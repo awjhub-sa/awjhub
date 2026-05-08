@@ -3,9 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Send, Truck, Building2, User, Package } from 'lucide-react';
 import { db } from '../config/db.js';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-
-const OBSERVER_NAME   = 'عمر الرفاعي';
-const OBSERVER_CENTER = 'مركز ٤٥';
+import { useAuth } from '../context/AuthContext.jsx';
+import { getCaterer } from '../config/centers.js';
 
 const SUPPORT_TYPES = [
   { value: 'internal', label: 'داخلي' },
@@ -15,6 +14,7 @@ const SUPPORT_TYPES = [
 
 export default function LogisticsRequest() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
 
   const [supportType, setSupportType]     = useState('');
   const [qtyInternal, setQtyInternal]     = useState('');
@@ -33,8 +33,10 @@ export default function LogisticsRequest() {
     setLoading(true);
     try {
       await addDoc(collection(db, 'logistics_requests'), {
-        observer: OBSERVER_NAME,
-        center: OBSERVER_CENTER,
+        observer: profile?.nameAr || profile?.name || 'مراقب',
+        center:   profile?.center  || '—',
+        caterer:  profile?.caterer || getCaterer(profile?.center) || '—',
+        uid:      profile?.uid     || '',
         supportType,
         ...(showInternal && { qtyInternal: Number(qtyInternal) }),
         ...(showExternal && { qtyExternal: Number(qtyExternal) }),
@@ -92,7 +94,7 @@ export default function LogisticsRequest() {
                 <User size={13} className="text-[#A98159]" /> اسم المراقب
               </label>
               <div className="w-full px-4 py-3 bg-[#F5F5F5] border border-[#D1C4B9] rounded-xl text-sm font-bold text-[#2D2926]">
-                {OBSERVER_NAME}
+                {profile?.nameAr || profile?.name || 'مراقب'}
               </div>
             </div>
 
@@ -102,7 +104,17 @@ export default function LogisticsRequest() {
                 <Building2 size={13} className="text-[#A98159]" /> المركز / المسكن
               </label>
               <div className="w-full px-4 py-3 bg-[#F5F5F5] border border-[#D1C4B9] rounded-xl text-sm font-bold text-[#2D2926]">
-                {OBSERVER_CENTER}
+                {profile?.center || '—'}
+              </div>
+            </div>
+
+            {/* Caterer */}
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-medium text-[#6D6E71] mb-1.5">
+                <Building2 size={13} className="text-[#A98159]" /> المتعهد
+              </label>
+              <div className="w-full px-4 py-3 bg-[#F5F5F5] border border-[#D1C4B9] rounded-xl text-sm text-[#2D2926]">
+                {profile?.caterer || getCaterer(profile?.center) || '—'}
               </div>
             </div>
           </div>

@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Utensils, Camera, ChevronRight, Save, CheckCircle2, AlertCircle } from 'lucide-react';
-import { db } from '../config/db.js'; // تأكد من المسار
+import { Utensils, ChevronRight, Save, CheckCircle2, AlertCircle, User, Building2 } from 'lucide-react';
+import { db } from '../config/db.js';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useAuth } from '../context/AuthContext.jsx';
+import { getCaterer } from '../config/centers.js';
 
 const Mealcheck = () => {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
   
   // مثال لأول 5 أسئلة (تقدر تكملها لـ 35 بنفس الطريقة)
@@ -32,10 +35,13 @@ const Mealcheck = () => {
     setLoading(true);
     try {
       await addDoc(collection(db, "meal_evaluations"), {
-        observer: "عمر الرفاعي",
-        answers: answers,
+        observer: profile?.nameAr || profile?.name || 'مراقب',
+        center:   profile?.center  || '—',
+        caterer:  profile?.caterer || getCaterer(profile?.center) || '—',
+        uid:      profile?.uid     || '',
+        answers,
         timestamp: serverTimestamp(),
-        status: "completed"
+        status: "completed",
       });
       alert("تم إرسال التقييم بنجاح");
       navigate('/home');
@@ -59,14 +65,29 @@ const Mealcheck = () => {
 
       <div className="p-4 max-w-2xl mx-auto">
         {/* Info Card */}
-        <div className="bg-dark-gradient rounded-3xl p-6 mb-8 text-white shadow-gold">
-          <div className="flex items-center gap-4">
+        <div className="rounded-3xl p-5 mb-6 text-white shadow-gold"
+          style={{ background: 'linear-gradient(135deg, #3D3330 0%, #2D2926 100%)' }}>
+          <div className="flex items-center gap-3 mb-4">
             <div className="bg-[#A98159]/20 p-3 rounded-2xl">
-              <Utensils className="text-[#A98159]" size={28} />
+              <Utensils className="text-[#A98159]" size={26} />
             </div>
             <div>
               <p className="text-[#A98159] text-xs font-bold">نموذج الفحص الميداني</p>
-              <h2 className="text-lg font-bold">35 معياراً للجودة</h2>
+              <h2 className="text-base font-bold">35 معياراً للجودة</h2>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-xs mt-1">
+            <div className="bg-white/5 rounded-xl px-3 py-2">
+              <p className="text-white/40 text-[10px] mb-0.5">المراقب</p>
+              <p className="text-white font-bold truncate">{profile?.nameAr || profile?.name || '—'}</p>
+            </div>
+            <div className="bg-white/5 rounded-xl px-3 py-2">
+              <p className="text-white/40 text-[10px] mb-0.5">المركز</p>
+              <p className="text-[#A98159] font-bold">{profile?.center || '—'}</p>
+            </div>
+            <div className="bg-white/5 rounded-xl px-3 py-2 col-span-1">
+              <p className="text-white/40 text-[10px] mb-0.5">المتعهد</p>
+              <p className="text-white text-[10px] leading-snug truncate">{profile?.caterer || getCaterer(profile?.center) || '—'}</p>
             </div>
           </div>
         </div>
