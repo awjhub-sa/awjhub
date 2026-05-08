@@ -1,0 +1,75 @@
+/* src/index.css */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
+/* src/index.css */
+@import "tailwindcss";
+
+
+@layer base {
+  html {
+    direction: rtl;
+    font-family: 'IBM Plex Sans Arabic', Tahoma, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-color: #FDFCFB;
+    color: #2D2926;
+    overflow-x: hidden;
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #D1C4B9; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #A98159; }
+
+  /* Select arrow RTL fix */
+  select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236D6E71' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: left 0.75rem center;
+    background-repeat: no-repeat;
+    background-size: 1.25em;
+    -webkit-appearance: none;
+    appearance: none;
+    padding-left: 2.5rem;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0.5;
+    cursor: pointer;
+  }
+}
+
+@layer utilities {
+  .bg-gold-gradient {
+    background: linear-gradient(135deg, #C4A46E 0%, #A98159 50%, #8B6840 100%);
+  }
+  .bg-dark-gradient {
+    background: linear-gradient(135deg, #3D3330 0%, #2D2926 100%);
+  }
+  .shadow-gold {
+    box-shadow: 0 4px 24px rgba(169, 129, 89, 0.30);
+  }
+  .shadow-gold-lg {
+    box-shadow: 0 8px 40px rgba(169, 129, 89, 0.35);
+  }
+  .shadow-card {
+    box-shadow: 0 2px 16px rgba(45, 41, 38, 0.07);
+  }
+  .shadow-card-lg {
+    box-shadow: 0 8px 32px rgba(45, 41, 38, 0.12);
+  }
+  .font-arabic {
+    font-family: 'IBM Plex Sans Arabic', Tahoma, sans-serif;
+  }
+}
