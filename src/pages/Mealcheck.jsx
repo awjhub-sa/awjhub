@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Utensils, Camera, ChevronRight, Save, CheckCircle2, AlertCircle } from 'lucide-react';
-import { db } from '../config/db'; // تأكد من المسار
+import { db } from '../config/db.js'; // تأكد من المسار
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const Mealcheck = () => {

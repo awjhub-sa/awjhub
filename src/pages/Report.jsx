@@ -6,7 +6,7 @@ import {
   Send, CheckCircle2, Zap, Package, Timer, Star,
   Thermometer, Users, FileX, Image
 } from 'lucide-react';
-import { db } from '../config/db';
+import { db } from '../config/db.js';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 /* ── Report type definitions ───────────────────────────── */

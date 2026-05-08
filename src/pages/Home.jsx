@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import {
   Utensils, AlertTriangle, Truck,
   Bell, User, ChevronLeft, TrendingUp,
-  ClipboardCheck, Star, MapPin
+  ClipboardCheck, Star, MapPin, Home as HomeIcon, Mountain
 } from 'lucide-react';
+import logo from '../assets/logo.png';
 
 /* ── Reusable decorative rule ─────────────────────────────── */
 const GoldRule = () => (
@@ -105,9 +106,7 @@ export default function Home() {
         <div className="max-w-md mx-auto flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gold-gradient flex items-center justify-center shadow-gold">
-              <span className="text-white font-bold text-base" style={{ fontFamily: 'serif' }}>ض</span>
-            </div>
+            <img src={logo} alt="شعار التطبيق" className="w-11 h-11 object-contain" />
             <div>
               <p className="text-xs font-bold text-dark leading-tight">ضيوف البيت</p>
               <p className="text-[10px] text-secondary leading-tight">منظومة المراقبة الميدانية</p>
@@ -202,6 +201,18 @@ export default function Home() {
             variant="accent"
           />
           <MenuCard
+            icon={HomeIcon}
+            title="تقييم جاهزية مشعر منى"
+            subtitle="فحص جاهزية المطبخ والمرافق الغذائية"
+            onClick={() => navigate('/mina-readiness')}
+          />
+          <MenuCard
+            icon={Mountain}
+            title="تقييم جاهزية مشعر عرفة"
+            subtitle="فحص جاهزية المطبخ والمرافق الغذائية"
+            onClick={() => navigate('/arafat-readiness')}
+          />
+          <MenuCard
             icon={AlertTriangle}
             title="بلاغ طارئ"
             subtitle="إرسال بلاغ عاجل لغرفة العمليات"
@@ -210,9 +221,9 @@ export default function Home() {
           />
           <MenuCard
             icon={Truck}
-            title="طلب إسناد لوجستي"
+            title="رفع طلب إسناد"
             subtitle="طلب معدات أو موارد بشرية"
-            onClick={() => {}}
+            onClick={() => navigate('/logistics')}
           />
         </div>
 
