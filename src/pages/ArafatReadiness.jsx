@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Save, CheckCircle2, AlertCircle, Mountain } from 'lucide-react';
 import { db } from '../config/db.js';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useAuth } from '../context/AuthContext.jsx';
+import { getCaterer } from '../config/centers.js';
 
 /* ── Data ──────────────────────────────────────────────────── */
 const SECTIONS = [
@@ -64,6 +66,7 @@ const REQUIRED_IDS = ALL_CRITERIA.filter(c => c.type !== 'choice' && c.type !== 
    ══════════════════════════════════════════════════════════ */
 export default function ArafatReadiness() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [answers, setAnswers] = useState({});
   const [details, setDetails] = useState({});
   const [loading, setLoading] = useState(false);
@@ -92,11 +95,15 @@ export default function ArafatReadiness() {
     setLoading(true);
     try {
       await addDoc(collection(db, 'arafat_readiness'), {
-        observer: 'عمر الرفاعي',
+        observer:     profile?.nameAr || profile?.name || 'مراقب',
+        center:       profile?.center  || '—',
+        caterer:      profile?.caterer || getCaterer(profile?.center) || '—',
+        uid:          profile?.uid     || '',
         answers,
         details,
         totalScore,
         maxScore,
+        scoreOutOf10: maxScore > 0 ? parseFloat(((totalScore / maxScore) * 10).toFixed(2)) : 0,
         timestamp: serverTimestamp(),
         status: 'completed',
       });
@@ -126,7 +133,7 @@ export default function ArafatReadiness() {
         {/* Info card */}
         <div className="rounded-3xl p-5 mb-6 text-white shadow-gold"
           style={{ background: 'linear-gradient(135deg, #3D3330 0%, #2D2926 100%)' }}>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <div className="bg-[#A98159]/20 p-3 rounded-2xl">
                 <Mountain className="text-[#A98159]" size={26} />
@@ -141,7 +148,22 @@ export default function ArafatReadiness() {
               <p className="text-[10px] text-white/50">مكتمل</p>
             </div>
           </div>
-          <div className="mt-4">
+          {/* Observer info */}
+          <div className="grid grid-cols-3 gap-2 text-xs mb-1 mt-1">
+            <div className="bg-white/5 rounded-xl px-3 py-2">
+              <p className="text-white/40 text-[10px] mb-0.5">المراقب</p>
+              <p className="text-white font-bold truncate">{profile?.nameAr || profile?.name || '—'}</p>
+            </div>
+            <div className="bg-white/5 rounded-xl px-3 py-2">
+              <p className="text-white/40 text-[10px] mb-0.5">المركز</p>
+              <p className="text-[#A98159] font-bold">{profile?.center || '—'}</p>
+            </div>
+            <div className="bg-white/5 rounded-xl px-3 py-2">
+              <p className="text-white/40 text-[10px] mb-0.5">المتعهد</p>
+              <p className="text-white text-[10px] leading-snug truncate">{profile?.caterer || getCaterer(profile?.center) || '—'}</p>
+            </div>
+          </div>
+          <div className="mt-0">
             <div className="flex justify-between text-xs text-white/50 mb-1">
               <span>الدرجة المتوقعة</span>
               <span>{totalScore.toFixed(2)} / {maxScore.toFixed(2)}</span>
