@@ -37,7 +37,7 @@ export default function Login() {
     setError('');
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // onAuthStateChanged in AuthContext will update role → App.jsx redirects
+      // onAuthStateChanged in AuthContext will update role → App.jsx redirects omar
     } catch (err) {
       const map = {
         'auth/user-not-found':  'البريد الإلكتروني غير مسجّل',
