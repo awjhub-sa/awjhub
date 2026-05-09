@@ -100,6 +100,16 @@ const TABS = [
 ];
 
 /* ── Helpers ── */
+function timeAgo(ts) {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  const s = Math.floor((Date.now() - d) / 1000);
+  if (s < 60)    return 'الآن';
+  if (s < 3600)  return `منذ ${Math.floor(s / 60)} دقيقة`;
+  if (s < 86400) return `منذ ${Math.floor(s / 3600)} ساعة`;
+  return `منذ ${Math.floor(s / 86400)} يوم`;
+}
+
 function fullDate(ts) {
   if (!ts) return '—';
   return (ts.toDate ? ts.toDate() : new Date(ts))
@@ -413,7 +423,7 @@ export default function AdminAnalytics() {
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                      <p className="text-[10px] text-[#6D6E71]">{fullDate(item.timestamp)}</p>
+                      <p className="text-[10px] text-[#6D6E71]">{timeAgo(item.timestamp)}</p>
                       <button
                         onClick={() => setExpanded(isOpen ? null : item.id)}
                         className="flex items-center gap-1 text-xs font-bold transition-colors"
@@ -430,16 +440,19 @@ export default function AdminAnalytics() {
                   {isOpen && (
                     <div className="border-t border-[#E8E0D8]/60 bg-[#FDFCFB] px-5 py-4 space-y-4">
 
-                      {/* Observer / center / caterer */}
-                      <div className="grid grid-cols-3 gap-2 text-xs">
+                      {/* Observer / center / caterer / timestamp */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                         {[
-                          { label: 'المراقب', val: item.observer, bold: true },
-                          { label: 'المركز',  val: item.center,  bold: true },
-                          { label: 'المتعهد', val: item.caterer || getCaterer(item.center), gold: true },
+                          { label: 'المراقب',      val: item.observer,                                    bold: true },
+                          { label: 'المركز',        val: item.center,                                      bold: true },
+                          { label: 'المتعهد',       val: item.caterer || getCaterer(item.center),          gold: true },
+                          { label: 'وقت الإرسال',  val: fullDate(item.timestamp),                         time: true },
                         ].map(c => (
-                          <div key={c.label} className="bg-white rounded-2xl border border-[#E8E0D8] p-3">
+                          <div key={c.label} className="bg-white rounded-2xl border border-[#E8E0D8] p-3"
+                            style={c.time ? { borderColor: `${tab.color}40`, background: `${tab.color}06` } : {}}>
                             <p className="text-[#6D6E71] text-[10px] mb-0.5">{c.label}</p>
-                            <p className={`font-bold text-[10px] leading-snug truncate ${c.gold ? 'text-[#A98159]' : 'text-[#2D2926]'}`}>
+                            <p className={`font-bold text-[10px] leading-snug ${c.gold ? 'text-[#A98159]' : c.time ? '' : 'text-[#2D2926]'} ${!c.time ? 'truncate' : ''}`}
+                              style={c.time ? { color: tab.color } : {}}>
                               {c.val || '—'}
                             </p>
                           </div>
