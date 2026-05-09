@@ -69,15 +69,18 @@ function openImageTab(src) {
 function StatCard({ label, value, icon: Icon, color, sub, onClick }) {
   return (
     <button onClick={onClick}
-      className="group bg-white rounded-2xl p-5 border border-[#EDE5DC] shadow-[0_1px_4px_rgba(45,41,38,0.05)] flex items-center gap-4 w-full text-right hover:shadow-[0_6px_24px_rgba(45,41,38,0.10)] hover:border-[#C9B8A8] transition-all duration-200 active:scale-[0.98]"
-      style={{ borderRight: `3px solid ${color}` }}>
+      className="group rounded-2xl p-5 border border-[#EDE5DC] shadow-[0_2px_8px_rgba(45,41,38,0.07)] flex items-center gap-4 w-full text-right hover:shadow-[0_8px_28px_rgba(45,41,38,0.13)] hover:border-[#C9B8A8] transition-all duration-200 active:scale-[0.98]"
+      style={{
+        borderRight: `3px solid ${color}`,
+        background: `linear-gradient(145deg, #ffffff 45%, ${color}0F 100%)`,
+      }}>
       <div className="flex-1 min-w-0">
         <p className="text-[11px] font-semibold text-[#9D8F85] mb-1">{label}</p>
-        <p className="text-[2rem] font-bold leading-none tabular-nums text-[#2D2926]">{value ?? '—'}</p>
+        <p className="text-[2rem] font-bold leading-none tabular-nums" style={{ color }}>{value ?? '—'}</p>
         {sub && <p className="text-[11px] text-[#B5A99E] mt-1.5 font-medium">{sub}</p>}
       </div>
-      <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-110"
-        style={{ background: `${color}13` }}>
+      <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200 group-hover:scale-110 group-hover:shadow-md"
+        style={{ background: `linear-gradient(135deg, ${color}28, ${color}14)` }}>
         <Icon size={22} style={{ color }} strokeWidth={1.5} />
       </div>
     </button>
@@ -258,11 +261,11 @@ export default function AdminDashboard() {
   }, []);
 
   const STATS = [
-    { label: 'البلاغات الميدانية', value: counts.reports,   icon: AlertTriangle, color: '#BA1A1A', sub: 'بلاغات نشطة',     nav: '/admin/reports'   },
+    { label: 'البلاغات الميدانية', value: counts.reports,   icon: AlertTriangle, color: '#E53E3E', sub: 'بلاغات نشطة',     nav: '/admin/reports'   },
     { label: 'التقييمات',           value: counts.evals,     icon: ClipboardList, color: '#A98159', sub: 'جودة الوجبات',    nav: '/admin/analytics' },
-    { label: 'طلبات الإسناد',       value: counts.logistics, icon: Truck,         color: '#1D6FA4', sub: 'طلبات لوجستية',  nav: '/admin/logistics' },
-    { label: 'جاهزية منى',         value: counts.mina,      icon: Mountain,      color: '#386B41', sub: 'تقييمات منى',     nav: '/admin/analytics' },
-    { label: 'جاهزية عرفة',        value: counts.arafat,    icon: Mountain,      color: '#0E7490', sub: 'تقييمات عرفة',    nav: '/admin/analytics' },
+    { label: 'طلبات الإسناد',       value: counts.logistics, icon: Truck,         color: '#3182CE', sub: 'طلبات لوجستية',  nav: '/admin/logistics' },
+    { label: 'جاهزية منى',         value: counts.mina,      icon: Mountain,      color: '#2F855A', sub: 'تقييمات منى',     nav: '/admin/analytics' },
+    { label: 'جاهزية عرفة',        value: counts.arafat,    icon: Mountain,      color: '#0987A0', sub: 'تقييمات عرفة',    nav: '/admin/analytics' },
   ];
 
   return (
@@ -275,21 +278,22 @@ export default function AdminDashboard() {
           <p className="text-sm text-[#9D8F85] mt-1 font-medium">مؤشرات الأداء الميداني — موسم الحج ١٤٤٧ هـ</p>
         </div>
 
-        {/* Hijri clock */}
-        <div className="flex items-stretch bg-[#2D2926] rounded-2xl overflow-hidden flex-shrink-0 shadow-[0_4px_20px_rgba(45,41,38,0.28)]">
+        {/* Hijri clock — gold gradient */}
+        <div className="flex items-stretch rounded-2xl overflow-hidden flex-shrink-0 shadow-[0_4px_20px_rgba(169,129,89,0.35)]"
+          style={{ background: 'linear-gradient(135deg, #C4A46E 0%, #A98159 50%, #8B6840 100%)' }}>
           <div className="flex items-center gap-3 px-5 py-3.5">
-            <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
-              <Clock size={15} className="text-[#A98159]" strokeWidth={1.5} />
+            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+              <Clock size={15} className="text-white" strokeWidth={1.5} />
             </div>
             <div>
-              <p className="text-white/40 text-[10px] font-medium leading-none">التاريخ الهجري</p>
-              <p className="text-white text-xs font-semibold mt-1 leading-tight">{clock.hijri || '...'}</p>
+              <p className="text-white/60 text-[10px] font-semibold leading-none">التاريخ الهجري</p>
+              <p className="text-white text-xs font-bold mt-1 leading-tight drop-shadow">{clock.hijri || '...'}</p>
             </div>
           </div>
-          <div className="w-px bg-white/10 my-3" />
+          <div className="w-px bg-white/20 my-3" />
           <div className="px-5 py-3.5 flex flex-col justify-center">
-            <p className="text-white/40 text-[10px] font-medium leading-none">الوقت الآن</p>
-            <p className="text-[#A98159] text-sm font-bold mt-1 tabular-nums leading-tight">{clock.time || '...'}</p>
+            <p className="text-white/60 text-[10px] font-semibold leading-none">الوقت الآن</p>
+            <p className="text-white text-sm font-extrabold mt-1 tabular-nums leading-tight drop-shadow">{clock.time || '...'}</p>
           </div>
         </div>
       </div>
@@ -302,12 +306,14 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Field reports ── */}
-      <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_1px_4px_rgba(45,41,38,0.05)] overflow-hidden">
+      <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#EDE5DC]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#EDE5DC]"
+          style={{ background: 'linear-gradient(135deg, #FEF2F2 0%, #fff 55%)' }}>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-red-50 rounded-xl flex items-center justify-center">
-              <AlertTriangle size={15} className="text-red-500" strokeWidth={1.5} />
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, #FCA5A5, #F87171)' }}>
+              <AlertTriangle size={16} className="text-white" strokeWidth={2} />
             </div>
             <div>
               <h2 className="font-bold text-[#2D2926] text-sm">البلاغات الميدانية</h2>
@@ -317,9 +323,9 @@ export default function AdminDashboard() {
             </div>
           </div>
           <button onClick={() => navigate('/admin/reports')}
-            className="flex items-center gap-1.5 text-xs font-semibold text-[#A98159] hover:text-[#8B6B40] transition-colors">
+            className="flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-700 transition-colors bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg">
             عرض الكل
-            <ArrowLeft size={13} strokeWidth={2} />
+            <ArrowLeft size={12} strokeWidth={2} />
           </button>
         </div>
 
@@ -384,12 +390,13 @@ export default function AdminDashboard() {
 
       {/* ── Other field activities ── */}
       {otherFeed.length > 0 && (
-        <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_1px_4px_rgba(45,41,38,0.05)] overflow-hidden">
+        <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
           {/* Header */}
-          <div className="flex items-center gap-3 px-6 py-4 border-b border-[#EDE5DC]">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: '#A9815915' }}>
-              <ClipboardList size={15} className="text-[#A98159]" strokeWidth={1.5} />
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-[#EDE5DC]"
+            style={{ background: 'linear-gradient(135deg, #FDF8F0 0%, #fff 55%)' }}>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
+              <ClipboardList size={16} className="text-white" strokeWidth={2} />
             </div>
             <div>
               <h2 className="font-bold text-[#2D2926] text-sm">النشاطات الميدانية</h2>

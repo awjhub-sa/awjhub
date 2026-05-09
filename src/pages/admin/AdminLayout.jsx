@@ -41,15 +41,18 @@ export default function AdminLayout() {
     <div className="flex flex-col h-full">
 
       {/* Logo */}
-      <div className="px-6 py-5 border-b border-white/10">
-        <div className="flex items-center gap-3 group cursor-default">
+      <div className="relative px-6 py-5 border-b border-white/10 overflow-hidden">
+        <div className="absolute inset-0 opacity-20"
+          style={{ background: 'radial-gradient(ellipse at 80% 50%, #C4A46E 0%, transparent 65%)' }} />
+        <div className="relative flex items-center gap-3 group cursor-default">
           <div className="relative">
-            <img src={logo} alt="logo" className="w-10 h-10 object-contain transition-transform duration-300 group-hover:scale-110" />
-            <div className="absolute inset-0 rounded-full bg-[#A98159]/20 scale-0 group-hover:scale-100 transition-transform duration-300" />
+            <div className="absolute inset-0 rounded-full blur-md opacity-0 group-hover:opacity-60 transition-opacity duration-300"
+              style={{ background: '#A98159' }} />
+            <img src={logo} alt="logo" className="w-10 h-10 object-contain transition-transform duration-300 group-hover:scale-110 relative z-10" />
           </div>
           <div>
-            <p className="text-white font-bold text-sm leading-tight">ضيوف البيت</p>
-            <p className="text-[#A98159] text-[10px] leading-tight tracking-wide">لوحة الإدارة</p>
+            <p className="text-white font-bold text-sm leading-tight tracking-wide">ضيوف البيت</p>
+            <p className="text-[10px] leading-tight font-semibold" style={{ color: '#C4A46E' }}>لوحة الإدارة</p>
           </div>
         </div>
       </div>
@@ -62,11 +65,15 @@ export default function AdminLayout() {
             to={to}
             onClick={() => setOpen(false)}
             className={({ isActive }) =>
-              `group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+              `group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
                 isActive
-                  ? 'bg-[#A98159] text-white shadow-[0_4px_16px_rgba(169,129,89,0.4)]'
-                  : 'text-white/70 hover:bg-white/10 hover:text-white'
+                  ? 'text-white shadow-[0_4px_20px_rgba(169,129,89,0.45)]'
+                  : 'text-white/65 hover:bg-white/8 hover:text-white'
               }`
+            }
+            style={({ isActive }) => isActive
+              ? { background: 'linear-gradient(135deg, #C4A46E, #A98159)' }
+              : {}
             }
           >
             {({ isActive }) => (
@@ -144,12 +151,12 @@ export default function AdminLayout() {
   );
 
   return (
-    <div dir="rtl" className="flex h-screen bg-[#F5F0EB] font-arabic overflow-hidden"
-      style={{ fontFamily: "'Cairo', Tahoma, sans-serif" }}>
+    <div dir="rtl" className="flex h-screen font-arabic overflow-hidden"
+      style={{ fontFamily: "'Cairo', Tahoma, sans-serif", background: 'linear-gradient(160deg, #F5F0EB 0%, #EDE5D8 100%)' }}>
 
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex flex-col w-60 flex-shrink-0"
-        style={{ background: 'linear-gradient(180deg,#3D3330 0%,#2D2926 100%)' }}>
+        style={{ background: 'linear-gradient(180deg,#4A3B35 0%,#2D2926 60%,#231F1C 100%)' }}>
         <SidebarContent />
       </aside>
 
@@ -158,7 +165,7 @@ export default function AdminLayout() {
         <div className="lg:hidden fixed inset-0 z-40 flex">
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setOpen(false)} />
           <aside className="relative w-64 flex flex-col z-50 shadow-2xl"
-            style={{ background: 'linear-gradient(180deg,#3D3330 0%,#2D2926 100%)' }}>
+            style={{ background: 'linear-gradient(180deg,#4A3B35 0%,#2D2926 60%,#231F1C 100%)' }}>
             <button
               onClick={() => setOpen(false)}
               className="absolute top-4 left-4 w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/20 transition-all duration-200 hover:rotate-90"
@@ -174,31 +181,32 @@ export default function AdminLayout() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
         {/* Top header */}
-        <header className="bg-white border-b border-[#D1C4B9] px-6 py-3 flex items-center justify-between flex-shrink-0 shadow-sm">
+        <header className="border-b border-[#D9CEBC] px-6 py-3 flex items-center justify-between flex-shrink-0 shadow-[0_1px_8px_rgba(45,41,38,0.08)]"
+          style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, #FDF8F2 100%)' }}>
           <div className="flex items-center gap-3">
             <button
               onClick={() => setOpen(true)}
-              className="group lg:hidden p-2 rounded-xl hover:bg-[#FDF8F0] transition-all duration-200"
+              className="group lg:hidden p-2 rounded-xl hover:bg-[#F5EEE4] transition-all duration-200"
             >
               <Menu size={20} className="text-[#2D2926] transition-transform duration-300 group-hover:scale-110" />
             </button>
             <div>
-              <p className="text-xs text-[#6D6E71]">موسم الحج</p>
-              <p className="text-sm font-bold text-[#2D2926]">١٤٤٧ هـ — لوحة التحكم</p>
+              <p className="text-[11px] font-semibold text-[#9D8F85]">موسم الحج ١٤٤٧ هـ</p>
+              <p className="text-sm font-bold text-[#2D2926]">لوحة التحكم الميدانية</p>
             </div>
           </div>
 
           {/* Bell */}
           <button
             onClick={() => navigate('/admin/reports')}
-            className="group relative p-2.5 rounded-xl border border-[#D1C4B9] hover:bg-[#FDF8F0] hover:border-[#A98159]/50 hover:shadow-sm transition-all duration-200"
+            className="group relative p-2.5 rounded-xl border border-[#D9CEBC] hover:bg-[#FDF8F0] hover:border-[#A98159]/60 hover:shadow-md transition-all duration-200"
           >
             <Bell
               size={18}
               className="text-[#6D6E71] transition-all duration-300 group-hover:text-[#A98159] group-hover:scale-110 group-hover:rotate-12"
             />
             {pendingCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-sm"
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-md"
                 style={{ animation: 'badgePulse 2s ease-in-out infinite' }}>
                 {pendingCount}
               </span>
