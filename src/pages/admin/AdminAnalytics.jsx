@@ -100,14 +100,10 @@ const TABS = [
 ];
 
 /* ── Helpers ── */
-function timeAgo(ts) {
+function fullDate(ts) {
   if (!ts) return '—';
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
-  const s = Math.floor((Date.now() - d) / 1000);
-  if (s < 60)    return 'الآن';
-  if (s < 3600)  return `منذ ${Math.floor(s / 60)} دقيقة`;
-  if (s < 86400) return `منذ ${Math.floor(s / 3600)} ساعة`;
-  return `منذ ${Math.floor(s / 86400)} يوم`;
+  return (ts.toDate ? ts.toDate() : new Date(ts))
+    .toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
 function getScore(doc) {
@@ -417,7 +413,7 @@ export default function AdminAnalytics() {
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                      <p className="text-[10px] text-[#6D6E71]">{timeAgo(item.timestamp)}</p>
+                      <p className="text-[10px] text-[#6D6E71]">{fullDate(item.timestamp)}</p>
                       <button
                         onClick={() => setExpanded(isOpen ? null : item.id)}
                         className="flex items-center gap-1 text-xs font-bold transition-colors"
