@@ -186,7 +186,7 @@ export default function AdminAnalytics() {
       </div>
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-2 bg-white border border-[#D1C4B9] rounded-2xl p-1.5 shadow-sm w-fit">
+      <div className="flex flex-wrap gap-2 bg-white border border-[#D1C4B9] rounded-3xl p-1.5 shadow-sm w-fit">
         {TABS.map(t => {
           const Icon = t.icon;
           const active = activeTab === t.key;
@@ -196,7 +196,7 @@ export default function AdminAnalytics() {
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all"
               style={active ? { backgroundColor: t.color, color: '#fff' } : { color: '#6D6E71' }}
             >
-              <Icon size={15} strokeWidth={1.75} />
+              <Icon size={15} strokeWidth={1.5} />
               {t.label}
             </button>
           );
@@ -212,7 +212,7 @@ export default function AdminAnalytics() {
             value: tab.hasScore ? (avgScore ? `${avgScore}/10` : '—') : totalNo,
             color: tab.hasScore ? '#A98159' : '#BA1A1A' },
         ].map(c => (
-          <div key={c.label} className="bg-white rounded-2xl p-4 border border-[#D1C4B9] shadow-sm text-center">
+          <div key={c.label} className="bg-white rounded-3xl p-4 border border-[#D1C4B9] shadow-sm text-center">
             <p className="text-[10px] text-[#6D6E71] mb-1">{c.label}</p>
             <p className="text-2xl font-bold" style={{ color: c.color }}>{c.value}</p>
           </div>
@@ -220,12 +220,12 @@ export default function AdminAnalytics() {
       </div>
 
       {data[activeTab] === null ? (
-        <div className="bg-white rounded-2xl border border-[#D1C4B9] py-16 text-center shadow-sm">
+        <div className="bg-white rounded-3xl border border-[#D1C4B9] py-16 text-center shadow-sm">
           <div className="w-6 h-6 border-2 border-[#A98159]/30 border-t-[#A98159] rounded-full animate-spin mx-auto mb-3" />
           <p className="text-[#6D6E71] text-sm">جارٍ التحميل...</p>
         </div>
       ) : docs.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-[#D1C4B9] py-16 text-center shadow-sm">
+        <div className="bg-white rounded-3xl border border-[#D1C4B9] py-16 text-center shadow-sm">
           <p className="text-[#6D6E71]">لا توجد بيانات بعد لهذا القسم</p>
         </div>
       ) : (
@@ -234,7 +234,7 @@ export default function AdminAnalytics() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
             {/* Pie */}
-            <div className="bg-white rounded-2xl border border-[#D1C4B9] shadow-sm p-5">
+            <div className="bg-white rounded-3xl border border-[#D1C4B9] shadow-sm p-5">
               <h3 className="font-bold text-[#2D2926] text-sm mb-4">نسبة الإجابات الكلية</h3>
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
@@ -251,7 +251,7 @@ export default function AdminAnalytics() {
             </div>
 
             {/* Bar */}
-            <div className="bg-white rounded-2xl border border-[#D1C4B9] shadow-sm p-5">
+            <div className="bg-white rounded-3xl border border-[#D1C4B9] shadow-sm p-5">
               <h3 className="font-bold text-[#2D2926] text-sm mb-4">نعم / لا لكل سؤال</h3>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={barData} layout="vertical" barSize={9} margin={{ left: 0, right: 10 }}>
@@ -270,7 +270,7 @@ export default function AdminAnalytics() {
 
             {/* Score trend */}
             {tab.hasScore && scoreTrend.length > 1 && (
-              <div className="bg-white rounded-2xl border border-[#D1C4B9] shadow-sm p-5">
+              <div className="bg-white rounded-3xl border border-[#D1C4B9] shadow-sm p-5">
                 <h3 className="font-bold text-[#2D2926] text-sm mb-4">
                   اتجاه الدرجات (آخر {scoreTrend.length} تقييمات)
                 </h3>
@@ -288,7 +288,7 @@ export default function AdminAnalytics() {
             )}
 
             {/* Compliance bars */}
-            <div className={`bg-white rounded-2xl border border-[#D1C4B9] shadow-sm p-5 ${tab.hasScore && scoreTrend.length > 1 ? '' : 'lg:col-span-2'}`}>
+            <div className={`bg-white rounded-3xl border border-[#D1C4B9] shadow-sm p-5 ${tab.hasScore && scoreTrend.length > 1 ? '' : 'lg:col-span-2'}`}>
               <h3 className="font-bold text-[#2D2926] text-sm mb-4">نسبة الامتثال لكل سؤال</h3>
               <div className="space-y-3">
                 {barData.map(d => {
@@ -332,13 +332,13 @@ export default function AdminAnalytics() {
 
               return (
                 <div key={item.id}
-                  className="bg-white rounded-2xl border border-[#D1C4B9] shadow-sm overflow-hidden transition-shadow hover:shadow-md">
+                  className="bg-white rounded-3xl border border-[#D1C4B9] shadow-sm overflow-hidden transition-shadow hover:shadow-md">
 
                   {/* Summary row */}
                   <div className="px-4 py-3.5 flex items-start gap-3">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                       style={{ background: `${tab.color}15` }}>
-                      <Icon size={18} style={{ color: tab.color }} strokeWidth={1.75} />
+                      <Icon size={18} style={{ color: tab.color }} strokeWidth={1.5} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-0.5">
@@ -412,7 +412,7 @@ export default function AdminAnalytics() {
                       {noAnswers.length > 0 && (
                         <div>
                           <p className="text-xs font-bold text-red-600 mb-2 flex items-center gap-1.5">
-                            <XCircle size={13} strokeWidth={1.75} />
+                            <XCircle size={13} strokeWidth={1.5} />
                             الأسئلة المجابة بـ «لا» ({noAnswers.length})
                           </p>
                           <div className="space-y-1.5">
@@ -430,7 +430,7 @@ export default function AdminAnalytics() {
                       {/* All answers */}
                       <div>
                         <p className="text-xs font-bold text-[#6D6E71] mb-2 flex items-center gap-1.5">
-                          <TrendingUp size={13} strokeWidth={1.75} />
+                          <TrendingUp size={13} strokeWidth={1.5} />
                           جميع الإجابات
                         </p>
                         <div className="space-y-1.5">

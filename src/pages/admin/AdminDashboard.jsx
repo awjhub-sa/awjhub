@@ -3,7 +3,7 @@ import { collection, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../config/db.js';
 import {
   AlertTriangle, Truck, TrendingUp,
-  ArrowLeft, Mountain, Utensils, X, Trash2, Clock,
+  ArrowLeft, Mountain, ClipboardList, X, Trash2, Clock,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getCaterer } from '../../config/centers.js';
@@ -68,9 +68,9 @@ function openImageTab(src) {
 /* ── StatCard ── */
 const StatCard = ({ label, value, icon: Icon, color, sub, onClick }) => (
   <button onClick={onClick}
-    className="bg-white rounded-2xl p-4 border border-[#D1C4B9] shadow-sm flex items-center gap-3 text-right w-full hover:shadow-md hover:border-[#A98159]/40 transition-all active:scale-[0.98]">
+    className="bg-white rounded-3xl p-4 border border-[#D1C4B9] shadow-sm flex items-center gap-3 text-right w-full hover:shadow-md hover:border-[#A98159]/40 transition-all active:scale-[0.98]">
     <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${color}18` }}>
-      <Icon size={20} style={{ color }} strokeWidth={1.75} />
+      <Icon size={20} style={{ color }} strokeWidth={1.5} />
     </div>
     <div className="min-w-0 flex-1">
       <p className="text-[#6D6E71] text-xs">{label}</p>
@@ -103,7 +103,7 @@ function ReportDetailModal({ report, onClose, onDelete }) {
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => onDelete(report.id)} className="w-8 h-8 rounded-xl border border-red-200 flex items-center justify-center hover:bg-red-50 transition text-red-400 hover:text-red-600">
-              <Trash2 size={14} strokeWidth={1.75} />
+              <Trash2 size={14} strokeWidth={1.5} />
             </button>
             <button onClick={onClose} className="w-8 h-8 rounded-xl border border-[#D1C4B9] flex items-center justify-center hover:bg-gray-50 transition">
               <X size={16} className="text-[#6D6E71]" />
@@ -256,7 +256,7 @@ export default function AdminDashboard() {
 
   const STAT_CARDS = [
     { label: 'البلاغات الميدانية',  value: counts.reports,   icon: AlertTriangle,  color: '#BA1A1A', sub: 'بلاغات طارئة',    nav: '/admin/reports'   },
-    { label: 'تقييم الوجبات',       value: counts.evals,     icon: Utensils,       color: '#A98159', sub: 'جودة الوجبات',    nav: '/admin/analytics' },
+    { label: 'التقييمات',            value: counts.evals,     icon: ClipboardList,  color: '#A98159', sub: 'جودة الوجبات',    nav: '/admin/analytics' },
     { label: 'طلبات الإسناد',        value: counts.logistics, icon: Truck,          color: '#1D6FA4', sub: 'طلبات لوجستية',  nav: '/admin/logistics' },
     { label: 'جاهزية منى',          value: counts.mina,      icon: Mountain,       color: '#386B41', sub: 'تقييمات منى',     nav: '/admin/analytics' },
     { label: 'جاهزية عرفة',         value: counts.arafat,    icon: Mountain,       color: '#1D6FA4', sub: 'تقييمات عرفة',    nav: '/admin/analytics' },
@@ -270,7 +270,7 @@ export default function AdminDashboard() {
           <p className="text-sm text-[#6D6E71] mt-0.5">مؤشرات الأداء الحية — موسم الحج ١٤٤٧ هـ</p>
         </div>
         {/* Hijri clock */}
-        <div className="flex items-center gap-3 bg-gradient-to-r from-[#2D2926] to-[#3D3330] rounded-2xl px-4 py-3 shadow-sm flex-shrink-0">
+        <div className="flex items-center gap-3 bg-gradient-to-r from-[#2D2926] to-[#3D3330] rounded-3xl px-4 py-3 shadow-sm flex-shrink-0">
           <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
             <Clock size={16} className="text-[#A98159]" strokeWidth={1.5} />
           </div>
@@ -292,7 +292,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── قسم البلاغات الميدانية ── */}
-      <div className="bg-white rounded-2xl border border-[#D1C4B9] shadow-sm overflow-hidden">
+      <div className="bg-white rounded-3xl border border-[#D1C4B9] shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#D1C4B9]"
           style={{ background: 'linear-gradient(135deg,#FEF2F2,#FFF)' }}>
           <div className="flex items-center gap-2">
@@ -355,7 +355,7 @@ export default function AdminDashboard() {
                   onClick={() => handleDeleteReport(r.id)}
                   className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-100 text-[#D1C4B9] hover:text-red-500 transition-all flex-shrink-0 self-center"
                 >
-                  <Trash2 size={13} strokeWidth={1.75} />
+                  <Trash2 size={13} strokeWidth={1.5} />
                 </button>
               </div>
               );
@@ -366,7 +366,7 @@ export default function AdminDashboard() {
 
       {/* ── نشاطات أخرى ── */}
       {otherFeed.length > 0 && (
-        <div className="bg-white rounded-2xl border border-[#D1C4B9] shadow-sm overflow-hidden">
+        <div className="bg-white rounded-3xl border border-[#D1C4B9] shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-[#D1C4B9]">
             <h2 className="font-bold text-[#2D2926]">نشاطات ميدانية أخرى</h2>
             <p className="text-xs text-[#6D6E71]">تقييمات وطلبات إسناد حديثة</p>
@@ -430,11 +430,11 @@ export default function AdminDashboard() {
         {[
           { label: 'البلاغات الميدانية', nav: '/admin/reports',   color: '#BA1A1A', icon: AlertTriangle },
           { label: 'الإسناد اللوجستي',   nav: '/admin/logistics', color: '#1D6FA4', icon: Truck        },
-          { label: 'تقييم الوجبات',      nav: '/admin/analytics', color: '#A98159', icon: Utensils     },
+          { label: 'التقييمات',           nav: '/admin/analytics', color: '#A98159', icon: ClipboardList },
           { label: 'تقييمات الجاهزية',   nav: '/admin/analytics', color: '#386B41', icon: TrendingUp   },
         ].map(b => (
           <button key={b.label} onClick={() => navigate(b.nav)}
-            className="bg-white rounded-2xl p-4 border border-[#D1C4B9] shadow-sm hover:shadow-md hover:border-[#A98159]/40 transition-all flex items-center gap-2.5 active:scale-[0.97]">
+            className="bg-white rounded-3xl p-4 border border-[#D1C4B9] shadow-sm hover:shadow-md hover:border-[#A98159]/40 transition-all flex items-center gap-2.5 active:scale-[0.97]">
             <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `${b.color}15` }}>
               <b.icon size={16} style={{ color: b.color }} />
             </div>

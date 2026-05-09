@@ -5,7 +5,7 @@ import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { auth, db } from '../../config/db.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import {
-  LayoutDashboard, FileText, Truck, Utensils,
+  LayoutDashboard, FileText, Truck, ClipboardList,
   Users, LogOut, Menu, X, Bell, ChevronRight,
 } from 'lucide-react';
 import logo from '../../assets/logo.png';
@@ -15,7 +15,7 @@ const NAV = [
   { to: '/admin/dashboard',  label: 'نظرة عامة',        icon: LayoutDashboard },
   { to: '/admin/reports',    label: 'البلاغات الميدانية', icon: FileText        },
   { to: '/admin/logistics',  label: 'الإسناد اللوجستي',  icon: Truck           },
-  { to: '/admin/analytics',  label: 'تقييم الوجبات',     icon: Utensils        },
+  { to: '/admin/analytics',  label: 'التقييمات',          icon: ClipboardList   },
   { to: '/admin/users',      label: 'إدارة المستخدمين',  icon: Users           },
 ];
 
