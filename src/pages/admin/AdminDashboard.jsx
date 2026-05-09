@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { collection, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, deleteDoc, updateDoc, doc } from 'firebase/firestore';
 import { db } from '../../config/db.js';
 import {
   AlertTriangle, Truck, ClipboardList, Mountain,
-  Clock, Trash2, X, ArrowLeft,
+  Clock, Trash2, X, ArrowLeft, CheckCircle2,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getCaterer } from '../../config/centers.js';
@@ -88,11 +88,10 @@ function StatCard({ label, value, icon: Icon, color, sub, onClick }) {
 }
 
 /* ─── Report Detail Modal ─── */
-function ReportDetailModal({ report, onClose, onDelete }) {
+function ReportDetailModal({ report, onClose, onDelete, onStatusChange }) {
   if (!report) return null;
   const label = REPORT_TYPE[report.reportType || report.type] || 'بلاغ';
   const sv    = SEV[report.severity];
-  const sb    = STATUS[report.status] || STATUS.pending;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" dir="rtl">
@@ -118,18 +117,35 @@ function ReportDetailModal({ report, onClose, onDelete }) {
         </div>
 
         <div className="p-6 space-y-4">
-          {/* Status badges */}
-          <div className="flex gap-2 flex-wrap">
-            {sv && (
+          {/* Severity badge */}
+          {sv && (
+            <div className="flex gap-2 flex-wrap">
               <span className="px-3 py-1 rounded-lg text-xs font-semibold border"
                 style={{ background: sv.bg, borderColor: sv.border, color: sv.text }}>
                 خطورة {sv.label}
               </span>
-            )}
-            <span className="px-3 py-1 rounded-lg text-xs font-semibold border"
-              style={{ background: sb.bg, borderColor: sb.border, color: sb.text }}>
-              {sb.label}
-            </span>
+            </div>
+          )}
+
+          {/* Status selector */}
+          <div>
+            <p className="text-[11px] font-semibold text-[#9D8F85] mb-2">حالة البلاغ</p>
+            <div className="grid grid-cols-3 gap-2">
+              {Object.entries(STATUS).map(([key, s]) => {
+                const active = (report.status || 'pending') === key;
+                return (
+                  <button key={key}
+                    onClick={() => onStatusChange(report.id, key)}
+                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold border transition-all"
+                    style={active
+                      ? { background: s.bg, borderColor: s.border, color: s.text, boxShadow: `0 2px 8px ${s.border}` }
+                      : { background: '#fff', borderColor: '#EDE5DC', color: '#9D8F85' }}>
+                    {active && <CheckCircle2 size={12} strokeWidth={2} />}
+                    {s.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Info grid */}
@@ -224,6 +240,12 @@ export default function AdminDashboard() {
     if (!window.confirm('هل أنت متأكد من حذف هذا البلاغ؟')) return;
     await deleteDoc(doc(db, 'reports', id));
     setSelectedReport(null);
+  };
+
+  /* Change report status */
+  const handleStatusChange = async (id, status) => {
+    await updateDoc(doc(db, 'reports', id), { status });
+    setSelectedReport(prev => prev?.id === id ? { ...prev, status } : prev);
   };
 
   /* Firestore listeners */
@@ -347,6 +369,7 @@ export default function AdminDashboard() {
               <div key={r.id}
                 className={`group flex items-center gap-4 px-6 py-4 hover:bg-[#FDFAF7] transition-colors ${!isLast ? 'border-b border-[#EDE5DC]' : ''}`}>
                 {/* Clickable area */}
+                {/* Clickable info area */}
                 <button onClick={() => setSelectedReport(r)}
                   className="flex items-center gap-4 flex-1 text-right min-w-0">
                   <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
@@ -358,25 +381,30 @@ export default function AdminDashboard() {
                       {r.observer || '—'} · {r.center || '—'}
                     </p>
                   </div>
-                  {/* Badges — hidden on mobile */}
-                  <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
-                    {sv && (
-                      <span className="px-2 py-0.5 rounded-lg text-[11px] font-semibold border"
-                        style={{ background: sv.bg, borderColor: sv.border, color: sv.text }}>
-                        {sv.label}
-                      </span>
-                    )}
-                    <span className="px-2 py-0.5 rounded-lg text-[11px] font-semibold border"
-                      style={{ background: sb.bg, borderColor: sb.border, color: sb.text }}>
-                      {sb.label}
+                  {/* Severity badge */}
+                  {sv && (
+                    <span className="hidden sm:inline-flex px-2 py-0.5 rounded-lg text-[11px] font-semibold border flex-shrink-0"
+                      style={{ background: sv.bg, borderColor: sv.border, color: sv.text }}>
+                      {sv.label}
                     </span>
-                  </div>
+                  )}
                   {/* Time */}
                   <div className="flex-shrink-0 text-left space-y-0.5">
                     <p className="text-[11px] text-[#9D8F85] font-medium">{timeAgo(r.timestamp)}</p>
                     <p className="text-[11px] font-bold text-[#A98159]">{clockTime(r.timestamp)}</p>
                   </div>
                 </button>
+                {/* Status select — inline */}
+                <select
+                  value={r.status || 'pending'}
+                  onChange={e => { e.stopPropagation(); handleStatusChange(r.id, e.target.value); }}
+                  onClick={e => e.stopPropagation()}
+                  className="text-[11px] font-bold border rounded-xl px-2 py-1.5 outline-none cursor-pointer flex-shrink-0 transition-all"
+                  style={{ background: sb.bg, borderColor: sb.border, color: sb.text }}>
+                  {Object.entries(STATUS).map(([k, s]) =>
+                    <option key={k} value={k}>{s.label}</option>
+                  )}
+                </select>
                 {/* Delete */}
                 <button onClick={() => handleDeleteReport(r.id)}
                   className="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-xl hover:bg-red-50 flex items-center justify-center text-[#C9B8A8] hover:text-red-500 transition-all flex-shrink-0">
@@ -467,6 +495,7 @@ export default function AdminDashboard() {
           report={selectedReport}
           onClose={() => setSelectedReport(null)}
           onDelete={handleDeleteReport}
+          onStatusChange={handleStatusChange}
         />
       )}
     </div>
