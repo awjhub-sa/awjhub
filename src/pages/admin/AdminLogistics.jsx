@@ -361,13 +361,20 @@ export default function AdminLogistics() {
                       { label: 'اسم المراقب',    val: r.observer },
                       { label: 'المركز / المسكن', val: r.center   },
                       { label: 'نوع الإسناد',     val: TYPE_LABEL[r.supportType] || '—' },
-                      { label: 'تاريخ الطلب',     val: fullDate(r.timestamp) },
+                      { label: 'وقت الإرسال',     val: fullDate(r.timestamp), time: true },
                       ...(r.qtyInternal != null ? [{ label: 'الكمية الداخلية', val: String(r.qtyInternal), blue: true }] : []),
                       ...(r.qtyExternal != null ? [{ label: 'الكمية الخارجية', val: String(r.qtyExternal), blue: true }] : []),
                     ].map(c => (
-                      <div key={c.label} className="bg-white rounded-2xl border border-[#EDE8E3] px-3 py-2.5">
+                      <div key={c.label}
+                        className="rounded-2xl border px-3 py-2.5"
+                        style={c.time
+                          ? { background: '#EFF6FF80', borderColor: '#3182CE40' }
+                          : { background: '#fff', borderColor: '#EDE8E3' }}>
                         <p className="text-[#6D6E71] text-[10px] mb-0.5">{c.label}</p>
-                        <p className={`font-bold ${c.blue ? 'text-[#1D6FA4] text-base' : 'text-[#2D2926]'}`}>{c.val || '—'}</p>
+                        <p className={`font-bold text-[10px] leading-snug ${c.blue ? 'text-base' : ''}`}
+                          style={c.time ? { color: '#3182CE' } : c.blue ? { color: '#3182CE' } : { color: '#2D2926' }}>
+                          {c.val || '—'}
+                        </p>
                       </div>
                     ))}
                     <div className="bg-[#FDF8F0] rounded-2xl border border-[#E8DDD4] px-3 py-2.5 col-span-2 sm:col-span-1">

@@ -374,14 +374,21 @@ export default function AdminReports() {
                   {/* Info grid */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
                     {[
-                      { label: 'اسم المراقب',   val: r.observer },
+                      { label: 'اسم المراقب',    val: r.observer },
                       { label: 'المركز / المسكن', val: r.center   },
-                      { label: 'وقت الإرسال',    val: fullDate(r.timestamp) },
-                      { label: 'نوع البلاغ',     val: `${rt.icon} ${rt.label}` },
+                      { label: 'نوع البلاغ',      val: `${rt.icon} ${rt.label}` },
+                      { label: 'وقت الإرسال',     val: fullDate(r.timestamp), time: true },
                     ].map(c => (
-                      <div key={c.label} className="bg-white rounded-2xl border border-[#EDE8E3] px-3 py-2.5">
+                      <div key={c.label}
+                        className="rounded-2xl border px-3 py-2.5"
+                        style={c.time
+                          ? { background: '#FEF2F280', borderColor: '#E5383840' }
+                          : { background: '#fff', borderColor: '#EDE8E3' }}>
                         <p className="text-[#6D6E71] text-[10px] mb-0.5">{c.label}</p>
-                        <p className="font-bold text-[#2D2926]">{c.val || '—'}</p>
+                        <p className={`font-bold text-[10px] leading-snug ${c.time ? '' : 'text-[#2D2926]'}`}
+                          style={c.time ? { color: '#E53E3E' } : {}}>
+                          {c.val || '—'}
+                        </p>
                       </div>
                     ))}
                     <div className="bg-[#FDF8F0] rounded-2xl border border-[#E8DDD4] px-3 py-2.5 col-span-2 sm:col-span-1">
