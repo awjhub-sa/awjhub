@@ -124,7 +124,7 @@ function fmtTime(ms) {
   return new Date(ms).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit', hour12: true });
 }
 
-/* ══════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════gbrbt */
 export default function Home() {
   const navigate      = useNavigate();
   const { profile }   = useAuth();
