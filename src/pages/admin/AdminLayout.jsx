@@ -145,7 +145,7 @@ export default function AdminLayout() {
 
   return (
     <div dir="rtl" className="flex h-screen bg-[#F5F0EB] font-arabic overflow-hidden"
-      style={{ fontFamily: "'IBM Plex Sans Arabic', Tahoma, sans-serif" }}>
+      style={{ fontFamily: "'Cairo', Tahoma, sans-serif" }}>
 
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex flex-col w-60 flex-shrink-0"

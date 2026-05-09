@@ -2,55 +2,55 @@ import { useEffect, useState } from 'react';
 import { collection, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../config/db.js';
 import {
-  AlertTriangle, Truck, TrendingUp,
-  ArrowLeft, Mountain, ClipboardList, X, Trash2, Clock,
+  AlertTriangle, Truck, ClipboardList, Mountain,
+  Clock, Trash2, X, ArrowLeft,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getCaterer } from '../../config/centers.js';
 
-/* ── helpers ── */
-const REPORT_TYPE_LABELS = {
-  water:    { label: 'تسرب مياه',        icon: '💧' },
-  electric: { label: 'عطل كهربائي',       icon: '⚡' },
-  crowd:    { label: 'ازدحام حرج',        icon: '👥' },
-  food:     { label: 'مشكلة غذائية',      icon: '🍽️' },
-  medical:  { label: 'حالة طبية طارئة',   icon: '🚑' },
-  security: { label: 'بلاغ أمني',         icon: '🛡️' },
-  fire:     { label: 'حريق / دخان',       icon: '🔥' },
-  other:    { label: 'بلاغ آخر',          icon: '📋' },
-  /* legacy types */
-  shortage: { label: 'نقص في الكميات',    icon: '📦' },
-  delay:    { label: 'تأخر في التوزيع',   icon: '⏱️' },
-  quality:  { label: 'مشكلة في الجودة',   icon: '⭐' },
-  hygiene:  { label: 'مخالفة صحية',       icon: '🌡️' },
+/* ─── Lookup tables ─── */
+const REPORT_TYPE = {
+  water:    'تسرب مياه',
+  electric: 'عطل كهربائي',
+  crowd:    'ازدحام حرج',
+  food:     'مشكلة غذائية',
+  medical:  'حالة طبية طارئة',
+  security: 'بلاغ أمني',
+  fire:     'حريق / دخان',
+  other:    'بلاغ آخر',
+  shortage: 'نقص كميات',
+  delay:    'تأخر توزيع',
+  quality:  'مشكلة جودة',
+  hygiene:  'مخالفة صحية',
 };
 
-const SEVERITY = {
-  high:   { label: 'عالية',   bg: '#FEE2E2', border: '#FECACA', text: '#991B1B', dot: '#DC2626' },
-  medium: { label: 'متوسطة',  bg: '#FEF3C7', border: '#FDE68A', text: '#92400E', dot: '#D97706' },
-  low:    { label: 'منخفضة',  bg: '#DBEAFE', border: '#BFDBFE', text: '#1E40AF', dot: '#3B82F6' },
-  urgent: { label: 'عاجل',    bg: '#FEE2E2', border: '#FECACA', text: '#991B1B', dot: '#DC2626' },
+const SEV = {
+  high:   { label: 'عالية',   bg: '#FEF2F2', text: '#DC2626', border: '#FCA5A5' },
+  urgent: { label: 'عاجل',    bg: '#FEF2F2', text: '#DC2626', border: '#FCA5A5' },
+  medium: { label: 'متوسطة',  bg: '#FFFBEB', text: '#B45309', border: '#FCD34D' },
+  low:    { label: 'منخفضة',  bg: '#EFF6FF', text: '#1D4ED8', border: '#93C5FD' },
 };
 
-const STATUS_BADGE = {
-  pending:     { label: 'قيد الانتظار', cls: 'bg-yellow-100 text-yellow-700' },
-  in_progress: { label: 'جارٍ التنفيذ',  cls: 'bg-blue-100   text-blue-700'   },
-  resolved:    { label: 'تم الحل',       cls: 'bg-green-100  text-green-700'  },
+const STATUS = {
+  pending:     { label: 'قيد الانتظار', bg: '#FEFCE8', text: '#854D0E', border: '#FDE047' },
+  in_progress: { label: 'جارٍ التنفيذ', bg: '#EFF6FF', text: '#1D4ED8', border: '#93C5FD' },
+  resolved:    { label: 'تم الحل',      bg: '#F0FDF4', text: '#15803D', border: '#86EFAC' },
 };
 
-const SUPPORT_LABELS = { internal: 'داخلي', external: 'خارجي', both: 'داخلي وخارجي' };
+const SUPPORT = { internal: 'داخلي', external: 'خارجي', both: 'داخلي وخارجي' };
 
+/* ─── Helpers ─── */
 function timeAgo(ts) {
   if (!ts) return '—';
   const d = ts.toDate ? ts.toDate() : new Date(ts);
   const s = Math.floor((Date.now() - d) / 1000);
   if (s < 60)    return 'الآن';
-  if (s < 3600)  return `منذ ${Math.floor(s / 60)} دقيقة`;
-  if (s < 86400) return `منذ ${Math.floor(s / 3600)} ساعة`;
-  return `منذ ${Math.floor(s / 86400)} يوم`;
+  if (s < 3600)  return `${Math.floor(s / 60)}د`;
+  if (s < 86400) return `${Math.floor(s / 3600)}س`;
+  return `${Math.floor(s / 86400)} يوم`;
 }
 
-function exactTime(ts) {
+function clockTime(ts) {
   if (!ts) return '';
   const d = ts.toDate ? ts.toDate() : new Date(ts);
   return d.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
@@ -61,84 +61,90 @@ function openImageTab(src) {
   win.document.write(`<!DOCTYPE html><html><head><title>صورة البلاغ</title>
     <style>body{margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;}
     img{max-width:100%;max-height:100vh;object-fit:contain;}</style></head>
-    <body><img src="${src}" /></body></html>`);
+    <body><img src="${src}"/></body></html>`);
   win.document.close();
 }
 
-/* ── StatCard ── */
-const StatCard = ({ label, value, icon: Icon, color, sub, onClick }) => (
-  <button onClick={onClick}
-    className="bg-white rounded-3xl p-4 border border-[#E8E0D8] shadow-[0_2px_20px_rgba(45,41,38,0.06)] flex items-center gap-3 text-right w-full hover:shadow-[0_4px_24px_rgba(45,41,38,0.10)] hover:border-[#A98159]/30 transition-all active:scale-[0.98]">
-    <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-      style={{ background: `linear-gradient(135deg,${color}22,${color}0E)` }}>
-      <Icon size={20} style={{ color }} strokeWidth={1.5} />
-    </div>
-    <div className="min-w-0 flex-1">
-      <p className="text-[#6D6E71] text-xs">{label}</p>
-      <p className="text-xl font-bold text-[#2D2926]">{value ?? '—'}</p>
-      {sub && <p className="text-[10px] text-[#6D6E71]">{sub}</p>}
-    </div>
-    <ArrowLeft size={14} className="text-[#D1C4B9] flex-shrink-0" strokeWidth={1.5} />
-  </button>
-);
+/* ─── Stat Card ─── */
+function StatCard({ label, value, icon: Icon, color, sub, onClick }) {
+  return (
+    <button onClick={onClick}
+      className="group bg-white rounded-2xl p-5 border border-[#EDE5DC] shadow-[0_1px_4px_rgba(45,41,38,0.05)] flex items-center gap-4 w-full text-right hover:shadow-[0_6px_24px_rgba(45,41,38,0.10)] hover:border-[#C9B8A8] transition-all duration-200 active:scale-[0.98]"
+      style={{ borderRight: `3px solid ${color}` }}>
+      <div className="flex-1 min-w-0">
+        <p className="text-[11px] font-semibold text-[#9D8F85] mb-1">{label}</p>
+        <p className="text-[2rem] font-bold leading-none tabular-nums text-[#2D2926]">{value ?? '—'}</p>
+        {sub && <p className="text-[11px] text-[#B5A99E] mt-1.5 font-medium">{sub}</p>}
+      </div>
+      <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-110"
+        style={{ background: `${color}13` }}>
+        <Icon size={22} style={{ color }} strokeWidth={1.5} />
+      </div>
+    </button>
+  );
+}
 
-/* ── ReportDetailModal ── */
+/* ─── Report Detail Modal ─── */
 function ReportDetailModal({ report, onClose, onDelete }) {
   if (!report) return null;
-  const rt = REPORT_TYPE_LABELS[report.reportType || report.type] || { label: 'بلاغ', icon: '📋' };
-  const sv = SEVERITY[report.severity] || SEVERITY.low;
-  const sb = STATUS_BADGE[report.status] || STATUS_BADGE.pending;
+  const label = REPORT_TYPE[report.reportType || report.type] || 'بلاغ';
+  const sv    = SEV[report.severity];
+  const sb    = STATUS[report.status] || STATUS.pending;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" dir="rtl">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-3xl w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-3xl w-full max-w-lg max-h-[88vh] overflow-y-auto shadow-2xl ring-1 ring-black/5">
+
         {/* Modal header */}
-        <div className="sticky top-0 bg-white border-b border-[#E8E0D8] px-5 py-4 flex items-center justify-between rounded-t-3xl z-10">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">{rt.icon}</span>
-            <div>
-              <p className="font-bold text-[#2D2926]">{rt.label}</p>
-              <p className="text-xs text-[#6D6E71]">{timeAgo(report.timestamp)} · {exactTime(report.timestamp)}</p>
-            </div>
+        <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-[#EDE5DC] px-6 py-4 flex items-center justify-between rounded-t-3xl z-10">
+          <div>
+            <p className="font-bold text-[#2D2926] text-base">{label}</p>
+            <p className="text-[11px] text-[#9D8F85] mt-0.5">{timeAgo(report.timestamp)} · {clockTime(report.timestamp)}</p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => onDelete(report.id)} className="w-8 h-8 rounded-xl border border-red-200 flex items-center justify-center hover:bg-red-50 transition text-red-400 hover:text-red-600">
-              <Trash2 size={14} strokeWidth={1.5} />
+            <button onClick={() => onDelete(report.id)}
+              className="h-9 px-3.5 rounded-xl border border-red-200 flex items-center gap-1.5 hover:bg-red-50 transition-colors text-red-500 text-xs font-semibold">
+              <Trash2 size={13} strokeWidth={1.5} /> حذف
             </button>
-            <button onClick={onClose} className="w-8 h-8 rounded-xl border border-[#E8E0D8] flex items-center justify-center hover:bg-gray-50 transition">
-              <X size={16} className="text-[#6D6E71]" />
+            <button onClick={onClose}
+              className="w-9 h-9 rounded-xl border border-[#EDE5DC] flex items-center justify-center hover:bg-[#F5F0EB] transition-colors">
+              <X size={16} className="text-[#6D6E71]" strokeWidth={1.5} />
             </button>
           </div>
         </div>
 
-        <div className="p-5 space-y-4">
-          {/* Badges */}
+        <div className="p-6 space-y-4">
+          {/* Status badges */}
           <div className="flex gap-2 flex-wrap">
-            <span className="px-3 py-1 rounded-full text-xs font-bold border"
-              style={{ background: sv.bg, borderColor: sv.border, color: sv.text }}>
-              <span className="inline-block w-2 h-2 rounded-full ml-1.5" style={{ background: sv.dot }} />
-              خطورة {sv.label}
+            {sv && (
+              <span className="px-3 py-1 rounded-lg text-xs font-semibold border"
+                style={{ background: sv.bg, borderColor: sv.border, color: sv.text }}>
+                خطورة {sv.label}
+              </span>
+            )}
+            <span className="px-3 py-1 rounded-lg text-xs font-semibold border"
+              style={{ background: sb.bg, borderColor: sb.border, color: sb.text }}>
+              {sb.label}
             </span>
-            <span className={`px-3 py-1 rounded-full text-xs font-bold ${sb.cls}`}>{sb.label}</span>
           </div>
 
           {/* Info grid */}
-          <div className="grid grid-cols-2 gap-3 text-xs">
+          <div className="grid grid-cols-2 gap-2.5">
             {[
-              { label: 'المراقب',     val: report.observer },
-              { label: 'المركز',      val: report.center   },
-              { label: 'نوع البلاغ',  val: rt.label        },
-              { label: 'وقت الإرسال', val: exactTime(report.timestamp) },
+              { lbl: 'المراقب',     val: report.observer },
+              { lbl: 'المركز',      val: report.center   },
+              { lbl: 'نوع البلاغ',  val: label           },
+              { lbl: 'وقت الإرسال', val: clockTime(report.timestamp) },
             ].map(c => (
-              <div key={c.label} className="bg-[#FDFCFB] rounded-xl border border-[#E8E0D8] p-3">
-                <p className="text-[#6D6E71] mb-0.5">{c.label}</p>
-                <p className="font-bold text-[#2D2926]">{c.val || '—'}</p>
+              <div key={c.lbl} className="bg-[#FAFAF8] rounded-xl border border-[#EDE5DC] p-3.5">
+                <p className="text-[10px] font-semibold text-[#9D8F85] mb-1">{c.lbl}</p>
+                <p className="font-bold text-[#2D2926] text-sm">{c.val || '—'}</p>
               </div>
             ))}
-            <div className="col-span-2 bg-[#FDF8F0] rounded-xl border border-[#E8E0D8] p-3">
-              <p className="text-[#6D6E71] mb-0.5">المتعهد</p>
-              <p className="font-bold text-[#A98159]">
+            <div className="col-span-2 bg-[#FDF8F0] rounded-xl border border-[#EDE5DC] p-3.5">
+              <p className="text-[10px] font-semibold text-[#9D8F85] mb-1">المتعهد</p>
+              <p className="font-bold text-[#A98159] text-sm">
                 {report.caterer || getCaterer(report.center) || '—'}
               </p>
             </div>
@@ -146,8 +152,8 @@ function ReportDetailModal({ report, onClose, onDelete }) {
 
           {/* Description */}
           {report.description && (
-            <div className="bg-[#FDFCFB] rounded-xl border border-[#E8E0D8] p-4">
-              <p className="text-xs text-[#6D6E71] mb-1.5 font-medium">وصف المشكلة</p>
+            <div className="bg-[#FAFAF8] rounded-xl border border-[#EDE5DC] p-4">
+              <p className="text-[10px] font-semibold text-[#9D8F85] mb-2">وصف المشكلة</p>
               <p className="text-sm text-[#2D2926] leading-relaxed">{report.description}</p>
             </div>
           )}
@@ -155,13 +161,13 @@ function ReportDetailModal({ report, onClose, onDelete }) {
           {/* Images */}
           {report.images?.length > 0 && (
             <div>
-              <p className="text-xs text-[#6D6E71] font-medium mb-2">الصور المرفقة ({report.images.length})</p>
+              <p className="text-[10px] font-semibold text-[#9D8F85] mb-2">الصور المرفقة ({report.images.length})</p>
               <div className="grid grid-cols-2 gap-2">
                 {report.images.map((src, i) => (
                   <button key={i} onClick={() => openImageTab(src)} className="group relative block w-full">
-                    <img src={src} alt="" className="w-full h-32 object-cover rounded-xl border border-[#E8E0D8]" />
-                    <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition bg-black/40 rounded-xl text-white text-xs font-bold">
-                      🔍 فتح الصورة
+                    <img src={src} alt="" className="w-full h-32 object-cover rounded-xl border border-[#EDE5DC]" />
+                    <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 rounded-xl text-white text-xs font-semibold">
+                      فتح الصورة
                     </span>
                   </button>
                 ))}
@@ -171,12 +177,13 @@ function ReportDetailModal({ report, onClose, onDelete }) {
 
           {/* Videos */}
           {report.videos?.length > 0 && (
-            <div className="bg-[#FDFCFB] rounded-xl border border-[#E8E0D8] p-3">
-              <p className="text-xs text-[#6D6E71] mb-1.5 font-medium">مقاطع الفيديو ({report.videos.length})</p>
+            <div className="bg-[#FAFAF8] rounded-xl border border-[#EDE5DC] p-3.5">
+              <p className="text-[10px] font-semibold text-[#9D8F85] mb-2">مقاطع الفيديو ({report.videos.length})</p>
               {report.videos.map((name, i) => (
-                <div key={i} className="flex items-center gap-2 text-sm text-[#2D2926]">
-                  <span>🎥</span><span>{name}</span>
-                </div>
+                <p key={i} className="text-sm text-[#2D2926] flex items-center gap-2">
+                  <span className="w-5 h-5 rounded bg-red-100 text-red-500 text-[10px] flex items-center justify-center flex-shrink-0">▶</span>
+                  {name}
+                </p>
               ))}
             </div>
           )}
@@ -189,17 +196,18 @@ function ReportDetailModal({ report, onClose, onDelete }) {
 /* ══════════════════════════════════════════════════════════ */
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [counts,       setCounts]       = useState({ reports: 0, evals: 0, logistics: 0, mina: 0, arafat: 0 });
-  const [reports,      setReports]      = useState([]);
-  const [otherFeed,    setOtherFeed]    = useState([]);
+  const [counts,         setCounts]         = useState({ reports: 0, evals: 0, logistics: 0, mina: 0, arafat: 0 });
+  const [reports,        setReports]        = useState([]);
+  const [otherFeed,      setOtherFeed]      = useState([]);
   const [selectedReport, setSelectedReport] = useState(null);
-  const [clock,        setClock]        = useState({ hijri: '', time: '' });
+  const [clock,          setClock]          = useState({ hijri: '', time: '' });
 
+  /* Live clock */
   useEffect(() => {
     const tick = () => {
       const now = new Date();
       setClock({
-        hijri: now.toLocaleDateString('ar-SA-u-ca-islamic', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+        hijri: now.toLocaleDateString('ar-SA-u-ca-islamic', { year: 'numeric', month: 'long', day: 'numeric' }),
         time:  now.toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }),
       });
     };
@@ -208,246 +216,245 @@ export default function AdminDashboard() {
     return () => clearInterval(id);
   }, []);
 
+  /* Delete report */
   const handleDeleteReport = async (id) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا البلاغ؟')) return;
     await deleteDoc(doc(db, 'reports', id));
     setSelectedReport(null);
   };
 
+  /* Firestore listeners */
   useEffect(() => {
-    const sortByTime = (arr) => [...arr].sort((a, b) => {
-      const ta = a.timestamp?.toMillis?.() ?? a.createdAt?.toMillis?.() ?? 0;
-      const tb = b.timestamp?.toMillis?.() ?? b.createdAt?.toMillis?.() ?? 0;
-      return tb - ta;
-    });
+    const byTime = arr => [...arr].sort((a, b) =>
+      (b.timestamp?.toMillis?.() ?? b.createdAt?.toMillis?.() ?? 0) -
+      (a.timestamp?.toMillis?.() ?? a.createdAt?.toMillis?.() ?? 0)
+    );
 
     const unsubs = [
       onSnapshot(collection(db, 'reports'), s => {
         setCounts(p => ({ ...p, reports: s.size }));
-        setReports(sortByTime(s.docs.map(d => ({ id: d.id, ...d.data() }))));
+        setReports(byTime(s.docs.map(d => ({ id: d.id, ...d.data() }))));
       }),
-      onSnapshot(collection(db, 'meal_evaluations'),  s => setCounts(p => ({ ...p, evals:     s.size }))),
-      onSnapshot(collection(db, 'logistics_requests'),s => {
+      onSnapshot(collection(db, 'meal_evaluations'), s =>
+        setCounts(p => ({ ...p, evals: s.size }))
+      ),
+      onSnapshot(collection(db, 'logistics_requests'), s => {
         setCounts(p => ({ ...p, logistics: s.size }));
-        const items = sortByTime(s.docs.map(d => ({ id: d.id, ...d.data(), _col: 'logistics' })));
-        setOtherFeed(prev => {
-          const filtered = prev.filter(i => i._col !== 'logistics');
-          return sortByTime([...filtered, ...items.slice(0, 3)]);
-        });
+        const items = byTime(s.docs.map(d => ({ id: d.id, ...d.data(), _col: 'logistics' })));
+        setOtherFeed(p => byTime([...p.filter(i => i._col !== 'logistics'), ...items.slice(0, 3)]));
       }),
-      onSnapshot(collection(db, 'mina_readiness'),   s => {
+      onSnapshot(collection(db, 'mina_readiness'), s => {
         setCounts(p => ({ ...p, mina: s.size }));
-        const items = sortByTime(s.docs.map(d => ({ id: d.id, ...d.data(), _col: 'mina' })));
-        setOtherFeed(prev => {
-          const filtered = prev.filter(i => i._col !== 'mina');
-          return sortByTime([...filtered, ...items.slice(0, 3)]);
-        });
+        const items = byTime(s.docs.map(d => ({ id: d.id, ...d.data(), _col: 'mina' })));
+        setOtherFeed(p => byTime([...p.filter(i => i._col !== 'mina'), ...items.slice(0, 3)]));
       }),
       onSnapshot(collection(db, 'arafat_readiness'), s => {
         setCounts(p => ({ ...p, arafat: s.size }));
-        const items = sortByTime(s.docs.map(d => ({ id: d.id, ...d.data(), _col: 'arafat' })));
-        setOtherFeed(prev => {
-          const filtered = prev.filter(i => i._col !== 'arafat');
-          return sortByTime([...filtered, ...items.slice(0, 3)]);
-        });
+        const items = byTime(s.docs.map(d => ({ id: d.id, ...d.data(), _col: 'arafat' })));
+        setOtherFeed(p => byTime([...p.filter(i => i._col !== 'arafat'), ...items.slice(0, 3)]));
       }),
     ];
     return () => unsubs.forEach(u => u());
   }, []);
 
-  const STAT_CARDS = [
-    { label: 'البلاغات الميدانية',  value: counts.reports,   icon: AlertTriangle,  color: '#BA1A1A', sub: 'بلاغات طارئة',    nav: '/admin/reports'   },
-    { label: 'التقييمات',            value: counts.evals,     icon: ClipboardList,  color: '#A98159', sub: 'جودة الوجبات',    nav: '/admin/analytics' },
-    { label: 'طلبات الإسناد',        value: counts.logistics, icon: Truck,          color: '#1D6FA4', sub: 'طلبات لوجستية',  nav: '/admin/logistics' },
-    { label: 'جاهزية منى',          value: counts.mina,      icon: Mountain,       color: '#386B41', sub: 'تقييمات منى',     nav: '/admin/analytics' },
-    { label: 'جاهزية عرفة',         value: counts.arafat,    icon: Mountain,       color: '#1D6FA4', sub: 'تقييمات عرفة',    nav: '/admin/analytics' },
+  const STATS = [
+    { label: 'البلاغات الميدانية', value: counts.reports,   icon: AlertTriangle, color: '#BA1A1A', sub: 'بلاغات نشطة',     nav: '/admin/reports'   },
+    { label: 'التقييمات',           value: counts.evals,     icon: ClipboardList, color: '#A98159', sub: 'جودة الوجبات',    nav: '/admin/analytics' },
+    { label: 'طلبات الإسناد',       value: counts.logistics, icon: Truck,         color: '#1D6FA4', sub: 'طلبات لوجستية',  nav: '/admin/logistics' },
+    { label: 'جاهزية منى',         value: counts.mina,      icon: Mountain,      color: '#386B41', sub: 'تقييمات منى',     nav: '/admin/analytics' },
+    { label: 'جاهزية عرفة',        value: counts.arafat,    icon: Mountain,      color: '#0E7490', sub: 'تقييمات عرفة',    nav: '/admin/analytics' },
   ];
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div className="space-y-6 pb-4">
+
+      {/* ── Page header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-[#2D2926]">نظرة عامة على العمليات</h1>
-          <p className="text-sm text-[#6D6E71] mt-0.5">مؤشرات الأداء الحية — موسم الحج ١٤٤٧ هـ</p>
+          <h1 className="text-2xl font-bold text-[#2D2926] leading-tight">نظرة عامة</h1>
+          <p className="text-sm text-[#9D8F85] mt-1 font-medium">مؤشرات الأداء الميداني — موسم الحج ١٤٤٧ هـ</p>
         </div>
+
         {/* Hijri clock */}
-        <div className="flex items-center gap-3 bg-gradient-to-r from-[#2D2926] to-[#3D3330] rounded-3xl px-4 py-3 shadow-[0_4px_20px_rgba(45,41,38,0.20)] flex-shrink-0">
-          <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
-            <Clock size={16} className="text-[#A98159]" strokeWidth={1.5} />
-          </div>
-          <div>
-            <p className="text-white/40 text-[10px] leading-none mb-0.5">التاريخ الهجري</p>
-            <p className="text-white text-xs font-bold leading-tight">{clock.hijri}</p>
-          </div>
-          <div className="border-r border-white/10 h-8 mx-1" />
-          <div className="text-left">
-            <p className="text-white/40 text-[10px] leading-none mb-0.5">الوقت</p>
-            <p className="text-[#A98159] text-sm font-bold tabular-nums leading-tight">{clock.time}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
-        {STAT_CARDS.map(c => <StatCard key={c.label} {...c} onClick={() => navigate(c.nav)} />)}
-      </div>
-
-      {/* ── قسم البلاغات الميدانية ── */}
-      <div className="bg-white rounded-3xl border border-[#E8E0D8] shadow-[0_2px_20px_rgba(45,41,38,0.06)] overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#E8E0D8]"
-          style={{ background: 'linear-gradient(135deg,#FEF2F200,#FFF)' }}>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg,#BA1A1A22,#BA1A1A0E)' }}>
-              <AlertTriangle size={16} className="text-red-600" strokeWidth={1.5} />
+        <div className="flex items-stretch bg-[#2D2926] rounded-2xl overflow-hidden flex-shrink-0 shadow-[0_4px_20px_rgba(45,41,38,0.28)]">
+          <div className="flex items-center gap-3 px-5 py-3.5">
+            <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+              <Clock size={15} className="text-[#A98159]" strokeWidth={1.5} />
             </div>
             <div>
-              <h2 className="font-bold text-[#2D2926]">البلاغات الميدانية</h2>
-              <p className="text-xs text-[#6D6E71]">تحديث فوري — اضغط لعرض التفاصيل</p>
+              <p className="text-white/40 text-[10px] font-medium leading-none">التاريخ الهجري</p>
+              <p className="text-white text-xs font-semibold mt-1 leading-tight">{clock.hijri || '...'}</p>
             </div>
           </div>
-          <button onClick={() => navigate('/admin/reports')}
-            className="flex items-center gap-1 text-xs font-bold text-red-600 hover:underline">
-            عرض الكل <ArrowLeft size={12} />
-          </button>
-        </div>
-
-        {reports.length === 0 ? (
-          <div className="py-10 text-center text-[#6D6E71] text-sm">لا توجد بلاغات بعد</div>
-        ) : (
-          <div className="divide-y divide-[#E8E0D8]/60">
-            {reports.slice(0, 6).map(r => {
-              const rt = REPORT_TYPE_LABELS[r.reportType || r.type] || { label: 'بلاغ', icon: '📋' };
-              const sv = SEVERITY[r.severity];
-              const sb = STATUS_BADGE[r.status] || STATUS_BADGE.pending;
-              return (
-                <div key={r.id} className="group flex items-start gap-3 px-5 py-3.5 hover:bg-red-50/40 transition-colors">
-                <button onClick={() => setSelectedReport(r)} className="flex items-start gap-3 flex-1 text-right min-w-0">
-                  <span className="text-2xl mt-0.5 flex-shrink-0">{rt.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                      <span className="text-sm font-bold text-[#2D2926]">{rt.label}</span>
-                      {sv && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border"
-                          style={{ background: sv.bg, borderColor: sv.border, color: sv.text }}>
-                          {sv.label}
-                        </span>
-                      )}
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${sb.cls}`}>{sb.label}</span>
-                    </div>
-                    <p className="text-xs text-[#6D6E71] truncate">
-                      {r.observer || '—'} · {r.center || '—'}
-                    </p>
-                    <p className="text-[10px] text-[#A98159] font-medium truncate">
-                      🏭 {r.caterer || getCaterer(r.center) || '—'}
-                    </p>
-                    {r.description && (
-                      <p className="text-xs text-[#2D2926]/60 truncate mt-0.5">{r.description}</p>
-                    )}
-                  </div>
-                  <div className="flex-shrink-0 text-left">
-                    <p className="text-[10px] text-[#6D6E71]">{timeAgo(r.timestamp)}</p>
-                    <p className="text-[10px] text-[#A98159] font-bold">{exactTime(r.timestamp)}</p>
-                    {r.images?.length > 0 && (
-                      <p className="text-[10px] text-[#6D6E71] mt-0.5">📷 {r.images.length}</p>
-                    )}
-                  </div>
-                </button>
-                <button
-                  onClick={() => handleDeleteReport(r.id)}
-                  className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-100 text-[#D1C4B9] hover:text-red-500 transition-all flex-shrink-0 self-center"
-                >
-                  <Trash2 size={13} strokeWidth={1.5} />
-                </button>
-              </div>
-              );
-            })}
+          <div className="w-px bg-white/10 my-3" />
+          <div className="px-5 py-3.5 flex flex-col justify-center">
+            <p className="text-white/40 text-[10px] font-medium leading-none">الوقت الآن</p>
+            <p className="text-[#A98159] text-sm font-bold mt-1 tabular-nums leading-tight">{clock.time || '...'}</p>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* ── نشاطات أخرى ── */}
-      {otherFeed.length > 0 && (
-        <div className="bg-white rounded-3xl border border-[#E8E0D8] shadow-[0_2px_20px_rgba(45,41,38,0.06)] overflow-hidden">
-          <div className="px-5 py-4 border-b border-[#E8E0D8]"
-            style={{ background: 'linear-gradient(135deg,#A9815908,transparent)' }}>
-            <h2 className="font-bold text-[#2D2926]">نشاطات ميدانية أخرى</h2>
-            <p className="text-xs text-[#6D6E71]">تقييمات وطلبات إسناد حديثة</p>
-          </div>
-          <div className="divide-y divide-[#E8E0D8]/60">
-            {otherFeed.slice(0, 6).map((item, i) => {
-              const isLogistics = item._col === 'logistics';
-              const isMina      = item._col === 'mina';
-              const isReadiness = isMina || item._col === 'arafat';
-
-              /* score badge color */
-              const score = item.scoreOutOf10 ?? (
-                item.maxScore > 0
-                  ? parseFloat(((item.totalScore / item.maxScore) * 10).toFixed(2))
-                  : null
-              );
-              const scoreBadge = score == null ? null
-                : score >= 8   ? { bg: '#DCFCE7', text: '#166534', border: '#BBF7D0' }
-                : score >= 5   ? { bg: '#FEF3C7', text: '#92400E', border: '#FDE68A' }
-                :                { bg: '#FEE2E2', text: '#991B1B', border: '#FECACA' };
-
-              return (
-                <button key={i} onClick={() => navigate(isLogistics ? '/admin/logistics' : '/admin/analytics')}
-                  className="w-full flex items-start gap-3 px-5 py-3.5 hover:bg-[#FDFCFB] transition-colors text-right">
-                  <span className="text-xl flex-shrink-0 mt-0.5">
-                    {isLogistics ? '🚛' : isMina ? '⛺' : '🏔️'}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                      <p className="text-sm font-bold text-[#2D2926]">
-                        {isLogistics
-                          ? `طلب إسناد ${SUPPORT_LABELS[item.supportType] || ''}`
-                          : isMina ? 'جاهزية مشعر منى' : 'جاهزية مشعر عرفة'}
-                      </p>
-                      {isReadiness && scoreBadge && (
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full border"
-                          style={{ background: scoreBadge.bg, color: scoreBadge.text, borderColor: scoreBadge.border }}>
-                          {score.toFixed(1)} / 10
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-[#6D6E71] mb-0.5">
-                      <span className="font-medium text-[#2D2926]">{item.observer || '—'}</span>
-                      <span>·</span>
-                      <span>{item.center || '—'}</span>
-                    </div>
-                    <p className="text-[10px] text-[#A98159] font-medium truncate">
-                      🏭 {item.caterer || getCaterer(item.center) || '—'}
-                    </p>
-                  </div>
-                  <p className="text-[10px] text-[#6D6E71] flex-shrink-0 mt-0.5">{timeAgo(item.timestamp)}</p>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Quick nav */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: 'البلاغات الميدانية', nav: '/admin/reports',   color: '#BA1A1A', icon: AlertTriangle },
-          { label: 'الإسناد اللوجستي',   nav: '/admin/logistics', color: '#1D6FA4', icon: Truck        },
-          { label: 'التقييمات',           nav: '/admin/analytics', color: '#A98159', icon: ClipboardList },
-          { label: 'تقييمات الجاهزية',   nav: '/admin/analytics', color: '#386B41', icon: TrendingUp   },
-        ].map(b => (
-          <button key={b.label} onClick={() => navigate(b.nav)}
-            className="bg-white rounded-3xl p-4 border border-[#E8E0D8] shadow-[0_2px_20px_rgba(45,41,38,0.06)] hover:shadow-[0_4px_24px_rgba(45,41,38,0.10)] hover:border-[#A98159]/30 transition-all flex items-center gap-2.5 active:scale-[0.97]">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: `linear-gradient(135deg,${b.color}22,${b.color}0E)` }}>
-              <b.icon size={16} style={{ color: b.color }} strokeWidth={1.5} />
-            </div>
-            <span className="text-xs font-bold text-[#2D2926]">{b.label}</span>
-          </button>
+      {/* ── Stat cards ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
+        {STATS.map(c => (
+          <StatCard key={c.label} {...c} onClick={() => navigate(c.nav)} />
         ))}
       </div>
 
-      {/* Detail Modal */}
+      {/* ── Field reports ── */}
+      <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_1px_4px_rgba(45,41,38,0.05)] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#EDE5DC]">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-red-50 rounded-xl flex items-center justify-center">
+              <AlertTriangle size={15} className="text-red-500" strokeWidth={1.5} />
+            </div>
+            <div>
+              <h2 className="font-bold text-[#2D2926] text-sm">البلاغات الميدانية</h2>
+              <p className="text-[11px] text-[#9D8F85] mt-0.5 font-medium">
+                {counts.reports} بلاغ إجمالاً · تحديث لحظي
+              </p>
+            </div>
+          </div>
+          <button onClick={() => navigate('/admin/reports')}
+            className="flex items-center gap-1.5 text-xs font-semibold text-[#A98159] hover:text-[#8B6B40] transition-colors">
+            عرض الكل
+            <ArrowLeft size={13} strokeWidth={2} />
+          </button>
+        </div>
+
+        {/* Rows */}
+        {reports.length === 0 ? (
+          <div className="py-14 text-center">
+            <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <AlertTriangle size={18} className="text-gray-200" strokeWidth={1.5} />
+            </div>
+            <p className="text-[#9D8F85] text-sm font-medium">لا توجد بلاغات بعد</p>
+          </div>
+        ) : (
+          reports.slice(0, 6).map((r, idx) => {
+            const label = REPORT_TYPE[r.reportType || r.type] || 'بلاغ';
+            const sv    = SEV[r.severity];
+            const sb    = STATUS[r.status] || STATUS.pending;
+            const isLast = idx === Math.min(reports.length, 6) - 1;
+            return (
+              <div key={r.id}
+                className={`group flex items-center gap-4 px-6 py-4 hover:bg-[#FDFAF7] transition-colors ${!isLast ? 'border-b border-[#EDE5DC]' : ''}`}>
+                {/* Clickable area */}
+                <button onClick={() => setSelectedReport(r)}
+                  className="flex items-center gap-4 flex-1 text-right min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
+                    <AlertTriangle size={14} className="text-red-400" strokeWidth={1.5} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-[#2D2926] truncate">{label}</p>
+                    <p className="text-[11px] text-[#9D8F85] truncate mt-0.5 font-medium">
+                      {r.observer || '—'} · {r.center || '—'}
+                    </p>
+                  </div>
+                  {/* Badges — hidden on mobile */}
+                  <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+                    {sv && (
+                      <span className="px-2 py-0.5 rounded-lg text-[11px] font-semibold border"
+                        style={{ background: sv.bg, borderColor: sv.border, color: sv.text }}>
+                        {sv.label}
+                      </span>
+                    )}
+                    <span className="px-2 py-0.5 rounded-lg text-[11px] font-semibold border"
+                      style={{ background: sb.bg, borderColor: sb.border, color: sb.text }}>
+                      {sb.label}
+                    </span>
+                  </div>
+                  {/* Time */}
+                  <div className="flex-shrink-0 text-left space-y-0.5">
+                    <p className="text-[11px] text-[#9D8F85] font-medium">{timeAgo(r.timestamp)}</p>
+                    <p className="text-[11px] font-bold text-[#A98159]">{clockTime(r.timestamp)}</p>
+                  </div>
+                </button>
+                {/* Delete */}
+                <button onClick={() => handleDeleteReport(r.id)}
+                  className="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-xl hover:bg-red-50 flex items-center justify-center text-[#C9B8A8] hover:text-red-500 transition-all flex-shrink-0">
+                  <Trash2 size={13} strokeWidth={1.5} />
+                </button>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* ── Other field activities ── */}
+      {otherFeed.length > 0 && (
+        <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_1px_4px_rgba(45,41,38,0.05)] overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-[#EDE5DC]">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+              style={{ background: '#A9815915' }}>
+              <ClipboardList size={15} className="text-[#A98159]" strokeWidth={1.5} />
+            </div>
+            <div>
+              <h2 className="font-bold text-[#2D2926] text-sm">النشاطات الميدانية</h2>
+              <p className="text-[11px] text-[#9D8F85] mt-0.5 font-medium">تقييمات وطلبات إسناد حديثة</p>
+            </div>
+          </div>
+
+          {/* Rows */}
+          {otherFeed.slice(0, 6).map((item, i) => {
+            const isLogistics = item._col === 'logistics';
+            const isMina      = item._col === 'mina';
+            const isReadiness = !isLogistics;
+
+            const score = item.scoreOutOf10 ?? (
+              item.maxScore > 0
+                ? parseFloat(((item.totalScore / item.maxScore) * 10).toFixed(1))
+                : null
+            );
+            const scoreSt = score == null ? null
+              : score >= 8 ? { bg: '#F0FDF4', text: '#15803D', border: '#86EFAC' }
+              : score >= 5 ? { bg: '#FFFBEB', text: '#B45309', border: '#FCD34D' }
+              :              { bg: '#FEF2F2', text: '#DC2626', border: '#FCA5A5' };
+
+            const isLast = i === Math.min(otherFeed.length, 6) - 1;
+
+            return (
+              <button key={i}
+                onClick={() => navigate(isLogistics ? '/admin/logistics' : '/admin/analytics')}
+                className={`w-full flex items-center gap-4 px-6 py-4 hover:bg-[#FDFAF7] transition-colors text-right ${!isLast ? 'border-b border-[#EDE5DC]' : ''}`}>
+                {/* Icon */}
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                  isLogistics ? 'bg-blue-50' : isMina ? 'bg-green-50' : 'bg-cyan-50'
+                }`}>
+                  {isLogistics
+                    ? <Truck    size={14} className="text-blue-400"  strokeWidth={1.5} />
+                    : <Mountain size={14} className={isMina ? 'text-green-500' : 'text-cyan-500'} strokeWidth={1.5} />
+                  }
+                </div>
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-[#2D2926] truncate">
+                    {isLogistics
+                      ? `طلب إسناد ${SUPPORT[item.supportType] || ''}`.trim()
+                      : isMina ? 'جاهزية مشعر منى' : 'جاهزية مشعر عرفة'}
+                  </p>
+                  <p className="text-[11px] text-[#9D8F85] truncate mt-0.5 font-medium">
+                    {item.observer || '—'} · {item.center || '—'}
+                  </p>
+                </div>
+                {/* Score badge */}
+                {isReadiness && scoreSt && score != null && (
+                  <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold border flex-shrink-0"
+                    style={{ background: scoreSt.bg, color: scoreSt.text, borderColor: scoreSt.border }}>
+                    {score.toFixed(1)} / 10
+                  </span>
+                )}
+                {/* Time */}
+                <p className="text-[11px] text-[#9D8F85] flex-shrink-0 font-medium">{timeAgo(item.timestamp)}</p>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Detail modal */}
       {selectedReport && (
         <ReportDetailModal
           report={selectedReport}

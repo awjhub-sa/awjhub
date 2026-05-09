@@ -20,7 +20,7 @@ export default {
         'dark-900':    '#1A1511',
       },
       fontFamily: {
-        arabic: ['"IBM Plex Sans Arabic"', '"Noto Kufi Arabic"', 'Tahoma', 'sans-serif'],
+        arabic: ['"Cairo"', 'Tahoma', 'sans-serif'],
       },
       boxShadow: {
         'gold':    '0 4px 24px rgba(169,129,89,0.18)',
