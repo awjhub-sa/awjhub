@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../config/db.js';
-import { Truck, Package, ChevronDown, ChevronUp } from 'lucide-react';
+import { Truck, Package, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { getCaterer } from '../../config/centers.js';
 
 const STATUS_OPTIONS = [
@@ -48,6 +48,12 @@ export default function AdminLogistics() {
 
   const handleStatus = async (id, status) => {
     await updateDoc(doc(db, 'logistics_requests', id), { status });
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذا الطلب؟')) return;
+    await deleteDoc(doc(db, 'logistics_requests', id));
+    setExpanded(null);
   };
 
   const filtered  = filter === 'all' ? requests : requests.filter(r => r.status === filter);
@@ -199,7 +205,13 @@ export default function AdminLogistics() {
                       </div>
                     )}
 
-                    <div className="flex justify-end">
+                    <div className="flex items-center justify-between">
+                      <button
+                        onClick={() => handleDelete(r.id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-red-500 border border-red-200 hover:bg-red-50 transition-all"
+                      >
+                        <Trash2 size={13} strokeWidth={1.75} /> حذف الطلب
+                      </button>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-[#6D6E71]">تحديث الحالة:</span>
                         <select

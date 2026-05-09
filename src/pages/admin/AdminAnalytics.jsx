@@ -1,27 +1,92 @@
 import { useEffect, useState } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../../config/db.js';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line,
 } from 'recharts';
-import { RefreshCw } from 'lucide-react';
+import {
+  Utensils, Mountain, ChevronDown, ChevronUp,
+  CheckCircle2, XCircle, TrendingUp,
+} from 'lucide-react';
+import { getCaterer } from '../../config/centers.js';
 
-const MEAL_QUESTIONS = [
-  { id: 1, text: 'درجة حرارة الوجبة' },
-  { id: 2, text: 'تغليف سليم' },
-  { id: 3, text: 'ملصقات الإنتاج' },
-  { id: 4, text: 'مظهر الطعام' },
-  { id: 5, text: 'القفازات والكمامات' },
+/* ── Full question definitions ── */
+const MEAL_Qs = [
+  { id: 1, text: 'هل درجة حرارة الوجبة مناسبة عند الاستلام؟' },
+  { id: 2, text: 'هل الوجبات مغلفة بطريقة سليمة وغير ممزقة؟' },
+  { id: 3, text: 'هل توجد ملصقات توضح تاريخ الإنتاج والانتهاء؟' },
+  { id: 4, text: 'هل شكل الطعام ومظهره العام فاتح للشهية؟' },
+  { id: 5, text: 'هل طاقم التوزيع يلتزم بارتداء القفازات والكمامات؟' },
 ];
 
-const MINA_Q  = [
+const MINA_Qs = [
+  { id: 1,  text: 'هل الطبخ في مطبخ واحد أم عدة مطابخ؟',                  type: 'choice' },
+  { id: 2,  text: 'هل تم غسيل المطبخ (الحوائط / المداخن / الأرضيات)؟' },
+  { id: 3,  text: 'هل تم وضع المستندات الرسمية في لوحة ظاهرة؟' },
+  { id: 5,  text: 'هل يوجد مصادر مياه متوفرة داخل المطبخ ومرافق المركز؟' },
+  { id: 6,  text: 'هل تم وضع قائمة الوجبات (المنيو) بلغة الحاج؟' },
+  { id: 7,  text: 'هل تم وضع مواعيد توزيع الوجبات بلغة الحاج؟' },
+  { id: 8,  text: 'هل يوجد ملصقات توعوية عن سلامة الغذاء؟' },
+  { id: 9,  text: 'هل تم توفير مغسلة أيدي بمستشعر داخل المطبخ؟' },
+  { id: 10, text: 'هل صواعق الحشرات الكهربائية نظيفة وتعمل؟' },
+  { id: 11, text: 'هل تم توفير دولاب للأغراض الشخصية للعاملين؟' },
+  { id: 12, text: 'هل تم تنظيف غرفة الزيت / التفتيش من الرواسب؟' },
+  { id: 13, text: 'هل تم توفير مياه الشرب بشكل كافٍ داخل الموقع؟' },
+  { id: 14, text: 'هل تم توفير المواد الأساسية الغذائية من المتعهد؟' },
+  { id: 15, text: 'هل مواقد الطبخ / الدوافير (الكيروسين) تعمل بشكل جيد؟' },
+  { id: 16, text: 'هل تم توفير فلتر مياه (ثلاثي) داخل المطبخ؟' },
+  { id: 17, text: 'هل تم توفير ثلاجات / ترامس لتبريد مياه الشرب؟',         type: 'yesno_detail' },
+  { id: 18, text: 'هل تم تحديد موقع مهيأ لتخزين المواد الغذائية؟' },
+  { id: 19, text: 'هل جميع المنتجات المستخدمة بها بطاقة تعريف المنتج؟' },
+  { id: 20, text: 'هل يتم تخزين المواد الغذائية بطريقة آمنة وسليمة؟' },
+  { id: 21, text: 'هل تم توفير معدات وأدوات الطبخ كاملة؟' },
+  { id: 22, text: 'هل يوجد مستودع (غرفة) تبريد مهيأ وجاهز للاستخدام؟' },
+  { id: 23, text: 'هل يوجد مستودع (غرفة) تجميد مهيأ وجاهز للاستخدام؟' },
+  { id: 24, text: 'هل تم توفير حافظات (غرف الثلج)؟' },
+  { id: 25, text: 'هل توفرت كميات كافية من الثلج داخل حافظة الثلج؟' },
+  { id: 26, text: 'هل توفرت وجبات جافة احتياطية بكميات كافية؟' },
+];
+
+const ARAFAT_Qs = [
+  { id: 1,  text: 'هل الطبخ في مطبخ واحد أم عدة مطابخ؟',                  type: 'choice' },
+  { id: 2,  text: 'هل تم غسيل المطبخ (الحوائط / المداخن / الأرضيات)؟' },
+  { id: 3,  text: 'هل تم وضع المستندات الرسمية في لوحة ظاهرة؟' },
+  { id: 4,  text: 'هل يوجد مصادر مياه مع توفر المياه في الخزان الاحتياطي؟' },
+  { id: 5,  text: 'هل تم وضع قائمة الوجبات (المنيو) بلغة الحاج؟' },
+  { id: 6,  text: 'هل تم وضع مواعيد توزيع الوجبات بلغة الحاج؟' },
+  { id: 7,  text: 'هل يوجد ملصقات توعوية عن سلامة الغذاء؟' },
+  { id: 8,  text: 'هل صواعق الحشرات الكهربائية نظيفة وتعمل؟' },
+  { id: 9,  text: 'هل تم توفير دولاب للأغراض الشخصية للعاملين؟' },
+  { id: 10, text: 'هل تم توفير حافظات (غرف الثلج)؟' },
+  { id: 11, text: 'هل توفرت كميات كافية من الثلج داخل حافظة الثلج؟' },
+  { id: 12, text: 'هل مواقد الطبخ تم إنشاؤها وتجربتها؟' },
+  { id: 13, text: 'هل تم توفير فلتر مياه (ثلاثي) داخل المطبخ؟' },
+  { id: 14, text: 'هل تم توفير ثلاجات / ترامس لتبريد مياه الشرب؟',         type: 'yesno_detail' },
+  { id: 15, text: 'هل تم تحديد موقع مهيأ لتخزين المواد الغذائية؟' },
+  { id: 16, text: 'هل جميع المنتجات المستخدمة بها بطاقة تعريف المنتج؟' },
+  { id: 17, text: 'هل يتم تخزين المواد الغذائية بطريقة آمنة وسليمة؟' },
+  { id: 18, text: 'هل تم توفير مياه الشرب بشكل كافٍ داخل الموقع؟' },
+  { id: 19, text: 'هل تم توفير المواد الأساسية الغذائية من المتعهد؟' },
+  { id: 20, text: 'هل تم توفير معدات وأدوات الطبخ (القدور – الحطب)؟' },
+  { id: 21, text: 'هل يوجد مستودع (غرفة) تبريد مهيأ وجاهز للاستخدام؟' },
+  { id: 22, text: 'هل تم توفير مستودع منفصل لتخزين الحطب؟' },
+  { id: 23, text: 'هل الحطب متوفر بكميات كافية؟' },
+  { id: 24, text: 'هل توفرت وجبات جافة احتياطية بكميات كافية؟' },
+];
+
+/* ── Chart question summaries (short labels) ── */
+const MEAL_CHART_Qs   = [
+  { id: 1, text: 'درجة الحرارة' }, { id: 2, text: 'التغليف' },
+  { id: 3, text: 'الملصقات' },     { id: 4, text: 'المظهر' },
+  { id: 5, text: 'القفازات' },
+];
+const MINA_CHART_Qs   = [
   { id: 2, text: 'غسيل المطبخ' }, { id: 6, text: 'قائمة الوجبات' },
   { id: 8, text: 'ملصقات سلامة' }, { id: 13, text: 'مياه الشرب' },
   { id: 14, text: 'المواد الغذائية' },
 ];
-
-const ARAFAT_Q = [
+const ARAFAT_CHART_Qs = [
   { id: 2, text: 'غسيل المطبخ' }, { id: 5, text: 'قائمة الوجبات' },
   { id: 7, text: 'ملصقات سلامة' }, { id: 18, text: 'مياه الشرب' },
   { id: 19, text: 'المواد الغذائية' },
@@ -30,187 +95,384 @@ const ARAFAT_Q = [
 const PIE_COLORS = ['#386B41', '#BA1A1A'];
 
 const TABS = [
-  { key: 'meal',   label: 'جودة الوجبات',  col: 'meal_evaluations',  qs: MEAL_QUESTIONS,  color: '#A98159' },
-  { key: 'mina',   label: 'جاهزية منى',    col: 'mina_readiness',   qs: MINA_Q,           color: '#386B41' },
-  { key: 'arafat', label: 'جاهزية عرفة',   col: 'arafat_readiness', qs: ARAFAT_Q,         color: '#1D6FA4' },
+  { key: 'meal',   label: 'تقييم الوجبات', col: 'meal_evaluations',  color: '#A98159', icon: Utensils,  allQs: MEAL_Qs,   chartQs: MEAL_CHART_Qs,   hasScore: false },
+  { key: 'mina',   label: 'جاهزية منى',    col: 'mina_readiness',   color: '#386B41', icon: Mountain,  allQs: MINA_Qs,   chartQs: MINA_CHART_Qs,   hasScore: true  },
+  { key: 'arafat', label: 'جاهزية عرفة',   col: 'arafat_readiness', color: '#1D6FA4', icon: Mountain,  allQs: ARAFAT_Qs, chartQs: ARAFAT_CHART_Qs, hasScore: true  },
 ];
+
+/* ── Helpers ── */
+function timeAgo(ts) {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  const s = Math.floor((Date.now() - d) / 1000);
+  if (s < 60)    return 'الآن';
+  if (s < 3600)  return `منذ ${Math.floor(s / 60)} دقيقة`;
+  if (s < 86400) return `منذ ${Math.floor(s / 3600)} ساعة`;
+  return `منذ ${Math.floor(s / 86400)} يوم`;
+}
+
+function getScore(doc) {
+  if (doc.scoreOutOf10 != null) return doc.scoreOutOf10;
+  if (doc.maxScore > 0) return parseFloat(((doc.totalScore / doc.maxScore) * 10).toFixed(2));
+  return null;
+}
+
+function scoreBadgeStyle(score) {
+  if (score == null) return null;
+  if (score >= 8) return { bg: '#DCFCE7', text: '#166534', border: '#BBF7D0' };
+  if (score >= 5) return { bg: '#FEF3C7', text: '#92400E', border: '#FDE68A' };
+  return              { bg: '#FEE2E2', text: '#991B1B', border: '#FECACA' };
+}
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-white border border-[#D1C4B9] rounded-xl px-3 py-2 shadow-lg text-xs" dir="rtl">
       <p className="font-bold text-[#2D2926] mb-1">{label}</p>
-      {payload.map(p => <p key={p.name} style={{ color: p.fill || p.stroke }}>
-        {p.name}: {p.value}
-      </p>)}
+      {payload.map(p => (
+        <p key={p.name} style={{ color: p.fill || p.stroke }}>{p.name}: {p.value}</p>
+      ))}
     </div>
   );
 };
 
+/* ══════════════════════════════════════════════════════════ */
 export default function AdminAnalytics() {
   const [activeTab, setActiveTab] = useState('meal');
-  const [data,      setData]      = useState({});
-  const [loading,   setLoading]   = useState(false);
+  const [data,      setData]      = useState({ meal: null, mina: null, arafat: null });
+  const [expanded,  setExpanded]  = useState(null);
 
-  const tab = TABS.find(t => t.key === activeTab);
+  useEffect(() => {
+    const unsubs = TABS.map(t =>
+      onSnapshot(collection(db, t.col), snap => {
+        const docs = snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => (b.timestamp?.toMillis?.() ?? 0) - (a.timestamp?.toMillis?.() ?? 0));
+        setData(prev => ({ ...prev, [t.key]: docs }));
+      })
+    );
+    return () => unsubs.forEach(u => u());
+  }, []);
 
-  const load = async (key, col) => {
-    setLoading(true);
-    const snap = await getDocs(collection(db, col));
-    setData(prev => ({ ...prev, [key]: snap.docs.map(d => d.data()) }));
-    setLoading(false);
-  };
+  const tab  = TABS.find(t => t.key === activeTab);
+  const docs = data[activeTab] ?? [];
 
-  useEffect(() => { if (!data[activeTab]) load(activeTab, tab.col); }, [activeTab]);
-
-  const docs = data[activeTab] || [];
-
-  /* نعم/لا per question */
-  const barData = tab.qs.map(q => {
+  /* chart data */
+  const barData = tab.chartQs.map(q => {
     const yes = docs.filter(d => d.answers?.[q.id] === 'نعم').length;
     const no  = docs.filter(d => d.answers?.[q.id] === 'لا').length;
     return { name: q.text, نعم: yes, لا: no };
   });
-
   const totalYes = barData.reduce((s, d) => s + d['نعم'], 0);
   const totalNo  = barData.reduce((s, d) => s + d['لا'],  0);
   const pieData  = [{ name: 'نعم', value: totalYes }, { name: 'لا', value: totalNo }];
 
-  /* Score trend */
-  const scoreTrend = docs
-    .filter(d => d.totalScore !== undefined)
-    .slice(-10)
-    .map((d, i) => ({ index: i + 1, درجة: +d.totalScore.toFixed(2) }));
-
-  const avgScore = docs.length && docs[0]?.totalScore !== undefined
-    ? (docs.reduce((s, d) => s + (d.totalScore || 0), 0) / docs.length).toFixed(2)
+  const scoreDocs  = docs.filter(d => getScore(d) != null);
+  const avgScore   = scoreDocs.length
+    ? (scoreDocs.reduce((s, d) => s + getScore(d), 0) / scoreDocs.length).toFixed(1)
     : null;
+  const scoreTrend = scoreDocs.slice(-10).map((d, i) => ({
+    index: i + 1,
+    درجة: parseFloat(getScore(d).toFixed(1)),
+  }));
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-[#2D2926]">تحليلات التقييمات</h1>
-          <p className="text-sm text-[#6D6E71]">رسوم بيانية لأداء المراقبين الميدانيين</p>
-        </div>
-        <button onClick={() => load(activeTab, tab.col)} className="p-2 rounded-xl border border-[#D1C4B9] hover:bg-[#FDF8F0] transition">
-          <RefreshCw size={16} className={`text-[#A98159] ${loading ? 'animate-spin' : ''}`} />
-        </button>
+
+      {/* Header */}
+      <div>
+        <h1 className="text-xl font-bold text-[#2D2926]">التقييم الميداني</h1>
+        <p className="text-sm text-[#6D6E71] mt-0.5">تقييمات الوجبات والجاهزية — موسم الحج ١٤٤٧ هـ</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 bg-white border border-[#D1C4B9] rounded-2xl p-1.5 w-fit shadow-sm">
-        {TABS.map(t => (
-          <button
-            key={t.key}
-            onClick={() => setActiveTab(t.key)}
-            className="px-5 py-2.5 rounded-xl text-sm font-bold transition-all"
-            style={activeTab === t.key
-              ? { backgroundColor: t.color, color: '#fff' }
-              : { color: '#6D6E71' }}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div className="flex flex-wrap gap-2 bg-white border border-[#D1C4B9] rounded-2xl p-1.5 shadow-sm w-fit">
+        {TABS.map(t => {
+          const Icon = t.icon;
+          const active = activeTab === t.key;
+          return (
+            <button key={t.key}
+              onClick={() => { setActiveTab(t.key); setExpanded(null); }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all"
+              style={active ? { backgroundColor: t.color, color: '#fff' } : { color: '#6D6E71' }}
+            >
+              <Icon size={15} strokeWidth={1.75} />
+              {t.label}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Summary row */}
+      {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'عدد التقييمات', value: docs.length },
-          { label: 'إجمالي نعم',    value: totalYes    },
-          { label: 'متوسط الدرجة',  value: avgScore ?? '—' },
+          { label: 'عدد التقييمات', value: docs.length,                                       color: tab.color  },
+          { label: 'إجمالي نعم',    value: totalYes,                                           color: '#386B41'  },
+          { label: tab.hasScore ? 'متوسط الدرجة' : 'إجمالي لا',
+            value: tab.hasScore ? (avgScore ? `${avgScore}/10` : '—') : totalNo,
+            color: tab.hasScore ? '#A98159' : '#BA1A1A' },
         ].map(c => (
-          <div key={c.label} className="bg-white rounded-2xl p-4 border border-[#D1C4B9] shadow-[0_2px_16px_rgba(45,41,38,0.07)] text-center">
-            <p className="text-xs text-[#6D6E71] mb-1">{c.label}</p>
-            <p className="text-2xl font-bold" style={{ color: tab.color }}>{c.value}</p>
+          <div key={c.label} className="bg-white rounded-2xl p-4 border border-[#D1C4B9] shadow-sm text-center">
+            <p className="text-[10px] text-[#6D6E71] mb-1">{c.label}</p>
+            <p className="text-2xl font-bold" style={{ color: c.color }}>{c.value}</p>
           </div>
         ))}
       </div>
 
-      {docs.length === 0 ? (
+      {data[activeTab] === null ? (
+        <div className="bg-white rounded-2xl border border-[#D1C4B9] py-16 text-center shadow-sm">
+          <div className="w-6 h-6 border-2 border-[#A98159]/30 border-t-[#A98159] rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-[#6D6E71] text-sm">جارٍ التحميل...</p>
+        </div>
+      ) : docs.length === 0 ? (
         <div className="bg-white rounded-2xl border border-[#D1C4B9] py-16 text-center shadow-sm">
           <p className="text-[#6D6E71]">لا توجد بيانات بعد لهذا القسم</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <>
+          {/* ── Charts ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-          {/* Pie */}
-          <div className="bg-white rounded-2xl border border-[#D1C4B9] shadow-[0_2px_16px_rgba(45,41,38,0.07)] p-5">
-            <h3 className="font-bold text-[#2D2926] mb-4">نسبة الإجابات الكلية</h3>
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={85}
-                  paddingAngle={3} dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  labelLine={false}
-                >
-                  {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
-                </Pie>
-                <Legend />
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Bar */}
-          <div className="bg-white rounded-2xl border border-[#D1C4B9] shadow-[0_2px_16px_rgba(45,41,38,0.07)] p-5">
-            <h3 className="font-bold text-[#2D2926] mb-4">نعم / لا لكل سؤال</h3>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={barData} layout="vertical" barSize={10} margin={{ left: 0, right: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#F0EAE3" />
-                <XAxis type="number" tick={{ fontSize: 10, fill: '#6D6E71' }} />
-                <YAxis type="category" dataKey="name" width={100}
-                  tick={{ fontSize: 9, fill: '#6D6E71' }}
-                  tickFormatter={v => v.length > 12 ? v.slice(0, 12) + '…' : v}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="نعم" fill="#386B41" radius={[0, 4, 4, 0]} />
-                <Bar dataKey="لا"  fill="#BA1A1A" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Score trend */}
-          {scoreTrend.length > 0 && (
-            <div className="bg-white rounded-2xl border border-[#D1C4B9] shadow-[0_2px_16px_rgba(45,41,38,0.07)] p-5 lg:col-span-2">
-              <h3 className="font-bold text-[#2D2926] mb-4">اتجاه الدرجات (آخر {scoreTrend.length} تقييمات)</h3>
-              <ResponsiveContainer width="100%" height={180}>
-                <LineChart data={scoreTrend} margin={{ left: 0, right: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#F0EAE3" />
-                  <XAxis dataKey="index" tick={{ fontSize: 10, fill: '#6D6E71' }} />
-                  <YAxis tick={{ fontSize: 10, fill: '#6D6E71' }} domain={[0, 10]} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Line type="monotone" dataKey="درجة" stroke={tab.color} strokeWidth={2.5} dot={{ r: 4, fill: tab.color }} />
-                </LineChart>
+            {/* Pie */}
+            <div className="bg-white rounded-2xl border border-[#D1C4B9] shadow-sm p-5">
+              <h3 className="font-bold text-[#2D2926] text-sm mb-4">نسبة الإجابات الكلية</h3>
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={80}
+                    paddingAngle={3} dataKey="value"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    labelLine={false}>
+                    {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
+                  </Pie>
+                  <Legend />
+                  <Tooltip />
+                </PieChart>
               </ResponsiveContainer>
             </div>
-          )}
 
-          {/* Compliance bars */}
-          <div className="bg-white rounded-2xl border border-[#D1C4B9] shadow-[0_2px_16px_rgba(45,41,38,0.07)] p-5 lg:col-span-2">
-            <h3 className="font-bold text-[#2D2926] mb-4">نسبة الامتثال لكل سؤال</h3>
-            <div className="space-y-3">
-              {barData.map(d => {
-                const total = d['نعم'] + d['لا'];
-                const pct   = total ? Math.round((d['نعم'] / total) * 100) : 0;
-                return (
-                  <div key={d.name}>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-[#2D2926] font-medium">{d.name}</span>
-                      <span className="font-bold" style={{ color: tab.color }}>{pct}%</span>
+            {/* Bar */}
+            <div className="bg-white rounded-2xl border border-[#D1C4B9] shadow-sm p-5">
+              <h3 className="font-bold text-[#2D2926] text-sm mb-4">نعم / لا لكل سؤال</h3>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={barData} layout="vertical" barSize={9} margin={{ left: 0, right: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#F0EAE3" />
+                  <XAxis type="number" tick={{ fontSize: 10, fill: '#6D6E71' }} />
+                  <YAxis type="category" dataKey="name" width={90}
+                    tick={{ fontSize: 9, fill: '#6D6E71' }}
+                    tickFormatter={v => v.length > 10 ? v.slice(0, 10) + '…' : v} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Bar dataKey="نعم" fill="#386B41" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="لا"  fill="#BA1A1A" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Score trend */}
+            {tab.hasScore && scoreTrend.length > 1 && (
+              <div className="bg-white rounded-2xl border border-[#D1C4B9] shadow-sm p-5">
+                <h3 className="font-bold text-[#2D2926] text-sm mb-4">
+                  اتجاه الدرجات (آخر {scoreTrend.length} تقييمات)
+                </h3>
+                <ResponsiveContainer width="100%" height={180}>
+                  <LineChart data={scoreTrend} margin={{ left: 0, right: 10 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#F0EAE3" />
+                    <XAxis dataKey="index" tick={{ fontSize: 10, fill: '#6D6E71' }} />
+                    <YAxis tick={{ fontSize: 10, fill: '#6D6E71' }} domain={[0, 10]} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Line type="monotone" dataKey="درجة" stroke={tab.color} strokeWidth={2.5}
+                      dot={{ r: 4, fill: tab.color }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {/* Compliance bars */}
+            <div className={`bg-white rounded-2xl border border-[#D1C4B9] shadow-sm p-5 ${tab.hasScore && scoreTrend.length > 1 ? '' : 'lg:col-span-2'}`}>
+              <h3 className="font-bold text-[#2D2926] text-sm mb-4">نسبة الامتثال لكل سؤال</h3>
+              <div className="space-y-3">
+                {barData.map(d => {
+                  const total = d['نعم'] + d['لا'];
+                  const pct   = total ? Math.round((d['نعم'] / total) * 100) : 0;
+                  return (
+                    <div key={d.name}>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-[#2D2926] font-medium">{d.name}</span>
+                        <span className="font-bold" style={{ color: tab.color }}>{pct}%</span>
+                      </div>
+                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${pct}%`, backgroundColor: tab.color }} />
+                      </div>
                     </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${pct}%`, backgroundColor: tab.color }} />
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
-        </div>
+
+          {/* ── Evaluations list divider ── */}
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1 bg-[#D1C4B9]" />
+            <span className="text-xs font-bold px-3 py-1 rounded-full border"
+              style={{ color: tab.color, background: `${tab.color}12`, borderColor: `${tab.color}30` }}>
+              قائمة التقييمات ({docs.length})
+            </span>
+            <div className="h-px flex-1 bg-[#D1C4B9]" />
+          </div>
+
+          {/* ── Evaluations list ── */}
+          <div className="space-y-3">
+            {docs.map(item => {
+              const score     = getScore(item);
+              const badge     = scoreBadgeStyle(score);
+              const noAnswers = tab.allQs.filter(q => item.answers?.[q.id] === 'لا');
+              const isOpen    = expanded === item.id;
+              const Icon      = tab.icon;
+
+              return (
+                <div key={item.id}
+                  className="bg-white rounded-2xl border border-[#D1C4B9] shadow-sm overflow-hidden transition-shadow hover:shadow-md">
+
+                  {/* Summary row */}
+                  <div className="px-4 py-3.5 flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: `${tab.color}15` }}>
+                      <Icon size={18} style={{ color: tab.color }} strokeWidth={1.75} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                        <span className="text-sm font-bold text-[#2D2926]">{item.observer || '—'}</span>
+                        {badge && score != null && (
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full border"
+                            style={{ background: badge.bg, color: badge.text, borderColor: badge.border }}>
+                            {score.toFixed(1)} / 10
+                          </span>
+                        )}
+                        {noAnswers.length > 0 && (
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-500 border border-red-100">
+                            {noAnswers.length} ملاحظة
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-[#6D6E71]">{item.center || '—'}</p>
+                      <p className="text-[10px] text-[#A98159] font-medium mt-0.5">
+                        🏭 {item.caterer || getCaterer(item.center) || '—'}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                      <p className="text-[10px] text-[#6D6E71]">{timeAgo(item.timestamp)}</p>
+                      <button
+                        onClick={() => setExpanded(isOpen ? null : item.id)}
+                        className="flex items-center gap-1 text-xs font-bold transition-colors"
+                        style={{ color: tab.color }}
+                      >
+                        {isOpen
+                          ? <><ChevronUp size={13} /> إخفاء</>
+                          : <><ChevronDown size={13} /> التفاصيل</>}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Expanded details */}
+                  {isOpen && (
+                    <div className="border-t border-[#D1C4B9]/50 bg-[#FDFCFB] px-4 py-4 space-y-4">
+
+                      {/* Observer info grid */}
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        {[
+                          { label: 'المراقب', val: item.observer, bold: true },
+                          { label: 'المركز',  val: item.center,  bold: true },
+                          { label: 'المتعهد', val: item.caterer || getCaterer(item.center), gold: true },
+                        ].map(c => (
+                          <div key={c.label} className="bg-white rounded-xl border border-[#D1C4B9] p-2.5">
+                            <p className="text-[#6D6E71] text-[10px] mb-0.5">{c.label}</p>
+                            <p className={`font-bold text-[10px] leading-snug truncate ${c.gold ? 'text-[#A98159]' : 'text-[#2D2926]'}`}>
+                              {c.val || '—'}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Score bar */}
+                      {tab.hasScore && score != null && (
+                        <div className="bg-white rounded-xl border border-[#D1C4B9] p-3">
+                          <div className="flex justify-between text-xs mb-2">
+                            <span className="text-[#6D6E71] font-medium">الدرجة الإجمالية</span>
+                            <span className="font-bold" style={{ color: tab.color }}>{score.toFixed(2)} / 10</span>
+                          </div>
+                          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full transition-all duration-700"
+                              style={{ width: `${Math.min(score * 10, 100)}%`, backgroundColor: tab.color }} />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Questions answered لا */}
+                      {noAnswers.length > 0 && (
+                        <div>
+                          <p className="text-xs font-bold text-red-600 mb-2 flex items-center gap-1.5">
+                            <XCircle size={13} strokeWidth={1.75} />
+                            الأسئلة المجابة بـ «لا» ({noAnswers.length})
+                          </p>
+                          <div className="space-y-1.5">
+                            {noAnswers.map(q => (
+                              <div key={q.id}
+                                className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
+                                <span className="text-[10px] font-bold text-red-400 mt-0.5 flex-shrink-0">#{q.id}</span>
+                                <p className="text-xs text-red-700 leading-relaxed">{q.text}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* All answers */}
+                      <div>
+                        <p className="text-xs font-bold text-[#6D6E71] mb-2 flex items-center gap-1.5">
+                          <TrendingUp size={13} strokeWidth={1.75} />
+                          جميع الإجابات
+                        </p>
+                        <div className="space-y-1.5">
+                          {tab.allQs.map(q => {
+                            const ans   = item.answers?.[q.id];
+                            if (!ans) return null;
+                            const isYes = ans === 'نعم';
+                            const isNo  = ans === 'لا';
+                            return (
+                              <div key={q.id} className={`flex items-center gap-2 rounded-xl px-3 py-2 border ${
+                                isYes ? 'bg-green-50 border-green-100'
+                                : isNo ? 'bg-red-50 border-red-100'
+                                :        'bg-gray-50 border-gray-100'
+                              }`}>
+                                <span className="text-[10px] font-bold flex-shrink-0"
+                                  style={{ color: isYes ? '#386B41' : isNo ? '#BA1A1A' : '#6D6E71' }}>
+                                  #{q.id}
+                                </span>
+                                <p className="text-xs flex-1 leading-relaxed"
+                                  style={{ color: isYes ? '#166534' : isNo ? '#991B1B' : '#2D2926' }}>
+                                  {q.text}
+                                </p>
+                                <span className={`text-[10px] font-bold flex-shrink-0 flex items-center gap-0.5 ${
+                                  isYes ? 'text-green-600' : isNo ? 'text-red-600' : 'text-gray-500'
+                                }`}>
+                                  {isYes
+                                    ? <CheckCircle2 size={12} strokeWidth={2} />
+                                    : isNo ? <XCircle size={12} strokeWidth={2} /> : null}
+                                  {ans}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );

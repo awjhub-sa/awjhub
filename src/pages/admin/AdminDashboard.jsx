@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../config/db.js';
 import {
-  ClipboardCheck, AlertTriangle, Truck, TrendingUp,
-  ArrowLeft, Mountain, Utensils, X,
+  AlertTriangle, Truck, TrendingUp,
+  ArrowLeft, Mountain, Utensils, X, Trash2, Clock,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getCaterer } from '../../config/centers.js';
@@ -82,7 +82,7 @@ const StatCard = ({ label, value, icon: Icon, color, sub, onClick }) => (
 );
 
 /* ── ReportDetailModal ── */
-function ReportDetailModal({ report, onClose }) {
+function ReportDetailModal({ report, onClose, onDelete }) {
   if (!report) return null;
   const rt = REPORT_TYPE_LABELS[report.reportType || report.type] || { label: 'بلاغ', icon: '📋' };
   const sv = SEVERITY[report.severity] || SEVERITY.low;
@@ -101,9 +101,14 @@ function ReportDetailModal({ report, onClose }) {
               <p className="text-xs text-[#6D6E71]">{timeAgo(report.timestamp)} · {exactTime(report.timestamp)}</p>
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-xl border border-[#D1C4B9] flex items-center justify-center hover:bg-red-50 transition">
-            <X size={16} className="text-[#6D6E71]" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => onDelete(report.id)} className="w-8 h-8 rounded-xl border border-red-200 flex items-center justify-center hover:bg-red-50 transition text-red-400 hover:text-red-600">
+              <Trash2 size={14} strokeWidth={1.75} />
+            </button>
+            <button onClick={onClose} className="w-8 h-8 rounded-xl border border-[#D1C4B9] flex items-center justify-center hover:bg-gray-50 transition">
+              <X size={16} className="text-[#6D6E71]" />
+            </button>
+          </div>
         </div>
 
         <div className="p-5 space-y-4">
@@ -187,6 +192,26 @@ export default function AdminDashboard() {
   const [reports,      setReports]      = useState([]);
   const [otherFeed,    setOtherFeed]    = useState([]);
   const [selectedReport, setSelectedReport] = useState(null);
+  const [clock,        setClock]        = useState({ hijri: '', time: '' });
+
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      setClock({
+        hijri: now.toLocaleDateString('ar-SA-u-ca-islamic', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+        time:  now.toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }),
+      });
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const handleDeleteReport = async (id) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذا البلاغ؟')) return;
+    await deleteDoc(doc(db, 'reports', id));
+    setSelectedReport(null);
+  };
 
   useEffect(() => {
     const sortByTime = (arr) => [...arr].sort((a, b) => {
@@ -239,9 +264,26 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-xl font-bold text-[#2D2926]">نظرة عامة على العمليات</h1>
-        <p className="text-sm text-[#6D6E71] mt-0.5">مؤشرات الأداء الحية — موسم الحج ١٤٤٧ هـ</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-[#2D2926]">نظرة عامة على العمليات</h1>
+          <p className="text-sm text-[#6D6E71] mt-0.5">مؤشرات الأداء الحية — موسم الحج ١٤٤٧ هـ</p>
+        </div>
+        {/* Hijri clock */}
+        <div className="flex items-center gap-3 bg-gradient-to-r from-[#2D2926] to-[#3D3330] rounded-2xl px-4 py-3 shadow-sm flex-shrink-0">
+          <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
+            <Clock size={16} className="text-[#A98159]" strokeWidth={1.5} />
+          </div>
+          <div>
+            <p className="text-white/40 text-[10px] leading-none mb-0.5">التاريخ الهجري</p>
+            <p className="text-white text-xs font-bold leading-tight">{clock.hijri}</p>
+          </div>
+          <div className="border-r border-white/10 h-8 mx-1" />
+          <div className="text-left">
+            <p className="text-white/40 text-[10px] leading-none mb-0.5">الوقت</p>
+            <p className="text-[#A98159] text-sm font-bold tabular-nums leading-tight">{clock.time}</p>
+          </div>
+        </div>
       </div>
 
       {/* Stat cards */}
@@ -277,8 +319,8 @@ export default function AdminDashboard() {
               const sv = SEVERITY[r.severity];
               const sb = STATUS_BADGE[r.status] || STATUS_BADGE.pending;
               return (
-                <button key={r.id} onClick={() => setSelectedReport(r)}
-                  className="w-full flex items-start gap-3 px-5 py-3.5 hover:bg-red-50/40 transition-colors text-right">
+                <div key={r.id} className="group flex items-start gap-3 px-5 py-3.5 hover:bg-red-50/40 transition-colors">
+                <button onClick={() => setSelectedReport(r)} className="flex items-start gap-3 flex-1 text-right min-w-0">
                   <span className="text-2xl mt-0.5 flex-shrink-0">{rt.icon}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-0.5">
@@ -309,6 +351,13 @@ export default function AdminDashboard() {
                     )}
                   </div>
                 </button>
+                <button
+                  onClick={() => handleDeleteReport(r.id)}
+                  className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-100 text-[#D1C4B9] hover:text-red-500 transition-all flex-shrink-0 self-center"
+                >
+                  <Trash2 size={13} strokeWidth={1.75} />
+                </button>
+              </div>
               );
             })}
           </div>
@@ -396,7 +445,11 @@ export default function AdminDashboard() {
 
       {/* Detail Modal */}
       {selectedReport && (
-        <ReportDetailModal report={selectedReport} onClose={() => setSelectedReport(null)} />
+        <ReportDetailModal
+          report={selectedReport}
+          onClose={() => setSelectedReport(null)}
+          onDelete={handleDeleteReport}
+        />
       )}
     </div>
   );
