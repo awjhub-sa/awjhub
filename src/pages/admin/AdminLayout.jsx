@@ -8,7 +8,7 @@ import {
   LayoutDashboard, FileText, Truck, ClipboardList,
   Users, LogOut, Menu, X, Bell, ChevronRight,
 } from 'lucide-react';
-import logo from '../../assets/logo.png';
+import logo from '../../assets/logo-light.svg';
 import { getCaterer } from '../../config/centers.js';
 
 const NAV = [
@@ -41,19 +41,12 @@ export default function AdminLayout() {
     <div className="flex flex-col h-full">
 
       {/* Logo */}
-      <div className="relative px-6 py-5 border-b border-white/10 overflow-hidden">
-        <div className="absolute inset-0 opacity-20"
-          style={{ background: 'radial-gradient(ellipse at 80% 50%, #C4A46E 0%, transparent 65%)' }} />
-        <div className="relative flex items-center gap-3 group cursor-default">
-          <div className="relative">
-            <div className="absolute inset-0 rounded-full blur-md opacity-0 group-hover:opacity-60 transition-opacity duration-300"
-              style={{ background: '#A98159' }} />
-            <img src={logo} alt="logo" className="w-10 h-10 object-contain transition-transform duration-300 group-hover:scale-110 relative z-10" />
-          </div>
-          <div>
-            <p className="text-white font-bold text-sm leading-tight tracking-wide">ضيوف البيت</p>
-            <p className="text-[10px] leading-tight font-semibold" style={{ color: '#C4A46E' }}>لوحة الإدارة</p>
-          </div>
+      <div className="relative px-5 py-4 border-b border-white/10 overflow-hidden">
+        <div className="absolute inset-0 opacity-15"
+          style={{ background: 'radial-gradient(ellipse at 70% 50%, #C4A46E 0%, transparent 70%)' }} />
+        <div className="relative flex flex-col items-center gap-1 cursor-default">
+          <img src={logo} alt="ضيوف البيت" className="w-full max-w-[152px] h-auto object-contain transition-transform duration-300 hover:scale-105" />
+          <p className="text-[9px] font-semibold tracking-widest uppercase opacity-40 text-white">لوحة الإدارة</p>
         </div>
       </div>
 
