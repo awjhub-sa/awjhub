@@ -78,6 +78,14 @@ function MultiCenterSelect({ selected, onChange }) {
   );
 }
 
+/* ── Tab metadata ── */
+const TAB_META = {
+  observers:       { role: 'observer',   label: 'مراقب',  addLabel: 'إضافة مراقب',  multiCenter: false },
+  supervisors:     { role: 'supervisor', label: 'مشرف',   addLabel: 'إضافة مشرف',   multiCenter: true  },
+  logistics_staff: { role: 'logistics',  label: 'إسناد',  addLabel: 'إضافة مسند',   multiCenter: true  },
+  emergency_staff: { role: 'emergency',  label: 'طوارئ',  addLabel: 'إضافة طوارئ',  multiCenter: true  },
+};
+
 /* ══════════════════════════════════════════════════════════ */
 export default function AdminUsers() {
   const [tab,       setTab]       = useState('observers');
@@ -99,19 +107,31 @@ export default function AdminUsers() {
     );
   }, []);
 
-  const observers   = allUsers.filter(u => u.role === 'observer');
-  const supervisors = allUsers.filter(u => u.role === 'supervisor' || u.role === 'admin');
+  const observers       = allUsers.filter(u => u.role === 'observer');
+  const supervisors     = allUsers.filter(u => u.role === 'supervisor' || u.role === 'admin');
+  const logistics_users = allUsers.filter(u => u.role === 'logistics');
+  const emergency_users = allUsers.filter(u => u.role === 'emergency');
+
+  const listForTab = t => ({
+    observers:       observers,
+    supervisors:     supervisors,
+    logistics_staff: logistics_users,
+    emergency_staff: emergency_users,
+  })[t] ?? [];
+
+  const isObs = tab === 'observers';
+  const meta  = TAB_META[tab];
 
   const openNew = () => {
     setEditId(null); setFeedback(null); setShowPass(false);
-    if (tab === 'observers') setObsForm(EMPTY_OBS);
-    else                     setSupForm(EMPTY_SUP);
+    if (isObs) setObsForm(EMPTY_OBS);
+    else       setSupForm(EMPTY_SUP);
     setModal(true);
   };
 
   const openEdit = (u) => {
     setEditId(u.id); setFeedback(null); setShowPass(false);
-    if (tab === 'observers') {
+    if (isObs) {
       setObsForm({
         nameAr: u.nameAr || u.name || '', nameEn: u.nameEn || '',
         idNumber: u.idNumber || '', phone: u.phone || '',
@@ -133,8 +153,7 @@ export default function AdminUsers() {
 
   /* ── حفظ ── */
   const handleSave = async () => {
-    const isObs = tab === 'observers';
-    const form  = isObs ? obsForm : supForm;
+    const form = isObs ? obsForm : supForm;
 
     if (!form.nameAr)  { setFeedback({ type: 'error', msg: 'الاسم الرباعي (عربي) مطلوب' }); return; }
     if (!form.email)   { setFeedback({ type: 'error', msg: 'البريد الإلكتروني مطلوب' }); return; }
@@ -180,9 +199,9 @@ export default function AdminUsers() {
           : { nameAr: form.nameAr, nameEn: form.nameEn, name: form.nameAr,
               idNumber: form.idNumber, phone: form.phone,
               centers: form.centers, center: form.centers[0] || '',
-              caterers: catereresMap, role: 'supervisor' };
+              caterers: catereresMap, role: meta.role };
         await createAccount(form.email, form.password, userData);
-        setFeedback({ type: 'success', msg: `تم إنشاء حساب ${isObs ? 'المراقب' : 'المشرف'} بنجاح` });
+        setFeedback({ type: 'success', msg: `تم إنشاء حساب ${meta.label} بنجاح` });
         setTimeout(closeModal, 1500);
       }
     } catch (e) {
@@ -218,9 +237,9 @@ export default function AdminUsers() {
                 <th className="px-5 py-3 text-right font-semibold">رقم الهوية</th>
                 <th className="px-5 py-3 text-right font-semibold">الجوال</th>
                 <th className="px-5 py-3 text-right font-semibold">البريد</th>
-                <th className="px-5 py-3 text-right font-semibold">{tab === 'observers' ? 'المركز' : 'المراكز'}</th>
+                <th className="px-5 py-3 text-right font-semibold">{isObs ? 'المركز' : 'المراكز'}</th>
                 <th className="px-5 py-3 text-right font-semibold">المتعهد</th>
-                {tab === 'observers' && <th className="px-5 py-3 text-right font-semibold">المشرف</th>}
+                {isObs && <th className="px-5 py-3 text-right font-semibold">المشرف</th>}
                 <th className="px-5 py-3 text-right font-semibold">إجراء</th>
               </tr>
             </thead>
@@ -242,14 +261,14 @@ export default function AdminUsers() {
                     <td className="px-5 py-3.5 text-[#6D6E71]" dir="ltr">{u.phone || '—'}</td>
                     <td className="px-5 py-3.5 text-[#6D6E71] text-xs" dir="ltr">{u.email || '—'}</td>
                     <td className="px-5 py-3.5 text-[#6D6E71] text-xs">
-                      {tab === 'observers' ? u.center || '—' : u.centers?.join('، ') || u.center || '—'}
+                      {isObs ? u.center || '—' : u.centers?.join('، ') || u.center || '—'}
                     </td>
                     <td className="px-5 py-3.5 text-[#6D6E71] text-xs max-w-[180px] truncate">
-                      {tab === 'observers'
+                      {isObs
                         ? (u.caterer || getCaterer(u.center) || '—')
                         : (u.centers?.map(cid => u.caterers?.[cid] || getCaterer(cid)).filter(Boolean).join(' / ') || '—')}
                     </td>
-                    {tab === 'observers' && (
+                    {isObs && (
                       <td className="px-5 py-3.5 text-[#6D6E71] text-xs">
                         {sup ? (sup.nameAr || sup.name) : '—'}
                       </td>
@@ -287,7 +306,9 @@ export default function AdminUsers() {
               <h1 className="text-base font-bold text-[#2D2926]">إدارة المستخدمين</h1>
               <p className="text-xs text-[#9D8F85] mt-0.5">
                 <span className="font-bold" style={{ color: '#A98159' }}>{observers.length}</span> مراقب ·{' '}
-                <span className="font-bold" style={{ color: '#A98159' }}>{supervisors.length}</span> مشرف
+                <span className="font-bold" style={{ color: '#A98159' }}>{supervisors.length}</span> مشرف ·{' '}
+                <span className="font-bold" style={{ color: '#3182CE' }}>{logistics_users.length}</span> إسناد ·{' '}
+                <span className="font-bold" style={{ color: '#E53E3E' }}>{emergency_users.length}</span> طوارئ
               </p>
             </div>
           </div>
@@ -295,24 +316,27 @@ export default function AdminUsers() {
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-bold hover:opacity-90 transition shadow-[0_4px_16px_rgba(169,129,89,0.35)]"
             style={{ background: 'linear-gradient(135deg,#C4A46E,#A98159)' }}>
             <Plus size={16} />
-            {tab === 'observers' ? 'إضافة مراقب' : 'إضافة مشرف'}
+            {meta.addLabel}
           </button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 bg-white border border-[#EDE5DC] rounded-2xl p-1.5 w-fit shadow-[0_2px_8px_rgba(45,41,38,0.06)]">
+      <div className="flex gap-1.5 bg-white border border-[#EDE5DC] rounded-2xl p-1.5 w-fit shadow-[0_2px_8px_rgba(45,41,38,0.06)]">
         {[
-          { key: 'observers',   label: 'المراقبون', count: observers.length   },
-          { key: 'supervisors', label: 'المشرفون',  count: supervisors.length },
+          { key: 'observers',       label: 'المراقبون', count: observers.length,       color: '#A98159' },
+          { key: 'supervisors',     label: 'المشرفون',  count: supervisors.length,     color: '#A98159' },
+          { key: 'logistics_staff', label: 'الإسناد',   count: logistics_users.length, color: '#3182CE' },
+          { key: 'emergency_staff', label: 'الطوارئ',   count: emergency_users.length, color: '#E53E3E' },
         ].map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
-            className="px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2"
+            className="px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2"
             style={tab === t.key
-              ? { background: 'linear-gradient(135deg,#C4A46E,#A98159)', color: '#fff' }
+              ? { background: `linear-gradient(135deg,${t.color}DD,${t.color})`, color: '#fff' }
               : { color: '#6D6E71' }}>
             {t.label}
-            <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${tab === t.key ? 'bg-white/20 text-white' : 'bg-[#F5F0EB] text-[#A98159]'}`}>
+            <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${tab === t.key ? 'bg-white/20 text-white' : 'bg-[#F5F0EB]'}`}
+              style={tab !== t.key ? { color: t.color } : {}}>
               {t.count}
             </span>
           </button>
@@ -320,10 +344,7 @@ export default function AdminUsers() {
       </div>
 
       {/* Table */}
-      {tab === 'observers'
-        ? renderTable(observers,   'لا يوجد مراقبون بعد — أضف أول مراقب')
-        : renderTable(supervisors, 'لا يوجد مشرفون بعد — أضف أول مشرف')
-      }
+      {renderTable(listForTab(tab), `لا يوجد ${meta.label}ون بعد — أضف أول ${meta.label}`)}
 
       {/* Modal */}
       {modal && (
@@ -339,9 +360,7 @@ export default function AdminUsers() {
                   <Users size={16} className="text-white" strokeWidth={2} />
                 </div>
                 <h2 className="font-bold text-[#2D2926] text-sm">
-                  {editId
-                    ? `تعديل بيانات ${tab === 'observers' ? 'المراقب' : 'المشرف'}`
-                    : `إضافة ${tab === 'observers' ? 'مراقب' : 'مشرف'} جديد`}
+                  {editId ? `تعديل بيانات ${meta.label}` : `إضافة ${meta.label} جديد`}
                 </h2>
               </div>
               <button onClick={closeModal}
@@ -482,8 +501,8 @@ export default function AdminUsers() {
                 </div>
               )}
 
-              {/* ══ نموذج المشرف ══ */}
-              {tab === 'supervisors' && (
+              {/* ══ نموذج المشرف / الإسناد / الطوارئ ══ */}
+              {!isObs && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     <Field label="الاسم الرباعي (عربي)" required>
@@ -569,7 +588,7 @@ export default function AdminUsers() {
                       </div>
                     </Field>
                   )}
-                  <Field label="مراكز الخدمة (يمكن اختيار أكثر من مركز)" required>
+                  <Field label={`مراكز الخدمة الخاصة بـ${meta.label} (يمكن اختيار أكثر من مركز)`} required>
                     <MultiCenterSelect
                       selected={supForm.centers}
                       onChange={v => setSupForm(p => ({ ...p, centers: v }))}
