@@ -68,8 +68,9 @@ function openImageTab(src) {
 /* ── StatCard ── */
 const StatCard = ({ label, value, icon: Icon, color, sub, onClick }) => (
   <button onClick={onClick}
-    className="bg-white rounded-3xl p-4 border border-[#D1C4B9] shadow-sm flex items-center gap-3 text-right w-full hover:shadow-md hover:border-[#A98159]/40 transition-all active:scale-[0.98]">
-    <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${color}18` }}>
+    className="bg-white rounded-3xl p-4 border border-[#E8E0D8] shadow-[0_2px_20px_rgba(45,41,38,0.06)] flex items-center gap-3 text-right w-full hover:shadow-[0_4px_24px_rgba(45,41,38,0.10)] hover:border-[#A98159]/30 transition-all active:scale-[0.98]">
+    <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+      style={{ background: `linear-gradient(135deg,${color}22,${color}0E)` }}>
       <Icon size={20} style={{ color }} strokeWidth={1.5} />
     </div>
     <div className="min-w-0 flex-1">
@@ -77,7 +78,7 @@ const StatCard = ({ label, value, icon: Icon, color, sub, onClick }) => (
       <p className="text-xl font-bold text-[#2D2926]">{value ?? '—'}</p>
       {sub && <p className="text-[10px] text-[#6D6E71]">{sub}</p>}
     </div>
-    <ArrowLeft size={14} className="text-[#D1C4B9] flex-shrink-0" />
+    <ArrowLeft size={14} className="text-[#D1C4B9] flex-shrink-0" strokeWidth={1.5} />
   </button>
 );
 
@@ -93,7 +94,7 @@ function ReportDetailModal({ report, onClose, onDelete }) {
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white rounded-3xl w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl">
         {/* Modal header */}
-        <div className="sticky top-0 bg-white border-b border-[#D1C4B9] px-5 py-4 flex items-center justify-between rounded-t-3xl z-10">
+        <div className="sticky top-0 bg-white border-b border-[#E8E0D8] px-5 py-4 flex items-center justify-between rounded-t-3xl z-10">
           <div className="flex items-center gap-2">
             <span className="text-2xl">{rt.icon}</span>
             <div>
@@ -105,7 +106,7 @@ function ReportDetailModal({ report, onClose, onDelete }) {
             <button onClick={() => onDelete(report.id)} className="w-8 h-8 rounded-xl border border-red-200 flex items-center justify-center hover:bg-red-50 transition text-red-400 hover:text-red-600">
               <Trash2 size={14} strokeWidth={1.5} />
             </button>
-            <button onClick={onClose} className="w-8 h-8 rounded-xl border border-[#D1C4B9] flex items-center justify-center hover:bg-gray-50 transition">
+            <button onClick={onClose} className="w-8 h-8 rounded-xl border border-[#E8E0D8] flex items-center justify-center hover:bg-gray-50 transition">
               <X size={16} className="text-[#6D6E71]" />
             </button>
           </div>
@@ -130,12 +131,12 @@ function ReportDetailModal({ report, onClose, onDelete }) {
               { label: 'نوع البلاغ',  val: rt.label        },
               { label: 'وقت الإرسال', val: exactTime(report.timestamp) },
             ].map(c => (
-              <div key={c.label} className="bg-[#FDFCFB] rounded-xl border border-[#D1C4B9] p-3">
+              <div key={c.label} className="bg-[#FDFCFB] rounded-xl border border-[#E8E0D8] p-3">
                 <p className="text-[#6D6E71] mb-0.5">{c.label}</p>
                 <p className="font-bold text-[#2D2926]">{c.val || '—'}</p>
               </div>
             ))}
-            <div className="col-span-2 bg-[#FDF8F0] rounded-xl border border-[#D1C4B9] p-3">
+            <div className="col-span-2 bg-[#FDF8F0] rounded-xl border border-[#E8E0D8] p-3">
               <p className="text-[#6D6E71] mb-0.5">المتعهد</p>
               <p className="font-bold text-[#A98159]">
                 {report.caterer || getCaterer(report.center) || '—'}
@@ -145,7 +146,7 @@ function ReportDetailModal({ report, onClose, onDelete }) {
 
           {/* Description */}
           {report.description && (
-            <div className="bg-[#FDFCFB] rounded-xl border border-[#D1C4B9] p-4">
+            <div className="bg-[#FDFCFB] rounded-xl border border-[#E8E0D8] p-4">
               <p className="text-xs text-[#6D6E71] mb-1.5 font-medium">وصف المشكلة</p>
               <p className="text-sm text-[#2D2926] leading-relaxed">{report.description}</p>
             </div>
@@ -158,7 +159,7 @@ function ReportDetailModal({ report, onClose, onDelete }) {
               <div className="grid grid-cols-2 gap-2">
                 {report.images.map((src, i) => (
                   <button key={i} onClick={() => openImageTab(src)} className="group relative block w-full">
-                    <img src={src} alt="" className="w-full h-32 object-cover rounded-xl border border-[#D1C4B9]" />
+                    <img src={src} alt="" className="w-full h-32 object-cover rounded-xl border border-[#E8E0D8]" />
                     <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition bg-black/40 rounded-xl text-white text-xs font-bold">
                       🔍 فتح الصورة
                     </span>
@@ -170,7 +171,7 @@ function ReportDetailModal({ report, onClose, onDelete }) {
 
           {/* Videos */}
           {report.videos?.length > 0 && (
-            <div className="bg-[#FDFCFB] rounded-xl border border-[#D1C4B9] p-3">
+            <div className="bg-[#FDFCFB] rounded-xl border border-[#E8E0D8] p-3">
               <p className="text-xs text-[#6D6E71] mb-1.5 font-medium">مقاطع الفيديو ({report.videos.length})</p>
               {report.videos.map((name, i) => (
                 <div key={i} className="flex items-center gap-2 text-sm text-[#2D2926]">
@@ -270,7 +271,7 @@ export default function AdminDashboard() {
           <p className="text-sm text-[#6D6E71] mt-0.5">مؤشرات الأداء الحية — موسم الحج ١٤٤٧ هـ</p>
         </div>
         {/* Hijri clock */}
-        <div className="flex items-center gap-3 bg-gradient-to-r from-[#2D2926] to-[#3D3330] rounded-3xl px-4 py-3 shadow-sm flex-shrink-0">
+        <div className="flex items-center gap-3 bg-gradient-to-r from-[#2D2926] to-[#3D3330] rounded-3xl px-4 py-3 shadow-[0_4px_20px_rgba(45,41,38,0.20)] flex-shrink-0">
           <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
             <Clock size={16} className="text-[#A98159]" strokeWidth={1.5} />
           </div>
@@ -292,12 +293,13 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── قسم البلاغات الميدانية ── */}
-      <div className="bg-white rounded-3xl border border-[#D1C4B9] shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#D1C4B9]"
-          style={{ background: 'linear-gradient(135deg,#FEF2F2,#FFF)' }}>
+      <div className="bg-white rounded-3xl border border-[#E8E0D8] shadow-[0_2px_20px_rgba(45,41,38,0.06)] overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#E8E0D8]"
+          style={{ background: 'linear-gradient(135deg,#FEF2F200,#FFF)' }}>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-red-100 rounded-xl flex items-center justify-center">
-              <AlertTriangle size={16} className="text-red-600" />
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg,#BA1A1A22,#BA1A1A0E)' }}>
+              <AlertTriangle size={16} className="text-red-600" strokeWidth={1.5} />
             </div>
             <div>
               <h2 className="font-bold text-[#2D2926]">البلاغات الميدانية</h2>
@@ -313,7 +315,7 @@ export default function AdminDashboard() {
         {reports.length === 0 ? (
           <div className="py-10 text-center text-[#6D6E71] text-sm">لا توجد بلاغات بعد</div>
         ) : (
-          <div className="divide-y divide-[#D1C4B9]/40">
+          <div className="divide-y divide-[#E8E0D8]/60">
             {reports.slice(0, 6).map(r => {
               const rt = REPORT_TYPE_LABELS[r.reportType || r.type] || { label: 'بلاغ', icon: '📋' };
               const sv = SEVERITY[r.severity];
@@ -366,12 +368,13 @@ export default function AdminDashboard() {
 
       {/* ── نشاطات أخرى ── */}
       {otherFeed.length > 0 && (
-        <div className="bg-white rounded-3xl border border-[#D1C4B9] shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-[#D1C4B9]">
+        <div className="bg-white rounded-3xl border border-[#E8E0D8] shadow-[0_2px_20px_rgba(45,41,38,0.06)] overflow-hidden">
+          <div className="px-5 py-4 border-b border-[#E8E0D8]"
+            style={{ background: 'linear-gradient(135deg,#A9815908,transparent)' }}>
             <h2 className="font-bold text-[#2D2926]">نشاطات ميدانية أخرى</h2>
             <p className="text-xs text-[#6D6E71]">تقييمات وطلبات إسناد حديثة</p>
           </div>
-          <div className="divide-y divide-[#D1C4B9]/40">
+          <div className="divide-y divide-[#E8E0D8]/60">
             {otherFeed.slice(0, 6).map((item, i) => {
               const isLogistics = item._col === 'logistics';
               const isMina      = item._col === 'mina';
@@ -434,9 +437,10 @@ export default function AdminDashboard() {
           { label: 'تقييمات الجاهزية',   nav: '/admin/analytics', color: '#386B41', icon: TrendingUp   },
         ].map(b => (
           <button key={b.label} onClick={() => navigate(b.nav)}
-            className="bg-white rounded-3xl p-4 border border-[#D1C4B9] shadow-sm hover:shadow-md hover:border-[#A98159]/40 transition-all flex items-center gap-2.5 active:scale-[0.97]">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `${b.color}15` }}>
-              <b.icon size={16} style={{ color: b.color }} />
+            className="bg-white rounded-3xl p-4 border border-[#E8E0D8] shadow-[0_2px_20px_rgba(45,41,38,0.06)] hover:shadow-[0_4px_24px_rgba(45,41,38,0.10)] hover:border-[#A98159]/30 transition-all flex items-center gap-2.5 active:scale-[0.97]">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+              style={{ background: `linear-gradient(135deg,${b.color}22,${b.color}0E)` }}>
+              <b.icon size={16} style={{ color: b.color }} strokeWidth={1.5} />
             </div>
             <span className="text-xs font-bold text-[#2D2926]">{b.label}</span>
           </button>

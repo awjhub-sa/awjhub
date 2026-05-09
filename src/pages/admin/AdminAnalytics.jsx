@@ -6,8 +6,8 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line,
 } from 'recharts';
 import {
-  Utensils, Mountain, ChevronDown, ChevronUp,
-  CheckCircle2, XCircle, TrendingUp,
+  ClipboardList, Mountain, ChevronDown, ChevronUp,
+  CheckCircle2, XCircle, TrendingUp, Utensils,
 } from 'lucide-react';
 import { getCaterer } from '../../config/centers.js';
 
@@ -43,7 +43,7 @@ const MINA_Qs = [
   { id: 21, text: 'هل تم توفير معدات وأدوات الطبخ كاملة؟' },
   { id: 22, text: 'هل يوجد مستودع (غرفة) تبريد مهيأ وجاهز للاستخدام؟' },
   { id: 23, text: 'هل يوجد مستودع (غرفة) تجميد مهيأ وجاهز للاستخدام؟' },
-  { id: 24, text: 'هل تم توفير حافظات (غرف الثلج)؟' },
+  { id: 24, text: 'هل تم توفير حافظات (غرم الثلج)؟' },
   { id: 25, text: 'هل توفرت كميات كافية من الثلج داخل حافظة الثلج؟' },
   { id: 26, text: 'هل توفرت وجبات جافة احتياطية بكميات كافية؟' },
 ];
@@ -75,7 +75,6 @@ const ARAFAT_Qs = [
   { id: 24, text: 'هل توفرت وجبات جافة احتياطية بكميات كافية؟' },
 ];
 
-/* ── Chart question summaries (short labels) ── */
 const MEAL_CHART_Qs   = [
   { id: 1, text: 'درجة الحرارة' }, { id: 2, text: 'التغليف' },
   { id: 3, text: 'الملصقات' },     { id: 4, text: 'المظهر' },
@@ -95,9 +94,9 @@ const ARAFAT_CHART_Qs = [
 const PIE_COLORS = ['#386B41', '#BA1A1A'];
 
 const TABS = [
-  { key: 'meal',   label: 'تقييم الوجبات', col: 'meal_evaluations',  color: '#A98159', icon: Utensils,  allQs: MEAL_Qs,   chartQs: MEAL_CHART_Qs,   hasScore: false },
-  { key: 'mina',   label: 'جاهزية منى',    col: 'mina_readiness',   color: '#386B41', icon: Mountain,  allQs: MINA_Qs,   chartQs: MINA_CHART_Qs,   hasScore: true  },
-  { key: 'arafat', label: 'جاهزية عرفة',   col: 'arafat_readiness', color: '#1D6FA4', icon: Mountain,  allQs: ARAFAT_Qs, chartQs: ARAFAT_CHART_Qs, hasScore: true  },
+  { key: 'meal',   label: 'تقييم الوجبات', col: 'meal_evaluations',  color: '#A98159', icon: Utensils,     allQs: MEAL_Qs,   chartQs: MEAL_CHART_Qs,   hasScore: false },
+  { key: 'mina',   label: 'جاهزية منى',    col: 'mina_readiness',   color: '#386B41', icon: Mountain,     allQs: MINA_Qs,   chartQs: MINA_CHART_Qs,   hasScore: true  },
+  { key: 'arafat', label: 'جاهزية عرفة',   col: 'arafat_readiness', color: '#1D6FA4', icon: Mountain,     allQs: ARAFAT_Qs, chartQs: ARAFAT_CHART_Qs, hasScore: true  },
 ];
 
 /* ── Helpers ── */
@@ -127,7 +126,7 @@ function scoreBadgeStyle(score) {
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-[#D1C4B9] rounded-xl px-3 py-2 shadow-lg text-xs" dir="rtl">
+    <div className="bg-white border border-[#E8E0D8] rounded-2xl px-3 py-2 shadow-lg text-xs" dir="rtl">
       <p className="font-bold text-[#2D2926] mb-1">{label}</p>
       {payload.map(p => (
         <p key={p.name} style={{ color: p.fill || p.stroke }}>{p.name}: {p.value}</p>
@@ -157,7 +156,6 @@ export default function AdminAnalytics() {
   const tab  = TABS.find(t => t.key === activeTab);
   const docs = data[activeTab] ?? [];
 
-  /* chart data */
   const barData = tab.chartQs.map(q => {
     const yes = docs.filter(d => d.answers?.[q.id] === 'نعم').length;
     const no  = docs.filter(d => d.answers?.[q.id] === 'لا').length;
@@ -179,40 +177,71 @@ export default function AdminAnalytics() {
   return (
     <div className="space-y-5">
 
-      {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-[#2D2926]">التقييم الميداني</h1>
-        <p className="text-sm text-[#6D6E71] mt-0.5">تقييمات الوجبات والجاهزية — موسم الحج ١٤٤٧ هـ</p>
+      {/* ── Page header ── */}
+      <div className="bg-white rounded-3xl border border-[#E8E0D8] shadow-[0_2px_20px_rgba(45,41,38,0.06)] px-6 py-5">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg,#A9815922,#A9815910)' }}>
+            <ClipboardList size={22} className="text-[#A98159]" strokeWidth={1.5} />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-[#2D2926]">التقييمات</h1>
+            <p className="text-sm text-[#6D6E71]">تقييمات الوجبات والجاهزية الميدانية — موسم الحج ١٤٤٧ هـ</p>
+          </div>
+        </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex flex-wrap gap-2 bg-white border border-[#D1C4B9] rounded-3xl p-1.5 shadow-sm w-fit">
+      {/* ── Sub-section selectors ── */}
+      <div className="grid grid-cols-3 gap-3">
         {TABS.map(t => {
-          const Icon = t.icon;
+          const Icon  = t.icon;
           const active = activeTab === t.key;
+          const count  = data[t.key]?.length ?? null;
           return (
             <button key={t.key}
               onClick={() => { setActiveTab(t.key); setExpanded(null); }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all"
-              style={active ? { backgroundColor: t.color, color: '#fff' } : { color: '#6D6E71' }}
+              className={`relative flex flex-col items-center gap-2.5 px-4 py-5 rounded-3xl border-2 transition-all duration-200 ${
+                active
+                  ? 'shadow-[0_6px_28px_rgba(45,41,38,0.14)]'
+                  : 'bg-white border-[#E8E0D8] shadow-[0_2px_12px_rgba(45,41,38,0.04)] hover:shadow-[0_4px_20px_rgba(45,41,38,0.08)]'
+              }`}
+              style={active
+                ? { background: `linear-gradient(135deg,${t.color}1A,${t.color}07)`, borderColor: t.color }
+                : {}}
             >
-              <Icon size={15} strokeWidth={1.5} />
-              {t.label}
+              <div className="w-13 h-13 w-12 h-12 rounded-2xl flex items-center justify-center transition-all"
+                style={{ background: active ? `${t.color}25` : `${t.color}13` }}>
+                <Icon size={22} style={{ color: t.color }} strokeWidth={1.5} />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-bold leading-snug"
+                  style={{ color: active ? t.color : '#2D2926' }}>
+                  {t.label}
+                </p>
+                {count != null && (
+                  <p className="text-[11px] text-[#6D6E71] mt-0.5">{count} تقييم</p>
+                )}
+              </div>
+              {active && (
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full"
+                  style={{ backgroundColor: t.color }} />
+              )}
             </button>
           );
         })}
       </div>
 
-      {/* Stats */}
+      {/* ── Summary stats ── */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'عدد التقييمات', value: docs.length,                                       color: tab.color  },
-          { label: 'إجمالي نعم',    value: totalYes,                                           color: '#386B41'  },
+          { label: 'عدد التقييمات', value: docs.length,                                              color: tab.color  },
+          { label: 'إجمالي نعم',    value: totalYes,                                                  color: '#386B41'  },
           { label: tab.hasScore ? 'متوسط الدرجة' : 'إجمالي لا',
             value: tab.hasScore ? (avgScore ? `${avgScore}/10` : '—') : totalNo,
             color: tab.hasScore ? '#A98159' : '#BA1A1A' },
         ].map(c => (
-          <div key={c.label} className="bg-white rounded-3xl p-4 border border-[#D1C4B9] shadow-sm text-center">
+          <div key={c.label}
+            className="bg-white rounded-3xl p-4 border border-[#E8E0D8] shadow-[0_2px_20px_rgba(45,41,38,0.06)] text-center">
             <p className="text-[10px] text-[#6D6E71] mb-1">{c.label}</p>
             <p className="text-2xl font-bold" style={{ color: c.color }}>{c.value}</p>
           </div>
@@ -220,77 +249,101 @@ export default function AdminAnalytics() {
       </div>
 
       {data[activeTab] === null ? (
-        <div className="bg-white rounded-3xl border border-[#D1C4B9] py-16 text-center shadow-sm">
+        <div className="bg-white rounded-3xl border border-[#E8E0D8] py-16 text-center shadow-[0_2px_20px_rgba(45,41,38,0.06)]">
           <div className="w-6 h-6 border-2 border-[#A98159]/30 border-t-[#A98159] rounded-full animate-spin mx-auto mb-3" />
           <p className="text-[#6D6E71] text-sm">جارٍ التحميل...</p>
         </div>
       ) : docs.length === 0 ? (
-        <div className="bg-white rounded-3xl border border-[#D1C4B9] py-16 text-center shadow-sm">
-          <p className="text-[#6D6E71]">لا توجد بيانات بعد لهذا القسم</p>
+        <div className="bg-white rounded-3xl border border-[#E8E0D8] py-16 text-center shadow-[0_2px_20px_rgba(45,41,38,0.06)]">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
+            style={{ background: `${tab.color}12` }}>
+            <tab.icon size={22} style={{ color: tab.color }} strokeWidth={1.5} />
+          </div>
+          <p className="text-[#6D6E71] font-medium">لا توجد بيانات بعد لهذا القسم</p>
         </div>
       ) : (
         <>
           {/* ── Charts ── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-            {/* Pie */}
-            <div className="bg-white rounded-3xl border border-[#D1C4B9] shadow-sm p-5">
-              <h3 className="font-bold text-[#2D2926] text-sm mb-4">نسبة الإجابات الكلية</h3>
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={80}
-                    paddingAngle={3} dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    labelLine={false}>
-                    {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
-                  </Pie>
-                  <Legend />
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+            {/* Pie chart */}
+            <div className="bg-white rounded-3xl border border-[#E8E0D8] shadow-[0_2px_20px_rgba(45,41,38,0.06)] overflow-hidden">
+              <div className="px-5 py-4 border-b border-[#E8E0D8]"
+                style={{ background: `linear-gradient(135deg,${tab.color}0A,transparent)` }}>
+                <h3 className="font-bold text-[#2D2926] text-sm">نسبة الإجابات الكلية</h3>
+              </div>
+              <div className="p-5">
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={80}
+                      paddingAngle={3} dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      labelLine={false}>
+                      {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
+                    </Pie>
+                    <Legend />
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </div>
 
-            {/* Bar */}
-            <div className="bg-white rounded-3xl border border-[#D1C4B9] shadow-sm p-5">
-              <h3 className="font-bold text-[#2D2926] text-sm mb-4">نعم / لا لكل سؤال</h3>
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={barData} layout="vertical" barSize={9} margin={{ left: 0, right: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#F0EAE3" />
-                  <XAxis type="number" tick={{ fontSize: 10, fill: '#6D6E71' }} />
-                  <YAxis type="category" dataKey="name" width={90}
-                    tick={{ fontSize: 9, fill: '#6D6E71' }}
-                    tickFormatter={v => v.length > 10 ? v.slice(0, 10) + '…' : v} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Bar dataKey="نعم" fill="#386B41" radius={[0, 4, 4, 0]} />
-                  <Bar dataKey="لا"  fill="#BA1A1A" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+            {/* Bar chart */}
+            <div className="bg-white rounded-3xl border border-[#E8E0D8] shadow-[0_2px_20px_rgba(45,41,38,0.06)] overflow-hidden">
+              <div className="px-5 py-4 border-b border-[#E8E0D8]"
+                style={{ background: `linear-gradient(135deg,${tab.color}0A,transparent)` }}>
+                <h3 className="font-bold text-[#2D2926] text-sm">نعم / لا لكل سؤال</h3>
+              </div>
+              <div className="p-5">
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={barData} layout="vertical" barSize={9} margin={{ left: 0, right: 10 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#F0EAE3" />
+                    <XAxis type="number" tick={{ fontSize: 10, fill: '#6D6E71' }} />
+                    <YAxis type="category" dataKey="name" width={90}
+                      tick={{ fontSize: 9, fill: '#6D6E71' }}
+                      tickFormatter={v => v.length > 10 ? v.slice(0, 10) + '…' : v} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    <Bar dataKey="نعم" fill="#386B41" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="لا"  fill="#BA1A1A" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
 
             {/* Score trend */}
             {tab.hasScore && scoreTrend.length > 1 && (
-              <div className="bg-white rounded-3xl border border-[#D1C4B9] shadow-sm p-5">
-                <h3 className="font-bold text-[#2D2926] text-sm mb-4">
-                  اتجاه الدرجات (آخر {scoreTrend.length} تقييمات)
-                </h3>
-                <ResponsiveContainer width="100%" height={180}>
-                  <LineChart data={scoreTrend} margin={{ left: 0, right: 10 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#F0EAE3" />
-                    <XAxis dataKey="index" tick={{ fontSize: 10, fill: '#6D6E71' }} />
-                    <YAxis tick={{ fontSize: 10, fill: '#6D6E71' }} domain={[0, 10]} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Line type="monotone" dataKey="درجة" stroke={tab.color} strokeWidth={2.5}
-                      dot={{ r: 4, fill: tab.color }} />
-                  </LineChart>
-                </ResponsiveContainer>
+              <div className="bg-white rounded-3xl border border-[#E8E0D8] shadow-[0_2px_20px_rgba(45,41,38,0.06)] overflow-hidden">
+                <div className="px-5 py-4 border-b border-[#E8E0D8]"
+                  style={{ background: `linear-gradient(135deg,${tab.color}0A,transparent)` }}>
+                  <h3 className="font-bold text-[#2D2926] text-sm">
+                    اتجاه الدرجات (آخر {scoreTrend.length} تقييمات)
+                  </h3>
+                </div>
+                <div className="p-5">
+                  <ResponsiveContainer width="100%" height={180}>
+                    <LineChart data={scoreTrend} margin={{ left: 0, right: 10 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#F0EAE3" />
+                      <XAxis dataKey="index" tick={{ fontSize: 10, fill: '#6D6E71' }} />
+                      <YAxis tick={{ fontSize: 10, fill: '#6D6E71' }} domain={[0, 10]} />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Line type="monotone" dataKey="درجة" stroke={tab.color} strokeWidth={2.5}
+                        dot={{ r: 4, fill: tab.color }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             )}
 
             {/* Compliance bars */}
-            <div className={`bg-white rounded-3xl border border-[#D1C4B9] shadow-sm p-5 ${tab.hasScore && scoreTrend.length > 1 ? '' : 'lg:col-span-2'}`}>
-              <h3 className="font-bold text-[#2D2926] text-sm mb-4">نسبة الامتثال لكل سؤال</h3>
-              <div className="space-y-3">
+            <div className={`bg-white rounded-3xl border border-[#E8E0D8] shadow-[0_2px_20px_rgba(45,41,38,0.06)] overflow-hidden ${
+              tab.hasScore && scoreTrend.length > 1 ? '' : 'lg:col-span-2'
+            }`}>
+              <div className="px-5 py-4 border-b border-[#E8E0D8]"
+                style={{ background: `linear-gradient(135deg,${tab.color}0A,transparent)` }}>
+                <h3 className="font-bold text-[#2D2926] text-sm">نسبة الامتثال لكل سؤال</h3>
+              </div>
+              <div className="p-5 space-y-3">
                 {barData.map(d => {
                   const total = d['نعم'] + d['لا'];
                   const pct   = total ? Math.round((d['نعم'] / total) * 100) : 0;
@@ -300,7 +353,7 @@ export default function AdminAnalytics() {
                         <span className="text-[#2D2926] font-medium">{d.name}</span>
                         <span className="font-bold" style={{ color: tab.color }}>{pct}%</span>
                       </div>
-                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-[#F0EAE3] rounded-full overflow-hidden">
                         <div className="h-full rounded-full transition-all duration-500"
                           style={{ width: `${pct}%`, backgroundColor: tab.color }} />
                       </div>
@@ -311,14 +364,14 @@ export default function AdminAnalytics() {
             </div>
           </div>
 
-          {/* ── Evaluations list divider ── */}
+          {/* ── Evaluations divider ── */}
           <div className="flex items-center gap-3">
-            <div className="h-px flex-1 bg-[#D1C4B9]" />
-            <span className="text-xs font-bold px-3 py-1 rounded-full border"
-              style={{ color: tab.color, background: `${tab.color}12`, borderColor: `${tab.color}30` }}>
+            <div className="h-px flex-1 bg-[#E8E0D8]" />
+            <span className="text-xs font-bold px-3 py-1.5 rounded-full border"
+              style={{ color: tab.color, background: `${tab.color}10`, borderColor: `${tab.color}30` }}>
               قائمة التقييمات ({docs.length})
             </span>
-            <div className="h-px flex-1 bg-[#D1C4B9]" />
+            <div className="h-px flex-1 bg-[#E8E0D8]" />
           </div>
 
           {/* ── Evaluations list ── */}
@@ -332,12 +385,15 @@ export default function AdminAnalytics() {
 
               return (
                 <div key={item.id}
-                  className="bg-white rounded-3xl border border-[#D1C4B9] shadow-sm overflow-hidden transition-shadow hover:shadow-md">
+                  className="bg-white rounded-3xl border border-[#E8E0D8] shadow-[0_2px_20px_rgba(45,41,38,0.06)] overflow-hidden hover:shadow-[0_4px_24px_rgba(45,41,38,0.10)] transition-shadow">
+
+                  {/* Colored accent strip */}
+                  <div className="h-0.5" style={{ backgroundColor: tab.color }} />
 
                   {/* Summary row */}
-                  <div className="px-4 py-3.5 flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: `${tab.color}15` }}>
+                  <div className="px-5 py-4 flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: `linear-gradient(135deg,${tab.color}20,${tab.color}10)` }}>
                       <Icon size={18} style={{ color: tab.color }} strokeWidth={1.5} />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -376,16 +432,16 @@ export default function AdminAnalytics() {
 
                   {/* Expanded details */}
                   {isOpen && (
-                    <div className="border-t border-[#D1C4B9]/50 bg-[#FDFCFB] px-4 py-4 space-y-4">
+                    <div className="border-t border-[#E8E0D8]/60 bg-[#FDFCFB] px-5 py-4 space-y-4">
 
-                      {/* Observer info grid */}
+                      {/* Observer / center / caterer */}
                       <div className="grid grid-cols-3 gap-2 text-xs">
                         {[
                           { label: 'المراقب', val: item.observer, bold: true },
                           { label: 'المركز',  val: item.center,  bold: true },
                           { label: 'المتعهد', val: item.caterer || getCaterer(item.center), gold: true },
                         ].map(c => (
-                          <div key={c.label} className="bg-white rounded-xl border border-[#D1C4B9] p-2.5">
+                          <div key={c.label} className="bg-white rounded-2xl border border-[#E8E0D8] p-3">
                             <p className="text-[#6D6E71] text-[10px] mb-0.5">{c.label}</p>
                             <p className={`font-bold text-[10px] leading-snug truncate ${c.gold ? 'text-[#A98159]' : 'text-[#2D2926]'}`}>
                               {c.val || '—'}
@@ -394,14 +450,14 @@ export default function AdminAnalytics() {
                         ))}
                       </div>
 
-                      {/* Score bar */}
+                      {/* Score progress bar */}
                       {tab.hasScore && score != null && (
-                        <div className="bg-white rounded-xl border border-[#D1C4B9] p-3">
+                        <div className="bg-white rounded-2xl border border-[#E8E0D8] p-3.5">
                           <div className="flex justify-between text-xs mb-2">
                             <span className="text-[#6D6E71] font-medium">الدرجة الإجمالية</span>
                             <span className="font-bold" style={{ color: tab.color }}>{score.toFixed(2)} / 10</span>
                           </div>
-                          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                          <div className="h-2 bg-[#F0EAE3] rounded-full overflow-hidden">
                             <div className="h-full rounded-full transition-all duration-700"
                               style={{ width: `${Math.min(score * 10, 100)}%`, backgroundColor: tab.color }} />
                           </div>
@@ -418,7 +474,7 @@ export default function AdminAnalytics() {
                           <div className="space-y-1.5">
                             {noAnswers.map(q => (
                               <div key={q.id}
-                                className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
+                                className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-2xl px-3 py-2.5">
                                 <span className="text-[10px] font-bold text-red-400 mt-0.5 flex-shrink-0">#{q.id}</span>
                                 <p className="text-xs text-red-700 leading-relaxed">{q.text}</p>
                               </div>
@@ -440,7 +496,7 @@ export default function AdminAnalytics() {
                             const isYes = ans === 'نعم';
                             const isNo  = ans === 'لا';
                             return (
-                              <div key={q.id} className={`flex items-center gap-2 rounded-xl px-3 py-2 border ${
+                              <div key={q.id} className={`flex items-center gap-2 rounded-2xl px-3 py-2 border ${
                                 isYes ? 'bg-green-50 border-green-100'
                                 : isNo ? 'bg-red-50 border-red-100'
                                 :        'bg-gray-50 border-gray-100'
