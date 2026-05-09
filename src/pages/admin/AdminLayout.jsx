@@ -192,7 +192,7 @@ export default function AdminLayout() {
             </button>
             <div>
               <p className="text-[11px] font-semibold text-[#9D8F85]">موسم الحج ١٤٤٧ هـ</p>
-              <p className="text-sm font-bold text-[#2D2926]">لوحة التحكم الميدانية</p>
+              <p className="text-sm font-bold text-[#2D2926]">لوحة التحكم الرئيسية</p>
             </div>
           </div>
 

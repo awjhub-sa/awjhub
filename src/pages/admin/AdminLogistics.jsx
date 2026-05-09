@@ -234,22 +234,33 @@ export default function AdminLogistics() {
     <div className="space-y-5">
 
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-[#2D2926]">الإسناد اللوجستي</h1>
-        <p className="text-sm text-[#6D6E71] mt-0.5">متابعة طلبات التوريد والإسناد الميداني</p>
+      <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
+        <div className="flex items-center gap-3 px-6 py-4"
+          style={{ background: 'linear-gradient(135deg, #EFF6FF 0%, #fff 55%)' }}>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #93C5FD, #3182CE)' }}>
+            <Truck size={20} className="text-white" strokeWidth={2} />
+          </div>
+          <div className="flex-1">
+            <h1 className="text-base font-bold text-[#2D2926]">الإسناد اللوجستي</h1>
+            <p className="text-xs text-[#9D8F85] mt-0.5">متابعة طلبات التوريد والإسناد الميداني</p>
+          </div>
+        </div>
       </div>
 
       {/* Summary stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'إجمالي الطلبات',  value: requests.length,                                           color: '#A98159' },
-          { label: 'قيد الانتظار',    value: pending,                                                    color: '#D97706' },
-          { label: 'تم التسليم',      value: delivered,                                                  color: '#059669' },
-          { label: 'داخلي وخارجي',   value: requests.filter(r => r.supportType === 'both').length,      color: '#1D6FA4' },
+          { label: 'إجمالي الطلبات', value: requests.length,                                      color: '#A98159' },
+          { label: 'قيد الانتظار',   value: pending,                                               color: '#D97706' },
+          { label: 'تم التسليم',     value: delivered,                                             color: '#2F855A' },
+          { label: 'داخلي وخارجي',  value: requests.filter(r => r.supportType === 'both').length, color: '#3182CE' },
         ].map(c => (
-          <div key={c.label} className="bg-white rounded-3xl p-4 border border-[#E8DDD4] shadow-sm text-center">
-            <p className="text-2xl font-bold" style={{ color: c.color }}>{c.value}</p>
-            <p className="text-[#6D6E71] text-xs mt-0.5">{c.label}</p>
+          <div key={c.label}
+            className="rounded-2xl p-4 border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] text-center"
+            style={{ borderRight: `3px solid ${c.color}`, background: `linear-gradient(145deg, #fff, ${c.color}0A)` }}>
+            <p className="text-2xl font-bold tabular-nums" style={{ color: c.color }}>{c.value}</p>
+            <p className="text-[#9D8F85] text-xs mt-0.5 font-semibold">{c.label}</p>
           </div>
         ))}
       </div>
@@ -260,11 +271,12 @@ export default function AdminLogistics() {
           <button key={opt.value} onClick={() => setFilter(opt.value)}
             className={`px-4 py-2 rounded-2xl text-xs font-bold border transition-all ${
               filter === opt.value
-                ? 'bg-[#2D2926] text-white border-[#2D2926]'
-                : 'bg-white text-[#6D6E71] border-[#E8DDD4] hover:border-[#A98159] hover:text-[#A98159]'
-            }`}>
+                ? 'text-white border-transparent shadow-sm'
+                : 'bg-white text-[#6D6E71] border-[#EDE5DC] hover:border-[#3182CE]/40 hover:text-[#3182CE]'
+            }`}
+            style={filter === opt.value ? { background: 'linear-gradient(135deg, #3182CE, #2563EB)' } : {}}>
             {opt.label}
-            <span className="mr-1.5 opacity-50">({opt.count})</span>
+            <span className={`mr-1.5 ${filter === opt.value ? 'opacity-70' : 'opacity-50'}`}>({opt.count})</span>
           </button>
         ))}
       </div>
@@ -272,9 +284,10 @@ export default function AdminLogistics() {
       {/* Cards */}
       <div className="space-y-3">
         {filtered.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-[#E8DDD4] py-20 text-center shadow-sm">
-            <div className="w-14 h-14 rounded-2xl bg-[#F0F7FF] flex items-center justify-center mx-auto mb-3">
-              <Truck size={24} className="text-[#1D6FA4]/40" strokeWidth={1.5} />
+          <div className="bg-white rounded-3xl border border-[#EDE5DC] py-20 text-center shadow-[0_2px_12px_rgba(45,41,38,0.06)]">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3"
+              style={{ background: 'linear-gradient(135deg, #DBEAFE, #BFDBFE)' }}>
+              <Truck size={24} className="text-blue-300" strokeWidth={1.5} />
             </div>
             <p className="text-[#6D6E71] text-sm font-medium">لا توجد طلبات في هذه الفئة</p>
           </div>
@@ -287,12 +300,13 @@ export default function AdminLogistics() {
 
           return (
             <div key={r.id}
-              className="bg-white rounded-3xl border border-[#E8DDD4] shadow-[0_2px_20px_rgba(45,41,38,0.06)] overflow-hidden transition-shadow hover:shadow-[0_4px_28px_rgba(45,41,38,0.1)]">
+              className="bg-white rounded-3xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden transition-all hover:shadow-[0_6px_24px_rgba(45,41,38,0.12)] hover:border-[#C9B8A8]">
 
               {/* Card header */}
               <div className="px-5 py-4 flex items-start gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-[#1D6FA4]/10 flex items-center justify-center flex-shrink-0">
-                  <Package size={18} className="text-[#1D6FA4]" strokeWidth={1.5} />
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: 'linear-gradient(135deg, #93C5FD28, #3182CE14)' }}>
+                  <Package size={18} style={{ color: '#3182CE' }} strokeWidth={1.5} />
                 </div>
 
                 <div className="flex-1 min-w-0">

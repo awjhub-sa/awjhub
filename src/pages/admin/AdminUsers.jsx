@@ -43,7 +43,7 @@ const Field = ({ label, required, children }) => (
   </div>
 );
 
-const inputCls = "w-full px-4 py-2.5 border border-[#D1C4B9] rounded-xl text-sm text-[#2D2926] outline-none focus:border-[#A98159] transition placeholder-[#6D6E71]/40";
+const inputCls = "w-full px-4 py-2.5 border border-[#E8DDD4] rounded-xl text-sm text-[#2D2926] outline-none focus:border-[#A98159] transition placeholder-[#6D6E71]/40";
 
 /* ── Multi-Select للمراكز — خارج AdminUsers لتجنّب إعادة التهيئة ── */
 function MultiCenterSelect({ selected, onChange }) {
@@ -61,7 +61,7 @@ function MultiCenterSelect({ selected, onChange }) {
         <ChevronDown size={15} className={`text-[#6D6E71] transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="absolute z-20 top-full right-0 left-0 mt-1 bg-white border border-[#D1C4B9] rounded-xl shadow-lg max-h-48 overflow-y-auto">
+        <div className="absolute z-20 top-full right-0 left-0 mt-1 bg-white border border-[#E8DDD4] rounded-xl shadow-lg max-h-48 overflow-y-auto">
           {CENTERS.map(c => (
             <label key={c.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#FDF8F0] cursor-pointer text-sm">
               <input type="checkbox" checked={selected.includes(c.id)} onChange={() => toggle(c.id)}
@@ -198,33 +198,37 @@ export default function AdminUsers() {
 
   /* ── جدول ── */
   const renderTable = (list, emptyMsg) => (
-    <div className="bg-white rounded-2xl border border-[#D1C4B9] shadow-sm overflow-hidden">
+    <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
       {list.length === 0 ? (
         <div className="py-14 text-center">
-          <Users size={32} className="mx-auto text-[#D1C4B9] mb-3" />
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3"
+            style={{ background: 'linear-gradient(135deg, #FDF8F0, #F3EAE0)' }}>
+            <Users size={26} className="text-[#C4A46E]" strokeWidth={1.5} />
+          </div>
           <p className="text-[#6D6E71] text-sm">{emptyMsg}</p>
         </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-[#FDFCFB] text-[#6D6E71] text-xs border-b border-[#D1C4B9]">
-                <th className="px-5 py-3 text-right font-medium">الاسم (عربي)</th>
-                <th className="px-5 py-3 text-right font-medium">الاسم (انجليزي)</th>
-                <th className="px-5 py-3 text-right font-medium">رقم الهوية</th>
-                <th className="px-5 py-3 text-right font-medium">الجوال</th>
-                <th className="px-5 py-3 text-right font-medium">البريد</th>
-                <th className="px-5 py-3 text-right font-medium">{tab === 'observers' ? 'المركز' : 'المراكز'}</th>
-                <th className="px-5 py-3 text-right font-medium">المتعهد</th>
-                {tab === 'observers' && <th className="px-5 py-3 text-right font-medium">المشرف</th>}
-                <th className="px-5 py-3 text-right font-medium">إجراء</th>
+              <tr className="text-[#6D6E71] text-xs border-b border-[#EDE5DC]"
+                style={{ background: 'linear-gradient(135deg, #FDF8F0 0%, #fff 60%)' }}>
+                <th className="px-5 py-3 text-right font-semibold">الاسم (عربي)</th>
+                <th className="px-5 py-3 text-right font-semibold">الاسم (انجليزي)</th>
+                <th className="px-5 py-3 text-right font-semibold">رقم الهوية</th>
+                <th className="px-5 py-3 text-right font-semibold">الجوال</th>
+                <th className="px-5 py-3 text-right font-semibold">البريد</th>
+                <th className="px-5 py-3 text-right font-semibold">{tab === 'observers' ? 'المركز' : 'المراكز'}</th>
+                <th className="px-5 py-3 text-right font-semibold">المتعهد</th>
+                {tab === 'observers' && <th className="px-5 py-3 text-right font-semibold">المشرف</th>}
+                <th className="px-5 py-3 text-right font-semibold">إجراء</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#D1C4B9]/40">
+            <tbody className="divide-y divide-[#EDE5DC]">
               {list.map(u => {
                 const sup = supervisors.find(s => s.id === u.supervisorId);
                 return (
-                  <tr key={u.id} className="hover:bg-[#FDFCFB] transition-colors">
+                  <tr key={u.id} className="hover:bg-[#FDF8F0] transition-colors">
                     <td className="px-5 py-3.5 font-medium text-[#2D2926]">
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 rounded-full bg-[#A98159]/10 border border-[#A98159]/20 flex items-center justify-center text-[#A98159] text-xs font-bold flex-shrink-0">
@@ -269,23 +273,35 @@ export default function AdminUsers() {
   const numOnly = (val) => val.replace(/\D/g, '');
 
   return (
-    <div className="space-y-5" dir="rtl" style={{ fontFamily: "'IBM Plex Sans Arabic', Tahoma, sans-serif" }}>
+    <div className="space-y-5" dir="rtl">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-[#2D2926]">إدارة المستخدمين</h1>
-          <p className="text-sm text-[#6D6E71]">{observers.length} مراقب · {supervisors.length} مشرف</p>
+      <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4"
+          style={{ background: 'linear-gradient(135deg, #FDF8F0 0%, #fff 55%)' }}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
+              <Users size={20} className="text-white" strokeWidth={2} />
+            </div>
+            <div>
+              <h1 className="text-base font-bold text-[#2D2926]">إدارة المستخدمين</h1>
+              <p className="text-xs text-[#9D8F85] mt-0.5">
+                <span className="font-bold" style={{ color: '#A98159' }}>{observers.length}</span> مراقب ·{' '}
+                <span className="font-bold" style={{ color: '#A98159' }}>{supervisors.length}</span> مشرف
+              </p>
+            </div>
+          </div>
+          <button onClick={openNew}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-bold hover:opacity-90 transition shadow-[0_4px_16px_rgba(169,129,89,0.35)]"
+            style={{ background: 'linear-gradient(135deg,#C4A46E,#A98159)' }}>
+            <Plus size={16} />
+            {tab === 'observers' ? 'إضافة مراقب' : 'إضافة مشرف'}
+          </button>
         </div>
-        <button onClick={openNew}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-bold hover:opacity-90 transition"
-          style={{ background: 'linear-gradient(135deg,#C4A46E,#A98159)' }}>
-          <Plus size={16} />
-          {tab === 'observers' ? 'إضافة مراقب' : 'إضافة مشرف'}
-        </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 bg-white border border-[#D1C4B9] rounded-2xl p-1.5 w-fit shadow-sm">
+      <div className="flex gap-2 bg-white border border-[#EDE5DC] rounded-2xl p-1.5 w-fit shadow-[0_2px_8px_rgba(45,41,38,0.06)]">
         {[
           { key: 'observers',   label: 'المراقبون', count: observers.length   },
           { key: 'supervisors', label: 'المشرفون',  count: supervisors.length },
@@ -314,19 +330,26 @@ export default function AdminUsers() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeModal} />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
-            <div className="h-1 rounded-t-2xl" style={{ background: 'linear-gradient(90deg,#C4A46E,#A98159)' }} />
-            <div className="px-6 py-5">
-
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="font-bold text-[#2D2926] text-lg">
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#EDE5DC]"
+              style={{ background: 'linear-gradient(135deg, #FDF8F0 0%, #fff 55%)' }}>
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+                  style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
+                  <Users size={16} className="text-white" strokeWidth={2} />
+                </div>
+                <h2 className="font-bold text-[#2D2926] text-sm">
                   {editId
                     ? `تعديل بيانات ${tab === 'observers' ? 'المراقب' : 'المشرف'}`
                     : `إضافة ${tab === 'observers' ? 'مراقب' : 'مشرف'} جديد`}
                 </h2>
-                <button onClick={closeModal} className="p-1.5 hover:bg-gray-100 rounded-lg transition">
-                  <X size={18} className="text-[#6D6E71]" />
-                </button>
               </div>
+              <button onClick={closeModal}
+                className="w-8 h-8 rounded-xl border border-[#EDE5DC] flex items-center justify-center hover:bg-[#F5F0EB] transition-colors">
+                <X size={15} className="text-[#6D6E71]" strokeWidth={1.75} />
+              </button>
+            </div>
+            <div className="px-6 py-5">
 
               {feedback && (
                 <div className={`mb-4 px-4 py-3 rounded-xl text-sm font-medium ${

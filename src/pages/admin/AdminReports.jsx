@@ -226,22 +226,34 @@ export default function AdminReports() {
     <div className="space-y-5">
 
       {/* Page header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-[#2D2926]">البلاغات الميدانية</h1>
-          <p className="text-sm text-[#6D6E71] mt-0.5">{reports.length} بلاغ إجمالاً · تحديث فوري</p>
+      <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
+        <div className="flex items-center gap-3 px-6 py-4"
+          style={{ background: 'linear-gradient(135deg, #FEF2F2 0%, #fff 55%)' }}>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #FCA5A5, #EF4444)' }}>
+            <AlertTriangle size={20} className="text-white" strokeWidth={2} />
+          </div>
+          <div className="flex-1">
+            <h1 className="text-base font-bold text-[#2D2926]">البلاغات الميدانية</h1>
+            <p className="text-xs text-[#9D8F85] mt-0.5">{reports.length} بلاغ إجمالاً · تحديث فوري</p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {['pending','in_progress','resolved'].map(v => {
-            const s = STATUS_OPTIONS.find(o => o.value === v);
-            const n = countOf(v);
-            return n > 0 ? (
-              <span key={v} className={`text-[11px] font-bold px-2.5 py-1 rounded-xl border ${s.cls}`}>
-                {n} {s.label}
-              </span>
-            ) : null;
-          })}
-        </div>
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: 'قيد الانتظار', value: countOf('pending'),     color: '#E53E3E' },
+          { label: 'جارٍ التنفيذ', value: countOf('in_progress'), color: '#3182CE' },
+          { label: 'تم الحل',      value: countOf('resolved'),    color: '#2F855A' },
+        ].map(c => (
+          <div key={c.label}
+            className="rounded-2xl p-4 border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] text-center"
+            style={{ borderRight: `3px solid ${c.color}`, background: `linear-gradient(145deg, #fff, ${c.color}0A)` }}>
+            <p className="text-2xl font-bold tabular-nums" style={{ color: c.color }}>{c.value}</p>
+            <p className="text-[#9D8F85] text-xs mt-0.5 font-semibold">{c.label}</p>
+          </div>
+        ))}
       </div>
 
       {/* Filter tabs */}
@@ -250,11 +262,12 @@ export default function AdminReports() {
           <button key={opt.value} onClick={() => setFilter(opt.value)}
             className={`px-4 py-2 rounded-2xl text-xs font-bold border transition-all ${
               filter === opt.value
-                ? 'bg-[#2D2926] text-white border-[#2D2926]'
-                : 'bg-white text-[#6D6E71] border-[#E8DDD4] hover:border-[#A98159] hover:text-[#A98159]'
-            }`}>
+                ? 'text-white border-transparent shadow-sm'
+                : 'bg-white text-[#6D6E71] border-[#EDE5DC] hover:border-[#E53E3E]/40 hover:text-[#E53E3E]'
+            }`}
+            style={filter === opt.value ? { background: 'linear-gradient(135deg, #E53E3E, #C53030)' } : {}}>
             {opt.label}
-            <span className={`mr-1.5 ${filter === opt.value ? 'opacity-60' : 'opacity-50'}`}>({opt.count})</span>
+            <span className={`mr-1.5 ${filter === opt.value ? 'opacity-70' : 'opacity-50'}`}>({opt.count})</span>
           </button>
         ))}
       </div>
@@ -262,9 +275,10 @@ export default function AdminReports() {
       {/* Reports list */}
       <div className="space-y-3">
         {filtered.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-[#E8DDD4] py-20 text-center shadow-sm">
-            <div className="w-14 h-14 rounded-2xl bg-[#F5F0EB] flex items-center justify-center mx-auto mb-3">
-              <AlertTriangle size={24} className="text-[#D1C4B9]" strokeWidth={1.5} />
+          <div className="bg-white rounded-3xl border border-[#EDE5DC] py-20 text-center shadow-[0_2px_12px_rgba(45,41,38,0.06)]">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3"
+              style={{ background: 'linear-gradient(135deg, #FEE2E2, #FECACA)' }}>
+              <AlertTriangle size={24} className="text-red-300" strokeWidth={1.5} />
             </div>
             <p className="text-[#6D6E71] text-sm font-medium">لا توجد بلاغات في هذه الفئة</p>
           </div>
@@ -277,7 +291,7 @@ export default function AdminReports() {
 
           return (
             <div key={r.id}
-              className="bg-white rounded-3xl border border-[#E8DDD4] shadow-[0_2px_20px_rgba(45,41,38,0.06)] overflow-hidden transition-shadow hover:shadow-[0_4px_28px_rgba(45,41,38,0.1)]">
+              className="bg-white rounded-3xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden transition-all hover:shadow-[0_6px_24px_rgba(45,41,38,0.12)] hover:border-[#C9B8A8]">
 
               {/* Severity color strip */}
               {sv && <div className="h-1 w-full" style={{ background: sv.bar }} />}
