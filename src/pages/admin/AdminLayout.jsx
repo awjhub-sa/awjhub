@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { auth, db } from '../../config/db.js';
@@ -19,17 +19,55 @@ const NAV = [
   { to: '/admin/users',      label: 'إدارة المستخدمين',  icon: Users           },
 ];
 
+const NOTIF_COLS = [
+  'reports', 'logistics_requests', 'meal_evaluations',
+  'mina_readiness', 'arafat_readiness',
+];
+
 export default function AdminLayout() {
   const navigate              = useNavigate();
+  const location              = useLocation();
   const { profile }           = useAuth();
   const [open, setOpen]       = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [newCount,     setNewCount]     = useState(0);
+  const [lastSeen,     setLastSeen]     = useState(
+    () => Number(localStorage.getItem('notif_last_seen') || 0)
+  );
 
+  /* Reports sidebar badge — pending reports only */
   useEffect(() => {
     const q = query(collection(db, 'reports'), where('status', '==', 'pending'));
     return onSnapshot(q, snap => setPendingCount(snap.size));
   }, []);
+
+  /* Bell badge — all new items across every collection since lastSeen */
+  useEffect(() => {
+    const counts = {};
+    const unsubs = NOTIF_COLS.map(col => {
+      counts[col] = 0;
+      return onSnapshot(collection(db, col), snap => {
+        counts[col] = snap.docs.filter(d => {
+          const ts = d.data().timestamp?.toMillis?.()
+                  ?? d.data().createdAt?.toMillis?.() ?? 0;
+          return ts > lastSeen;
+        }).length;
+        setNewCount(Object.values(counts).reduce((a, b) => a + b, 0));
+      });
+    });
+    return () => unsubs.forEach(u => u());
+  }, [lastSeen]);
+
+  /* Reset badge when admin visits the notifications page */
+  useEffect(() => {
+    if (location.pathname === '/admin/notifications') {
+      const now = Date.now();
+      localStorage.setItem('notif_last_seen', now.toString());
+      setLastSeen(now);
+      setNewCount(0);
+    }
+  }, [location.pathname]);
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -191,17 +229,17 @@ export default function AdminLayout() {
 
           {/* Bell */}
           <button
-            onClick={() => navigate('/admin/reports')}
+            onClick={() => navigate('/admin/notifications')}
             className="group relative p-2.5 rounded-xl border border-[#D9CEBC] hover:bg-[#FDF8F0] hover:border-[#A98159]/60 hover:shadow-md transition-all duration-200"
           >
             <Bell
               size={18}
               className="text-[#6D6E71] transition-all duration-300 group-hover:text-[#A98159] group-hover:scale-110 group-hover:rotate-12"
             />
-            {pendingCount > 0 && (
+            {newCount > 0 && (
               <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-md"
                 style={{ animation: 'badgePulse 2s ease-in-out infinite' }}>
-                {pendingCount}
+                {newCount > 99 ? '99+' : newCount}
               </span>
             )}
           </button>
