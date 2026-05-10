@@ -4,7 +4,7 @@ import { db } from '../../config/db.js';
 import {
   ListChecks, Utensils, Mountain, Globe2, CalendarDays,
   Send, Building2, CheckCircle2, ChevronDown, ChevronUp,
-  Clock, Users, AlertCircle,
+  Clock, AlertCircle, X,
 } from 'lucide-react';
 
 /* ── Helpers ── */
@@ -25,7 +25,7 @@ const NATIONALITIES = [
   { key: 'bangladesh',  label: 'بنغلاديش',   flag: '🇧🇩', centers: [7, 8, 101, 102],          color: '#3182CE' },
   { key: 'afghanistan', label: 'أفغانستان',  flag: '🇦🇫', centers: [26, ...range(30, 35)],    color: '#7C3AED' },
   { key: 'bahrain',     label: 'البحرين',    flag: '🇧🇭', centers: [99],                      color: '#0987A0' },
-  { key: 'bohra',       label: 'البهرة',     flag: '🕌', centers: [5],                       color: '#A98159' },
+  { key: 'bohra',       label: 'البهرة',     flag: '🕌',  centers: [5],                       color: '#A98159' },
 ];
 
 /* ── Task types ── */
@@ -39,6 +39,17 @@ const MEALS = [
   { key: 'breakfast', label: 'الإفطار', icon: '🌅' },
   { key: 'lunch',     label: 'الغداء',  icon: '☀️' },
   { key: 'dinner',    label: 'العشاء',  icon: '🌙' },
+];
+
+/* ── Dhu al-Hijjah days ── */
+const DHU_HIJJAH_DAYS = [
+  { value: '7',  dayAr: '٧',  label: '٧ ذو الحجة ١٤٤٧'  },
+  { value: '8',  dayAr: '٨',  label: '٨ ذو الحجة ١٤٤٧'  },
+  { value: '9',  dayAr: '٩',  label: '٩ ذو الحجة ١٤٤٧'  },
+  { value: '10', dayAr: '١٠', label: '١٠ ذو الحجة ١٤٤٧' },
+  { value: '11', dayAr: '١١', label: '١١ ذو الحجة ١٤٤٧' },
+  { value: '12', dayAr: '١٢', label: '١٢ ذو الحجة ١٤٤٧' },
+  { value: '13', dayAr: '١٣', label: '١٣ ذو الحجة ١٤٤٧' },
 ];
 
 const TASK_LABEL = {
@@ -57,9 +68,16 @@ function toggle(arr, val) {
 /* ── History card ── */
 function AssignmentCard({ item }) {
   const [open, setOpen] = useState(false);
-  const natLabels    = item.target_nationalities?.map(k => NAT_LABEL[k] || k).join('، ') || '—';
-  const taskLabels   = item.task_types?.map(k => TASK_LABEL[k] || k).join(' + ') || '—';
-  const centerCount  = item.target_centers?.length ?? 0;
+  const natLabels   = item.target_nationalities?.map(k => NAT_LABEL[k] || k).join('، ') || '—';
+  const taskLabels  = item.task_types?.map(k => TASK_LABEL[k] || k).join(' + ') || '—';
+  const centerCount = item.target_centers?.length ?? 0;
+
+  /* scheduled_date may be a Firestore Timestamp (old) or a label string (new) */
+  const dateDisplay = item.scheduled_date
+    ? (item.scheduled_date?.toDate
+        ? new Date(item.scheduled_date.toDate()).toLocaleDateString('ar-SA', { dateStyle: 'long' })
+        : String(item.scheduled_date))
+    : '—';
 
   return (
     <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_10px_rgba(45,41,38,0.06)] overflow-hidden">
@@ -102,19 +120,12 @@ function AssignmentCard({ item }) {
 
       {open && (
         <div className="border-t border-[#EDE5DC] bg-[#FDFCFB] px-5 py-3.5 space-y-2.5">
-          {/* Scheduled date */}
           <div className="flex items-center gap-2 text-xs">
             <CalendarDays size={13} style={{ color: '#A98159' }} strokeWidth={1.5} />
             <span className="text-[#6D6E71]">تاريخ التنفيذ:</span>
-            <span className="font-bold text-[#2D2926]">
-              {item.scheduled_date
-                ? new Date(item.scheduled_date.toDate?.() ?? item.scheduled_date)
-                    .toLocaleDateString('ar-SA', { dateStyle: 'long' })
-                : '—'}
-            </span>
+            <span className="font-bold text-[#2D2926]">{dateDisplay}</span>
           </div>
 
-          {/* Meal types */}
           {item.meal_types?.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap text-xs">
               <Utensils size={13} style={{ color: '#A98159' }} strokeWidth={1.5} />
@@ -127,7 +138,6 @@ function AssignmentCard({ item }) {
             </div>
           )}
 
-          {/* Centers */}
           <div>
             <p className="text-[11px] text-[#6D6E71] mb-1.5 flex items-center gap-1">
               <Building2 size={11} strokeWidth={1.5} />
@@ -152,7 +162,7 @@ export default function AdminTaskAssign() {
   const [selTasks,  setSelTasks]  = useState([]);
   const [selMeals,  setSelMeals]  = useState([]);
   const [selNats,   setSelNats]   = useState([]);
-  const [schedDate, setSchedDate] = useState('');
+  const [schedDay,  setSchedDay]  = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [feedback,   setFeedback]   = useState(null);
   const [history,    setHistory]    = useState([]);
@@ -160,12 +170,12 @@ export default function AdminTaskAssign() {
 
   const hasMeal = selTasks.includes('meal_evaluation');
 
-  /* Compute target centers from selected nationalities */
   const targetCenters = [...new Set(
     NATIONALITIES.filter(n => selNats.includes(n.key)).flatMap(n => n.centers)
   )].sort((a, b) => a - b);
 
-  /* Load history */
+  const schedLabel = DHU_HIJJAH_DAYS.find(d => d.value === schedDay)?.label || '';
+
   useEffect(() => {
     const q = query(collection(db, 'assigned_tasks'), orderBy('created_at', 'desc'));
     return onSnapshot(q, snap =>
@@ -174,31 +184,38 @@ export default function AdminTaskAssign() {
   }, []);
 
   const handleAssign = async () => {
-    if (selTasks.length === 0)  { setFeedback({ type: 'error', msg: 'اختر مهمة واحدة على الأقل' }); return; }
-    if (hasMeal && selMeals.length === 0) { setFeedback({ type: 'error', msg: 'اختر نوع الوجبة للتقييم' }); return; }
-    if (selNats.length === 0)   { setFeedback({ type: 'error', msg: 'اختر جنسية واحدة على الأقل' }); return; }
-    if (!schedDate)             { setFeedback({ type: 'error', msg: 'حدد تاريخ التنفيذ' }); return; }
+    if (selTasks.length === 0)              { setFeedback({ type: 'error', msg: 'اختر مهمة واحدة على الأقل' }); return; }
+    if (hasMeal && selMeals.length === 0)   { setFeedback({ type: 'error', msg: 'اختر نوع الوجبة للتقييم' }); return; }
+    if (selNats.length === 0)               { setFeedback({ type: 'error', msg: 'اختر جنسية واحدة على الأقل' }); return; }
+    if (!schedDay)                          { setFeedback({ type: 'error', msg: 'حدد يوم التنفيذ' }); return; }
 
     setSubmitting(true);
     setFeedback(null);
     try {
       await addDoc(collection(db, 'assigned_tasks'), {
-        task_types:            selTasks,
-        meal_types:            hasMeal ? selMeals : [],
-        target_nationalities:  selNats,
-        target_centers:        targetCenters,
-        scheduled_date:        new Date(schedDate),
-        status:                'pending',
-        created_at:            serverTimestamp(),
+        task_types:           selTasks,
+        meal_types:           hasMeal ? selMeals : [],
+        target_nationalities: selNats,
+        target_centers:       targetCenters,
+        scheduled_date:       schedLabel,
+        status:               'pending',
+        created_at:           serverTimestamp(),
       });
       setFeedback({ type: 'success', msg: 'تم إسناد المهام بنجاح ✓' });
-      setSelTasks([]); setSelMeals([]); setSelNats([]); setSchedDate('');
+      setSelTasks([]); setSelMeals([]); setSelNats([]); setSchedDay('');
       setTimeout(() => setFeedback(null), 4000);
-    } catch (e) {
+    } catch {
       setFeedback({ type: 'error', msg: 'حدث خطأ أثناء الحفظ، حاول مجدداً' });
     }
     setSubmitting(false);
   };
+
+  const removeTask = key => {
+    setSelTasks(p => p.filter(x => x !== key));
+    if (key === 'meal_evaluation') setSelMeals([]);
+  };
+  const removeNat  = key => setSelNats(p => p.filter(x => x !== key));
+  const removeMeal = key => setSelMeals(p => p.filter(x => x !== key));
 
   const displayedHistory = showAll ? history : history.slice(0, 5);
 
@@ -222,10 +239,10 @@ export default function AdminTaskAssign() {
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
 
-        {/* ══ FORM (right 3 cols) ══ */}
+        {/* ══ FORM ══ */}
         <div className="lg:col-span-3 space-y-4">
 
-          {/* ── 1. Task selection ── */}
+          {/* 1. Task selection */}
           <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
             <div className="flex items-center gap-3 px-5 py-3.5 border-b border-[#EDE5DC]"
               style={{ background: 'linear-gradient(135deg, #FDF8F0, #fff 60%)' }}>
@@ -260,7 +277,6 @@ export default function AdminTaskAssign() {
                       </div>
                     </button>
 
-                    {/* Meal sub-selection */}
                     {t.hasMeals && active && (
                       <div className="mt-2 mr-4 grid grid-cols-3 gap-2">
                         {MEALS.map(m => {
@@ -285,7 +301,7 @@ export default function AdminTaskAssign() {
             </div>
           </div>
 
-          {/* ── 2. Nationality selection ── */}
+          {/* 2. Nationality selection */}
           <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
             <div className="flex items-center gap-3 px-5 py-3.5 border-b border-[#EDE5DC]"
               style={{ background: 'linear-gradient(135deg, #EFF6FF, #fff 60%)' }}>
@@ -327,7 +343,7 @@ export default function AdminTaskAssign() {
             </div>
           </div>
 
-          {/* ── 3. Date ── */}
+          {/* 3. Date */}
           <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
             <div className="flex items-center gap-3 px-5 py-3.5 border-b border-[#EDE5DC]"
               style={{ background: 'linear-gradient(135deg, #F0FDF4, #fff 60%)' }}>
@@ -335,21 +351,35 @@ export default function AdminTaskAssign() {
                 style={{ background: 'linear-gradient(135deg, #86EFAC, #2F855A)' }}>
                 <CalendarDays size={15} className="text-white" strokeWidth={2} />
               </div>
-              <p className="font-bold text-[#2D2926] text-sm">تاريخ التنفيذ</p>
-            </div>
-            <div className="p-4">
-              <input
-                type="date"
-                value={schedDate}
-                onChange={e => setSchedDate(e.target.value)}
-                className="w-full px-4 py-3 border border-[#E8DDD4] rounded-xl text-sm text-[#2D2926] outline-none focus:border-[#A98159] transition-colors bg-[#FDFCFB]"
-                dir="ltr"
-              />
-              {schedDate && (
-                <p className="mt-2 text-xs text-[#A98159] font-semibold text-center">
-                  📅 {new Date(schedDate).toLocaleDateString('ar-SA', { dateStyle: 'full' })}
-                </p>
+              <p className="font-bold text-[#2D2926] text-sm">يوم التنفيذ</p>
+              {schedDay && (
+                <span className="mr-auto text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  {schedLabel}
+                </span>
               )}
+            </div>
+            <div className="p-4 grid grid-cols-4 gap-2">
+              {DHU_HIJJAH_DAYS.map(d => {
+                const active = schedDay === d.value;
+                return (
+                  <button key={d.value}
+                    onClick={() => setSchedDay(p => p === d.value ? '' : d.value)}
+                    className="flex flex-col items-center gap-0.5 py-3 px-1 rounded-xl border transition-all"
+                    style={active
+                      ? { background: '#2F855A14', borderColor: '#2F855A60', boxShadow: '0 2px 8px #2F855A18' }
+                      : { background: '#FAFAF8', borderColor: '#EDE5DC' }}>
+                    <span className="text-sm font-black leading-none" style={{ color: active ? '#2F855A' : '#2D2926' }}>
+                      {d.dayAr}
+                    </span>
+                    <span className="text-[9px] font-semibold" style={{ color: active ? '#2F855A99' : '#9D8F85' }}>
+                      ذو الحجة
+                    </span>
+                    {active && (
+                      <div className="w-1.5 h-1.5 rounded-full mt-0.5" style={{ background: '#2F855A' }} />
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -380,14 +410,13 @@ export default function AdminTaskAssign() {
           </button>
         </div>
 
-        {/* ══ PREVIEW (left 2 cols) ══ */}
-        <div className="lg:col-span-2 space-y-4">
-
-          {/* Summary preview */}
+        {/* ══ PREVIEW ══ */}
+        <div className="lg:col-span-2">
           <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden sticky top-4">
             <div className="px-5 py-3.5 border-b border-[#EDE5DC]"
               style={{ background: 'linear-gradient(135deg, #FDF8F0, #fff 60%)' }}>
               <p className="font-bold text-[#2D2926] text-sm">ملخص الإسناد</p>
+              <p className="text-[10px] text-[#9D8F85] mt-0.5">اضغط × لحذف أي خيار</p>
             </div>
             <div className="p-4 space-y-4">
 
@@ -398,22 +427,45 @@ export default function AdminTaskAssign() {
                 </p>
                 {selTasks.length === 0
                   ? <p className="text-[12px] text-[#C9B8A8] italic">لم تُحدد بعد</p>
-                  : selTasks.map(k => {
-                      const t = TASKS.find(x => x.key === k);
-                      return (
-                        <div key={k} className="flex items-center gap-2 mb-1.5">
-                          <span className="text-xs font-bold px-2.5 py-1 rounded-lg border"
-                            style={{ background: `${t.color}10`, borderColor: `${t.color}35`, color: t.color }}>
-                            {t.label}
-                          </span>
-                          {k === 'meal_evaluation' && selMeals.length > 0 && (
-                            <span className="text-[10px] text-[#9D8F85]">
-                              ({selMeals.map(m => MEAL_LABEL[m]).join('، ')})
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })
+                  : <div className="space-y-2">
+                      {selTasks.map(k => {
+                        const t = TASKS.find(x => x.key === k);
+                        return (
+                          <div key={k}>
+                            <div className="flex items-center gap-1.5">
+                              <span className="flex-1 text-xs font-bold px-2.5 py-1 rounded-lg border"
+                                style={{ background: `${t.color}10`, borderColor: `${t.color}35`, color: t.color }}>
+                                {t.label}
+                              </span>
+                              <button
+                                onClick={() => removeTask(k)}
+                                className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-50 transition-colors flex-shrink-0"
+                                style={{ color: t.color }}>
+                                <X size={12} strokeWidth={2.5} />
+                              </button>
+                            </div>
+                            {k === 'meal_evaluation' && selMeals.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1.5 mr-2">
+                                {selMeals.map(m => (
+                                  <div key={m} className="flex items-center gap-0.5">
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg border"
+                                      style={{ background: `${t.color}0A`, borderColor: `${t.color}30`, color: t.color }}>
+                                      {MEAL_LABEL[m]}
+                                    </span>
+                                    <button
+                                      onClick={() => removeMeal(m)}
+                                      className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-red-50 transition-colors"
+                                      style={{ color: t.color }}>
+                                      <X size={9} strokeWidth={2.5} />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                 }
               </div>
 
@@ -424,14 +476,23 @@ export default function AdminTaskAssign() {
                 </p>
                 {selNats.length === 0
                   ? <p className="text-[12px] text-[#C9B8A8] italic">لم تُحدد بعد</p>
-                  : <div className="flex flex-wrap gap-1.5">
+                  : <div className="space-y-1.5">
                       {selNats.map(k => {
                         const n = NATIONALITIES.find(x => x.key === k);
                         return (
-                          <span key={k} className="text-[11px] font-bold px-2 py-0.5 rounded-lg border"
-                            style={{ background: `${n.color}10`, borderColor: `${n.color}35`, color: n.color }}>
-                            {n.flag} {n.label}
-                          </span>
+                          <div key={k} className="flex items-center gap-1.5">
+                            <span className="flex-1 text-[11px] font-bold px-2 py-1 rounded-lg border"
+                              style={{ background: `${n.color}10`, borderColor: `${n.color}35`, color: n.color }}>
+                              {n.flag} {n.label}
+                              <span className="font-normal opacity-60 mr-1 text-[10px]">({n.centers.length} مركز)</span>
+                            </span>
+                            <button
+                              onClick={() => removeNat(k)}
+                              className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-50 transition-colors flex-shrink-0"
+                              style={{ color: n.color }}>
+                              <X size={12} strokeWidth={2.5} />
+                            </button>
+                          </div>
                         );
                       })}
                     </div>
@@ -462,14 +523,19 @@ export default function AdminTaskAssign() {
               </div>
 
               {/* Date */}
-              {schedDate && (
-                <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl px-3 py-2.5">
-                  <p className="text-[10px] text-[#6D6E71] mb-0.5 flex items-center gap-1">
-                    <CalendarDays size={10} strokeWidth={1.75} /> تاريخ التنفيذ
-                  </p>
-                  <p className="text-xs font-bold text-[#2F855A]">
-                    {new Date(schedDate).toLocaleDateString('ar-SA', { dateStyle: 'full' })}
-                  </p>
+              {schedDay && (
+                <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl px-3 py-2.5 flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] text-[#6D6E71] mb-0.5 flex items-center gap-1">
+                      <CalendarDays size={10} strokeWidth={1.75} /> يوم التنفيذ
+                    </p>
+                    <p className="text-xs font-bold text-[#2F855A]">{schedLabel}</p>
+                  </div>
+                  <button
+                    onClick={() => setSchedDay('')}
+                    className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-50 transition-colors text-[#2F855A]">
+                    <X size={12} strokeWidth={2.5} />
+                  </button>
                 </div>
               )}
             </div>
