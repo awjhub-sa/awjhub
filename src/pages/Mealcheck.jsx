@@ -1,10 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Utensils, ChevronRight, Save, CheckCircle2, AlertCircle, Camera, Lock, ArrowLeft, RotateCcw } from 'lucide-react';
+import {
+  Utensils, ChevronRight, Save, CheckCircle2, AlertCircle,
+  Camera, Lock, ArrowLeft, RotateCcw, ClipboardList, Ban,
+} from 'lucide-react';
 import { db } from '../config/db.js';
 import { collection, addDoc, serverTimestamp, setDoc, doc } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getCaterer } from '../config/centers.js';
+import { useAssignedTasks, extractDay, MEAL_META } from '../hooks/useAssignedTasks.js';
 
 /* ── Phases ── */
 const PHASES = [
@@ -52,33 +56,163 @@ const QUESTIONS = [
   { id: 35, text: "هل يتم الالتزام بالوزن المحدد للمكونات داخل الوجبة؟",                                 category: "إجراءات إضافية",        score: 0.25 },
 ];
 
-const STORAGE_KEY = uid => `mealcheck_progress_${uid}`;
+const STORAGE_KEY = (uid, taskId, mealType) => `mealcheck_${uid}_${taskId}_${mealType}`;
 
+/* ── Task Gate Screen ── */
+function TaskGate({ profile, tasks, completions, loading, onSelect }) {
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FDFCFB] flex items-center justify-center font-arabic">
+        <div className="w-8 h-8 border-2 border-[#A98159]/30 border-t-[#A98159] rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Expand tasks into individual (taskId, mealType) items
+  const items = [];
+  tasks
+    .filter(t => t.task_types?.includes('meal_evaluation'))
+    .forEach(task => {
+      const mealTypes = task.meal_types?.length > 0 ? task.meal_types : [];
+      mealTypes.forEach(mealType => {
+        const done = completions.some(c => c.taskId === task.id && c.mealType === mealType);
+        items.push({ task, mealType, done });
+      });
+    });
+
+  const pending   = items.filter(i => !i.done);
+  const completed = items.filter(i => i.done);
+
+  return (
+    <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-10 font-arabic">
+      <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 py-3 mb-6 shadow-sm">
+        <div className="max-w-xl mx-auto flex items-center justify-between">
+          <button onClick={() => window.history.back()} className="p-2 hover:bg-gray-100 rounded-xl transition">
+            <ChevronRight className="text-[#A98159]" size={22} strokeWidth={2.5} />
+          </button>
+          <h1 className="text-base font-bold text-[#2D2926] absolute left-1/2 -translate-x-1/2 whitespace-nowrap">تقييم جودة الوجبات</h1>
+          <div className="w-10" />
+        </div>
+      </header>
+
+      <div className="max-w-xl mx-auto px-4 space-y-5">
+        {/* Observer card */}
+        <div className="rounded-[2rem] p-5 text-white bg-[#2D2926] shadow-lg">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="bg-white/10 p-2.5 rounded-xl"><Utensils className="text-[#A98159]" size={22} /></div>
+            <div>
+              <p className="text-[#A98159] text-[10px] font-black uppercase tracking-widest">مهام التقييم</p>
+              <h2 className="text-base font-bold">اختر الوجبة للتقييم</h2>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { lbl: 'المراقب', val: profile?.nameAr || profile?.name, cls: 'text-white' },
+              { lbl: 'المركز',  val: profile?.center,                   cls: 'text-[#A98159]' },
+              { lbl: 'المتعهد', val: profile?.caterer || getCaterer(profile?.center), cls: 'text-white' },
+            ].map(c => (
+              <div key={c.lbl} className="bg-white/5 rounded-xl px-2 py-2 border border-white/10 text-center">
+                <p className="text-white/40 text-[9px] mb-0.5">{c.lbl}</p>
+                <p className={`font-bold text-[10px] truncate ${c.cls}`}>{c.val || '—'}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* No tasks at all */}
+        {items.length === 0 && (
+          <div className="bg-white border border-[#EDE5DC] rounded-2xl py-14 text-center shadow-sm">
+            <Ban size={36} className="mx-auto text-gray-300 mb-3" strokeWidth={1.2} />
+            <p className="text-[#2D2926] font-bold text-base mb-1">لا توجد مهام حالياً</p>
+            <p className="text-[#9D8F85] text-sm">لم تُسند إليك أي مهام تقييم لمركزك بعد</p>
+          </div>
+        )}
+
+        {/* Pending tasks */}
+        {pending.length > 0 && (
+          <div className="space-y-3">
+            <p className="text-xs font-black text-[#A98159] uppercase tracking-wider px-1">مهام معلقة — {pending.length}</p>
+            {pending.map(({ task, mealType }) => {
+              const meta = MEAL_META[mealType] || {};
+              return (
+                <button key={`${task.id}_${mealType}`}
+                  onClick={() => onSelect({ taskId: task.id, mealType, scheduledDate: task.scheduled_date, day: extractDay(task.scheduled_date) })}
+                  className="w-full bg-white border-2 border-[#D1C4B9] hover:border-[#A98159] rounded-2xl p-4 flex items-center gap-4 text-right transition-all active:scale-[0.98] shadow-sm hover:shadow-md">
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
+                    style={{ background: meta.bg, border: `1.5px solid ${meta.border}` }}>
+                    {meta.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm text-[#2D2926]">{meta.label}</p>
+                    <p className="text-[11px] text-[#9D8F85] mt-0.5">{task.scheduled_date}</p>
+                  </div>
+                  <ArrowLeft size={18} className="text-[#A98159] flex-shrink-0" strokeWidth={2.5} />
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Completed tasks */}
+        {completed.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-black text-green-600 uppercase tracking-wider px-1">مكتملة — {completed.length}</p>
+            {completed.map(({ task, mealType }) => {
+              const meta = MEAL_META[mealType] || {};
+              return (
+                <div key={`${task.id}_${mealType}_done`}
+                  className="bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0 bg-green-100 border border-green-200">
+                    {meta.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm text-green-700">{meta.label}</p>
+                    <p className="text-[11px] text-green-600 mt-0.5">{task.scheduled_date}</p>
+                  </div>
+                  <CheckCircle2 size={20} className="text-green-500 flex-shrink-0" strokeWidth={2} />
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════ */
 export default function Mealcheck() {
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const { tasks, completions, loading } = useAssignedTasks(profile);
+
+  /* ── Selected task ── */
+  const [selectedTask, setSelectedTask] = useState(null);
+  // { taskId, mealType, scheduledDate, day }
 
   /* ── Screen ── */
   const [screen, setScreen] = useState('phases');
 
-  /* ── Phase state — phaseDone tracks completion, phasePhotos holds the File ── */
+  /* ── Phase state ── */
   const [phaseDone,   setPhaseDone]   = useState({ 1: false, 2: false, 3: false });
   const [phasePhotos, setPhasePhotos] = useState({ 1: null,  2: null,  3: null  });
   const fileRefs = [useRef(null), useRef(null), useRef(null)];
 
   /* ── Questions ── */
   const [answers, setAnswers] = useState({});
-  const [loading, setLoading] = useState(false);
-
-  /* ── Restored banner ── */
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [restored, setRestored] = useState(false);
 
-  /* ── Load saved progress on mount ── */
+  /* ── Load saved progress when task changes ── */
   useEffect(() => {
-    const uid = profile?.uid;
-    if (!uid) return;
+    if (!selectedTask || !profile?.uid) return;
+    setScreen('phases');
+    setPhaseDone({ 1: false, 2: false, 3: false });
+    setPhasePhotos({ 1: null, 2: null, 3: null });
+    setAnswers({});
+    setRestored(false);
     try {
-      const raw = localStorage.getItem(STORAGE_KEY(uid));
+      const raw = localStorage.getItem(STORAGE_KEY(profile.uid, selectedTask.taskId, selectedTask.mealType));
       if (!raw) return;
       const data = JSON.parse(raw);
       const hasPhases  = Object.values(data.phaseDone  || {}).some(Boolean);
@@ -89,21 +223,24 @@ export default function Mealcheck() {
       if (data.screen)    setScreen(data.screen);
       setRestored(true);
     } catch {}
-  }, [profile?.uid]);
+  }, [selectedTask?.taskId, selectedTask?.mealType, profile?.uid]);
 
-  /* ── Auto-save whenever progress changes ── */
+  /* ── Auto-save ── */
   useEffect(() => {
-    const uid = profile?.uid;
-    if (!uid) return;
-    localStorage.setItem(STORAGE_KEY(uid), JSON.stringify({ screen, answers, phaseDone }));
-  }, [screen, answers, phaseDone, profile?.uid]);
+    if (!selectedTask || !profile?.uid) return;
+    localStorage.setItem(
+      STORAGE_KEY(profile.uid, selectedTask.taskId, selectedTask.mealType),
+      JSON.stringify({ screen, answers, phaseDone })
+    );
+  }, [screen, answers, phaseDone, selectedTask, profile?.uid]);
 
-  /* ── Clear progress ── */
   const clearProgress = () => {
-    localStorage.removeItem(STORAGE_KEY(profile?.uid));
+    if (selectedTask && profile?.uid) {
+      localStorage.removeItem(STORAGE_KEY(profile.uid, selectedTask.taskId, selectedTask.mealType));
+    }
     setScreen('phases');
     setPhaseDone({ 1: false, 2: false, 3: false });
-    setPhasePhotos({ 1: null,  2: null,  3: null  });
+    setPhasePhotos({ 1: null, 2: null, 3: null });
     setAnswers({});
     setRestored(false);
   };
@@ -114,10 +251,12 @@ export default function Mealcheck() {
     setPhasePhotos(prev => ({ ...prev, [id]: file }));
     setPhaseDone(prev  => ({ ...prev, [id]: true  }));
     const center = profile?.center;
-    if (center) {
+    if (center && selectedTask) {
+      const docId = `${center}_d${selectedTask.day}_${selectedTask.mealType}`;
       try {
-        await setDoc(doc(db, 'meal_phases', center), {
-          center,
+        await setDoc(doc(db, 'meal_phases', docId), {
+          center, day: selectedTask.day, mealType: selectedTask.mealType,
+          scheduledDate: selectedTask.scheduledDate,
           observer: profile?.nameAr || profile?.name || '—',
           uid: profile?.uid,
           [`phase${id}`]: serverTimestamp(),
@@ -128,7 +267,6 @@ export default function Mealcheck() {
   };
 
   const allPhasesComplete = phaseDone[1] && phaseDone[2] && phaseDone[3];
-
   const handleAnswer = (id, val) => setAnswers(prev => ({ ...prev, [id]: val }));
 
   const handleSubmit = async () => {
@@ -136,7 +274,7 @@ export default function Mealcheck() {
       alert('يرجى الإجابة على جميع المعايير قبل الإرسال');
       return;
     }
-    setLoading(true);
+    setLoadingSubmit(true);
     try {
       let totalScore = 0;
       QUESTIONS.forEach(q => { if (answers[q.id] === 'نعم') totalScore += q.score; });
@@ -149,166 +287,127 @@ export default function Mealcheck() {
         answers,
         totalScore: totalScore.toFixed(2),
         percentage: percentage.toFixed(1),
+        mealType: selectedTask?.mealType || null,
+        mealLabel: MEAL_META[selectedTask?.mealType]?.label || null,
+        scheduledDate: selectedTask?.scheduledDate || null,
+        taskId: selectedTask?.taskId || null,
         status: 'pending',
         timestamp: serverTimestamp(),
       });
-      localStorage.removeItem(STORAGE_KEY(profile?.uid));
+      // Mark task complete
+      await addDoc(collection(db, 'task_completions'), {
+        taskId: selectedTask?.taskId,
+        taskType: 'meal_evaluation',
+        mealType: selectedTask?.mealType,
+        scheduledDate: selectedTask?.scheduledDate,
+        center: profile?.center,
+        uid: profile?.uid,
+        observerName: profile?.nameAr || profile?.name || '—',
+        completedAt: serverTimestamp(),
+      });
+      localStorage.removeItem(STORAGE_KEY(profile?.uid, selectedTask?.taskId, selectedTask?.mealType));
       alert('تم إرسال التقييم بنجاح');
-      navigate('/home');
+      setSelectedTask(null);
     } catch { alert('حدث خطأ أثناء الإرسال'); }
-    finally { setLoading(false); }
+    finally { setLoadingSubmit(false); }
   };
+
+  /* ── Task gate ── */
+  if (!selectedTask) {
+    return <TaskGate profile={profile} tasks={tasks} completions={completions} loading={loading} onSelect={setSelectedTask} />;
+  }
+
+  const meta = MEAL_META[selectedTask.mealType] || {};
 
   /* ════════════════════════════════════════════
      PHASES SCREEN
   ════════════════════════════════════════════ */
   if (screen === 'phases') {
     const completedCount = [1, 2, 3].filter(id => phaseDone[id]).length;
-
     return (
       <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-32 font-arabic">
-
-        <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 md:px-8 py-3 mb-6 shadow-sm">
+        <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 py-3 mb-6 shadow-sm">
           <div className="max-w-xl mx-auto flex items-center justify-between">
-            <button onClick={() => navigate('/home')} className="p-2 hover:bg-gray-100 rounded-xl transition shrink-0">
+            <button onClick={() => setSelectedTask(null)} className="p-2 hover:bg-gray-100 rounded-xl transition">
               <ChevronRight className="text-[#A98159]" size={22} strokeWidth={2.5} />
             </button>
             <h1 className="text-base font-bold text-[#2D2926] absolute left-1/2 -translate-x-1/2 whitespace-nowrap">
               مراحل تقييم الوجبة
             </h1>
-            <div className="w-10 shrink-0" />
+            <div className="w-10" />
           </div>
         </header>
 
         <div className="max-w-xl mx-auto px-4 space-y-4">
-
-          {/* Restored progress banner */}
           {restored && (
             <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3">
-              <RotateCcw size={15} className="text-blue-500 flex-shrink-0" strokeWidth={2} />
+              <RotateCcw size={14} className="text-blue-500 flex-shrink-0" strokeWidth={2} />
               <p className="text-blue-700 text-[12px] font-bold flex-1">تم استعادة تقدمك من الجلسة السابقة</p>
-              <button
-                onClick={clearProgress}
-                className="text-blue-400 hover:text-blue-600 text-[11px] font-bold underline flex-shrink-0 transition-colors"
-              >
-                مسح
-              </button>
+              <button onClick={clearProgress} className="text-blue-400 hover:text-blue-600 text-[11px] font-bold underline flex-shrink-0">مسح</button>
             </div>
           )}
 
-          {/* Info card */}
           <div className="rounded-[2rem] p-6 text-white bg-[#2D2926] shadow-lg">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="bg-white/10 p-3 rounded-2xl">
-                <Utensils className="text-[#A98159]" size={26} />
-              </div>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="text-3xl">{meta.icon}</div>
               <div>
-                <p className="text-[#A98159] text-[10px] font-black uppercase tracking-widest">خطوة ١ من ٢</p>
+                <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: meta.color }}>{meta.label} — {selectedTask.scheduledDate}</p>
                 <h2 className="text-lg font-bold">توثيق مراحل الوجبة</h2>
               </div>
             </div>
-
-            {/* Progress bar */}
-            <div className="mb-3">
+            <div className="mb-4">
               <div className="flex items-center justify-between mb-1.5">
                 <p className="text-white/50 text-[11px] font-semibold">التقدم</p>
-                <p className="text-white/70 text-[11px] font-bold">{completedCount} / 3 مراحل</p>
+                <p className="text-white/70 text-[11px] font-bold">{completedCount} / 3</p>
               </div>
               <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                 <div className="h-full bg-[#A98159] rounded-full transition-all duration-500"
                   style={{ width: `${(completedCount / 3) * 100}%` }} />
               </div>
             </div>
-
-            {/* Observer info */}
-            <div className="grid grid-cols-3 gap-2 mt-4">
-              <div className="bg-white/5 rounded-xl px-3 py-2 border border-white/10 text-center">
-                <p className="text-white/40 text-[9px] mb-0.5">المراقب</p>
-                <p className="text-white font-bold text-[11px] truncate">{profile?.nameAr || profile?.name || '—'}</p>
-              </div>
-              <div className="bg-white/5 rounded-xl px-3 py-2 border border-white/10 text-center">
-                <p className="text-white/40 text-[9px] mb-0.5">المركز</p>
-                <p className="text-[#A98159] font-bold text-[11px]">{profile?.center || '—'}</p>
-              </div>
-              <div className="bg-white/5 rounded-xl px-3 py-2 border border-white/10 text-center">
-                <p className="text-white/40 text-[9px] mb-0.5">المتعهد</p>
-                <p className="text-white font-bold text-[11px] truncate">{profile?.caterer || getCaterer(profile?.center) || '—'}</p>
-              </div>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { lbl: 'المراقب', val: profile?.nameAr || profile?.name, cls: 'text-white' },
+                { lbl: 'المركز',  val: profile?.center,                   cls: 'text-[#A98159]' },
+                { lbl: 'المتعهد', val: profile?.caterer || getCaterer(profile?.center), cls: 'text-white' },
+              ].map(c => (
+                <div key={c.lbl} className="bg-white/5 rounded-xl px-2 py-2 border border-white/10 text-center">
+                  <p className="text-white/40 text-[9px] mb-0.5">{c.lbl}</p>
+                  <p className={`font-bold text-[10px] truncate ${c.cls}`}>{c.val || '—'}</p>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Phase cards */}
           <div className="space-y-3">
             {PHASES.map((phase, idx) => {
               const isUnlocked = idx === 0 || phaseDone[idx];
               const isDone     = phaseDone[phase.id];
               const isRestored = isDone && !phasePhotos[phase.id];
               const ref        = fileRefs[idx];
-
               return (
-                <div key={phase.id}
-                  className={`bg-white rounded-2xl border-2 p-5 transition-all duration-300 ${
-                    isDone
-                      ? 'border-green-400 shadow-[0_4px_16px_rgba(34,197,94,0.15)]'
-                      : isUnlocked
-                        ? 'border-[#D1C4B9] hover:border-[#A98159]/50 shadow-sm'
-                        : 'border-[#EDE8E3] opacity-50'
-                  }`}>
-
-                  <input
-                    ref={ref}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    disabled={!isUnlocked}
-                    onChange={e => handlePhotoChange(phase.id, e.target.files[0])}
-                  />
-
+                <div key={phase.id} className={`bg-white rounded-2xl border-2 p-5 transition-all duration-300 ${isDone ? 'border-green-400 shadow-[0_4px_16px_rgba(34,197,94,0.15)]' : isUnlocked ? 'border-[#D1C4B9] hover:border-[#A98159]/50 shadow-sm' : 'border-[#EDE8E3] opacity-50'}`}>
+                  <input ref={ref} type="file" accept="image/*" capture="environment" className="hidden"
+                    disabled={!isUnlocked} onChange={e => handlePhotoChange(phase.id, e.target.files[0])} />
                   <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
-                      isDone
-                        ? 'bg-green-100'
-                        : isUnlocked
-                          ? 'bg-[#FDF8F0] border border-[#A98159]/20'
-                          : 'bg-gray-50'
-                    }`}>
-                      {isDone ? (
-                        <CheckCircle2 size={24} className="text-green-500" strokeWidth={2} />
-                      ) : isUnlocked ? (
-                        <span className="text-[#A98159] font-black text-lg">{phase.id}</span>
-                      ) : (
-                        <Lock size={18} className="text-gray-300" strokeWidth={1.5} />
-                      )}
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${isDone ? 'bg-green-100' : isUnlocked ? 'bg-[#FDF8F0] border border-[#A98159]/20' : 'bg-gray-50'}`}>
+                      {isDone ? <CheckCircle2 size={24} className="text-green-500" strokeWidth={2} />
+                        : isUnlocked ? <span className="text-[#A98159] font-black text-lg">{phase.id}</span>
+                        : <Lock size={18} className="text-gray-300" strokeWidth={1.5} />}
                     </div>
-
                     <div className="flex-1 min-w-0">
-                      <p className={`font-bold text-sm ${isDone ? 'text-green-700' : isUnlocked ? 'text-[#2D2926]' : 'text-gray-400'}`}>
-                        {phase.label}
-                      </p>
-                      {isDone ? (
-                        <p className="text-[11px] text-green-600 font-semibold mt-0.5 flex items-center gap-1">
-                          <CheckCircle2 size={11} strokeWidth={2.5} />
-                          {isRestored
-                            ? 'تم توثيق هذه المرحلة في جلسة سابقة'
-                            : `تم رفع الصورة — ${phasePhotos[phase.id]?.name}`
-                          }
-                        </p>
-                      ) : (
-                        <p className="text-[11px] text-[#9D8F85] mt-0.5">
-                          {isUnlocked ? phase.desc : 'أكمل المرحلة السابقة أولاً'}
-                        </p>
-                      )}
+                      <p className={`font-bold text-sm ${isDone ? 'text-green-700' : isUnlocked ? 'text-[#2D2926]' : 'text-gray-400'}`}>{phase.label}</p>
+                      {isDone
+                        ? <p className="text-[11px] text-green-600 font-semibold mt-0.5 flex items-center gap-1">
+                            <CheckCircle2 size={11} strokeWidth={2.5} />
+                            {isRestored ? 'تم توثيق هذه المرحلة في جلسة سابقة' : `تم رفع الصورة — ${phasePhotos[phase.id]?.name}`}
+                          </p>
+                        : <p className="text-[11px] text-[#9D8F85] mt-0.5">{isUnlocked ? phase.desc : 'أكمل المرحلة السابقة أولاً'}</p>
+                      }
                     </div>
-
                     {isUnlocked && (
-                      <button
-                        onClick={() => ref.current?.click()}
-                        className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                          isDone
-                            ? 'bg-green-50 text-green-600 border border-green-200 hover:bg-green-100'
-                            : 'bg-[#A98159] text-white shadow-md hover:bg-[#8B6840] active:scale-95'
-                        }`}>
+                      <button onClick={() => ref.current?.click()}
+                        className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${isDone ? 'bg-green-50 text-green-600 border border-green-200 hover:bg-green-100' : 'bg-[#A98159] text-white shadow-md hover:bg-[#8B6840] active:scale-95'}`}>
                         <Camera size={14} strokeWidth={2} />
                         {isDone ? 'تغيير' : 'رفع صورة'}
                       </button>
@@ -320,7 +419,6 @@ export default function Mealcheck() {
           </div>
         </div>
 
-        {/* Bottom CTA */}
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-t border-[#D1C4B9] z-50">
           <div className="max-w-xl mx-auto">
             {!allPhasesComplete && (
@@ -328,19 +426,11 @@ export default function Mealcheck() {
                 ارفع صورة لكل مرحلة لتتمكن من بدء التقييم
               </p>
             )}
-            <button
-              onClick={() => setScreen('questions')}
-              disabled={!allPhasesComplete}
-              className={`w-full py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-3 transition-all duration-300 ${
-                allPhasesComplete
-                  ? 'bg-[#A98159] text-white shadow-xl active:scale-95'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              }`}>
-              {allPhasesComplete ? (
-                <>بدء التقييم <ArrowLeft size={18} strokeWidth={2.5} /></>
-              ) : (
-                <>{3 - completedCount} مراحل متبقية</>
-              )}
+            <button onClick={() => setScreen('questions')} disabled={!allPhasesComplete}
+              className={`w-full py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-3 transition-all duration-300 ${allPhasesComplete ? 'bg-[#A98159] text-white shadow-xl active:scale-95' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
+              {allPhasesComplete
+                ? <>بدء التقييم <ArrowLeft size={18} strokeWidth={2.5} /></>
+                : <>{3 - completedCount} مراحل متبقية</>}
             </button>
           </div>
         </div>
@@ -352,67 +442,52 @@ export default function Mealcheck() {
      QUESTIONS SCREEN
   ════════════════════════════════════════════ */
   const answeredCount = Object.keys(answers).length;
-
   return (
     <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-32 font-arabic">
-      <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 md:px-8 py-3 mb-6 shadow-sm">
+      <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 py-3 mb-6 shadow-sm">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <button onClick={() => setScreen('phases')} className="p-2 hover:bg-gray-100 rounded-xl transition shrink-0">
+          <button onClick={() => setScreen('phases')} className="p-2 hover:bg-gray-100 rounded-xl transition">
             <ChevronRight className="text-[#A98159]" size={22} strokeWidth={2.5} />
           </button>
           <h1 className="text-base font-bold text-[#2D2926] absolute left-1/2 -translate-x-1/2 whitespace-nowrap">تقييم جودة الوجبات</h1>
-          <div className="w-10 shrink-0" />
+          <div className="w-10" />
         </div>
       </header>
 
       <div className="max-w-4xl mx-auto px-4 space-y-6">
-
-        {/* Resumed progress notice in questions screen */}
         {restored && answeredCount > 0 && (
           <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3">
             <RotateCcw size={14} className="text-blue-500 flex-shrink-0" strokeWidth={2} />
-            <p className="text-blue-700 text-[12px] font-bold">
-              تم استعادة {answeredCount} إجابة محفوظة — يمكنك الاستكمال من حيث توقفت
-            </p>
+            <p className="text-blue-700 text-[12px] font-bold">تم استعادة {answeredCount} إجابة محفوظة</p>
           </div>
         )}
 
-        <div className="rounded-[2.5rem] p-6 my-6 text-white shadow-lg relative overflow-hidden bg-[#2D2926]">
-          <div className="flex justify-between items-center mb-6 relative z-10">
-            <div className="flex items-center gap-3">
-              <div className="bg-white/10 p-3 rounded-2xl">
-                <Utensils className="text-[#A98159]" size={28} />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold">{QUESTIONS.length} معياراً للجودة</h2>
-                <p className="text-white/40 text-[10px] font-bold">خطوة ٢ من ٢ — نموذج فحص الوجبات</p>
-              </div>
+        <div className="rounded-[2.5rem] p-6 text-white shadow-lg bg-[#2D2926]">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="text-3xl">{meta.icon}</div>
+            <div>
+              <h2 className="text-xl font-bold">{QUESTIONS.length} معياراً للجودة</h2>
+              <p className="text-white/40 text-[10px] font-bold">{meta.label} — {selectedTask.scheduledDate}</p>
             </div>
           </div>
-
-          {/* Phase summary badges */}
           <div className="flex items-center gap-2 mb-4 flex-wrap">
             {PHASES.map(p => (
               <span key={p.id} className="flex items-center gap-1 bg-green-500/20 text-green-300 text-[10px] font-bold px-2.5 py-1 rounded-full border border-green-500/30">
-                <CheckCircle2 size={10} strokeWidth={2.5} />
-                {p.label}
+                <CheckCircle2 size={10} strokeWidth={2.5} /> {p.label}
               </span>
             ))}
           </div>
-
-          <div className="grid grid-cols-3 gap-3 relative z-10">
-            <div className="bg-white/5 rounded-2xl py-3 border border-white/10 text-center">
-              <span className="text-white/40 text-[9px] block mb-1">المراقب</span>
-              <span className="text-white font-bold text-[11px]">{profile?.nameAr || '—'}</span>
-            </div>
-            <div className="bg-white/5 rounded-2xl py-3 border border-white/10 text-center">
-              <span className="text-white/40 text-[9px] block mb-1">المركز</span>
-              <span className="text-[#A98159] font-bold text-[11px]">{profile?.center || '—'}</span>
-            </div>
-            <div className="bg-white/5 rounded-2xl py-3 border border-white/10 text-center">
-              <span className="text-white/40 text-[9px] block mb-1">المتعهد</span>
-              <span className="text-white font-bold text-[11px] truncate block px-1">{profile?.caterer || getCaterer(profile?.center) || '—'}</span>
-            </div>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { lbl: 'المراقب', val: profile?.nameAr || '—', cls: 'text-white' },
+              { lbl: 'المركز',  val: profile?.center  || '—', cls: 'text-[#A98159]' },
+              { lbl: 'المتعهد', val: profile?.caterer || getCaterer(profile?.center) || '—', cls: 'text-white' },
+            ].map(c => (
+              <div key={c.lbl} className="bg-white/5 rounded-xl px-2 py-2 border border-white/10 text-center">
+                <p className="text-white/40 text-[9px] mb-0.5">{c.lbl}</p>
+                <p className={`font-bold text-[10px] truncate ${c.cls}`}>{c.val}</p>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -422,12 +497,10 @@ export default function Mealcheck() {
             return (
               <React.Fragment key={q.id}>
                 {isFirstInCategory && (
-                  <div className="col-span-full pt-4 pb-2 relative flex items-center">
-                    <div className="flex-grow border-t border-[#D1C4B9]"></div>
-                    <span className="mx-4 px-4 py-1.5 rounded-full border border-[#D1C4B9] bg-[#FDF8F0] text-[#A98159] text-xs font-black shadow-sm">
-                      {q.category}
-                    </span>
-                    <div className="flex-grow border-t border-[#D1C4B9]"></div>
+                  <div className="col-span-full pt-4 pb-2 flex items-center">
+                    <div className="flex-grow border-t border-[#D1C4B9]" />
+                    <span className="mx-4 px-4 py-1.5 rounded-full border border-[#D1C4B9] bg-[#FDF8F0] text-[#A98159] text-xs font-black shadow-sm">{q.category}</span>
+                    <div className="flex-grow border-t border-[#D1C4B9]" />
                   </div>
                 )}
                 <div className={`bg-white border p-6 rounded-3xl shadow-sm transition-all ${answers[q.id] ? 'border-[#A98159]/30' : 'border-[#D1C4B9]'}`}>
@@ -453,21 +526,17 @@ export default function Mealcheck() {
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-t border-[#D1C4B9] z-50">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-2 px-1">
-            <span className="text-[11px] text-[#9D8F85] font-semibold">
-              {answeredCount} / {QUESTIONS.length} سؤال
-            </span>
-            <span className="text-[11px] text-[#A98159] font-bold">
-              {Math.round((answeredCount / QUESTIONS.length) * 100)}%
-            </span>
+            <span className="text-[11px] text-[#9D8F85] font-semibold">{answeredCount} / {QUESTIONS.length} سؤال</span>
+            <span className="text-[11px] text-[#A98159] font-bold">{Math.round((answeredCount / QUESTIONS.length) * 100)}%</span>
           </div>
           <div className="h-1.5 bg-gray-100 rounded-full mb-3 overflow-hidden">
             <div className="h-full bg-[#A98159] rounded-full transition-all duration-300"
               style={{ width: `${(answeredCount / QUESTIONS.length) * 100}%` }} />
           </div>
-          <button onClick={handleSubmit} disabled={loading}
+          <button onClick={handleSubmit} disabled={loadingSubmit}
             className="w-full bg-[#A98159] text-white py-4 rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-3 active:scale-95 transition-all disabled:bg-gray-400">
             <Save size={20} />
-            {loading ? 'جاري الإرسال...' : 'حفظ وإرسال التقرير النهائي'}
+            {loadingSubmit ? 'جاري الإرسال...' : 'حفظ وإرسال التقرير النهائي'}
           </button>
         </div>
       </div>

@@ -13,6 +13,7 @@ import logo from '../assets/logo.png';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getCaterer } from '../config/centers.js';
 import { db, auth } from '../config/db.js';
+import { useAssignedTasks } from '../hooks/useAssignedTasks.js';
 
 /* ── Decorative Gold Rule ── */
 const GoldRule = () => (
@@ -143,12 +144,37 @@ export default function Home() {
     return () => unsubs.forEach(unsub => unsub());
   }, [profile?.uid]);
 
+  const { tasks, completions } = useAssignedTasks(profile);
+
+  const pendingMealBadge = (() => {
+    const mealTasks = tasks.filter(t => t.taskType === 'meal_evaluation');
+    let count = 0;
+    mealTasks.forEach(task => {
+      (task.mealTypes || []).forEach(mt => {
+        if (!completions.some(c => c.taskId === task.id && c.mealType === mt)) count++;
+      });
+    });
+    return count || null;
+  })();
+
+  const pendingMinaBadge = (() => {
+    const count = tasks.filter(t => t.taskType === 'mina_readiness' &&
+      !completions.some(c => c.taskId === t.id && c.taskType === 'mina_readiness')).length;
+    return count || null;
+  })();
+
+  const pendingArafatBadge = (() => {
+    const count = tasks.filter(t => t.taskType === 'arafat_readiness' &&
+      !completions.some(c => c.taskId === t.id && c.taskType === 'arafat_readiness')).length;
+    return count || null;
+  })();
+
   const name = profile?.nameAr || profile?.name || 'المراقب الميداني';
   const center = profile?.center || '—';
   const caterer = profile?.caterer || getCaterer(profile?.center) || '—';
   const centerNum = center !== '—' ? center.replace('مركز ', '') : '—';
   const isSup = profile?.role === 'supervisor' || profile?.role === 'admin';
-  // التحقق من وجود مصفوفة المراكز لتجنب خطأ length 
+  // التحقق من وجود مصفوفة المراكز لتجنب خطأ length
   const centersCount = profile?.centers ? profile.centers.length : (profile?.center ? 1 : 0);
 
   const displayed = showAll ? activities : activities.slice(0, 4);
@@ -298,10 +324,10 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 gap-4">
-            <MenuCard icon={Utensils} title="تقييم جودة الوجبات" onClick={() => navigate('/mealcheck')} variant="accent" />
-            <MenuCard icon={HomeIcon} title="جاهزية مشعر منى" onClick={() => navigate('/mina-readiness')} />
-            <MenuCard icon={Mountain} title="جاهزية مشعر عرفة" onClick={() => navigate('/arafat-readiness')} />
-            <MenuCard icon={AlertTriangle} title="بلاغ طارئ" onClick={() => navigate('/report')} badge="جديد" />
+            <MenuCard icon={Utensils} title="تقييم جودة الوجبات" onClick={() => navigate('/mealcheck')} variant="accent" badge={pendingMealBadge} />
+            <MenuCard icon={HomeIcon} title="جاهزية مشعر منى" onClick={() => navigate('/mina-readiness')} badge={pendingMinaBadge} />
+            <MenuCard icon={Mountain} title="جاهزية مشعر عرفة" onClick={() => navigate('/arafat-readiness')} badge={pendingArafatBadge} />
+            <MenuCard icon={AlertTriangle} title="بلاغ طارئ" onClick={() => navigate('/report')} />
             <MenuCard icon={Truck} title="طلب إسناد لوجستي" onClick={() => navigate('/logistics')} />
           </div>
         </div>
