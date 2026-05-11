@@ -4,13 +4,17 @@ import { db } from '../../config/db.js';
 import {
   Target, ChefHat, Tent, Compass, Earth, CalendarCheck,
   Rocket, Sparkles, Building2, CheckCircle2, ChevronDown,
-  ChevronUp, Clock, AlertCircle, X, Layers,
+  ChevronUp, Clock, AlertCircle, X, Layers, Search,
 } from 'lucide-react';
 import { Coffee, ForkKnife, Moon } from '@phosphor-icons/react';
+import { CENTERS } from '../../config/centers.js';
 
 /* ── Helpers ── */
 function range(s, e) {
   return Array.from({ length: e - s + 1 }, (_, i) => s + i);
+}
+function centerNum(id) {
+  return parseInt((id || '').replace(/[^0-9]/g, '')) || 0;
 }
 function fullDate(ts) {
   if (!ts) return '—';
@@ -158,21 +162,28 @@ function AssignmentCard({ item }) {
 
 /* ══════════════════════════════════════════════════════════ */
 export default function AdminTaskAssign() {
-  const [selTasks,  setSelTasks]  = useState([]);
-  const [selMeals,  setSelMeals]  = useState([]);
-  const [selNats,   setSelNats]   = useState([]);
-  const [schedDay,  setSchedDay]  = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [feedback,   setFeedback]   = useState(null);
-  const [history,    setHistory]    = useState([]);
-  const [showAll,    setShowAll]    = useState(false);
+  const [selTasks,     setSelTasks]     = useState([]);
+  const [selMeals,     setSelMeals]     = useState([]);
+  const [selNats,      setSelNats]      = useState([]);
+  const [selMode,      setSelMode]      = useState('nationality'); // 'nationality' | 'center'
+  const [selCenters,   setSelCenters]   = useState([]);
+  const [centerSearch, setCenterSearch] = useState('');
+  const [schedDay,     setSchedDay]     = useState('');
+  const [submitting,   setSubmitting]   = useState(false);
+  const [feedback,     setFeedback]     = useState(null);
+  const [history,      setHistory]      = useState([]);
+  const [showAll,      setShowAll]      = useState(false);
 
   const hasMeal    = selTasks.includes('meal_evaluation');
   const mealMissing = hasMeal && selMeals.length === 0;
 
-  const targetCenters = [...new Set(
-    NATIONALITIES.filter(n => selNats.includes(n.key)).flatMap(n => n.centers)
-  )].sort((a, b) => a - b);
+  const targetCenters = selMode === 'nationality'
+    ? [...new Set(NATIONALITIES.filter(n => selNats.includes(n.key)).flatMap(n => n.centers))].sort((a, b) => a - b)
+    : selCenters.map(centerNum).filter(Boolean).sort((a, b) => a - b);
+
+  const filteredCenters = CENTERS.filter(c =>
+    c.id.includes(centerSearch) || c.caterer.includes(centerSearch)
+  );
 
   const schedLabel = DHU_HIJJAH_DAYS.find(d => d.value === schedDay)?.label || '';
 
@@ -184,10 +195,11 @@ export default function AdminTaskAssign() {
   }, []);
 
   const handleAssign = async () => {
-    if (selTasks.length === 0)   { setFeedback({ type: 'error', msg: 'اختر مهمة واحدة على الأقل' }); return; }
-    if (mealMissing)             { setFeedback({ type: 'error', msg: 'اختر نوع الوجبة للتقييم' }); return; }
-    if (selNats.length === 0)    { setFeedback({ type: 'error', msg: 'اختر جنسية واحدة على الأقل' }); return; }
-    if (!schedDay)               { setFeedback({ type: 'error', msg: 'حدد يوم التنفيذ' }); return; }
+    if (selTasks.length === 0)                              { setFeedback({ type: 'error', msg: 'اختر مهمة واحدة على الأقل' }); return; }
+    if (mealMissing)                                        { setFeedback({ type: 'error', msg: 'اختر نوع الوجبة للتقييم' }); return; }
+    if (selMode === 'nationality' && selNats.length === 0)  { setFeedback({ type: 'error', msg: 'اختر جنسية واحدة على الأقل' }); return; }
+    if (selMode === 'center' && selCenters.length === 0)    { setFeedback({ type: 'error', msg: 'اختر مركزاً واحداً على الأقل' }); return; }
+    if (!schedDay)                                          { setFeedback({ type: 'error', msg: 'حدد يوم التنفيذ' }); return; }
 
     setSubmitting(true);
     setFeedback(null);
@@ -195,14 +207,14 @@ export default function AdminTaskAssign() {
       await addDoc(collection(db, 'assigned_tasks'), {
         task_types:           selTasks,
         meal_types:           hasMeal ? selMeals : [],
-        target_nationalities: selNats,
+        target_nationalities: selMode === 'nationality' ? selNats : [],
         target_centers:       targetCenters,
         scheduled_date:       schedLabel,
         status:               'pending',
         created_at:           serverTimestamp(),
       });
       setFeedback({ type: 'success', msg: 'تم إسناد المهام بنجاح ✓' });
-      setSelTasks([]); setSelMeals([]); setSelNats([]); setSchedDay('');
+      setSelTasks([]); setSelMeals([]); setSelNats([]); setSelCenters([]); setSchedDay('');
       setTimeout(() => setFeedback(null), 4000);
     } catch {
       setFeedback({ type: 'error', msg: 'حدث خطأ أثناء الحفظ، حاول مجدداً' });
@@ -210,12 +222,10 @@ export default function AdminTaskAssign() {
     setSubmitting(false);
   };
 
-  const removeTask = key => {
-    setSelTasks(p => p.filter(x => x !== key));
-    if (key === 'meal_evaluation') setSelMeals([]);
-  };
-  const removeNat  = key => setSelNats(p => p.filter(x => x !== key));
-  const removeMeal = key => setSelMeals(p => p.filter(x => x !== key));
+  const removeTask   = key => { setSelTasks(p => p.filter(x => x !== key)); if (key === 'meal_evaluation') setSelMeals([]); };
+  const removeNat    = key => setSelNats(p => p.filter(x => x !== key));
+  const removeMeal   = key => setSelMeals(p => p.filter(x => x !== key));
+  const removeCenter = id  => setSelCenters(p => p.filter(x => x !== id));
 
   const displayedHistory = showAll ? history : history.slice(0, 5);
 
@@ -315,46 +325,145 @@ export default function AdminTaskAssign() {
             </div>
           </div>
 
-          {/* 2. Nationality selection */}
+          {/* 2. Target selection (Nationality or Center) */}
           <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
+            {/* Header */}
             <div className="flex items-center gap-3 px-5 py-3.5 border-b border-[#EDE5DC]"
               style={{ background: 'linear-gradient(135deg, #EFF6FF, #fff 60%)' }}>
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
                 style={{ background: 'linear-gradient(135deg, #93C5FD, #3182CE)' }}>
-                <Earth size={15} className="text-white" strokeWidth={2} />
+                {selMode === 'nationality' ? <Earth size={15} className="text-white" strokeWidth={2} /> : <Building2 size={15} className="text-white" strokeWidth={2} />}
               </div>
-              <p className="font-bold text-[#2D2926] text-sm">تحديد الجنسيات</p>
-              {selNats.length > 0 && (
+              <p className="font-bold text-[#2D2926] text-sm">تحديد الجهة المستهدفة</p>
+              {(selMode === 'nationality' ? selNats.length : selCenters.length) > 0 && (
                 <span className="mr-auto text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200">
-                  {selNats.length} محددة
+                  {selMode === 'nationality' ? selNats.length : selCenters.length} محدد
                 </span>
               )}
             </div>
-            <div className="p-4 grid grid-cols-2 gap-2.5">
-              {NATIONALITIES.map(n => {
-                const active = selNats.includes(n.key);
-                return (
-                  <button key={n.key}
-                    onClick={() => setSelNats(p => toggle(p, n.key))}
-                    className="flex items-center gap-2.5 px-3.5 py-3 rounded-xl border transition-all text-right"
-                    style={active
-                      ? { background: `${n.color}0D`, borderColor: `${n.color}45`, boxShadow: `0 2px 8px ${n.color}14` }
-                      : { background: '#FAFAF8', borderColor: '#EDE5DC' }}>
-                    <span className="text-lg leading-none">{n.flag}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold truncate" style={{ color: active ? n.color : '#2D2926' }}>
-                        {n.label}
-                      </p>
-                      <p className="text-[10px] text-[#9D8F85]">{n.centers.length} مركز</p>
-                    </div>
-                    <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${active ? 'border-transparent' : 'border-[#D9CEBC]'}`}
-                      style={active ? { background: n.color } : {}}>
-                      {active && <span className="text-white text-[8px] font-black leading-none">✓</span>}
-                    </div>
-                  </button>
-                );
-              })}
+
+            {/* Mode toggle */}
+            <div className="px-4 pt-3.5 pb-0">
+              <div className="flex gap-1.5 p-1 rounded-xl bg-[#F5F0EB]">
+                {[
+                  { id: 'nationality', label: 'حسب الجنسية', icon: Earth },
+                  { id: 'center',      label: 'حسب المركز',  icon: Building2 },
+                ].map(m => {
+                  const Icon = m.icon;
+                  const active = selMode === m.id;
+                  return (
+                    <button key={m.id}
+                      onClick={() => { setSelMode(m.id); setSelNats([]); setSelCenters([]); setCenterSearch(''); }}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all"
+                      style={active
+                        ? { background: 'white', color: '#2D2926', boxShadow: '0 1px 6px rgba(45,41,38,0.12)' }
+                        : { color: '#9D8F85' }}>
+                      <Icon size={13} strokeWidth={2} />
+                      {m.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+
+            {/* Nationality grid */}
+            {selMode === 'nationality' && (
+              <div className="p-4 grid grid-cols-2 gap-2.5">
+                {NATIONALITIES.map(n => {
+                  const active = selNats.includes(n.key);
+                  return (
+                    <button key={n.key}
+                      onClick={() => setSelNats(p => toggle(p, n.key))}
+                      className="flex items-center gap-2.5 px-3.5 py-3 rounded-xl border transition-all text-right"
+                      style={active
+                        ? { background: `${n.color}0D`, borderColor: `${n.color}45`, boxShadow: `0 2px 8px ${n.color}14` }
+                        : { background: '#FAFAF8', borderColor: '#EDE5DC' }}>
+                      <span className="text-lg leading-none">{n.flag}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold truncate" style={{ color: active ? n.color : '#2D2926' }}>{n.label}</p>
+                        <p className="text-[10px] text-[#9D8F85]">{n.centers.length} مركز</p>
+                      </div>
+                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${active ? 'border-transparent' : 'border-[#D9CEBC]'}`}
+                        style={active ? { background: n.color } : {}}>
+                        {active && <span className="text-white text-[8px] font-black leading-none">✓</span>}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Center list */}
+            {selMode === 'center' && (
+              <div className="p-4 space-y-3">
+                {/* Search */}
+                <div className="relative">
+                  <Search size={13} strokeWidth={1.75} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9D8F85] pointer-events-none" />
+                  <input
+                    type="text"
+                    value={centerSearch}
+                    onChange={e => setCenterSearch(e.target.value)}
+                    placeholder="ابحث عن مركز..."
+                    dir="rtl"
+                    className="w-full pr-8 pl-3 py-2 rounded-xl border border-[#EDE5DC] bg-[#FAFAF8] text-sm text-[#2D2926] placeholder-[#C9B8A8] focus:outline-none focus:border-[#A98159] transition-colors"
+                  />
+                  {centerSearch && (
+                    <button onClick={() => setCenterSearch('')}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-[#C9B8A8] hover:text-[#6D6E71]">
+                      <X size={12} strokeWidth={2} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Select / deselect all visible */}
+                {filteredCenters.length > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-[#9D8F85]">{filteredCenters.length} مركز</span>
+                    <button
+                      onClick={() => {
+                        const visibleIds = filteredCenters.map(c => c.id);
+                        const allSelected = visibleIds.every(id => selCenters.includes(id));
+                        if (allSelected) setSelCenters(p => p.filter(id => !visibleIds.includes(id)));
+                        else setSelCenters(p => [...new Set([...p, ...visibleIds])]);
+                      }}
+                      className="text-[11px] font-bold text-[#A98159] hover:underline">
+                      {filteredCenters.every(c => selCenters.includes(c.id)) ? 'إلغاء تحديد الكل' : 'تحديد الكل'}
+                    </button>
+                  </div>
+                )}
+
+                {/* Center rows */}
+                <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                  {filteredCenters.length === 0
+                    ? <p className="text-center text-[12px] text-[#C9B8A8] py-4">لا توجد نتائج</p>
+                    : filteredCenters.map(c => {
+                        const active = selCenters.includes(c.id);
+                        return (
+                          <button key={c.id}
+                            onClick={() => setSelCenters(p => toggle(p, c.id))}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all text-right"
+                            style={active
+                              ? { background: '#A9815910', borderColor: '#A9815950', boxShadow: '0 1px 6px rgba(169,129,89,0.12)' }
+                              : { background: '#FAFAF8', borderColor: '#EDE5DC' }}>
+                            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                              style={{ background: active ? '#A9815920' : '#F5F0EB' }}>
+                              <Building2 size={13} strokeWidth={1.75} style={{ color: active ? '#A98159' : '#C9B8A8' }} />
+                            </div>
+                            <div className="flex-1 min-w-0 text-right">
+                              <p className="text-xs font-bold" style={{ color: active ? '#A98159' : '#2D2926' }}>{c.id}</p>
+                              <p className="text-[10px] text-[#9D8F85] truncate">{c.caterer}</p>
+                            </div>
+                            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${active ? 'border-transparent' : 'border-[#D9CEBC]'}`}
+                              style={active ? { background: '#A98159' } : {}}>
+                              {active && <span className="text-white text-[8px] font-black leading-none">✓</span>}
+                            </div>
+                          </button>
+                        );
+                      })
+                  }
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 3. Date */}
@@ -489,59 +598,94 @@ export default function AdminTaskAssign() {
                 }
               </div>
 
-              {/* Nationalities */}
+              {/* Target selection preview */}
               <div>
-                <p className="text-[11px] font-semibold text-[#9D8F85] mb-2 flex items-center gap-1">
-                  <Earth size={11} strokeWidth={1.75} /> الجنسيات
-                </p>
-                {selNats.length === 0
-                  ? <p className="text-[12px] text-[#C9B8A8] italic">لم تُحدد بعد</p>
-                  : <div className="space-y-1.5">
-                      {selNats.map(k => {
-                        const n = NATIONALITIES.find(x => x.key === k);
-                        return (
-                          <div key={k} className="flex items-center gap-1.5">
-                            <span className="flex-1 text-[11px] font-bold px-2 py-1 rounded-lg border"
-                              style={{ background: `${n.color}10`, borderColor: `${n.color}35`, color: n.color }}>
-                              {n.flag} {n.label}
-                              <span className="font-normal opacity-60 mr-1 text-[10px]">({n.centers.length} مركز)</span>
-                            </span>
-                            <button onClick={() => removeNat(k)}
-                              className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-50 transition-colors flex-shrink-0"
-                              style={{ color: n.color }}>
-                              <X size={12} strokeWidth={2.5} />
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                }
+                {selMode === 'nationality' ? (
+                  <>
+                    <p className="text-[11px] font-semibold text-[#9D8F85] mb-2 flex items-center gap-1">
+                      <Earth size={11} strokeWidth={1.75} /> الجنسيات
+                    </p>
+                    {selNats.length === 0
+                      ? <p className="text-[12px] text-[#C9B8A8] italic">لم تُحدد بعد</p>
+                      : <div className="space-y-1.5">
+                          {selNats.map(k => {
+                            const n = NATIONALITIES.find(x => x.key === k);
+                            return (
+                              <div key={k} className="flex items-center gap-1.5">
+                                <span className="flex-1 text-[11px] font-bold px-2 py-1 rounded-lg border"
+                                  style={{ background: `${n.color}10`, borderColor: `${n.color}35`, color: n.color }}>
+                                  {n.flag} {n.label}
+                                  <span className="font-normal opacity-60 mr-1 text-[10px]">({n.centers.length} مركز)</span>
+                                </span>
+                                <button onClick={() => removeNat(k)}
+                                  className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-50 transition-colors flex-shrink-0"
+                                  style={{ color: n.color }}>
+                                  <X size={12} strokeWidth={2.5} />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                    }
+                  </>
+                ) : (
+                  <>
+                    <p className="text-[11px] font-semibold text-[#9D8F85] mb-2 flex items-center gap-1">
+                      <Building2 size={11} strokeWidth={1.75} /> المراكز المحددة
+                      {selCenters.length > 0 && (
+                        <span className="mr-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                          style={{ background: '#A9815918', color: '#A98159', border: '1px solid #A9815930' }}>
+                          {selCenters.length}
+                        </span>
+                      )}
+                    </p>
+                    {selCenters.length === 0
+                      ? <p className="text-[12px] text-[#C9B8A8] italic">لم تُحدد بعد</p>
+                      : <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
+                          {selCenters.map(id => (
+                            <div key={id} className="flex items-center gap-0.5">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg"
+                                style={{ background: '#A9815910', border: '1px solid #A9815935', color: '#A98159' }}>
+                                {id}
+                              </span>
+                              <button onClick={() => removeCenter(id)}
+                                className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-red-50 transition-colors text-[#A98159]">
+                                <X size={9} strokeWidth={2.5} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                    }
+                  </>
+                )}
               </div>
 
-              {/* Target centers */}
-              <div>
-                <p className="text-[11px] font-semibold text-[#9D8F85] mb-2 flex items-center gap-1">
-                  <Building2 size={11} strokeWidth={1.75} />
-                  المراكز المستهدفة
-                  {targetCenters.length > 0 && (
-                    <span className="mr-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                      style={{ background: '#7C3AED18', color: '#7C3AED', border: '1px solid #7C3AED30' }}>
-                      {targetCenters.length}
-                    </span>
-                  )}
-                </p>
-                {targetCenters.length === 0
-                  ? <p className="text-[12px] text-[#C9B8A8] italic">ستظهر بعد تحديد الجنسيات</p>
-                  : <div className="flex flex-wrap gap-1 max-h-40 overflow-y-auto">
-                      {targetCenters.map(c => (
-                        <span key={c} className="text-[10px] font-bold px-2 py-0.5 rounded-lg"
-                          style={{ background: '#7C3AED0D', border: '1px solid #7C3AED25', color: '#7C3AED' }}>
-                          {c}
-                        </span>
-                      ))}
-                    </div>
-                }
-              </div>
+              {/* Target centers count (nationality mode only) */}
+              {selMode === 'nationality' && (
+                <div>
+                  <p className="text-[11px] font-semibold text-[#9D8F85] mb-2 flex items-center gap-1">
+                    <Building2 size={11} strokeWidth={1.75} />
+                    المراكز المستهدفة
+                    {targetCenters.length > 0 && (
+                      <span className="mr-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                        style={{ background: '#7C3AED18', color: '#7C3AED', border: '1px solid #7C3AED30' }}>
+                        {targetCenters.length}
+                      </span>
+                    )}
+                  </p>
+                  {targetCenters.length === 0
+                    ? <p className="text-[12px] text-[#C9B8A8] italic">ستظهر بعد تحديد الجنسيات</p>
+                    : <div className="flex flex-wrap gap-1 max-h-40 overflow-y-auto">
+                        {targetCenters.map(c => (
+                          <span key={c} className="text-[10px] font-bold px-2 py-0.5 rounded-lg"
+                            style={{ background: '#7C3AED0D', border: '1px solid #7C3AED25', color: '#7C3AED' }}>
+                            {c}
+                          </span>
+                        ))}
+                      </div>
+                  }
+                </div>
+              )}
 
               {/* Date */}
               {schedDay && (
