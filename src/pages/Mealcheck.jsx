@@ -138,9 +138,9 @@ function TaskGate({ profile, tasks, completions, loading, onSelect }) {
                 <button key={`${task.id}_${mealType}`}
                   onClick={() => onSelect({ taskId: task.id, mealType, scheduledDate: task.scheduled_date, day: extractDay(task.scheduled_date) })}
                   className="w-full bg-white border-2 border-[#D1C4B9] hover:border-[#A98159] rounded-2xl p-4 flex items-center gap-4 text-right transition-all active:scale-[0.98] shadow-sm hover:shadow-md">
-                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
                     style={{ background: meta.bg, border: `1.5px solid ${meta.border}` }}>
-                    {meta.icon}
+                    <meta.icon size={26} weight="duotone" style={{ color: meta.color }} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-sm text-[#2D2926]">{meta.label}</p>
@@ -162,8 +162,8 @@ function TaskGate({ profile, tasks, completions, loading, onSelect }) {
               return (
                 <div key={`${task.id}_${mealType}_done`}
                   className="bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0 bg-green-100 border border-green-200">
-                    {meta.icon}
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 bg-green-100 border border-green-200">
+                    <meta.icon size={26} weight="duotone" style={{ color: meta.color }} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-sm text-green-700">{meta.label}</p>
@@ -349,7 +349,9 @@ export default function Mealcheck() {
 
           <div className="rounded-[2rem] p-6 text-white bg-[#2D2926] shadow-lg">
             <div className="flex items-center gap-3 mb-4">
-              <div className="text-3xl">{meta.icon}</div>
+              <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: `${meta.color}22` }}>
+                <meta.icon size={22} weight="duotone" style={{ color: meta.color }} />
+              </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: meta.color }}>{meta.label} — {selectedTask.scheduledDate}</p>
                 <h2 className="text-lg font-bold">توثيق مراحل الوجبة</h2>
@@ -464,7 +466,9 @@ export default function Mealcheck() {
 
         <div className="rounded-[2.5rem] p-6 text-white shadow-lg bg-[#2D2926]">
           <div className="flex items-center gap-3 mb-5">
-            <div className="text-3xl">{meta.icon}</div>
+            <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: `${meta.color}22` }}>
+              <meta.icon size={22} weight="duotone" style={{ color: meta.color }} />
+            </div>
             <div>
               <h2 className="text-xl font-bold">{QUESTIONS.length} معياراً للجودة</h2>
               <p className="text-white/40 text-[10px] font-bold">{meta.label} — {selectedTask.scheduledDate}</p>

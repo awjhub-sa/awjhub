@@ -3,6 +3,7 @@ import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../../config/db.js';
 import { CENTERS } from '../../config/centers.js';
 import { Activity, CheckCircle2, Clock, Layers, RotateCcw } from 'lucide-react';
+import { Coffee, ForkKnife, Moon } from '@phosphor-icons/react';
 
 const PHASES = [
   { id: 1, label: 'التجهيز',  short: 'تجهيز', color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A', glow: 'rgba(245,158,11,0.45)' },
@@ -11,9 +12,9 @@ const PHASES = [
 ];
 
 const MEALS = [
-  { id: 'breakfast', label: 'الإفطار', icon: '🌅', color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A' },
-  { id: 'lunch',     label: 'الغداء',  icon: '☀️', color: '#EF4444', bg: '#FEF2F2', border: '#FCA5A5' },
-  { id: 'dinner',    label: 'العشاء',  icon: '🌙', color: '#6366F1', bg: '#EEF2FF', border: '#C7D2FE' },
+  { id: 'breakfast', label: 'الإفطار', icon: Coffee,    color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A' },
+  { id: 'lunch',     label: 'الغداء',  icon: ForkKnife, color: '#EF4444', bg: '#FEF2F2', border: '#FCA5A5' },
+  { id: 'dinner',    label: 'العشاء',  icon: Moon,      color: '#6366F1', bg: '#EEF2FF', border: '#C7D2FE' },
 ];
 
 const DAYS = [
@@ -185,7 +186,7 @@ export default function AdminPhases() {
           <p className="text-[11px] font-bold text-[#9D8F85] uppercase tracking-wider">المركز</p>
           {MEALS.map(m => (
             <div key={m.id} className="flex items-center justify-center gap-1.5">
-              <span className="text-sm">{m.icon}</span>
+              <m.icon size={15} weight="duotone" style={{ color: m.color }} />
               <p className="text-[11px] font-bold text-[#9D8F85]">{m.label}</p>
             </div>
           ))}

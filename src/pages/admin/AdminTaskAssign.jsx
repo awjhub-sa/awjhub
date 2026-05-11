@@ -6,6 +6,7 @@ import {
   Rocket, Sparkles, Building2, CheckCircle2, ChevronDown,
   ChevronUp, Clock, AlertCircle, X, Layers,
 } from 'lucide-react';
+import { Coffee, ForkKnife, Moon } from '@phosphor-icons/react';
 
 /* ── Helpers ── */
 function range(s, e) {
@@ -36,9 +37,9 @@ const TASKS = [
 ];
 
 const MEALS = [
-  { key: 'breakfast', label: 'الإفطار', icon: '🌅' },
-  { key: 'lunch',     label: 'الغداء',  icon: '☀️' },
-  { key: 'dinner',    label: 'العشاء',  icon: '🌙' },
+  { key: 'breakfast', label: 'الإفطار', icon: Coffee,    color: '#F59E0B' },
+  { key: 'lunch',     label: 'الغداء',  icon: ForkKnife, color: '#EF4444' },
+  { key: 'dinner',    label: 'العشاء',  icon: Moon,      color: '#6366F1' },
 ];
 
 /* ── Dhu al-Hijjah days ── */
@@ -300,7 +301,7 @@ export default function AdminTaskAssign() {
                                 style={mActive
                                   ? { background: `${t.color}12`, borderColor: t.color, color: t.color }
                                   : { background: '#FAFAF8', borderColor: mealMissing ? '#FCA5A5' : '#EDE5DC', color: '#6D6E71' }}>
-                                <span className="text-lg leading-none">{m.icon}</span>
+                                <m.icon size={20} weight="duotone" style={{ color: mActive ? t.color : m.color }} />
                                 <span className="text-xs font-bold">{m.label}</span>
                               </button>
                             );

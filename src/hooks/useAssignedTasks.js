@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../config/db.js';
+import { Coffee, ForkKnife, Moon } from '@phosphor-icons/react';
 
 export function extractCenterNum(centerStr) {
   return parseInt((centerStr || '').replace(/[^0-9]/g, '')) || 0;
@@ -44,7 +45,7 @@ export function useAssignedTasks(profile) {
 }
 
 export const MEAL_META = {
-  breakfast: { label: 'الإفطار', icon: '🌅', color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A' },
-  lunch:     { label: 'الغداء',  icon: '☀️', color: '#EF4444', bg: '#FEF2F2', border: '#FCA5A5' },
-  dinner:    { label: 'العشاء',  icon: '🌙', color: '#6366F1', bg: '#EEF2FF', border: '#C7D2FE' },
+  breakfast: { label: 'الإفطار', icon: Coffee,    color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A' },
+  lunch:     { label: 'الغداء',  icon: ForkKnife, color: '#EF4444', bg: '#FEF2F2', border: '#FCA5A5' },
+  dinner:    { label: 'العشاء',  icon: Moon,      color: '#6366F1', bg: '#EEF2FF', border: '#C7D2FE' },
 };
