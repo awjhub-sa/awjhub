@@ -5,7 +5,8 @@ import { RequireAuth, RequireAdmin } from './components/PrivateRoute.jsx';
 // Observer pages
 import Login           from './pages/Login';
 import Home            from './pages/Home';
-import Profile         from './pages/Profile'; // ✅ تم إضافة الاستيراد
+import SupervisorHome  from './pages/SupervisorHome'; // 👈 إضافة استيراد شاشة المشرف الجديدة
+import Profile         from './pages/Profile';
 import Mealcheck       from './pages/Mealcheck';
 import Report          from './pages/Report';
 import MinaReadiness   from './pages/MinaReadiness';
@@ -13,21 +14,29 @@ import ArafatReadiness from './pages/ArafatReadiness';
 import LogisticsRequest from './pages/LogisticsRequest';
 
 // Admin pages
-import AdminLayout     from './pages/admin/AdminLayout';
-import AdminDashboard  from './pages/admin/AdminDashboard';
-import AdminReports    from './pages/admin/AdminReports';
-import AdminLogistics  from './pages/admin/AdminLogistics';
-import AdminAnalytics  from './pages/admin/AdminAnalytics';
-import AdminUsers           from './pages/admin/AdminUsers';
+import AdminLayout      from './pages/admin/AdminLayout';
+import AdminDashboard   from './pages/admin/AdminDashboard';
+import AdminReports     from './pages/admin/AdminReports';
+import AdminLogistics   from './pages/admin/AdminLogistics';
+import AdminAnalytics   from './pages/admin/AdminAnalytics';
+import AdminUsers       from './pages/admin/AdminUsers';
 import AdminNotifications from './pages/admin/AdminNotifications';
 import AdminTaskAssign   from './pages/admin/AdminTaskAssign';
 
 /* Root redirect based on role */
 function RootRedirect() {
   const { user, role, loading } = useAuth();
+  
   if (loading) return null;
-  if (!user)            return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/login" replace />;
+  
+  // توجيه الآدمن
   if (role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+  
+  // 👈 توجيه المشرف الميداني
+  if (role === 'supervisor') return <Navigate to="/supervisor-home" replace />;
+  
+  // توجيه المراقب (الافتراضي)
   return <Navigate to="/home" replace />;
 }
 
@@ -41,7 +50,11 @@ export default function App() {
 
         {/* Observer (protected) */}
         <Route path="/home"             element={<RequireAuth><Home /></RequireAuth>} />
-        <Route path="/profile"          element={<RequireAuth><Profile /></RequireAuth>} /> {/* ✅ تمت إضافة المسار */}
+        
+        {/* 👈 مسار المشرف الميداني الجديد */}
+        <Route path="/supervisor-home"  element={<RequireAuth><SupervisorHome /></RequireAuth>} />
+        
+        <Route path="/profile"          element={<RequireAuth><Profile /></RequireAuth>} />
         <Route path="/mealcheck"        element={<RequireAuth><Mealcheck /></RequireAuth>} />
         <Route path="/report"           element={<RequireAuth><Report /></RequireAuth>} />
         <Route path="/mina-readiness"   element={<RequireAuth><MinaReadiness /></RequireAuth>} />
