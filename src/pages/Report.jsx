@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, AlertTriangle, Zap, Image as ImageIcon, Video, Upload, X, CheckCircle2 } from 'lucide-react';
 import { db } from '../config/db.js';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, runTransaction, doc } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getCaterer } from '../config/centers.js';
 
@@ -52,7 +52,9 @@ export default function Report() {
   const [severity, setSeverity] = useState('medium');
   const [imageFile, setImageFile] = useState(null);
   const [videoFile, setVideoFile] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading,     setLoading]     = useState(false);
+  const [reportNum,   setReportNum]   = useState('');
+  const [submitted,   setSubmitted]   = useState(false);
 
   const handleReportChange = (e) => {
     const reportTitle = e.target.value;
@@ -63,12 +65,19 @@ export default function Report() {
 
   const handleSubmit = async () => {
     if (!selectedReport || !description || !imageFile || !videoFile) {
-        alert('الرجاء إكمال كافة المتطلبات (النوع، الوصف، الصورة، والفيديو)');
-        return;
+      alert('الرجاء إكمال كافة المتطلبات (النوع، الوصف، الصورة، والفيديو)');
+      return;
     }
-    
     setLoading(true);
     try {
+      const counterRef = doc(db, 'counters', 'reports');
+      const nextNum = await runTransaction(db, async (tx) => {
+        const snap = await tx.get(counterRef);
+        const n = (snap.exists() ? snap.data().value : 0) + 1;
+        tx.set(counterRef, { value: n });
+        return n;
+      });
+      const reportNumber = `BLG-${String(nextNum).padStart(4, '0')}`;
       await addDoc(collection(db, 'reports'), {
         uid: profile?.uid,
         observer: profile?.nameAr || profile?.name || 'مراقب',
@@ -77,14 +86,40 @@ export default function Report() {
         reportType: selectedReport,
         severity,
         description,
+        reportNumber,
         status: 'pending',
         timestamp: serverTimestamp(),
       });
-      alert('تم إرسال البلاغ لغرفة العمليات');
-      navigate('/home');
+      setReportNum(reportNumber);
+      setSubmitted(true);
     } catch (e) { alert('خطأ في الإرسال'); }
     setLoading(false);
   };
+
+  if (submitted) {
+    return (
+      <div dir="rtl" className="min-h-screen bg-[#FDFCFB] flex items-center justify-center p-6 font-arabic">
+        <div className="w-full max-w-sm text-center space-y-6">
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+            <CheckCircle2 size={40} className="text-green-600" strokeWidth={1.5} />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-[#2D2926] mb-1">تم إرسال البلاغ</h2>
+            <p className="text-sm text-[#9D8F85]">وصل البلاغ لغرفة العمليات بنجاح</p>
+          </div>
+          <div className="bg-[#2D2926] rounded-2xl px-6 py-5 text-center">
+            <p className="text-white/50 text-[11px] font-semibold mb-2 tracking-widest uppercase">رقم البلاغ</p>
+            <p className="text-white text-3xl font-black tracking-wider">{reportNum}</p>
+            <p className="text-white/40 text-[10px] mt-2">احتفظ بهذا الرقم للمتابعة</p>
+          </div>
+          <button onClick={() => navigate('/home')}
+            className="w-full py-4 rounded-2xl bg-[#A98159] text-white font-bold text-base shadow-lg active:scale-95 transition-all">
+            العودة للرئيسية
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-32 font-arabic">

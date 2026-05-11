@@ -4,7 +4,7 @@ import { db } from '../../config/db.js';
 import {
   AlertTriangle, Truck, ClipboardList, Mountain,
   Clock, Trash2, X, ArrowLeft, CheckCircle2,
-  Utensils, Droplets, ChevronDown, Filter,
+  Utensils, Droplets, ChevronDown, Filter, Search,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getCaterer } from '../../config/centers.js';
@@ -125,7 +125,15 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange }) {
 
         <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-[#EDE5DC] px-6 py-4 flex items-center justify-between rounded-t-3xl z-10">
           <div>
-            <p className="font-bold text-[#2D2926] text-base">{label}</p>
+            <div className="flex items-center gap-2">
+              <p className="font-bold text-[#2D2926] text-base">{label}</p>
+              {report.reportNumber && (
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-md"
+                  style={{ background: '#2D292612', color: '#2D2926' }}>
+                  {report.reportNumber}
+                </span>
+              )}
+            </div>
             <p className="text-[11px] text-[#9D8F85] mt-0.5">{timeAgo(report.timestamp)} · {clockTime(report.timestamp)}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -248,7 +256,15 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange }) {
               <CatIcon size={16} className="text-blue-500" strokeWidth={1.75} />
             </div>
             <div>
-              <p className="font-bold text-[#2D2926] text-base">{title}</p>
+              <div className="flex items-center gap-2">
+                <p className="font-bold text-[#2D2926] text-base">{title}</p>
+                {item.requestNumber && (
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-md"
+                    style={{ background: '#3182CE15', color: '#3182CE' }}>
+                    {item.requestNumber}
+                  </span>
+                )}
+              </div>
               <p className="text-[11px] text-[#9D8F85] mt-0.5">{timeAgo(item.timestamp)} · {clockTime(item.timestamp)}</p>
             </div>
           </div>
@@ -354,6 +370,7 @@ export default function AdminDashboard() {
   const [selectedReport,    setSelectedReport]    = useState(null);
   const [selectedLogistics, setSelectedLogistics] = useState(null);
   const [centerFilter,      setCenterFilter]      = useState('');
+  const [searchQuery,       setSearchQuery]       = useState('');
   const [clock,           setClock]           = useState({ hijri: '', time: '' });
 
   /* Live clock */
@@ -503,6 +520,27 @@ export default function AdminDashboard() {
         ))}
       </div>
 
+      {/* ── Search bar ── */}
+      <div className="relative">
+        <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+          <Search size={16} className="text-[#9D8F85]" />
+        </div>
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          placeholder="ابحث برقم البلاغ... (مثال: BLG-0001)"
+          className="w-full bg-white border border-[#EDE5DC] rounded-2xl pr-11 pl-4 py-3.5 text-sm text-[#2D2926] placeholder-[#B5A99E] outline-none focus:border-[#A98159] focus:shadow-[0_0_0_3px_rgba(169,129,89,0.1)] transition-all shadow-[0_2px_8px_rgba(45,41,38,0.06)]"
+          dir="rtl"
+        />
+        {searchQuery && (
+          <button onClick={() => setSearchQuery('')}
+            className="absolute inset-y-0 left-0 flex items-center pl-4 text-[#9D8F85] hover:text-[#2D2926] transition-colors">
+            <X size={14} />
+          </button>
+        )}
+      </div>
+
       {/* ── Field reports ── */}
       <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#EDE5DC]"
@@ -536,19 +574,26 @@ export default function AdminDashboard() {
           </button>
         </div>
 
-        {reports.length === 0 ? (
-          <div className="py-14 text-center">
-            <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <AlertTriangle size={18} className="text-gray-200" strokeWidth={1.5} />
+        {(() => {
+          const q = searchQuery.trim().toLowerCase();
+          const displayed = q
+            ? reports.filter(r => r.reportNumber?.toLowerCase().includes(q))
+            : reports.slice(0, 6);
+          if (displayed.length === 0) return (
+            <div className="py-14 text-center">
+              <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <Search size={18} className="text-gray-200" strokeWidth={1.5} />
+              </div>
+              <p className="text-[#9D8F85] text-sm font-medium">
+                {q ? `لم يتم العثور على بلاغ بالرقم "${searchQuery}"` : 'لا توجد بلاغات بعد'}
+              </p>
             </div>
-            <p className="text-[#9D8F85] text-sm font-medium">لا توجد بلاغات بعد</p>
-          </div>
-        ) : (
-          reports.slice(0, 6).map((r, idx) => {
+          );
+          return displayed.map((r, idx) => {
             const label  = REPORT_TYPE[r.reportType || r.type] || r.reportType || r.type || 'بلاغ';
             const sv     = SEV[r.severity];
             const sb     = STATUS[r.status] || STATUS.pending;
-            const isLast = idx === Math.min(reports.length, 6) - 1;
+            const isLast = idx === displayed.length - 1;
             return (
               <div key={r.id}
                 className={`group flex items-center gap-4 px-6 py-4 hover:bg-[#FDFAF7] transition-colors ${!isLast ? 'border-b border-[#EDE5DC]' : ''}`}>
@@ -558,7 +603,15 @@ export default function AdminDashboard() {
                     <AlertTriangle size={14} className="text-red-400" strokeWidth={1.5} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-[#2D2926] truncate">{label}</p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="text-sm font-semibold text-[#2D2926] truncate">{label}</p>
+                      {r.reportNumber && (
+                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md flex-shrink-0"
+                          style={{ background: '#2D292610', color: '#2D2926' }}>
+                          {r.reportNumber}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[11px] text-[#9D8F85] truncate mt-0.5 font-medium">
                       {r.observer || '—'} · {r.center || '—'}
                     </p>
@@ -590,8 +643,8 @@ export default function AdminDashboard() {
                 </button>
               </div>
             );
-          })
-        )}
+          });
+        })()}
       </div>
 
       {/* ── Logistics requests ── */}
@@ -652,9 +705,17 @@ export default function AdminDashboard() {
                     <CatIcon size={14} className="text-blue-400" strokeWidth={1.5} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-[#2D2926] truncate">
-                      إسناد {CATEGORY_LABEL[item.category] || ''} · {SUPPORT[item.supportType] || ''}
-                    </p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="text-sm font-semibold text-[#2D2926] truncate">
+                        إسناد {CATEGORY_LABEL[item.category] || ''} · {SUPPORT[item.supportType] || ''}
+                      </p>
+                      {item.requestNumber && (
+                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md flex-shrink-0"
+                          style={{ background: '#3182CE12', color: '#3182CE' }}>
+                          {item.requestNumber}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[11px] text-[#9D8F85] truncate mt-0.5 font-medium">
                       {item.observer || '—'} · {item.center || '—'}
                       {qtyParts ? ` · ${qtyParts}` : ''}

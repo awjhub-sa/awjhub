@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, Send, Truck, Package, Utensils, Droplets, User } from 'lucide-react';
+import { ChevronRight, Send, Truck, Package, Utensils, Droplets, User, CheckCircle2 } from 'lucide-react';
 import { db } from '../config/db.js';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, runTransaction, doc } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getCaterer } from '../config/centers.js';
 
@@ -26,8 +26,10 @@ export default function LogisticsRequest() {
   const [qtyInternal, setQtyInternal] = useState('');
   const [qtyExternal, setQtyExternal] = useState('');
   const [notes, setNotes] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [isFormValid, setIsFormValid] = useState(false);
+  const [loading,      setLoading]      = useState(false);
+  const [isFormValid,  setIsFormValid]  = useState(false);
+  const [requestNum,   setRequestNum]   = useState('');
+  const [submitted,    setSubmitted]    = useState(false);
 
   const showInternal = supportType === 'internal' || supportType === 'both';
   const showExternal = supportType === 'external' || supportType === 'both';
@@ -56,9 +58,16 @@ export default function LogisticsRequest() {
 
   const handleSubmit = async () => {
     if (!isFormValid || loading) return;
-    
     setLoading(true);
     try {
+      const counterRef = doc(db, 'counters', 'logistics');
+      const nextNum = await runTransaction(db, async (tx) => {
+        const snap = await tx.get(counterRef);
+        const n = (snap.exists() ? snap.data().value : 0) + 1;
+        tx.set(counterRef, { value: n });
+        return n;
+      });
+      const requestNumber = `ISN-${String(nextNum).padStart(4, '0')}`;
       await addDoc(collection(db, 'logistics_requests'), {
         uid: profile?.uid,
         observer: profile?.nameAr || profile?.name || '—',
@@ -69,16 +78,42 @@ export default function LogisticsRequest() {
         qtyInternal: showInternal ? parseInt(qtyInternal) : null,
         qtyExternal: showExternal ? parseInt(qtyExternal) : null,
         notes,
+        requestNumber,
         timestamp: serverTimestamp(),
         status: 'pending'
       });
-      alert('تم إرسال طلب الإسناد بنجاح');
-      navigate('/home');
-    } catch (e) { 
-      alert('خطأ في الإرسال'); 
+      setRequestNum(requestNumber);
+      setSubmitted(true);
+    } catch (e) {
+      alert('خطأ في الإرسال');
     }
     setLoading(false);
   };
+
+  if (submitted) {
+    return (
+      <div dir="rtl" className="min-h-screen bg-[#FDFCFB] flex items-center justify-center p-6 font-arabic">
+        <div className="w-full max-w-sm text-center space-y-6">
+          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+            <CheckCircle2 size={40} className="text-blue-600" strokeWidth={1.5} />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-[#2D2926] mb-1">تم إرسال الطلب</h2>
+            <p className="text-sm text-[#9D8F85]">وصل طلب الإسناد لغرفة العمليات بنجاح</p>
+          </div>
+          <div className="bg-[#2D2926] rounded-2xl px-6 py-5 text-center">
+            <p className="text-white/50 text-[11px] font-semibold mb-2 tracking-widest uppercase">رقم الطلب</p>
+            <p className="text-white text-3xl font-black tracking-wider">{requestNum}</p>
+            <p className="text-white/40 text-[10px] mt-2">احتفظ بهذا الرقم للمتابعة</p>
+          </div>
+          <button onClick={() => navigate('/home')}
+            className="w-full py-4 rounded-2xl bg-[#1A73E8] text-white font-bold text-base shadow-lg active:scale-95 transition-all">
+            العودة للرئيسية
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-28 font-arabic px-0">
