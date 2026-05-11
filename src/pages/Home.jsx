@@ -6,7 +6,7 @@ import { signOut } from 'firebase/auth';
 import {
   ForkKnife as Utensils, Warning as AlertTriangle, Van as Truck,
   Bell, User, CaretLeft as ChevronLeft, TrendUp as TrendingUp,
-  ClipboardCheck, MapPin, House as HomeIcon, Mountains as Mountain, Buildings as Building2,
+  ClipboardText as ClipboardCheck, MapPin, House as HomeIcon, Mountains as Mountain, Buildings as Building2,
   Package, Clock, SignOut as LogOut,
 } from '@phosphor-icons/react';
 import { motion } from 'framer-motion';
@@ -288,7 +288,7 @@ export default function Home() {
           <div className="space-y-4">
             <div className="flex items-center justify-between px-2">
               <div className="flex items-center gap-2">
-                <ClipboardCheck size={20} className="text-[#A98159]" />
+                <ClipboardText as ClipboardCheck size={20} className="text-[#A98159]" />
                 <span className="text-lg font-black text-[#2D2926]">سجل النشاط اليومي</span>
                 {activities.length > 0 && <span className="bg-[#A98159] text-white text-xs font-bold px-2.5 py-0.5 rounded-full">{activities.length}</span>}
               </div>
