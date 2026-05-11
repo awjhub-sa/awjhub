@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { collection, onSnapshot, deleteDoc, updateDoc, doc } from 'firebase/firestore';
 import { db } from '../../config/db.js';
 import {
   AlertTriangle, Truck, ClipboardList, Mountain,
   Clock, Trash2, X, ArrowLeft, CheckCircle2,
+  Utensils, Droplets, ChevronDown, Filter,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getCaterer } from '../../config/centers.js';
@@ -25,6 +26,7 @@ const REPORT_TYPE = {
 };
 
 const CATEGORY_LABEL = { meals: 'وجبات', water: 'مياه' };
+const CATEGORY_ICON  = { meals: Utensils, water: Droplets };
 
 const SEV = {
   high:   { label: 'عالية',   bg: '#FEF2F2', text: '#DC2626', border: '#FCA5A5' },
@@ -67,6 +69,20 @@ function openImageTab(src) {
   win.document.close();
 }
 
+function getActivityCenter(item) {
+  return item.center || item.centerId || '—';
+}
+function getActivityObserver(item) {
+  return item.observer || item.observerName || '—';
+}
+function getActivityScore(item) {
+  if (item._col === 'meal') {
+    const pct = parseFloat(item.percentage);
+    return isNaN(pct) ? null : parseFloat((pct / 10).toFixed(1));
+  }
+  return null;
+}
+
 /* ─── Stat Card ─── */
 function StatCard({ label, value, icon: Icon, color, sub, onClick }) {
   return (
@@ -100,7 +116,6 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange }) {
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white rounded-3xl w-full max-w-lg max-h-[88vh] overflow-y-auto shadow-2xl ring-1 ring-black/5">
 
-        {/* Modal header */}
         <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-[#EDE5DC] px-6 py-4 flex items-center justify-between rounded-t-3xl z-10">
           <div>
             <p className="font-bold text-[#2D2926] text-base">{label}</p>
@@ -119,7 +134,6 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange }) {
         </div>
 
         <div className="p-6 space-y-4">
-          {/* Severity badge */}
           {sv && (
             <div className="flex gap-2 flex-wrap">
               <span className="px-3 py-1 rounded-lg text-xs font-semibold border"
@@ -129,7 +143,6 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange }) {
             </div>
           )}
 
-          {/* Status selector */}
           <div>
             <p className="text-[11px] font-semibold text-[#9D8F85] mb-2">حالة البلاغ</p>
             <div className="grid grid-cols-3 gap-2">
@@ -150,7 +163,6 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange }) {
             </div>
           </div>
 
-          {/* Info grid */}
           <div className="grid grid-cols-2 gap-2.5">
             {[
               { lbl: 'المراقب',     val: report.observer },
@@ -171,7 +183,6 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange }) {
             </div>
           </div>
 
-          {/* Description */}
           {report.description && (
             <div className="bg-[#FAFAF8] rounded-xl border border-[#EDE5DC] p-4">
               <p className="text-[10px] font-semibold text-[#9D8F85] mb-2">وصف المشكلة</p>
@@ -179,7 +190,6 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange }) {
             </div>
           )}
 
-          {/* Images */}
           {report.images?.length > 0 && (
             <div>
               <p className="text-[10px] font-semibold text-[#9D8F85] mb-2">الصور المرفقة ({report.images.length})</p>
@@ -196,7 +206,6 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange }) {
             </div>
           )}
 
-          {/* Videos */}
           {report.videos?.length > 0 && (
             <div className="bg-[#FAFAF8] rounded-xl border border-[#EDE5DC] p-3.5">
               <p className="text-[10px] font-semibold text-[#9D8F85] mb-2">مقاطع الفيديو ({report.videos.length})</p>
@@ -217,11 +226,14 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange }) {
 /* ══════════════════════════════════════════════════════════ */
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [counts,         setCounts]         = useState({ reports: 0, evals: 0, logistics: 0, mina: 0, arafat: 0 });
-  const [reports,        setReports]        = useState([]);
-  const [otherFeed,      setOtherFeed]      = useState([]);
-  const [selectedReport, setSelectedReport] = useState(null);
-  const [clock,          setClock]          = useState({ hijri: '', time: '' });
+  const [counts,          setCounts]          = useState({ reports: 0, evals: 0, logistics: 0, mina: 0, arafat: 0 });
+  const [reports,         setReports]         = useState([]);
+  const [logisticsFeed,   setLogisticsFeed]   = useState([]);
+  const [pendingLogistics, setPendingLogistics] = useState(0);
+  const [activityFeed,    setActivityFeed]    = useState([]);
+  const [selectedReport,  setSelectedReport]  = useState(null);
+  const [centerFilter,    setCenterFilter]    = useState('');
+  const [clock,           setClock]           = useState({ hijri: '', time: '' });
 
   /* Live clock */
   useEffect(() => {
@@ -250,6 +262,18 @@ export default function AdminDashboard() {
     setSelectedReport(prev => prev?.id === id ? { ...prev, status } : prev);
   };
 
+  /* Change logistics status */
+  const handleLogisticsStatusChange = async (id, status) => {
+    await updateDoc(doc(db, 'logistics_requests', id), { status });
+    setLogisticsFeed(prev => prev.map(i => i.id === id ? { ...i, status } : i));
+  };
+
+  /* Delete logistics */
+  const handleDeleteLogistics = async (id) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذا الطلب؟')) return;
+    await deleteDoc(doc(db, 'logistics_requests', id));
+  };
+
   /* Firestore listeners */
   useEffect(() => {
     const byTime = arr => [...arr].sort((a, b) =>
@@ -262,34 +286,59 @@ export default function AdminDashboard() {
         setCounts(p => ({ ...p, reports: s.size }));
         setReports(byTime(s.docs.map(d => ({ id: d.id, ...d.data() }))));
       }),
-      onSnapshot(collection(db, 'meal_evaluations'), s =>
-        setCounts(p => ({ ...p, evals: s.size }))
-      ),
       onSnapshot(collection(db, 'logistics_requests'), s => {
         setCounts(p => ({ ...p, logistics: s.size }));
-        const items = byTime(s.docs.map(d => ({ id: d.id, ...d.data(), _col: 'logistics' })));
-        setOtherFeed(p => byTime([...p.filter(i => i._col !== 'logistics'), ...items.slice(0, 3)]));
+        const items = byTime(s.docs.map(d => ({ id: d.id, ...d.data() })));
+        setLogisticsFeed(items);
+        setPendingLogistics(items.filter(i => (i.status || 'pending') === 'pending').length);
+      }),
+      onSnapshot(collection(db, 'meal_evaluations'), s => {
+        setCounts(p => ({ ...p, evals: s.size }));
+        const items = byTime(s.docs.map(d => ({ id: d.id, ...d.data(), _col: 'meal' })));
+        setActivityFeed(p => byTime([...p.filter(i => i._col !== 'meal'), ...items]));
       }),
       onSnapshot(collection(db, 'mina_readiness'), s => {
         setCounts(p => ({ ...p, mina: s.size }));
         const items = byTime(s.docs.map(d => ({ id: d.id, ...d.data(), _col: 'mina' })));
-        setOtherFeed(p => byTime([...p.filter(i => i._col !== 'mina'), ...items.slice(0, 3)]));
+        setActivityFeed(p => byTime([...p.filter(i => i._col !== 'mina'), ...items]));
       }),
       onSnapshot(collection(db, 'arafat_readiness'), s => {
         setCounts(p => ({ ...p, arafat: s.size }));
         const items = byTime(s.docs.map(d => ({ id: d.id, ...d.data(), _col: 'arafat' })));
-        setOtherFeed(p => byTime([...p.filter(i => i._col !== 'arafat'), ...items.slice(0, 3)]));
+        setActivityFeed(p => byTime([...p.filter(i => i._col !== 'arafat'), ...items]));
       }),
     ];
     return () => unsubs.forEach(u => u());
   }, []);
 
+  /* Center list for filter — derived from activityFeed */
+  const centerOptions = useMemo(() => {
+    const set = new Set();
+    activityFeed.forEach(i => {
+      const c = getActivityCenter(i);
+      if (c && c !== '—') set.add(c);
+    });
+    return [...set].sort((a, b) => {
+      const na = parseInt(a.replace(/[^0-9]/g, '')) || 0;
+      const nb = parseInt(b.replace(/[^0-9]/g, '')) || 0;
+      return na - nb;
+    });
+  }, [activityFeed]);
+
+  /* Filtered activity feed */
+  const filteredActivity = useMemo(() =>
+    centerFilter
+      ? activityFeed.filter(i => getActivityCenter(i) === centerFilter)
+      : activityFeed,
+    [activityFeed, centerFilter]
+  );
+
   const STATS = [
-    { label: 'البلاغات الميدانية', value: counts.reports,   icon: AlertTriangle, color: '#E53E3E', sub: 'بلاغات نشطة',     nav: '/admin/reports'   },
-    { label: 'التقييمات',           value: counts.evals,     icon: ClipboardList, color: '#A98159', sub: 'جودة الوجبات',    nav: '/admin/analytics' },
-    { label: 'طلبات الإسناد',       value: counts.logistics, icon: Truck,         color: '#3182CE', sub: 'طلبات لوجستية',  nav: '/admin/logistics' },
-    { label: 'جاهزية منى',         value: counts.mina,      icon: Mountain,      color: '#2F855A', sub: 'تقييمات منى',     nav: '/admin/analytics' },
-    { label: 'جاهزية عرفة',        value: counts.arafat,    icon: Mountain,      color: '#0987A0', sub: 'تقييمات عرفة',    nav: '/admin/analytics' },
+    { label: 'البلاغات الميدانية', value: counts.reports,   icon: AlertTriangle, color: '#E53E3E', sub: 'بلاغات نشطة',    nav: '/admin/reports'   },
+    { label: 'التقييمات',           value: counts.evals,     icon: ClipboardList, color: '#A98159', sub: 'جودة الوجبات',   nav: '/admin/analytics' },
+    { label: 'طلبات الإسناد',       value: counts.logistics, icon: Truck,         color: '#3182CE', sub: 'طلبات لوجستية', nav: '/admin/logistics' },
+    { label: 'جاهزية منى',         value: counts.mina,      icon: Mountain,      color: '#2F855A', sub: 'تقييمات منى',    nav: '/admin/analytics' },
+    { label: 'جاهزية عرفة',        value: counts.arafat,    icon: Mountain,      color: '#0987A0', sub: 'تقييمات عرفة',   nav: '/admin/analytics' },
   ];
 
   return (
@@ -302,7 +351,7 @@ export default function AdminDashboard() {
           <p className="text-sm text-[#9D8F85] mt-1 font-medium">مؤشرات الأداء الميداني — موسم الحج ١٤٤٧ هـ</p>
         </div>
 
-        {/* Hijri clock — gold gradient */}
+        {/* Hijri clock */}
         <div className="flex items-stretch rounded-2xl overflow-hidden flex-shrink-0 shadow-[0_4px_20px_rgba(169,129,89,0.35)]"
           style={{ background: 'linear-gradient(135deg, #C4A46E 0%, #A98159 50%, #8B6840 100%)' }}>
           <div className="flex items-center gap-3 px-5 py-3.5">
@@ -331,7 +380,6 @@ export default function AdminDashboard() {
 
       {/* ── Field reports ── */}
       <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#EDE5DC]"
           style={{ background: 'linear-gradient(135deg, #FEF2F2 0%, #fff 55%)' }}>
           <div className="flex items-center gap-3">
@@ -353,7 +401,6 @@ export default function AdminDashboard() {
           </button>
         </div>
 
-        {/* Rows */}
         {reports.length === 0 ? (
           <div className="py-14 text-center">
             <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
@@ -363,15 +410,13 @@ export default function AdminDashboard() {
           </div>
         ) : (
           reports.slice(0, 6).map((r, idx) => {
-            const label = REPORT_TYPE[r.reportType || r.type] || r.reportType || r.type || 'بلاغ';
-            const sv    = SEV[r.severity];
-            const sb    = STATUS[r.status] || STATUS.pending;
+            const label  = REPORT_TYPE[r.reportType || r.type] || r.reportType || r.type || 'بلاغ';
+            const sv     = SEV[r.severity];
+            const sb     = STATUS[r.status] || STATUS.pending;
             const isLast = idx === Math.min(reports.length, 6) - 1;
             return (
               <div key={r.id}
                 className={`group flex items-center gap-4 px-6 py-4 hover:bg-[#FDFAF7] transition-colors ${!isLast ? 'border-b border-[#EDE5DC]' : ''}`}>
-                {/* Clickable area */}
-                {/* Clickable info area */}
                 <button onClick={() => setSelectedReport(r)}
                   className="flex items-center gap-4 flex-1 text-right min-w-0">
                   <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
@@ -383,20 +428,17 @@ export default function AdminDashboard() {
                       {r.observer || '—'} · {r.center || '—'}
                     </p>
                   </div>
-                  {/* Severity badge */}
                   {sv && (
                     <span className="hidden sm:inline-flex px-2 py-0.5 rounded-lg text-[11px] font-semibold border flex-shrink-0"
                       style={{ background: sv.bg, borderColor: sv.border, color: sv.text }}>
                       {sv.label}
                     </span>
                   )}
-                  {/* Time */}
                   <div className="flex-shrink-0 text-left space-y-0.5">
                     <p className="text-[11px] text-[#9D8F85] font-medium">{timeAgo(r.timestamp)}</p>
                     <p className="text-[11px] font-bold text-[#A98159]">{clockTime(r.timestamp)}</p>
                   </div>
                 </button>
-                {/* Status select — inline */}
                 <select
                   value={r.status || 'pending'}
                   onChange={e => { e.stopPropagation(); handleStatusChange(r.id, e.target.value); }}
@@ -407,7 +449,6 @@ export default function AdminDashboard() {
                     <option key={k} value={k}>{s.label}</option>
                   )}
                 </select>
-                {/* Delete */}
                 <button onClick={() => handleDeleteReport(r.id)}
                   className="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-xl hover:bg-red-50 flex items-center justify-center text-[#C9B8A8] hover:text-red-500 transition-all flex-shrink-0">
                   <Trash2 size={13} strokeWidth={1.5} />
@@ -418,78 +459,191 @@ export default function AdminDashboard() {
         )}
       </div>
 
-      {/* ── Other field activities ── */}
-      {otherFeed.length > 0 && (
-        <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center gap-3 px-6 py-4 border-b border-[#EDE5DC]"
-            style={{ background: 'linear-gradient(135deg, #FDF8F0 0%, #fff 55%)' }}>
+      {/* ── Logistics requests ── */}
+      <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#EDE5DC]"
+          style={{ background: 'linear-gradient(135deg, #EFF6FF 0%, #fff 55%)' }}>
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+                style={{ background: 'linear-gradient(135deg, #60A5FA, #3B82F6)' }}>
+                <Truck size={16} className="text-white" strokeWidth={2} />
+              </div>
+              {pendingLogistics > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-md animate-pulse">
+                  {pendingLogistics}
+                </span>
+              )}
+            </div>
+            <div>
+              <h2 className="font-bold text-[#2D2926] text-sm">طلبات الإسناد</h2>
+              <p className="text-[11px] text-[#9D8F85] mt-0.5 font-medium">
+                {counts.logistics} طلب إجمالاً
+                {pendingLogistics > 0 && (
+                  <span className="text-red-500 font-bold"> · {pendingLogistics} قيد الانتظار</span>
+                )}
+              </p>
+            </div>
+          </div>
+          <button onClick={() => navigate('/admin/logistics')}
+            className="flex items-center gap-1.5 text-xs font-bold text-blue-500 hover:text-blue-700 transition-colors bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg">
+            عرض الكل
+            <ArrowLeft size={12} strokeWidth={2} />
+          </button>
+        </div>
+
+        {logisticsFeed.length === 0 ? (
+          <div className="py-14 text-center">
+            <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <Truck size={18} className="text-gray-200" strokeWidth={1.5} />
+            </div>
+            <p className="text-[#9D8F85] text-sm font-medium">لا توجد طلبات إسناد بعد</p>
+          </div>
+        ) : (
+          logisticsFeed.slice(0, 6).map((item, idx) => {
+            const sb       = STATUS[item.status] || STATUS.pending;
+            const CatIcon  = CATEGORY_ICON[item.category] || Truck;
+            const isLast   = idx === Math.min(logisticsFeed.length, 6) - 1;
+            const qtyParts = [
+              item.qtyInternal ? `${item.qtyInternal} داخلي` : null,
+              item.qtyExternal ? `${item.qtyExternal} خارجي` : null,
+            ].filter(Boolean).join(' · ');
+            return (
+              <div key={item.id}
+                className={`group flex items-center gap-4 px-6 py-4 hover:bg-[#F8FBFF] transition-colors ${!isLast ? 'border-b border-[#EDE5DC]' : ''}`}>
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+                    <CatIcon size={14} className="text-blue-400" strokeWidth={1.5} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-[#2D2926] truncate">
+                      إسناد {CATEGORY_LABEL[item.category] || ''} · {SUPPORT[item.supportType] || ''}
+                    </p>
+                    <p className="text-[11px] text-[#9D8F85] truncate mt-0.5 font-medium">
+                      {item.observer || '—'} · {item.center || '—'}
+                      {qtyParts ? ` · ${qtyParts}` : ''}
+                    </p>
+                  </div>
+                  <div className="flex-shrink-0 text-left space-y-0.5">
+                    <p className="text-[11px] text-[#9D8F85] font-medium">{timeAgo(item.timestamp)}</p>
+                    <p className="text-[11px] font-bold text-[#3182CE]">{clockTime(item.timestamp)}</p>
+                  </div>
+                </div>
+                <select
+                  value={item.status || 'pending'}
+                  onChange={e => handleLogisticsStatusChange(item.id, e.target.value)}
+                  className="text-[11px] font-bold border rounded-xl px-2 py-1.5 outline-none cursor-pointer flex-shrink-0 transition-all"
+                  style={{ background: sb.bg, borderColor: sb.border, color: sb.text }}>
+                  {Object.entries(STATUS).map(([k, s]) =>
+                    <option key={k} value={k}>{s.label}</option>
+                  )}
+                </select>
+                <button onClick={() => handleDeleteLogistics(item.id)}
+                  className="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-xl hover:bg-red-50 flex items-center justify-center text-[#C9B8A8] hover:text-red-500 transition-all flex-shrink-0">
+                  <Trash2 size={13} strokeWidth={1.5} />
+                </button>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* ── Field activities (evals + readiness) ── */}
+      <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#EDE5DC]"
+          style={{ background: 'linear-gradient(135deg, #FDF8F0 0%, #fff 55%)' }}>
+          <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center"
               style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
               <ClipboardList size={16} className="text-white" strokeWidth={2} />
             </div>
             <div>
               <h2 className="font-bold text-[#2D2926] text-sm">النشاطات الميدانية</h2>
-              <p className="text-[11px] text-[#9D8F85] mt-0.5 font-medium">تقييمات وطلبات إسناد حديثة</p>
+              <p className="text-[11px] text-[#9D8F85] mt-0.5 font-medium">
+                تقييمات الوجبات وجاهزية المشاعر
+              </p>
             </div>
           </div>
 
-          {/* Rows */}
-          {otherFeed.slice(0, 6).map((item, i) => {
-            const isLogistics = item._col === 'logistics';
-            const isMina      = item._col === 'mina';
-            const isReadiness = !isLogistics;
+          {/* Center filter */}
+          {centerOptions.length > 0 && (
+            <div className="relative flex-shrink-0">
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none">
+                <Filter size={11} className="text-[#A98159]" />
+              </div>
+              <select
+                value={centerFilter}
+                onChange={e => setCenterFilter(e.target.value)}
+                className="appearance-none text-[11px] font-bold border border-[#D9CEBC] rounded-xl pl-6 pr-7 py-1.5 outline-none cursor-pointer transition-all bg-[#FDF8F0] text-[#2D2926] hover:border-[#A98159] focus:border-[#A98159]"
+              >
+                <option value="">جميع المراكز</option>
+                {centerOptions.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
+                <ChevronDown size={11} className="text-[#9D8F85]" />
+              </div>
+            </div>
+          )}
+        </div>
 
-            const score = item.scoreOutOf10 ?? (
-              item.maxScore > 0
-                ? parseFloat(((item.totalScore / item.maxScore) * 10).toFixed(1))
-                : null
-            );
+        {/* Rows */}
+        {filteredActivity.length === 0 ? (
+          <div className="py-14 text-center">
+            <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <ClipboardList size={18} className="text-gray-200" strokeWidth={1.5} />
+            </div>
+            <p className="text-[#9D8F85] text-sm font-medium">
+              {centerFilter ? `لا توجد نشاطات لـ ${centerFilter}` : 'لا توجد نشاطات بعد'}
+            </p>
+          </div>
+        ) : (
+          filteredActivity.slice(0, 8).map((item, i) => {
+            const isMina  = item._col === 'mina';
+            const isMeal  = item._col === 'meal';
+            const center  = getActivityCenter(item);
+            const observer = getActivityObserver(item);
+            const score   = getActivityScore(item);
             const scoreSt = score == null ? null
               : score >= 8 ? { bg: '#F0FDF4', text: '#15803D', border: '#86EFAC' }
               : score >= 5 ? { bg: '#FFFBEB', text: '#B45309', border: '#FCD34D' }
               :              { bg: '#FEF2F2', text: '#DC2626', border: '#FCA5A5' };
-
-            const isLast = i === Math.min(otherFeed.length, 6) - 1;
+            const isLast  = i === Math.min(filteredActivity.length, 8) - 1;
 
             return (
-              <button key={i}
-                onClick={() => navigate(isLogistics ? '/admin/logistics' : '/admin/analytics')}
+              <button key={`${item._col}-${item.id}`}
+                onClick={() => navigate('/admin/analytics')}
                 className={`w-full flex items-center gap-4 px-6 py-4 hover:bg-[#FDFAF7] transition-colors text-right ${!isLast ? 'border-b border-[#EDE5DC]' : ''}`}>
-                {/* Icon */}
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                  isLogistics ? 'bg-blue-50' : isMina ? 'bg-green-50' : 'bg-cyan-50'
+                  isMeal ? 'bg-amber-50' : isMina ? 'bg-green-50' : 'bg-cyan-50'
                 }`}>
-                  {isLogistics
-                    ? <Truck    size={14} className="text-blue-400"  strokeWidth={1.5} />
+                  {isMeal
+                    ? <Utensils size={14} className="text-amber-500" strokeWidth={1.5} />
                     : <Mountain size={14} className={isMina ? 'text-green-500' : 'text-cyan-500'} strokeWidth={1.5} />
                   }
                 </div>
-                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-[#2D2926] truncate">
-                    {isLogistics
-                      ? `طلب إسناد ${CATEGORY_LABEL[item.category] || ''} ${SUPPORT[item.supportType] ? `· ${SUPPORT[item.supportType]}` : ''}`.trim()
-                      : isMina ? 'جاهزية مشعر منى' : 'جاهزية مشعر عرفة'}
+                    {isMeal ? 'تقييم جودة الوجبات' : isMina ? 'جاهزية مشعر منى' : 'جاهزية مشعر عرفة'}
                   </p>
                   <p className="text-[11px] text-[#9D8F85] truncate mt-0.5 font-medium">
-                    {item.observer || '—'} · {item.center || '—'}
+                    {observer} · {center}
                   </p>
                 </div>
-                {/* Score badge */}
-                {isReadiness && scoreSt && score != null && (
+                {scoreSt && score != null && (
                   <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold border flex-shrink-0"
                     style={{ background: scoreSt.bg, color: scoreSt.text, borderColor: scoreSt.border }}>
                     {score.toFixed(1)} / 10
                   </span>
                 )}
-                {/* Time */}
                 <p className="text-[11px] text-[#9D8F85] flex-shrink-0 font-medium">{timeAgo(item.timestamp)}</p>
               </button>
             );
-          })}
-        </div>
-      )}
+          })
+        )}
+      </div>
 
       {/* Detail modal */}
       {selectedReport && (
