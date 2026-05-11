@@ -1,55 +1,85 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
 import { RequireAuth, RequireAdmin } from './components/PrivateRoute.jsx';
+import React from 'react';
 
-// Observer pages
+// صفحات المراقب (Observer)
 import Login           from './pages/Login';
 import Home            from './pages/Home';
-import Profile         from './pages/Profile'; // ✅ تم إضافة الاستيراد
+import Profile         from './pages/Profile';
 import Mealcheck       from './pages/Mealcheck';
 import Report          from './pages/Report';
 import MinaReadiness   from './pages/MinaReadiness';
 import ArafatReadiness from './pages/ArafatReadiness';
 import LogisticsRequest from './pages/LogisticsRequest';
 
-// Admin pages
-import AdminLayout     from './pages/admin/AdminLayout';
-import AdminDashboard  from './pages/admin/AdminDashboard';
-import AdminReports    from './pages/admin/AdminReports';
-import AdminLogistics  from './pages/admin/AdminLogistics';
-import AdminAnalytics  from './pages/admin/AdminAnalytics';
-import AdminUsers           from './pages/admin/AdminUsers';
-import AdminNotifications from './pages/admin/AdminNotifications';
-import AdminTaskAssign   from './pages/admin/AdminTaskAssign';
-import AdminPhases       from './pages/admin/AdminPhases';
+// صفحات المشرف (Supervisor)
+import SupervisorHome      from './pages/Supervisor/SupervisorHome';
+import SupMinaReadiness    from './pages/Supervisor/SupMinaReadiness';
+import SupArafatReadiness  from './pages/Supervisor/SupArafatReadiness';
+import SupMealcheck        from './pages/Supervisor/SupMealcheck';
+import SupReport           from './pages/Supervisor/SupReport';
+import SupLogisticsRequest from './pages/Supervisor/SupLogisticsRequest';
 
-/* Root redirect based on role */
+// صفحات المسؤول (Admin)
+import AdminLayout         from './pages/admin/AdminLayout';
+import AdminDashboard      from './pages/admin/AdminDashboard';
+import AdminReports        from './pages/admin/AdminReports';
+import AdminLogistics      from './pages/admin/AdminLogistics';
+import AdminAnalytics      from './pages/admin/AdminAnalytics';
+import AdminUsers          from './pages/admin/AdminUsers';
+import AdminNotifications  from './pages/admin/AdminNotifications';
+import AdminTaskAssign     from './pages/admin/AdminTaskAssign';
+
+// شاشة تحميل بسيطة مطابقة لهوية التطبيق
+const FullPageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-[#FDFCFB]">
+    <div className="w-10 h-10 border-4 border-[#A98159]/30 border-t-[#A98159] rounded-full animate-spin" />
+  </div>
+);
+
 function RootRedirect() {
   const { user, role, loading } = useAuth();
-  if (loading) return null;
-  if (!user)            return <Navigate to="/login" replace />;
+  
+  if (loading) return <FullPageLoader />;
+  if (!user) return <Navigate to="/login" replace />;
+  
   if (role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+  if (role === 'supervisor') return <Navigate to="/supervisor-home" replace />;
   return <Navigate to="/home" replace />;
 }
+
+const PublicRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  if (loading) return <FullPageLoader />;
+  return !user ? children : <RootRedirect />;
+};
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public */}
-        <Route path="/"      element={<RootRedirect />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<RootRedirect />} />
+        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
 
-        {/* Observer (protected) */}
+        {/* Observer Routes */}
         <Route path="/home"             element={<RequireAuth><Home /></RequireAuth>} />
-        <Route path="/profile"          element={<RequireAuth><Profile /></RequireAuth>} /> {/* ✅ تمت إضافة المسار */}
+        <Route path="/profile"          element={<RequireAuth><Profile /></RequireAuth>} />
         <Route path="/mealcheck"        element={<RequireAuth><Mealcheck /></RequireAuth>} />
         <Route path="/report"           element={<RequireAuth><Report /></RequireAuth>} />
         <Route path="/mina-readiness"   element={<RequireAuth><MinaReadiness /></RequireAuth>} />
         <Route path="/arafat-readiness" element={<RequireAuth><ArafatReadiness /></RequireAuth>} />
         <Route path="/logistics"        element={<RequireAuth><LogisticsRequest /></RequireAuth>} />
+
+        {/* Supervisor Routes */}
+        <Route path="/supervisor-home"      element={<RequireAuth><SupervisorHome /></RequireAuth>} />
+        <Route path="/sup-mina-readiness"   element={<RequireAuth><SupMinaReadiness /></RequireAuth>} />
+        <Route path="/sup-arafat-readiness" element={<RequireAuth><SupArafatReadiness /></RequireAuth>} />
+        <Route path="/sup-mealcheck"        element={<RequireAuth><SupMealcheck /></RequireAuth>} />
+        <Route path="/sup-report"           element={<RequireAuth><SupReport /></RequireAuth>} />
+        <Route path="/sup-logistics"        element={<RequireAuth><SupLogisticsRequest /></RequireAuth>} />
         
-        {/* Admin (protected — admin role only) */}
+        {/* Admin Routes */}
         <Route path="/admin" element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
           <Route index                element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard"     element={<AdminDashboard />} />
@@ -62,7 +92,6 @@ export default function App() {
           <Route path="phases"        element={<AdminPhases />} />
         </Route>
 
-        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
