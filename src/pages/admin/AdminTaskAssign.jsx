@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { collection, addDoc, onSnapshot, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc, onSnapshot, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { db } from '../../config/db.js';
 import {
   Target, ChefHat, Tent, Compass, Earth, CalendarCheck,
   Rocket, Sparkles, Building2, CheckCircle2, ChevronDown,
-  ChevronUp, Clock, AlertCircle, X, Layers, Search,
+  ChevronUp, Clock, AlertCircle, X, Layers, Search, Trash2,
 } from 'lucide-react';
 import { Coffee, ForkKnife, Moon } from '@phosphor-icons/react';
 import { CENTERS } from '../../config/centers.js';
@@ -71,8 +71,13 @@ function toggle(arr, val) {
 
 /* ── History card ── */
 function AssignmentCard({ item }) {
-  const [open, setOpen] = useState(false);
-  const natLabels   = item.target_nationalities?.map(k => NAT_LABEL[k] || k).join('، ') || '—';
+  const [open,      setOpen]      = useState(false);
+  const [confirm,   setConfirm]   = useState(false);
+  const [deleting,  setDeleting]  = useState(false);
+
+  const natLabels   = item.target_nationalities?.length
+    ? item.target_nationalities.map(k => NAT_LABEL[k] || k).join('، ')
+    : null;
   const taskLabels  = item.task_types?.map(k => TASK_LABEL[k] || k).join(' + ') || '—';
   const centerCount = item.target_centers?.length ?? 0;
 
@@ -81,6 +86,13 @@ function AssignmentCard({ item }) {
         ? new Date(item.scheduled_date.toDate()).toLocaleDateString('ar-SA', { dateStyle: 'long' })
         : String(item.scheduled_date))
     : '—';
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    await deleteDoc(doc(db, 'assigned_tasks', item.id)).catch(() => {});
+    setDeleting(false);
+    setConfirm(false);
+  };
 
   return (
     <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_10px_rgba(45,41,38,0.06)] overflow-hidden">
@@ -92,9 +104,14 @@ function AssignmentCard({ item }) {
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-[#2D2926] truncate">{taskLabels}</p>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-            <span className="flex items-center gap-1 text-[11px] text-[#6D6E71]">
-              <Earth size={10} strokeWidth={1.5} /> {natLabels}
-            </span>
+            {natLabels
+              ? <span className="flex items-center gap-1 text-[11px] text-[#6D6E71]">
+                  <Earth size={10} strokeWidth={1.5} /> {natLabels}
+                </span>
+              : <span className="flex items-center gap-1 text-[11px] text-[#6D6E71]">
+                  <Building2 size={10} strokeWidth={1.5} /> مراكز محددة
+                </span>
+            }
             <span className="text-[#C9B8A8]">·</span>
             <span className="flex items-center gap-1 text-[11px] text-[#6D6E71]">
               <Building2 size={10} strokeWidth={1.5} /> {centerCount} مركز
@@ -113,13 +130,43 @@ function AssignmentCard({ item }) {
             <Clock size={9} strokeWidth={1.5} />
             {fullDate(item.created_at)}
           </div>
-          <button onClick={() => setOpen(p => !p)}
-            className="flex items-center gap-0.5 text-[10px] font-bold text-[#A98159]">
-            {open ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-            {open ? 'إخفاء' : 'تفاصيل'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setOpen(p => !p)}
+              className="flex items-center gap-0.5 text-[10px] font-bold text-[#A98159]">
+              {open ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+              {open ? 'إخفاء' : 'تفاصيل'}
+            </button>
+            <span className="text-[#D9CEBC]">|</span>
+            <button onClick={() => setConfirm(true)}
+              className="flex items-center gap-0.5 text-[10px] font-bold text-red-400 hover:text-red-600 transition-colors">
+              <Trash2 size={11} strokeWidth={2} />
+              حذف
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Confirm delete bar */}
+      {confirm && (
+        <div className="border-t border-red-100 bg-red-50 px-5 py-3 flex items-center justify-between gap-3">
+          <p className="text-xs font-semibold text-red-600">
+            سيختفي الإسناد فوراً من عند المراقبين. تأكيد الحذف؟
+          </p>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button onClick={() => setConfirm(false)}
+              className="text-[11px] font-bold text-[#6D6E71] hover:text-[#2D2926] px-2.5 py-1 rounded-lg border border-[#D9CEBC] bg-white transition-colors">
+              إلغاء
+            </button>
+            <button onClick={handleDelete} disabled={deleting}
+              className="text-[11px] font-bold text-white px-3 py-1 rounded-lg bg-red-500 hover:bg-red-600 disabled:opacity-60 transition-colors flex items-center gap-1.5">
+              {deleting
+                ? <span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                : <Trash2 size={11} strokeWidth={2} />}
+              {deleting ? 'جارٍ الحذف...' : 'تأكيد الحذف'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {open && (
         <div className="border-t border-[#EDE5DC] bg-[#FDFCFB] px-5 py-3.5 space-y-2.5">
