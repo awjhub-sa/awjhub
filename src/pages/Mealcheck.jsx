@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Utensils, ChevronRight, Save, CheckCircle2, AlertCircle, Camera, Lock, ArrowLeft } from 'lucide-react';
+import { Utensils, ChevronRight, Save, CheckCircle2, AlertCircle, Camera, Lock, ArrowLeft, RotateCcw } from 'lucide-react';
 import { db } from '../config/db.js';
 import { collection, addDoc, serverTimestamp, setDoc, doc } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -52,20 +52,67 @@ const QUESTIONS = [
   { id: 35, text: "هل يتم الالتزام بالوزن المحدد للمكونات داخل الوجبة؟",                                 category: "إجراءات إضافية",        score: 0.25 },
 ];
 
+const STORAGE_KEY = uid => `mealcheck_progress_${uid}`;
+
 export default function Mealcheck() {
   const navigate = useNavigate();
   const { profile } = useAuth();
 
-  /* ── Screen state ── */
-  const [screen,  setScreen]  = useState('phases'); // 'phases' | 'questions'
+  /* ── Screen ── */
+  const [screen, setScreen] = useState('phases');
 
-  /* ── Phase photos ── */
-  const [phasePhotos, setPhasePhotos] = useState({ 1: null, 2: null, 3: null });
+  /* ── Phase state — phaseDone tracks completion, phasePhotos holds the File ── */
+  const [phaseDone,   setPhaseDone]   = useState({ 1: false, 2: false, 3: false });
+  const [phasePhotos, setPhasePhotos] = useState({ 1: null,  2: null,  3: null  });
   const fileRefs = [useRef(null), useRef(null), useRef(null)];
 
+  /* ── Questions ── */
+  const [answers, setAnswers] = useState({});
+  const [loading, setLoading] = useState(false);
+
+  /* ── Restored banner ── */
+  const [restored, setRestored] = useState(false);
+
+  /* ── Load saved progress on mount ── */
+  useEffect(() => {
+    const uid = profile?.uid;
+    if (!uid) return;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY(uid));
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      const hasPhases  = Object.values(data.phaseDone  || {}).some(Boolean);
+      const hasAnswers = Object.keys(data.answers || {}).length > 0;
+      if (!hasPhases && !hasAnswers) return;
+      if (data.phaseDone) setPhaseDone(data.phaseDone);
+      if (data.answers)   setAnswers(data.answers);
+      if (data.screen)    setScreen(data.screen);
+      setRestored(true);
+    } catch {}
+  }, [profile?.uid]);
+
+  /* ── Auto-save whenever progress changes ── */
+  useEffect(() => {
+    const uid = profile?.uid;
+    if (!uid) return;
+    localStorage.setItem(STORAGE_KEY(uid), JSON.stringify({ screen, answers, phaseDone }));
+  }, [screen, answers, phaseDone, profile?.uid]);
+
+  /* ── Clear progress ── */
+  const clearProgress = () => {
+    localStorage.removeItem(STORAGE_KEY(profile?.uid));
+    setScreen('phases');
+    setPhaseDone({ 1: false, 2: false, 3: false });
+    setPhasePhotos({ 1: null,  2: null,  3: null  });
+    setAnswers({});
+    setRestored(false);
+  };
+
+  /* ── Photo upload ── */
   const handlePhotoChange = async (id, file) => {
     if (!file) return;
     setPhasePhotos(prev => ({ ...prev, [id]: file }));
+    setPhaseDone(prev  => ({ ...prev, [id]: true  }));
     const center = profile?.center;
     if (center) {
       try {
@@ -80,11 +127,7 @@ export default function Mealcheck() {
     }
   };
 
-  const allPhasesComplete = phasePhotos[1] && phasePhotos[2] && phasePhotos[3];
-
-  /* ── Questions ── */
-  const [answers, setAnswers] = useState({});
-  const [loading, setLoading] = useState(false);
+  const allPhasesComplete = phaseDone[1] && phaseDone[2] && phaseDone[3];
 
   const handleAnswer = (id, val) => setAnswers(prev => ({ ...prev, [id]: val }));
 
@@ -109,6 +152,7 @@ export default function Mealcheck() {
         status: 'pending',
         timestamp: serverTimestamp(),
       });
+      localStorage.removeItem(STORAGE_KEY(profile?.uid));
       alert('تم إرسال التقييم بنجاح');
       navigate('/home');
     } catch { alert('حدث خطأ أثناء الإرسال'); }
@@ -119,12 +163,11 @@ export default function Mealcheck() {
      PHASES SCREEN
   ════════════════════════════════════════════ */
   if (screen === 'phases') {
-    const completedCount = [1, 2, 3].filter(id => phasePhotos[id]).length;
+    const completedCount = [1, 2, 3].filter(id => phaseDone[id]).length;
 
     return (
       <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-32 font-arabic">
 
-        {/* Header */}
         <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 md:px-8 py-3 mb-6 shadow-sm">
           <div className="max-w-xl mx-auto flex items-center justify-between">
             <button onClick={() => navigate('/home')} className="p-2 hover:bg-gray-100 rounded-xl transition shrink-0">
@@ -137,7 +180,21 @@ export default function Mealcheck() {
           </div>
         </header>
 
-        <div className="max-w-xl mx-auto px-4 space-y-5">
+        <div className="max-w-xl mx-auto px-4 space-y-4">
+
+          {/* Restored progress banner */}
+          {restored && (
+            <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3">
+              <RotateCcw size={15} className="text-blue-500 flex-shrink-0" strokeWidth={2} />
+              <p className="text-blue-700 text-[12px] font-bold flex-1">تم استعادة تقدمك من الجلسة السابقة</p>
+              <button
+                onClick={clearProgress}
+                className="text-blue-400 hover:text-blue-600 text-[11px] font-bold underline flex-shrink-0 transition-colors"
+              >
+                مسح
+              </button>
+            </div>
+          )}
 
           {/* Info card */}
           <div className="rounded-[2rem] p-6 text-white bg-[#2D2926] shadow-lg">
@@ -183,8 +240,9 @@ export default function Mealcheck() {
           {/* Phase cards */}
           <div className="space-y-3">
             {PHASES.map((phase, idx) => {
-              const isUnlocked = idx === 0 || phasePhotos[idx]; // phase idx starts 0, ids start 1
-              const isDone     = !!phasePhotos[phase.id];
+              const isUnlocked = idx === 0 || phaseDone[idx];
+              const isDone     = phaseDone[phase.id];
+              const isRestored = isDone && !phasePhotos[phase.id];
               const ref        = fileRefs[idx];
 
               return (
@@ -197,18 +255,17 @@ export default function Mealcheck() {
                         : 'border-[#EDE8E3] opacity-50'
                   }`}>
 
-                  {/* Hidden file input */}
                   <input
                     ref={ref}
                     type="file"
                     accept="image/*"
+                    capture="environment"
                     className="hidden"
                     disabled={!isUnlocked}
                     onChange={e => handlePhotoChange(phase.id, e.target.files[0])}
                   />
 
                   <div className="flex items-center gap-4">
-                    {/* Step number / status icon */}
                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
                       isDone
                         ? 'bg-green-100'
@@ -225,7 +282,6 @@ export default function Mealcheck() {
                       )}
                     </div>
 
-                    {/* Text */}
                     <div className="flex-1 min-w-0">
                       <p className={`font-bold text-sm ${isDone ? 'text-green-700' : isUnlocked ? 'text-[#2D2926]' : 'text-gray-400'}`}>
                         {phase.label}
@@ -233,7 +289,10 @@ export default function Mealcheck() {
                       {isDone ? (
                         <p className="text-[11px] text-green-600 font-semibold mt-0.5 flex items-center gap-1">
                           <CheckCircle2 size={11} strokeWidth={2.5} />
-                          تم رفع الصورة — {phasePhotos[phase.id].name}
+                          {isRestored
+                            ? 'تم توثيق هذه المرحلة في جلسة سابقة'
+                            : `تم رفع الصورة — ${phasePhotos[phase.id]?.name}`
+                          }
                         </p>
                       ) : (
                         <p className="text-[11px] text-[#9D8F85] mt-0.5">
@@ -242,7 +301,6 @@ export default function Mealcheck() {
                       )}
                     </div>
 
-                    {/* Upload button */}
                     {isUnlocked && (
                       <button
                         onClick={() => ref.current?.click()}
@@ -293,6 +351,8 @@ export default function Mealcheck() {
   /* ════════════════════════════════════════════
      QUESTIONS SCREEN
   ════════════════════════════════════════════ */
+  const answeredCount = Object.keys(answers).length;
+
   return (
     <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-32 font-arabic">
       <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 md:px-8 py-3 mb-6 shadow-sm">
@@ -306,6 +366,17 @@ export default function Mealcheck() {
       </header>
 
       <div className="max-w-4xl mx-auto px-4 space-y-6">
+
+        {/* Resumed progress notice in questions screen */}
+        {restored && answeredCount > 0 && (
+          <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3">
+            <RotateCcw size={14} className="text-blue-500 flex-shrink-0" strokeWidth={2} />
+            <p className="text-blue-700 text-[12px] font-bold">
+              تم استعادة {answeredCount} إجابة محفوظة — يمكنك الاستكمال من حيث توقفت
+            </p>
+          </div>
+        )}
+
         <div className="rounded-[2.5rem] p-6 my-6 text-white shadow-lg relative overflow-hidden bg-[#2D2926]">
           <div className="flex justify-between items-center mb-6 relative z-10">
             <div className="flex items-center gap-3">
@@ -359,7 +430,7 @@ export default function Mealcheck() {
                     <div className="flex-grow border-t border-[#D1C4B9]"></div>
                   </div>
                 )}
-                <div className="bg-white border border-[#D1C4B9] p-6 rounded-3xl shadow-sm">
+                <div className={`bg-white border p-6 rounded-3xl shadow-sm transition-all ${answers[q.id] ? 'border-[#A98159]/30' : 'border-[#D1C4B9]'}`}>
                   <span className="text-[#A98159] font-bold text-sm block mb-2">#{q.id}</span>
                   <p className="text-[#2D2926] font-bold text-base mb-6 leading-relaxed">{q.text}</p>
                   <div className="flex gap-3">
@@ -383,15 +454,15 @@ export default function Mealcheck() {
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-2 px-1">
             <span className="text-[11px] text-[#9D8F85] font-semibold">
-              {Object.keys(answers).length} / {QUESTIONS.length} سؤال
+              {answeredCount} / {QUESTIONS.length} سؤال
             </span>
             <span className="text-[11px] text-[#A98159] font-bold">
-              {Math.round((Object.keys(answers).length / QUESTIONS.length) * 100)}%
+              {Math.round((answeredCount / QUESTIONS.length) * 100)}%
             </span>
           </div>
           <div className="h-1.5 bg-gray-100 rounded-full mb-3 overflow-hidden">
             <div className="h-full bg-[#A98159] rounded-full transition-all duration-300"
-              style={{ width: `${(Object.keys(answers).length / QUESTIONS.length) * 100}%` }} />
+              style={{ width: `${(answeredCount / QUESTIONS.length) * 100}%` }} />
           </div>
           <button onClick={handleSubmit} disabled={loading}
             className="w-full bg-[#A98159] text-white py-4 rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-3 active:scale-95 transition-all disabled:bg-gray-400">
