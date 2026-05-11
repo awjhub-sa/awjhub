@@ -5,7 +5,7 @@ import {
   Truck, Package, ChevronDown, ChevronUp,
   Pencil, Trash2, X, Save, User, Building2, Clock,
 } from 'lucide-react';
-import { getCaterer } from '../../config/centers.js';
+import { getCaterer, getShakhis, getLocation } from '../../config/centers.js';
 
 /* ── constants ── */
 const STATUS_OPTIONS = [
@@ -383,6 +383,28 @@ export default function AdminLogistics() {
                         {r.caterer || getCaterer(r.center) || '—'}
                       </p>
                     </div>
+                    {getShakhis(r.center) && (
+                      <div className="rounded-2xl border px-3 py-2.5"
+                        style={{ background: '#F5F3FF', borderColor: '#7C3AED40' }}>
+                        <p className="text-[#6D6E71] text-[10px] mb-0.5">رقم الشاخص</p>
+                        <p className="font-black text-sm tracking-widest" style={{ color: '#7C3AED' }}>
+                          {getShakhis(r.center)}
+                        </p>
+                      </div>
+                    )}
+                    {getLocation(r.center) && (
+                      <a href={getLocation(r.center)} target="_blank" rel="noopener noreferrer"
+                        className="rounded-2xl border px-3 py-2.5 flex items-center gap-2 group hover:shadow-md transition-all col-span-2 sm:col-span-1"
+                        style={{ background: '#F0FDF4', borderColor: '#22C55E40', textDecoration: 'none' }}>
+                        <span className="text-base flex-shrink-0">📍</span>
+                        <div className="min-w-0">
+                          <p className="text-[#6D6E71] text-[10px] mb-0.5">الموقع على الخريطة</p>
+                          <p className="font-bold text-[11px] group-hover:underline" style={{ color: '#16A34A' }}>
+                            فتح في خرائط Google ↗
+                          </p>
+                        </div>
+                      </a>
+                    )}
                   </div>
 
                   {/* Notes */}

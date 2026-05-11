@@ -20,6 +20,7 @@ import AdminLogistics  from './pages/admin/AdminLogistics';
 import AdminAnalytics  from './pages/admin/AdminAnalytics';
 import AdminUsers           from './pages/admin/AdminUsers';
 import AdminNotifications from './pages/admin/AdminNotifications';
+import AdminTaskAssign   from './pages/admin/AdminTaskAssign';
 
 /* Root redirect based on role */
 function RootRedirect() {
@@ -56,6 +57,7 @@ export default function App() {
           <Route path="analytics"     element={<AdminAnalytics />} />
           <Route path="users"         element={<AdminUsers />} />
           <Route path="notifications" element={<AdminNotifications />} />
+          <Route path="tasks"         element={<AdminTaskAssign />} />
         </Route>
 
         {/* Fallback */}
