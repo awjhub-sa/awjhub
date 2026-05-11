@@ -1,9 +1,8 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, AlertTriangle, Zap, Image as ImageIcon, Video, Upload, X, CheckCircle2 } from 'lucide-react';
-import { db, storage } from '../config/db.js';
-import { collection, addDoc, serverTimestamp, runTransaction, doc, updateDoc } from 'firebase/firestore';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db } from '../config/db.js';
+import { collection, addDoc, serverTimestamp, runTransaction, doc } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getCaterer } from '../config/centers.js';
 
@@ -79,48 +78,22 @@ export default function Report() {
         return n;
       });
       const reportNumber = `BLG-${String(nextNum).padStart(4, '0')}`;
-
-      /* 1. Save report to Firestore immediately — always */
-      const reportRef = await addDoc(collection(db, 'reports'), {
-        uid: profile?.uid,
-        observer: profile?.nameAr || profile?.name || 'مراقب',
-        center: profile?.center || '—',
-        caterer: profile?.caterer || getCaterer(profile?.center) || '—',
+      await addDoc(collection(db, 'reports'), {
+        uid:        profile?.uid,
+        observer:   profile?.nameAr || profile?.name || 'مراقب',
+        center:     profile?.center || '—',
+        caterer:    profile?.caterer || getCaterer(profile?.center) || '—',
         reportType: selectedReport,
         severity,
         description,
         reportNumber,
-        status: 'pending',
-        timestamp: serverTimestamp(),
-        images:   [],
-        videoUrl: null,
+        status:     'pending',
+        timestamp:  serverTimestamp(),
+        images:     [],
+        videoUrl:   null,
       });
-
       setReportNum(reportNumber);
       setSubmitted(true);
-
-      /* 2. Upload media in background — failure doesn't block submission */
-      (async () => {
-        try {
-          let imageURL = null;
-          let videoURL = null;
-          if (imageFile) {
-            const iRef = storageRef(storage, `reports/${reportNumber}/image_${Date.now()}`);
-            await uploadBytes(iRef, imageFile);
-            imageURL = await getDownloadURL(iRef);
-          }
-          if (videoFile) {
-            const vRef = storageRef(storage, `reports/${reportNumber}/video_${Date.now()}`);
-            await uploadBytes(vRef, videoFile);
-            videoURL = await getDownloadURL(vRef);
-          }
-          await updateDoc(reportRef, {
-            images:   imageURL ? [imageURL] : [],
-            videoUrl: videoURL || null,
-          });
-        } catch { /* silent — report already saved */ }
-      })();
-
     } catch { alert('خطأ في الإرسال'); }
     setLoading(false);
   };

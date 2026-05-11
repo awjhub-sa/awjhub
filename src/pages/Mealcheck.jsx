@@ -4,9 +4,8 @@ import {
   Utensils, ChevronRight, Save, CheckCircle2, AlertCircle,
   Camera, Lock, ArrowLeft, RotateCcw, ClipboardList, Ban,
 } from 'lucide-react';
-import { db, storage } from '../config/db.js';
-import { collection, addDoc, serverTimestamp, setDoc, doc, getDoc } from 'firebase/firestore';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db } from '../config/db.js';
+import { collection, addDoc, serverTimestamp, setDoc, doc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getCaterer } from '../config/centers.js';
 import { useAssignedTasks, extractDay, MEAL_META } from '../hooks/useAssignedTasks.js';
@@ -204,102 +203,83 @@ export default function Mealcheck() {
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [restored, setRestored] = useState(false);
 
-  /* ── Load saved progress when task changes ── */
+  /* ── Reset + restore answers from localStorage when task changes ── */
   useEffect(() => {
-    if (!selectedTask || !profile?.uid || !profile?.center) return;
+    if (!selectedTask || !profile?.uid) return;
     setScreen('phases');
     setPhaseDone({ 1: false, 2: false, 3: false });
     setPhasePhotos({ 1: null, 2: null, 3: null });
     setAnswers({});
     setRestored(false);
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY(profile.uid, selectedTask.taskId, selectedTask.mealType));
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data.answers && Object.keys(data.answers).length > 0) {
+        setAnswers(data.answers);
+        if (data.screen) setScreen(data.screen);
+        setRestored(true);
+      }
+    } catch {}
+  }, [selectedTask?.taskId, selectedTask?.mealType, profile?.uid]);
 
+  /* ── Real-time phaseDone sync from Firestore ── */
+  useEffect(() => {
+    if (!selectedTask || !profile?.center || !profile?.uid) return;
+    const docId      = `${profile.center}_d${selectedTask.day}_${selectedTask.mealType}`;
     const storageKey = STORAGE_KEY(profile.uid, selectedTask.taskId, selectedTask.mealType);
-    const docId = `${profile.center}_d${selectedTask.day}_${selectedTask.mealType}`;
-
-    /* Check Firestore first — if admin cleared the day, wipe local progress */
-    getDoc(doc(db, 'meal_phases', docId)).then(snap => {
+    return onSnapshot(doc(db, 'meal_phases', docId), snap => {
       if (!snap.exists()) {
         localStorage.removeItem(storageKey);
-        return;
+        setPhaseDone({ 1: false, 2: false, 3: false });
+        setPhasePhotos({ 1: null, 2: null, 3: null });
+        setAnswers({});
+        setScreen('phases');
+        setRestored(false);
+      } else {
+        const d = snap.data();
+        setPhaseDone({ 1: !!d.phase1, 2: !!d.phase2, 3: !!d.phase3 });
       }
-      try {
-        const raw = localStorage.getItem(storageKey);
-        if (!raw) return;
-        const data = JSON.parse(raw);
-        const hasPhases  = Object.values(data.phaseDone  || {}).some(Boolean);
-        const hasAnswers = Object.keys(data.answers || {}).length > 0;
-        if (!hasPhases && !hasAnswers) return;
-        if (data.phaseDone) setPhaseDone(data.phaseDone);
-        if (data.answers)   setAnswers(data.answers);
-        if (data.screen)    setScreen(data.screen);
-        setRestored(true);
-      } catch {}
-    }).catch(() => {
-      /* Network error — fall back to localStorage */
-      try {
-        const raw = localStorage.getItem(storageKey);
-        if (!raw) return;
-        const data = JSON.parse(raw);
-        if (data.phaseDone) setPhaseDone(data.phaseDone);
-        if (data.answers)   setAnswers(data.answers);
-        if (data.screen)    setScreen(data.screen);
-        setRestored(true);
-      } catch {}
     });
-  }, [selectedTask?.taskId, selectedTask?.mealType, profile?.uid, profile?.center]);
+  }, [selectedTask?.taskId, selectedTask?.mealType, profile?.center, profile?.uid]);
 
-  /* ── Auto-save ── */
+  /* ── Auto-save answers + screen (phaseDone comes from Firestore) ── */
   useEffect(() => {
     if (!selectedTask || !profile?.uid) return;
     localStorage.setItem(
       STORAGE_KEY(profile.uid, selectedTask.taskId, selectedTask.mealType),
-      JSON.stringify({ screen, answers, phaseDone })
+      JSON.stringify({ screen, answers })
     );
-  }, [screen, answers, phaseDone, selectedTask, profile?.uid]);
+  }, [screen, answers, selectedTask, profile?.uid]);
 
   const clearProgress = () => {
     if (selectedTask && profile?.uid) {
       localStorage.removeItem(STORAGE_KEY(profile.uid, selectedTask.taskId, selectedTask.mealType));
     }
     setScreen('phases');
-    setPhaseDone({ 1: false, 2: false, 3: false });
     setPhasePhotos({ 1: null, 2: null, 3: null });
     setAnswers({});
     setRestored(false);
   };
 
-  /* ── Photo upload ── */
+  /* ── Photo capture — save timestamp to Firestore only ── */
   const handlePhotoChange = async (id, file) => {
     if (!file) return;
     setPhasePhotos(prev => ({ ...prev, [id]: file }));
-    setPhaseDone(prev  => ({ ...prev, [id]: true  }));
     const center = profile?.center;
     if (!center || !selectedTask) return;
-
-    const docId   = `${center}_d${selectedTask.day}_${selectedTask.mealType}`;
-    const baseDoc = {
-      center,
-      day:           selectedTask.day,
-      mealType:      selectedTask.mealType,
-      scheduledDate: selectedTask.scheduledDate,
-      observer:      profile?.nameAr || profile?.name || '—',
-      uid:           profile?.uid,
-      [`phase${id}`]: serverTimestamp(),
-      updatedAt:      serverTimestamp(),
-    };
-
-    /* 1. Save phase timestamp immediately — always, regardless of photo */
     try {
-      await setDoc(doc(db, 'meal_phases', docId), baseDoc, { merge: true });
-    } catch { /* silent */ }
-
-    /* 2. Upload photo separately — failure doesn't block phase data */
-    try {
-      const sRef     = storageRef(storage, `meal_phases/${docId}/phase${id}_${Date.now()}`);
-      await uploadBytes(sRef, file);
-      const photoURL = await getDownloadURL(sRef);
-      await setDoc(doc(db, 'meal_phases', docId), { [`phase${id}_photo`]: photoURL }, { merge: true });
-    } catch { /* photo upload failed silently */ }
+      await setDoc(doc(db, 'meal_phases', `${center}_d${selectedTask.day}_${selectedTask.mealType}`), {
+        center,
+        day:           selectedTask.day,
+        mealType:      selectedTask.mealType,
+        scheduledDate: selectedTask.scheduledDate,
+        observer:      profile?.nameAr || profile?.name || '—',
+        uid:           profile?.uid,
+        [`phase${id}`]: serverTimestamp(),
+        updatedAt:      serverTimestamp(),
+      }, { merge: true });
+    } catch {}
   };
 
   const allPhasesComplete = phaseDone[1] && phaseDone[2] && phaseDone[3];

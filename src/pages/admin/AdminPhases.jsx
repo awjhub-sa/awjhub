@@ -93,13 +93,24 @@ export default function AdminPhases() {
   const [centerClearConfirm, setCenterClearConfirm] = useState(null);
   const [centerClearing,     setCenterClearing]     = useState(false);
 
+  /* Reset confirm states whenever the day tab changes */
+  useEffect(() => {
+    setClearConfirm(false);
+    setMealClearTarget(null);
+    if (typeof setCenterClearConfirm === 'function') setCenterClearConfirm(null);
+  }, [selectedDay]);
+
   const handleClearDay = async () => {
     setClearing(true);
     try {
       const batch = writeBatch(db);
-      Object.values(phasesData)
-        .filter(d => d.day === selectedDay)
-        .forEach(d => batch.delete(doc(db, 'meal_phases', d.id)));
+      /* Use docID pattern — more reliable than filtering by day field */
+      CENTERS.forEach(c => {
+        MEALS.forEach(m => {
+          const docId = `${c.id}_d${selectedDay}_${m.id}`;
+          if (phasesData[docId]) batch.delete(doc(db, 'meal_phases', docId));
+        });
+      });
       await batch.commit();
     } catch {}
     setClearing(false);

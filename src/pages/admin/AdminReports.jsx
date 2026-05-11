@@ -368,6 +368,27 @@ export default function AdminReports() {
                     className={`text-[10px] font-bold border rounded-xl px-2 py-1 outline-none cursor-pointer ${b.cls}`}>
                     {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
+                  {/* Media quick-open icons */}
+                  <div className="flex items-center gap-1.5">
+                    {allImages[0] && (
+                      <button
+                        onClick={() => window.open(allImages[0], '_blank')}
+                        title="فتح الصورة في تبويب جديد"
+                        className="w-7 h-7 rounded-lg border border-[#EDE5DC] bg-white flex items-center justify-center hover:border-[#A98159] hover:bg-[#FDF8F0] transition-colors"
+                      >
+                        <ImageIcon size={13} strokeWidth={1.75} className="text-[#A98159]" />
+                      </button>
+                    )}
+                    {r.videoUrl && (
+                      <button
+                        onClick={() => window.open(r.videoUrl, '_blank')}
+                        title="فتح الفيديو في تبويب جديد"
+                        className="w-7 h-7 rounded-lg border border-[#EDE5DC] bg-white flex items-center justify-center hover:border-[#6366F1] hover:bg-[#EEF2FF] transition-colors"
+                      >
+                        <Video size={13} strokeWidth={1.75} className="text-[#6366F1]" />
+                      </button>
+                    )}
+                  </div>
                   <button onClick={() => setExpanded(isOpen ? null : r.id)}
                     className="flex items-center gap-1 text-[#A98159] text-xs font-bold">
                     {isOpen
