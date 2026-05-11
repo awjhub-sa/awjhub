@@ -43,6 +43,13 @@ const STATUS = {
 
 const SUPPORT = { internal: 'داخلي', external: 'خارجي', both: 'داخلي وخارجي' };
 
+const LOGISTICS_STATUS = {
+  pending:   { label: 'قيد الانتظار', bg: '#FFFBEB', text: '#B45309', border: '#FDE68A' },
+  approved:  { label: 'موافق عليه',   bg: '#EFF6FF', text: '#1D4ED8', border: '#BFDBFE' },
+  delivered: { label: 'تم التسليم',   bg: '#F0FDF4', text: '#15803D', border: '#86EFAC' },
+  rejected:  { label: 'مرفوض',        bg: '#FEF2F2', text: '#DC2626', border: '#FECACA' },
+};
+
 /* ─── Helpers ─── */
 function timeAgo(ts) {
   if (!ts) return '—';
@@ -261,8 +268,8 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange }) {
           {/* Status selector */}
           <div>
             <p className="text-[11px] font-semibold text-[#9D8F85] mb-2">حالة الطلب</p>
-            <div className="grid grid-cols-3 gap-2">
-              {Object.entries(STATUS).map(([key, s]) => {
+            <div className="grid grid-cols-2 gap-2">
+              {Object.entries(LOGISTICS_STATUS).map(([key, s]) => {
                 const active = (item.status || 'pending') === key;
                 return (
                   <button key={key}
@@ -629,7 +636,7 @@ export default function AdminDashboard() {
           </div>
         ) : (
           logisticsFeed.slice(0, 6).map((item, idx) => {
-            const sb       = STATUS[item.status] || STATUS.pending;
+            const sb       = LOGISTICS_STATUS[item.status] || LOGISTICS_STATUS.pending;
             const CatIcon  = CATEGORY_ICON[item.category] || Truck;
             const isLast   = idx === Math.min(logisticsFeed.length, 6) - 1;
             const qtyParts = [
@@ -664,7 +671,7 @@ export default function AdminDashboard() {
                   onClick={e => e.stopPropagation()}
                   className="text-[11px] font-bold border rounded-xl px-2 py-1.5 outline-none cursor-pointer flex-shrink-0 transition-all"
                   style={{ background: sb.bg, borderColor: sb.border, color: sb.text }}>
-                  {Object.entries(STATUS).map(([k, s]) =>
+                  {Object.entries(LOGISTICS_STATUS).map(([k, s]) =>
                     <option key={k} value={k}>{s.label}</option>
                   )}
                 </select>
