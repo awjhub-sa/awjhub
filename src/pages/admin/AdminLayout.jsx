@@ -6,7 +6,7 @@ import { auth, db } from '../../config/db.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import {
   LayoutDashboard, FileText, Truck, ClipboardList,
-  Users, LogOut, Menu, X, Bell, ChevronRight, ListChecks,
+  Users, LogOut, Menu, X, Bell, ChevronRight, ListChecks, Layers,
 } from 'lucide-react';
 import logo from '../../assets/logo-light.svg';
 import { getCaterer } from '../../config/centers.js';
@@ -16,6 +16,7 @@ const NAV = [
   { to: '/admin/reports',    label: 'البلاغات الميدانية', icon: FileText        },
   { to: '/admin/logistics',  label: 'الإسناد اللوجستي',  icon: Truck           },
   { to: '/admin/analytics',  label: 'التقييمات',          icon: ClipboardList   },
+  { to: '/admin/phases',     label: 'المراحل',             icon: Layers          },
   { to: '/admin/tasks',      label: 'إسناد المهام',       icon: ListChecks      },
   { to: '/admin/users',      label: 'إدارة المستخدمين',  icon: Users           },
 ];

@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Utensils, ChevronRight, Save, CheckCircle2, AlertCircle, Camera, Lock, ArrowLeft } from 'lucide-react';
 import { db } from '../config/db.js';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, setDoc, doc } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getCaterer } from '../config/centers.js';
 
@@ -63,9 +63,21 @@ export default function Mealcheck() {
   const [phasePhotos, setPhasePhotos] = useState({ 1: null, 2: null, 3: null });
   const fileRefs = [useRef(null), useRef(null), useRef(null)];
 
-  const handlePhotoChange = (id, file) => {
+  const handlePhotoChange = async (id, file) => {
     if (!file) return;
     setPhasePhotos(prev => ({ ...prev, [id]: file }));
+    const center = profile?.center;
+    if (center) {
+      try {
+        await setDoc(doc(db, 'meal_phases', center), {
+          center,
+          observer: profile?.nameAr || profile?.name || '—',
+          uid: profile?.uid,
+          [`phase${id}`]: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        }, { merge: true });
+      } catch { /* silent */ }
+    }
   };
 
   const allPhasesComplete = phasePhotos[1] && phasePhotos[2] && phasePhotos[3];
