@@ -278,7 +278,7 @@ export default function AdminPhases() {
       {/* Table */}
       <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
         <div className="grid gap-2 px-4 py-3 border-b border-[#EDE5DC] bg-[#FAFAF8]"
-          style={{ gridTemplateColumns: '1.2fr repeat(3, 1fr) 0.6fr 50px' }}>
+          style={{ gridTemplateColumns: '1.2fr repeat(3, 1fr) 0.6fr' }}>
           <p className="text-[11px] font-bold text-[#9D8F85]">المركز</p>
           {MEALS.map(m => (
             <div key={m.id} className="flex items-center justify-center gap-1.5">
@@ -287,7 +287,6 @@ export default function AdminPhases() {
             </div>
           ))}
           <p className="text-[11px] font-bold text-[#9D8F85] text-center">التقدم</p>
-          <p className="text-[11px] font-bold text-[#9D8F85] text-center">إجراء</p>
         </div>
 
         {rows.map((row, idx) => {
@@ -296,8 +295,8 @@ export default function AdminPhases() {
           return (
             <div
               key={row.center}
-              className={`group grid gap-2 px-4 py-4 items-center ${!isLast ? 'border-b border-[#EDE5DC]' : ''}`}
-              style={{ gridTemplateColumns: '1.2fr repeat(3, 1fr) 0.6fr 50px' }}
+              className={`grid gap-2 px-4 py-4 items-center ${!isLast ? 'border-b border-[#EDE5DC]' : ''}`}
+              style={{ gridTemplateColumns: '1.2fr repeat(3, 1fr) 0.6fr' }}
             >
               <div className="min-w-0">
                 <p className="font-bold text-sm text-[#2D2926]">{row.center}</p>
@@ -305,11 +304,12 @@ export default function AdminPhases() {
               </div>
 
               {MEALS.map(meal => {
-                const data = getCell(row.center, selectedDay, meal.id);
-                const done = cellDone(data);
+                const data     = getCell(row.center, selectedDay, meal.id);
+                const done     = cellDone(data);
                 const isTarget = mealClearTarget?.center === row.center && mealClearTarget?.mealId === meal.id;
                 return (
                   <div key={meal.id} className="flex flex-col items-center gap-1">
+                    {/* Phase dots */}
                     <div className="flex items-center gap-1.5">
                       {PHASES.map(phase => (
                         <PhaseDot
@@ -322,36 +322,51 @@ export default function AdminPhases() {
                         />
                       ))}
                     </div>
-                    {done > 0 && (
-                      <div className="flex flex-col items-center">
+                    {done > 0 ? (
+                      <>
                         <span className="text-[9px] font-bold text-[#9D8F85] tabular-nums">
-                          {fmtTime([3,2,1].map(n => data[`phase${n}`]).find(Boolean))}
+                          {fmtTime([3, 2, 1].map(n => data[`phase${n}`]).find(Boolean))}
                         </span>
+                        {/* Per-meal delete button */}
                         {isTarget ? (
-                           <button onClick={handleClearMeal} className="text-[8px] text-red-500 font-bold">تأكيد</button>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <button
+                              onClick={handleClearMeal}
+                              disabled={mealClearing}
+                              className="w-6 h-6 rounded-lg bg-red-500 hover:bg-red-600 flex items-center justify-center disabled:opacity-60 transition-colors"
+                              title="تأكيد الحذف"
+                            >
+                              <Trash2 size={10} className="text-white" strokeWidth={2.5} />
+                            </button>
+                            <button
+                              onClick={() => setMealClearTarget(null)}
+                              className="w-6 h-6 rounded-lg border border-[#D9CEBC] flex items-center justify-center hover:bg-[#F5F0EB] transition-colors"
+                              title="إلغاء"
+                            >
+                              <X size={10} className="text-[#9D8F85]" strokeWidth={2.5} />
+                            </button>
+                          </div>
                         ) : (
-                           <button onClick={() => setMealClearTarget({center: row.center, mealId: meal.id})} className="opacity-0 group-hover:opacity-100 text-[8px] text-[#9D8F85]">حذف</button>
+                          <button
+                            onClick={() => setMealClearTarget({ center: row.center, mealId: meal.id })}
+                            className="mt-0.5 w-6 h-6 rounded-lg border border-[#EDE5DC] flex items-center justify-center hover:border-red-300 hover:bg-red-50 transition-colors"
+                            title="حذف بيانات الوجبة"
+                          >
+                            <Trash2 size={10} className="text-[#C9B8A8] hover:text-red-400 transition-colors" strokeWidth={2} />
+                          </button>
                         )}
-                      </div>
+                      </>
+                    ) : (
+                      <span className="text-[9px] text-[#D1D5DB]">—</span>
                     )}
                   </div>
                 );
               })}
 
               <div className="text-center">
-                <p className="text-xs font-black" style={{ color: pct === 100 ? '#10B981' : '#F59E0B' }}>{pct}%</p>
-              </div>
-
-              <div className="flex justify-center">
-                {centerClearConfirm === row.center ? (
-                   <button onClick={() => handleClearCenter(row.center)} className="w-7 h-7 bg-red-500 rounded-lg flex items-center justify-center text-white">
-                     <Trash2 size={12} />
-                   </button>
-                ) : (
-                   <button onClick={() => setCenterClearConfirm(row.center)} className="w-7 h-7 border rounded-lg flex items-center justify-center text-[#C9B8A8]">
-                     <Trash2 size={12} />
-                   </button>
-                )}
+                <p className="text-xs font-black" style={{ color: pct === 100 ? '#10B981' : pct > 0 ? '#F59E0B' : '#D1D5DB' }}>
+                  {pct}%
+                </p>
               </div>
             </div>
           );
