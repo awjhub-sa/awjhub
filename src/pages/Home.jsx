@@ -147,10 +147,10 @@ export default function Home() {
   const { tasks, completions } = useAssignedTasks(profile);
 
   const pendingMealBadge = (() => {
-    const mealTasks = tasks.filter(t => t.taskType === 'meal_evaluation');
+    const mealTasks = tasks.filter(t => t.task_types?.includes('meal_evaluation'));
     let count = 0;
     mealTasks.forEach(task => {
-      (task.mealTypes || []).forEach(mt => {
+      (task.meal_types || []).forEach(mt => {
         if (!completions.some(c => c.taskId === task.id && c.mealType === mt)) count++;
       });
     });
@@ -158,16 +158,18 @@ export default function Home() {
   })();
 
   const pendingMinaBadge = (() => {
-    const count = tasks.filter(t => t.taskType === 'mina_readiness' &&
+    const count = tasks.filter(t => t.task_types?.includes('mina_readiness') &&
       !completions.some(c => c.taskId === t.id && c.taskType === 'mina_readiness')).length;
     return count || null;
   })();
 
   const pendingArafatBadge = (() => {
-    const count = tasks.filter(t => t.taskType === 'arafat_readiness' &&
+    const count = tasks.filter(t => t.task_types?.includes('arafat_readiness') &&
       !completions.some(c => c.taskId === t.id && c.taskType === 'arafat_readiness')).length;
     return count || null;
   })();
+
+  const totalPendingBadge = (pendingMealBadge || 0) + (pendingMinaBadge || 0) + (pendingArafatBadge || 0) || null;
 
   const name = profile?.nameAr || profile?.name || 'المراقب الميداني';
   const center = profile?.center || '—';
@@ -193,8 +195,13 @@ export default function Home() {
           </div>
           
           <div className="flex items-center gap-2">
-            <button className="w-10 h-10 rounded-xl border border-[#D1C4B9] flex items-center justify-center hover:bg-[#FDF8F0] transition-all">
+            <button className="relative w-10 h-10 rounded-xl border border-[#D1C4B9] flex items-center justify-center hover:bg-[#FDF8F0] transition-all">
               <Bell size={18} className="text-[#6D6E71]" />
+              {totalPendingBadge && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-[#BA1A1A] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">
+                  {totalPendingBadge}
+                </span>
+              )}
             </button>
             
             <button 

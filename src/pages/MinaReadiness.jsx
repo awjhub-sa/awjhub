@@ -60,7 +60,7 @@ export default function MinaReadiness() {
 
   const { tasks, completions, loading: tasksLoading } = useAssignedTasks(profile);
 
-  const minaTasks = tasks.filter(t => t.taskType === 'mina_readiness');
+  const minaTasks = tasks.filter(t => t.task_types?.includes('mina_readiness'));
   const isDone = (task) => completions.some(c => c.taskId === task.id && c.taskType === 'mina_readiness');
   const pendingTasks = minaTasks.filter(t => !isDone(t));
   const doneTasks = minaTasks.filter(t => isDone(t));
@@ -151,7 +151,7 @@ export default function MinaReadiness() {
                   <p className="text-sm font-black text-[#2D2926] px-1 mb-2">المهام المعلقة</p>
                   {pendingTasks.map(task => (
                     <button key={task.id}
-                      onClick={() => setSelectedTask({ taskId: task.id, scheduledDate: task.scheduledDate })}
+                      onClick={() => setSelectedTask({ taskId: task.id, scheduledDate: task.scheduled_date })}
                       className="w-full bg-white border border-[#D1C4B9] rounded-3xl p-5 text-right flex items-center gap-4 hover:border-[#A98159] hover:shadow-md transition-all active:scale-[0.98]">
                       <div className="w-12 h-12 bg-[#FDF8F0] border border-[#A98159]/20 rounded-2xl flex items-center justify-center shrink-0">
                         <Home className="text-[#A98159]" size={22} />
@@ -161,7 +161,7 @@ export default function MinaReadiness() {
                         {task.scheduledDate && (
                           <div className="flex items-center gap-1.5 mt-1">
                             <Calendar size={12} className="text-[#A98159]" />
-                            <span className="text-xs text-[#A98159] font-bold">{task.scheduledDate}</span>
+                            <span className="text-xs text-[#A98159] font-bold">{task.scheduled_date}</span>
                           </div>
                         )}
                       </div>
@@ -181,10 +181,10 @@ export default function MinaReadiness() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-green-800 text-sm">جاهزية مشعر منى</p>
-                        {task.scheduledDate && (
+                        {task.scheduled_date && (
                           <div className="flex items-center gap-1.5 mt-1">
                             <Calendar size={12} className="text-green-600" />
-                            <span className="text-xs text-green-600 font-bold">{task.scheduledDate}</span>
+                            <span className="text-xs text-green-600 font-bold">{task.scheduled_date}</span>
                           </div>
                         )}
                         <p className="text-xs text-green-600 font-bold mt-0.5">تم الإرسال</p>
