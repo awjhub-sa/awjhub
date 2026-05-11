@@ -4,8 +4,9 @@ import {
   Utensils, ChevronRight, Save, CheckCircle2, AlertCircle,
   Camera, Lock, ArrowLeft, RotateCcw, ClipboardList, Ban,
 } from 'lucide-react';
-import { db } from '../config/db.js';
+import { db, storage } from '../config/db.js';
 import { collection, addDoc, serverTimestamp, setDoc, doc } from 'firebase/firestore';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getCaterer } from '../config/centers.js';
 import { useAssignedTasks, extractDay, MEAL_META } from '../hooks/useAssignedTasks.js';
@@ -254,13 +255,18 @@ export default function Mealcheck() {
     if (center && selectedTask) {
       const docId = `${center}_d${selectedTask.day}_${selectedTask.mealType}`;
       try {
+        const path    = `meal_phases/${docId}/phase${id}_${Date.now()}`;
+        const sRef    = storageRef(storage, path);
+        await uploadBytes(sRef, file);
+        const photoURL = await getDownloadURL(sRef);
         await setDoc(doc(db, 'meal_phases', docId), {
           center, day: selectedTask.day, mealType: selectedTask.mealType,
           scheduledDate: selectedTask.scheduledDate,
           observer: profile?.nameAr || profile?.name || '—',
           uid: profile?.uid,
-          [`phase${id}`]: serverTimestamp(),
-          updatedAt: serverTimestamp(),
+          [`phase${id}`]:       serverTimestamp(),
+          [`phase${id}_photo`]: photoURL,
+          updatedAt:            serverTimestamp(),
         }, { merge: true });
       } catch { /* silent */ }
     }

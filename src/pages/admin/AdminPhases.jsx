@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../../config/db.js';
 import { CENTERS } from '../../config/centers.js';
-import { Activity, CheckCircle2, Clock, Layers, RotateCcw } from 'lucide-react';
+import { Activity, CheckCircle2, Clock, Layers, RotateCcw, ImageIcon, X } from 'lucide-react';
 import { Coffee, ForkKnife, Moon } from '@phosphor-icons/react';
 
 const PHASES = [
@@ -18,6 +18,7 @@ const MEALS = [
 ];
 
 const DAYS = [
+  { id: '7',  label: '٧ ذو الحجة'  },
   { id: '8',  label: '٨ ذو الحجة'  },
   { id: '9',  label: '٩ ذو الحجة'  },
   { id: '10', label: '١٠ ذو الحجة' },
@@ -32,25 +33,51 @@ function fmtTime(ts) {
   return d.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
 }
 
-function PhaseDot({ done, phase, small }) {
+function PhotoLightbox({ src, onClose }) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm" onClick={onClose}>
+      <button onClick={onClose}
+        className="absolute top-4 left-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors">
+        <X size={20} strokeWidth={2} />
+      </button>
+      <div onClick={e => e.stopPropagation()}>
+        <img src={src} alt="" className="max-w-full max-h-[88vh] rounded-2xl shadow-2xl object-contain" />
+      </div>
+    </div>
+  );
+}
+
+function PhaseDot({ done, phase, small, photoUrl, onViewPhoto }) {
   const size = small ? 'w-6 h-6 text-[9px]' : 'w-7 h-7 text-[10px]';
   return (
-    <div
-      className={`${size} rounded-full flex items-center justify-center font-black transition-all`}
-      style={done
-        ? { background: phase.color, color: '#fff', boxShadow: `0 0 8px ${phase.glow}` }
-        : { background: '#F3F4F6', color: '#D1D5DB' }
-      }
-    >
-      {done ? <CheckCircle2 size={small ? 11 : 13} strokeWidth={2.5} /> : phase.id}
+    <div className="relative group">
+      <div
+        className={`${size} rounded-full flex items-center justify-center font-black transition-all cursor-default`}
+        style={done
+          ? { background: phase.color, color: '#fff', boxShadow: `0 0 8px ${phase.glow}` }
+          : { background: '#F3F4F6', color: '#D1D5DB' }
+        }
+      >
+        {done ? <CheckCircle2 size={small ? 11 : 13} strokeWidth={2.5} /> : phase.id}
+      </div>
+      {done && photoUrl && (
+        <button
+          onClick={() => onViewPhoto(photoUrl)}
+          title="عرض الصورة"
+          className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          style={{ background: phase.color }}>
+          <ImageIcon size={8} strokeWidth={2.5} className="text-white" />
+        </button>
+      )}
     </div>
   );
 }
 
 export default function AdminPhases() {
-  const [phasesData, setPhasesData] = useState({});
+  const [phasesData,  setPhasesData]  = useState({});
   const [selectedDay, setSelectedDay] = useState('8');
-  const [sortBy, setSortBy] = useState('progress');
+  const [sortBy,      setSortBy]      = useState('progress');
+  const [lightboxSrc, setLightboxSrc] = useState(null);
 
   useEffect(() => {
     return onSnapshot(collection(db, 'meal_phases'), snap => {
@@ -223,13 +250,15 @@ export default function AdminPhases() {
                 return (
                   <div key={meal.id} className="flex flex-col items-center gap-1.5">
                     {/* 3 phase dots */}
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2">
                       {PHASES.map(phase => (
                         <PhaseDot
                           key={phase.id}
                           done={!!data[`phase${phase.id}`]}
                           phase={phase}
                           small
+                          photoUrl={data[`phase${phase.id}_photo`] || null}
+                          onViewPhoto={setLightboxSrc}
                         />
                       ))}
                     </div>
@@ -271,6 +300,8 @@ export default function AdminPhases() {
           );
         })}
       </div>
+
+      {lightboxSrc && <PhotoLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
 
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }

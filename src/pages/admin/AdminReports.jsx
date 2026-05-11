@@ -4,18 +4,27 @@ import { db } from '../../config/db.js';
 import {
   AlertTriangle, ChevronDown, ChevronUp,
   Pencil, Trash2, X, Save, ImageIcon, Video,
-  User, Building2, Clock, ShieldAlert,
+  User, Building2, Clock, ShieldAlert, Play, ExternalLink,
 } from 'lucide-react';
 import { getCaterer, getShakhis, getLocation } from '../../config/centers.js';
 
-/* ── helpers ── */
-function openImageTab(src) {
-  const win = window.open('', '_blank');
-  win.document.write(`<!DOCTYPE html><html><head><title>صورة البلاغ</title>
-    <style>body{margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;}
-    img{max-width:100%;max-height:100vh;object-fit:contain;}</style></head>
-    <body><img src="${src}"/></body></html>`);
-  win.document.close();
+/* ── Media Lightbox ── */
+function MediaLightbox({ src, type, onClose }) {
+  if (!src) return null;
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm" onClick={onClose}>
+      <button onClick={onClose}
+        className="absolute top-4 left-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors z-10">
+        <X size={20} strokeWidth={2} />
+      </button>
+      <div onClick={e => e.stopPropagation()} className="max-w-5xl w-full max-h-[90vh] flex items-center justify-center">
+        {type === 'video'
+          ? <video src={src} controls autoPlay className="max-w-full max-h-[85vh] rounded-2xl shadow-2xl" />
+          : <img src={src} alt="" className="max-w-full max-h-[85vh] rounded-2xl shadow-2xl object-contain" />
+        }
+      </div>
+    </div>
+  );
 }
 
 function timeAgo(ts) {
@@ -189,6 +198,7 @@ export default function AdminReports() {
   const [filter,        setFilter]        = useState('all');
   const [expanded,      setExpanded]      = useState(null);
   const [editingReport, setEditingReport] = useState(null);
+  const [lightbox,      setLightbox]      = useState(null); // { src, type: 'image'|'video' }
 
   useEffect(() => {
     return onSnapshot(collection(db, 'reports'), snap => {
@@ -336,16 +346,16 @@ export default function AdminReports() {
                     <p className="text-xs text-[#6D6E71] mt-1.5 line-clamp-1">{r.description}</p>
                   )}
 
-                  {!isOpen && (allImages.length > 0 || r.videos?.length > 0) && (
+                  {!isOpen && (allImages.length > 0 || r.videoUrl) && (
                     <div className="flex gap-1.5 mt-1.5">
                       {allImages.length > 0 && (
                         <span className="flex items-center gap-1 text-[10px] bg-[#F5F0EB] text-[#A98159] font-bold px-2 py-0.5 rounded-full">
-                          <ImageIcon size={9} strokeWidth={2} /> {allImages.length}
+                          <ImageIcon size={9} strokeWidth={2} /> {allImages.length} صورة
                         </span>
                       )}
-                      {r.videos?.length > 0 && (
+                      {r.videoUrl && (
                         <span className="flex items-center gap-1 text-[10px] bg-[#F5F0EB] text-[#A98159] font-bold px-2 py-0.5 rounded-full">
-                          <Video size={9} strokeWidth={2} /> {r.videos.length}
+                          <Video size={9} strokeWidth={2} /> فيديو
                         </span>
                       )}
                     </div>
@@ -450,10 +460,12 @@ export default function AdminReports() {
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {allImages.map((src, i) =>
                           src.startsWith('http') || src.startsWith('data:') ? (
-                            <button key={i} onClick={() => openImageTab(src)} className="group relative block">
+                            <button key={i} onClick={() => setLightbox({ src, type: 'image' })} className="group relative block">
                               <img src={src} alt="" className="w-full h-28 object-cover rounded-2xl border border-[#EDE8E3]" />
-                              <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition bg-black/40 rounded-2xl text-white text-xs font-bold">
-                                🔍 فتح
+                              <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition bg-black/50 rounded-2xl">
+                                <div className="bg-white/90 rounded-xl px-3 py-1.5 flex items-center gap-1.5 text-xs font-bold text-[#2D2926]">
+                                  <ImageIcon size={12} strokeWidth={2} /> عرض
+                                </div>
                               </span>
                             </button>
                           ) : (
@@ -466,19 +478,24 @@ export default function AdminReports() {
                     </div>
                   )}
 
-                  {/* Videos */}
-                  {r.videos?.length > 0 && (
+                  {/* Video */}
+                  {r.videoUrl && (
                     <div>
                       <p className="text-[10px] text-[#6D6E71] font-semibold mb-2 flex items-center gap-1">
-                        <Video size={11} strokeWidth={1.75} /> مقاطع الفيديو ({r.videos.length})
+                        <Video size={11} strokeWidth={1.75} /> الفيديو المرفق
                       </p>
-                      <div className="space-y-1.5">
-                        {r.videos.map((name, i) => (
-                          <div key={i} className="flex items-center gap-2 bg-[#F5F0EB] rounded-xl px-3 py-2 text-xs text-[#2D2926]">
-                            🎥 <span className="font-medium">{name}</span>
-                          </div>
-                        ))}
-                      </div>
+                      <button
+                        onClick={() => setLightbox({ src: r.videoUrl, type: 'video' })}
+                        className="group flex items-center gap-3 w-full bg-[#1A1A2E] hover:bg-[#16213E] text-white rounded-2xl px-4 py-3 transition-colors">
+                        <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0 group-hover:bg-white/20 transition-colors">
+                          <Play size={18} strokeWidth={2} className="text-white ml-0.5" />
+                        </div>
+                        <div className="flex-1 text-right">
+                          <p className="text-sm font-bold">تشغيل الفيديو</p>
+                          <p className="text-[10px] text-white/50">اضغط للمشاهدة</p>
+                        </div>
+                        <ExternalLink size={14} strokeWidth={1.75} className="text-white/40 flex-shrink-0" />
+                      </button>
                     </div>
                   )}
 
@@ -516,6 +533,15 @@ export default function AdminReports() {
           report={editingReport}
           onClose={() => setEditingReport(null)}
           onSave={handleSaveEdit}
+        />
+      )}
+
+      {/* Media Lightbox */}
+      {lightbox && (
+        <MediaLightbox
+          src={lightbox.src}
+          type={lightbox.type}
+          onClose={() => setLightbox(null)}
         />
       )}
     </div>
