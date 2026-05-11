@@ -161,6 +161,7 @@ export default function AdminPhases() {
                     </span>
                   )}
                 </div>
+                <p className="text-[10px] text-[#A98159] font-bold mt-0.5 truncate">{row.caterer}</p>
                 {row.data.observer && (
                   <p className="text-[10px] text-[#9D8F85] font-medium mt-0.5 truncate">
                     {row.data.observer}
