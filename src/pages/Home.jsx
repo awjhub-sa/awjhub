@@ -288,7 +288,7 @@ export default function Home() {
           <div className="space-y-4">
             <div className="flex items-center justify-between px-2">
               <div className="flex items-center gap-2">
-                <ClipboardText as ClipboardCheck size={20} className="text-[#A98159]" />
+                <ClipboardCheck size={20} className="text-[#A98159]" />
                 <span className="text-lg font-black text-[#2D2926]">سجل النشاط اليومي</span>
                 {activities.length > 0 && <span className="bg-[#A98159] text-white text-xs font-bold px-2.5 py-0.5 rounded-full">{activities.length}</span>}
               </div>
