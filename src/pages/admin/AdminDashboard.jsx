@@ -226,11 +226,12 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange }) {
 /* ══════════════════════════════════════════════════════════ */
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [counts,          setCounts]          = useState({ reports: 0, evals: 0, logistics: 0, mina: 0, arafat: 0 });
-  const [reports,         setReports]         = useState([]);
-  const [logisticsFeed,   setLogisticsFeed]   = useState([]);
+  const [counts,           setCounts]           = useState({ reports: 0, evals: 0, logistics: 0, mina: 0, arafat: 0 });
+  const [reports,          setReports]          = useState([]);
+  const [pendingReports,   setPendingReports]   = useState(0);
+  const [logisticsFeed,    setLogisticsFeed]    = useState([]);
   const [pendingLogistics, setPendingLogistics] = useState(0);
-  const [activityFeed,    setActivityFeed]    = useState([]);
+  const [activityFeed,     setActivityFeed]     = useState([]);
   const [selectedReport,  setSelectedReport]  = useState(null);
   const [centerFilter,    setCenterFilter]    = useState('');
   const [clock,           setClock]           = useState({ hijri: '', time: '' });
@@ -284,7 +285,9 @@ export default function AdminDashboard() {
     const unsubs = [
       onSnapshot(collection(db, 'reports'), s => {
         setCounts(p => ({ ...p, reports: s.size }));
-        setReports(byTime(s.docs.map(d => ({ id: d.id, ...d.data() }))));
+        const items = byTime(s.docs.map(d => ({ id: d.id, ...d.data() })));
+        setReports(items);
+        setPendingReports(items.filter(i => (i.status || 'pending') === 'pending').length);
       }),
       onSnapshot(collection(db, 'logistics_requests'), s => {
         setCounts(p => ({ ...p, logistics: s.size }));
@@ -383,14 +386,24 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#EDE5DC]"
           style={{ background: 'linear-gradient(135deg, #FEF2F2 0%, #fff 55%)' }}>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #FCA5A5, #F87171)' }}>
-              <AlertTriangle size={16} className="text-white" strokeWidth={2} />
+            <div className="relative">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+                style={{ background: 'linear-gradient(135deg, #FCA5A5, #F87171)' }}>
+                <AlertTriangle size={16} className="text-white" strokeWidth={2} />
+              </div>
+              {pendingReports > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-red-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-md animate-pulse">
+                  {pendingReports}
+                </span>
+              )}
             </div>
             <div>
               <h2 className="font-bold text-[#2D2926] text-sm">البلاغات الميدانية</h2>
               <p className="text-[11px] text-[#9D8F85] mt-0.5 font-medium">
-                {counts.reports} بلاغ إجمالاً · تحديث لحظي
+                {counts.reports} بلاغ إجمالاً
+                {pendingReports > 0 && (
+                  <span className="text-red-500 font-bold"> · {pendingReports} قيد الانتظار</span>
+                )}
               </p>
             </div>
           </div>
@@ -500,51 +513,79 @@ export default function AdminDashboard() {
             <p className="text-[#9D8F85] text-sm font-medium">لا توجد طلبات إسناد بعد</p>
           </div>
         ) : (
-          logisticsFeed.slice(0, 6).map((item, idx) => {
-            const sb       = STATUS[item.status] || STATUS.pending;
-            const CatIcon  = CATEGORY_ICON[item.category] || Truck;
-            const isLast   = idx === Math.min(logisticsFeed.length, 6) - 1;
-            const qtyParts = [
-              item.qtyInternal ? `${item.qtyInternal} داخلي` : null,
-              item.qtyExternal ? `${item.qtyExternal} خارجي` : null,
-            ].filter(Boolean).join(' · ');
-            return (
-              <div key={item.id}
-                className={`group flex items-center gap-4 px-6 py-4 hover:bg-[#F8FBFF] transition-colors ${!isLast ? 'border-b border-[#EDE5DC]' : ''}`}>
-                <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-                    <CatIcon size={14} className="text-blue-400" strokeWidth={1.5} />
+          <div className="p-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+            {logisticsFeed.slice(0, 6).map(item => {
+              const sb      = STATUS[item.status] || STATUS.pending;
+              const CatIcon = CATEGORY_ICON[item.category] || Truck;
+              const qtyParts = [
+                item.qtyInternal ? `${item.qtyInternal} داخلي` : null,
+                item.qtyExternal ? `${item.qtyExternal} خارجي` : null,
+              ].filter(Boolean).join(' · ');
+              return (
+                <div key={item.id}
+                  className="group relative bg-[#F8FBFF] hover:bg-white border border-[#DBEAFE] hover:border-[#93C5FD] rounded-2xl p-4 flex flex-col gap-3 transition-all duration-200 hover:shadow-[0_4px_16px_rgba(59,130,246,0.12)]">
+
+                  {/* Top row: icon + type + time */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <CatIcon size={16} className="text-blue-500" strokeWidth={1.75} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-[#2D2926] leading-tight">
+                          إسناد {CATEGORY_LABEL[item.category] || ''}
+                        </p>
+                        <p className="text-[11px] text-[#3182CE] font-semibold mt-0.5">
+                          {SUPPORT[item.supportType] || '—'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-left flex-shrink-0">
+                      <p className="text-[11px] text-[#9D8F85] font-medium">{timeAgo(item.timestamp)}</p>
+                      <p className="text-[10px] text-[#3182CE] font-bold">{clockTime(item.timestamp)}</p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-[#2D2926] truncate">
-                      إسناد {CATEGORY_LABEL[item.category] || ''} · {SUPPORT[item.supportType] || ''}
-                    </p>
-                    <p className="text-[11px] text-[#9D8F85] truncate mt-0.5 font-medium">
-                      {item.observer || '—'} · {item.center || '—'}
-                      {qtyParts ? ` · ${qtyParts}` : ''}
-                    </p>
+
+                  {/* Observer + Center */}
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <div className="bg-white rounded-xl border border-[#DBEAFE] px-2.5 py-1.5">
+                      <p className="text-[9px] text-[#9D8F85] font-semibold mb-0.5">المراقب</p>
+                      <p className="text-[11px] font-bold text-[#2D2926] truncate">{item.observer || '—'}</p>
+                    </div>
+                    <div className="bg-white rounded-xl border border-[#DBEAFE] px-2.5 py-1.5">
+                      <p className="text-[9px] text-[#9D8F85] font-semibold mb-0.5">المركز</p>
+                      <p className="text-[11px] font-bold text-[#3182CE] truncate">{item.center || '—'}</p>
+                    </div>
                   </div>
-                  <div className="flex-shrink-0 text-left space-y-0.5">
-                    <p className="text-[11px] text-[#9D8F85] font-medium">{timeAgo(item.timestamp)}</p>
-                    <p className="text-[11px] font-bold text-[#3182CE]">{clockTime(item.timestamp)}</p>
+
+                  {/* Qty */}
+                  {qtyParts && (
+                    <div className="bg-white rounded-xl border border-[#DBEAFE] px-2.5 py-1.5">
+                      <p className="text-[9px] text-[#9D8F85] font-semibold mb-0.5">الكميات</p>
+                      <p className="text-[11px] font-bold text-[#2D2926]">{qtyParts}</p>
+                    </div>
+                  )}
+
+                  {/* Status + delete */}
+                  <div className="flex items-center gap-2 pt-0.5">
+                    <select
+                      value={item.status || 'pending'}
+                      onChange={e => handleLogisticsStatusChange(item.id, e.target.value)}
+                      className="flex-1 text-[11px] font-bold border rounded-xl px-2 py-1.5 outline-none cursor-pointer transition-all"
+                      style={{ background: sb.bg, borderColor: sb.border, color: sb.text }}>
+                      {Object.entries(STATUS).map(([k, s]) =>
+                        <option key={k} value={k}>{s.label}</option>
+                      )}
+                    </select>
+                    <button onClick={() => handleDeleteLogistics(item.id)}
+                      className="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-xl hover:bg-red-50 flex items-center justify-center text-[#C9B8A8] hover:text-red-500 transition-all flex-shrink-0">
+                      <Trash2 size={13} strokeWidth={1.5} />
+                    </button>
                   </div>
                 </div>
-                <select
-                  value={item.status || 'pending'}
-                  onChange={e => handleLogisticsStatusChange(item.id, e.target.value)}
-                  className="text-[11px] font-bold border rounded-xl px-2 py-1.5 outline-none cursor-pointer flex-shrink-0 transition-all"
-                  style={{ background: sb.bg, borderColor: sb.border, color: sb.text }}>
-                  {Object.entries(STATUS).map(([k, s]) =>
-                    <option key={k} value={k}>{s.label}</option>
-                  )}
-                </select>
-                <button onClick={() => handleDeleteLogistics(item.id)}
-                  className="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-xl hover:bg-red-50 flex items-center justify-center text-[#C9B8A8] hover:text-red-500 transition-all flex-shrink-0">
-                  <Trash2 size={13} strokeWidth={1.5} />
-                </button>
-              </div>
-            );
-          })
+              );
+            })}
+          </div>
         )}
       </div>
 
