@@ -4,11 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import {
-  Utensils, AlertTriangle, Truck,
-  Bell, User, ChevronLeft, TrendingUp,
-  ClipboardCheck, MapPin, Home as HomeIcon, Mountain, Building2,
-  Package, Clock, LogOut
-} from 'lucide-react';
+  ForkKnife as Utensils, Warning as AlertTriangle, Van as Truck,
+  Bell, User, CaretLeft as ChevronLeft, TrendUp as TrendingUp,
+  ClipboardCheck, MapPin, House as HomeIcon, Mountains as Mountain, Buildings as Building2,
+  Package, Clock, SignOut as LogOut,
+} from '@phosphor-icons/react';
+import { motion } from 'framer-motion';
 import logo from '../assets/logo.png';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getCaterer } from '../config/centers.js';
@@ -26,45 +27,59 @@ const GoldRule = () => (
   </svg>
 );
 
+const _cardSpring = { type: 'spring', stiffness: 380, damping: 18 };
+
 /* ── Reusable Menu Card ── */
 const MenuCard = ({ icon: Icon, title, subtitle, badge, onClick, variant = 'default' }) => {
   const isAccent = variant === 'accent';
   return (
-    <button
+    <motion.button
       onClick={onClick}
+      whileHover={{ y: -3 }}
+      whileTap={{ scale: 0.97 }}
+      transition={_cardSpring}
       className={`
-        group w-full text-right rounded-2xl p-5 flex items-center gap-4
-        transition-all duration-300 active:scale-[0.97] border
+        w-full text-right rounded-2xl p-5 flex items-center gap-4 border
         ${isAccent
-          ? 'border-transparent hover:brightness-110 hover:shadow-2xl text-white'
-          : 'bg-white border-[#D1C4B9] hover:border-[#A98159]/50 hover:shadow-lg hover:-translate-y-0.5 text-[#2D2926]'}
+          ? 'border-transparent text-white'
+          : 'bg-white border-[#D1C4B9] text-[#2D2926]'}
       `}
-      style={isAccent ? { background: 'linear-gradient(135deg, #3D3330 0%, #2D2926 100%)', boxShadow: '0 4px 20px rgba(45,41,38,0.25)' } : {}}
+      style={isAccent
+        ? { background: 'linear-gradient(135deg, #3D3330 0%, #2D2926 100%)', boxShadow: '0 4px 20px rgba(45,41,38,0.25)' }
+        : { boxShadow: '0 2px 8px rgba(45,41,38,0.06)' }}
     >
-      <div className={`
-        flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center
-        transition-all duration-300 group-hover:scale-110 group-hover:rotate-3
-        ${isAccent
-          ? 'bg-white/10 group-hover:bg-white/20'
-          : 'bg-[#FDF8F0] border border-[#A98159]/20 group-hover:bg-[#A98159]/10'}
-      `}>
-        <Icon size={26} className="text-[#A98159] transition-all duration-300 group-hover:scale-105" strokeWidth={1.75} />
-      </div>
+      <motion.div
+        whileHover={{ scale: 1.15, rotate: 5 }}
+        whileTap={{ scale: 0.88 }}
+        transition={_cardSpring}
+        className="flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center backdrop-blur-md border"
+        style={isAccent
+          ? { background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.12)' }
+          : { background: 'rgba(169,129,89,0.06)', borderColor: 'rgba(169,129,89,0.14)' }}
+      >
+        <Icon size={26} weight="duotone" className="text-[#A98159]" />
+      </motion.div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="font-bold text-base">{title}</span>
           {badge && (
-            <span className="bg-[#BA1A1A] text-white text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">
+            <motion.span
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={_cardSpring}
+              className="bg-[#BA1A1A] text-white text-[10px] font-bold px-2 py-0.5 rounded-full"
+              style={{ animation: 'softPulse 2s ease-in-out infinite' }}
+            >
               {badge}
-            </span>
+            </motion.span>
           )}
         </div>
-        <p className={`text-sm mt-0.5 truncate transition-colors duration-300 ${isAccent ? 'text-white/50 group-hover:text-white/70' : 'text-[#6D6E71] group-hover:text-[#A98159]/70'}`}>
+        <p className={`text-sm mt-0.5 truncate ${isAccent ? 'text-white/50' : 'text-[#6D6E71]'}`}>
           {subtitle}
         </p>
       </div>
-      <ChevronLeft size={18} className={`flex-shrink-0 transition-all duration-300 group-hover:-translate-x-1 opacity-50 ${isAccent ? 'text-white' : 'text-[#A98159]'}`} strokeWidth={2.5} />
-    </button>
+      <ChevronLeft size={18} weight="thin" className={`flex-shrink-0 opacity-40 ${isAccent ? 'text-white' : 'text-[#A98159]'}`} />
+    </motion.button>
   );
 };
 
@@ -195,21 +210,33 @@ export default function Home() {
           </div>
           
           <div className="flex items-center gap-2">
-            <button className="relative w-10 h-10 rounded-xl border border-[#D1C4B9] flex items-center justify-center hover:bg-[#FDF8F0] transition-all">
-              <Bell size={18} className="text-[#6D6E71]" />
-              {totalPendingBadge && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-[#BA1A1A] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">
-                  {totalPendingBadge}
-                </span>
-              )}
-            </button>
-            
-            <button 
-              onClick={() => navigate('/profile')}
-              className="w-10 h-10 rounded-xl bg-[#FDF8F0] border border-[#A98159]/20 flex items-center justify-center hover:bg-[#A98159] hover:text-white group transition-all"
+            <motion.button
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.92 }}
+              className="relative w-10 h-10 rounded-xl border border-[#D1C4B9] bg-white/60 backdrop-blur-md flex items-center justify-center hover:bg-[#FDF8F0] transition-colors"
             >
-              <User size={18} className="text-[#A98159] group-hover:text-white transition-all" />
-            </button>
+              <Bell size={18} weight="thin" className="text-[#6D6E71]" />
+              {totalPendingBadge && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={_cardSpring}
+                  className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-[#BA1A1A] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1"
+                  style={{ animation: 'softPulse 2s ease-in-out infinite' }}
+                >
+                  {totalPendingBadge}
+                </motion.span>
+              )}
+            </motion.button>
+
+            <motion.button
+              onClick={() => navigate('/profile')}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.92 }}
+              className="w-10 h-10 rounded-xl bg-[#FDF8F0] border border-[#A98159]/20 backdrop-blur-md flex items-center justify-center hover:bg-[#A98159] group transition-colors"
+            >
+              <User size={18} weight="thin" className="text-[#A98159] group-hover:text-white transition-colors" />
+            </motion.button>
           </div>
         </div>
       </header>
@@ -269,7 +296,7 @@ export default function Home() {
 
             {activities.length === 0 ? (
               <div className="bg-white border border-[#D1C4B9] rounded-3xl py-12 text-center shadow-sm">
-                <Clock size={40} className="mx-auto text-[#D1C4B9] mb-3 opacity-40" strokeWidth={1.2} />
+                <Clock size={40} className="mx-auto text-[#D1C4B9] mb-3 opacity-40" weight="thin" />
                 <p className="text-[#6D6E71] text-sm font-bold font-arabic">لا يوجد نشاط مسجل لليوم بعد</p>
               </div>
             ) : (
@@ -330,13 +357,36 @@ export default function Home() {
             <div className="h-px flex-1 bg-[#D1C4B9]/50" />
           </div>
 
-          <div className="grid grid-cols-1 gap-4">
-            <MenuCard icon={Utensils} title="تقييم جودة الوجبات" onClick={() => navigate('/mealcheck')} variant="accent" badge={pendingMealBadge} />
-            <MenuCard icon={HomeIcon} title="جاهزية مشعر منى" onClick={() => navigate('/mina-readiness')} badge={pendingMinaBadge} />
-            <MenuCard icon={Mountain} title="جاهزية مشعر عرفة" onClick={() => navigate('/arafat-readiness')} badge={pendingArafatBadge} />
-            <MenuCard icon={AlertTriangle} title="بلاغ طارئ" onClick={() => navigate('/report')} />
-            <MenuCard icon={Truck} title="طلب إسناد لوجستي" onClick={() => navigate('/logistics')} />
-          </div>
+          <motion.div
+            className="grid grid-cols-1 gap-3"
+            initial="hidden"
+            animate="visible"
+            variants={{ visible: { transition: { staggerChildren: 0.07 } } }}
+          >
+            {[
+              { icon: Utensils,      title: 'تقييم جودة الوجبات',  path: '/mealcheck',        variant: 'accent', badge: pendingMealBadge   },
+              { icon: HomeIcon,      title: 'جاهزية مشعر منى',     path: '/mina-readiness',   variant: 'default', badge: pendingMinaBadge  },
+              { icon: Mountain,      title: 'جاهزية مشعر عرفة',    path: '/arafat-readiness', variant: 'default', badge: pendingArafatBadge },
+              { icon: AlertTriangle, title: 'بلاغ طارئ',           path: '/report',           variant: 'default', badge: null              },
+              { icon: Truck,         title: 'طلب إسناد لوجستي',    path: '/logistics',        variant: 'default', badge: null              },
+            ].map((item, i) => (
+              <motion.div
+                key={item.path}
+                variants={{
+                  hidden:  { opacity: 0, x: 20 },
+                  visible: { opacity: 1, x: 0, transition: { type: 'spring', stiffness: 340, damping: 22 } },
+                }}
+              >
+                <MenuCard
+                  icon={item.icon}
+                  title={item.title}
+                  onClick={() => navigate(item.path)}
+                  variant={item.variant}
+                  badge={item.badge}
+                />
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
 
       </main>
@@ -347,6 +397,10 @@ export default function Home() {
           to   { opacity: 1; transform: translateY(0); }
         }
         .animate-fade-slide-up { animation: fadeSlideUp 0.5s ease-out forwards; }
+        @keyframes softPulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50%       { opacity: 0.75; transform: scale(1.08); }
+        }
       `}</style>
     </div>
   );

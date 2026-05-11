@@ -2,10 +2,23 @@ import { useEffect, useState, useMemo } from 'react';
 import { collection, onSnapshot, deleteDoc, updateDoc, doc } from 'firebase/firestore';
 import { db } from '../../config/db.js';
 import {
-  AlertTriangle, Truck, ClipboardList, Mountain,
-  Clock, Trash2, X, ArrowLeft, CheckCircle2,
-  Utensils, Droplets, ChevronDown, Filter, Search,
-} from 'lucide-react';
+  Warning as AlertTriangle,
+  Van as Truck,
+  ClipboardText as ClipboardList,
+  Mountains as Mountain,
+  Clock,
+  Trash as Trash2,
+  X,
+  ArrowLeft,
+  CheckCircle as CheckCircle2,
+  ForkKnife as Utensils,
+  Drop as Droplets,
+  CaretDown as ChevronDown,
+  Funnel as Filter,
+  MagnifyingGlass as Search,
+  Warning, Van, ClipboardText, Mountains,
+} from '@phosphor-icons/react';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { getCaterer } from '../../config/centers.js';
 
@@ -90,25 +103,37 @@ function getActivityScore(item) {
   return null;
 }
 
+const _spring = { type: 'spring', stiffness: 380, damping: 18 };
+
 /* ─── Stat Card ─── */
 function StatCard({ label, value, icon: Icon, color, sub, onClick }) {
   return (
-    <button onClick={onClick}
-      className="group rounded-2xl p-5 border border-[#EDE5DC] shadow-[0_2px_8px_rgba(45,41,38,0.07)] flex items-center gap-4 w-full text-right hover:shadow-[0_8px_28px_rgba(45,41,38,0.13)] hover:border-[#C9B8A8] transition-all duration-200 active:scale-[0.98]"
+    <motion.button
+      onClick={onClick}
+      whileHover={{ y: -3, boxShadow: `0 12px 32px ${color}22` }}
+      whileTap={{ scale: 0.96 }}
+      transition={_spring}
+      className="rounded-2xl p-5 border border-[#EDE5DC] shadow-[0_2px_8px_rgba(45,41,38,0.07)] flex items-center gap-4 w-full text-right"
       style={{
         borderRight: `3px solid ${color}`,
-        background: `linear-gradient(145deg, #ffffff 45%, ${color}0F 100%)`,
-      }}>
+        background: `linear-gradient(145deg, #ffffff 45%, ${color}09 100%)`,
+      }}
+    >
       <div className="flex-1 min-w-0">
         <p className="text-[11px] font-semibold text-[#9D8F85] mb-1">{label}</p>
         <p className="text-[2rem] font-bold leading-none tabular-nums" style={{ color }}>{value ?? '—'}</p>
         {sub && <p className="text-[11px] text-[#B5A99E] mt-1.5 font-medium">{sub}</p>}
       </div>
-      <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200 group-hover:scale-110 group-hover:shadow-md"
-        style={{ background: `linear-gradient(135deg, ${color}28, ${color}14)` }}>
-        <Icon size={22} style={{ color }} strokeWidth={1.5} />
-      </div>
-    </button>
+      <motion.div
+        whileHover={{ scale: 1.18, rotate: 5 }}
+        whileTap={{ scale: 0.88 }}
+        transition={_spring}
+        className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 backdrop-blur-md border"
+        style={{ background: `${color}0D`, borderColor: `${color}22` }}
+      >
+        <Icon size={24} weight="duotone" style={{ color }} />
+      </motion.div>
+    </motion.button>
   );
 }
 
@@ -139,11 +164,11 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange }) {
           <div className="flex items-center gap-2">
             <button onClick={() => onDelete(report.id)}
               className="h-9 px-3.5 rounded-xl border border-red-200 flex items-center gap-1.5 hover:bg-red-50 transition-colors text-red-500 text-xs font-semibold">
-              <Trash2 size={13} strokeWidth={1.5} /> حذف
+              <Trash2 size={13} weight="thin" /> حذف
             </button>
             <button onClick={onClose}
               className="w-9 h-9 rounded-xl border border-[#EDE5DC] flex items-center justify-center hover:bg-[#F5F0EB] transition-colors">
-              <X size={16} className="text-[#6D6E71]" strokeWidth={1.5} />
+              <X size={16} className="text-[#6D6E71]" weight="thin" />
             </button>
           </div>
         </div>
@@ -170,7 +195,7 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange }) {
                     style={active
                       ? { background: s.bg, borderColor: s.border, color: s.text, boxShadow: `0 2px 8px ${s.border}` }
                       : { background: '#fff', borderColor: '#EDE5DC', color: '#9D8F85' }}>
-                    {active && <CheckCircle2 size={12} strokeWidth={2} />}
+                    {active && <CheckCircle2 size={12} weight="thin" />}
                     {s.label}
                   </button>
                 );
@@ -253,7 +278,7 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange }) {
         <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-[#EDE5DC] px-6 py-4 flex items-center justify-between rounded-t-3xl z-10">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-              <CatIcon size={16} className="text-blue-500" strokeWidth={1.75} />
+              <CatIcon size={16} className="text-blue-500" weight="thin" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -271,11 +296,11 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange }) {
           <div className="flex items-center gap-2">
             <button onClick={() => onDelete(item.id)}
               className="h-9 px-3.5 rounded-xl border border-red-200 flex items-center gap-1.5 hover:bg-red-50 transition-colors text-red-500 text-xs font-semibold">
-              <Trash2 size={13} strokeWidth={1.5} /> حذف
+              <Trash2 size={13} weight="thin" /> حذف
             </button>
             <button onClick={onClose}
               className="w-9 h-9 rounded-xl border border-[#EDE5DC] flex items-center justify-center hover:bg-[#F5F0EB] transition-colors">
-              <X size={16} className="text-[#6D6E71]" strokeWidth={1.5} />
+              <X size={16} className="text-[#6D6E71]" weight="thin" />
             </button>
           </div>
         </div>
@@ -294,7 +319,7 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange }) {
                     style={active
                       ? { background: s.bg, borderColor: s.border, color: s.text, boxShadow: `0 2px 8px ${s.border}` }
                       : { background: '#fff', borderColor: '#EDE5DC', color: '#9D8F85' }}>
-                    {active && <CheckCircle2 size={12} strokeWidth={2} />}
+                    {active && <CheckCircle2 size={12} weight="thin" />}
                     {s.label}
                   </button>
                 );
@@ -476,11 +501,11 @@ export default function AdminDashboard() {
   );
 
   const STATS = [
-    { label: 'البلاغات الميدانية', value: counts.reports,   icon: AlertTriangle, color: '#E53E3E', sub: 'بلاغات نشطة',    nav: '/admin/reports'   },
-    { label: 'التقييمات',           value: counts.evals,     icon: ClipboardList, color: '#A98159', sub: 'جودة الوجبات',   nav: '/admin/analytics' },
-    { label: 'طلبات الإسناد',       value: counts.logistics, icon: Truck,         color: '#3182CE', sub: 'طلبات لوجستية', nav: '/admin/logistics' },
-    { label: 'جاهزية منى',         value: counts.mina,      icon: Mountain,      color: '#2F855A', sub: 'تقييمات منى',    nav: '/admin/analytics' },
-    { label: 'جاهزية عرفة',        value: counts.arafat,    icon: Mountain,      color: '#0987A0', sub: 'تقييمات عرفة',   nav: '/admin/analytics' },
+    { label: 'البلاغات الميدانية', value: counts.reports,   icon: Warning,       color: '#E53E3E', sub: 'بلاغات نشطة',   nav: '/admin/reports'   },
+    { label: 'التقييمات',           value: counts.evals,     icon: ClipboardText, color: '#A98159', sub: 'جودة الوجبات',  nav: '/admin/analytics' },
+    { label: 'طلبات الإسناد',       value: counts.logistics, icon: Van,           color: '#3182CE', sub: 'طلبات لوجستية', nav: '/admin/logistics' },
+    { label: 'جاهزية منى',         value: counts.mina,      icon: Mountains,     color: '#2F855A', sub: 'تقييمات منى',   nav: '/admin/analytics' },
+    { label: 'جاهزية عرفة',        value: counts.arafat,    icon: Mountains,     color: '#0987A0', sub: 'تقييمات عرفة',  nav: '/admin/analytics' },
   ];
 
   return (
@@ -498,7 +523,7 @@ export default function AdminDashboard() {
           style={{ background: 'linear-gradient(135deg, #C4A46E 0%, #A98159 50%, #8B6840 100%)' }}>
           <div className="flex items-center gap-3 px-5 py-3.5">
             <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-              <Clock size={15} className="text-white" strokeWidth={1.5} />
+              <Clock size={15} className="text-white" weight="thin" />
             </div>
             <div>
               <p className="text-white/60 text-[10px] font-semibold leading-none">التاريخ الهجري</p>
@@ -549,7 +574,7 @@ export default function AdminDashboard() {
             <div className="relative">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center"
                 style={{ background: 'linear-gradient(135deg, #FCA5A5, #F87171)' }}>
-                <AlertTriangle size={16} className="text-white" strokeWidth={2} />
+                <AlertTriangle size={16} className="text-white" weight="thin" />
               </div>
               {pendingReports > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-red-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-md animate-pulse">
@@ -570,7 +595,7 @@ export default function AdminDashboard() {
           <button onClick={() => navigate('/admin/reports')}
             className="flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-700 transition-colors bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg">
             عرض الكل
-            <ArrowLeft size={12} strokeWidth={2} />
+            <ArrowLeft size={12} weight="thin" />
           </button>
         </div>
 
@@ -582,7 +607,7 @@ export default function AdminDashboard() {
           if (displayed.length === 0) return (
             <div className="py-14 text-center">
               <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                <Search size={18} className="text-gray-200" strokeWidth={1.5} />
+                <Search size={18} className="text-gray-200" weight="thin" />
               </div>
               <p className="text-[#9D8F85] text-sm font-medium">
                 {q ? `لم يتم العثور على بلاغ بالرقم "${searchQuery}"` : 'لا توجد بلاغات بعد'}
@@ -600,7 +625,7 @@ export default function AdminDashboard() {
                 <button onClick={() => setSelectedReport(r)}
                   className="flex items-center gap-4 flex-1 text-right min-w-0">
                   <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
-                    <AlertTriangle size={14} className="text-red-400" strokeWidth={1.5} />
+                    <AlertTriangle size={14} className="text-red-400" weight="thin" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
@@ -639,7 +664,7 @@ export default function AdminDashboard() {
                 </select>
                 <button onClick={() => handleDeleteReport(r.id)}
                   className="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-xl hover:bg-red-50 flex items-center justify-center text-[#C9B8A8] hover:text-red-500 transition-all flex-shrink-0">
-                  <Trash2 size={13} strokeWidth={1.5} />
+                  <Trash2 size={13} weight="thin" />
                 </button>
               </div>
             );
@@ -655,7 +680,7 @@ export default function AdminDashboard() {
             <div className="relative">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center"
                 style={{ background: 'linear-gradient(135deg, #60A5FA, #3B82F6)' }}>
-                <Truck size={16} className="text-white" strokeWidth={2} />
+                <Truck size={16} className="text-white" weight="thin" />
               </div>
               {pendingLogistics > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-md animate-pulse">
@@ -676,14 +701,14 @@ export default function AdminDashboard() {
           <button onClick={() => navigate('/admin/logistics')}
             className="flex items-center gap-1.5 text-xs font-bold text-blue-500 hover:text-blue-700 transition-colors bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg">
             عرض الكل
-            <ArrowLeft size={12} strokeWidth={2} />
+            <ArrowLeft size={12} weight="thin" />
           </button>
         </div>
 
         {logisticsFeed.length === 0 ? (
           <div className="py-14 text-center">
             <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <Truck size={18} className="text-gray-200" strokeWidth={1.5} />
+              <Truck size={18} className="text-gray-200" weight="thin" />
             </div>
             <p className="text-[#9D8F85] text-sm font-medium">لا توجد طلبات إسناد بعد</p>
           </div>
@@ -702,7 +727,7 @@ export default function AdminDashboard() {
                 <button onClick={() => setSelectedLogistics(item)}
                   className="flex items-center gap-4 flex-1 text-right min-w-0">
                   <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-                    <CatIcon size={14} className="text-blue-400" strokeWidth={1.5} />
+                    <CatIcon size={14} className="text-blue-400" weight="thin" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
@@ -738,7 +763,7 @@ export default function AdminDashboard() {
                 </select>
                 <button onClick={() => handleDeleteLogistics(item.id)}
                   className="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-xl hover:bg-red-50 flex items-center justify-center text-[#C9B8A8] hover:text-red-500 transition-all flex-shrink-0">
-                  <Trash2 size={13} strokeWidth={1.5} />
+                  <Trash2 size={13} weight="thin" />
                 </button>
               </div>
             );
@@ -754,7 +779,7 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center"
               style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
-              <ClipboardList size={16} className="text-white" strokeWidth={2} />
+              <ClipboardList size={16} className="text-white" weight="thin" />
             </div>
             <div>
               <h2 className="font-bold text-[#2D2926] text-sm">النشاطات الميدانية</h2>
@@ -791,7 +816,7 @@ export default function AdminDashboard() {
         {filteredActivity.length === 0 ? (
           <div className="py-14 text-center">
             <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <ClipboardList size={18} className="text-gray-200" strokeWidth={1.5} />
+              <ClipboardList size={18} className="text-gray-200" weight="thin" />
             </div>
             <p className="text-[#9D8F85] text-sm font-medium">
               {centerFilter ? `لا توجد نشاطات لـ ${centerFilter}` : 'لا توجد نشاطات بعد'}
@@ -818,8 +843,8 @@ export default function AdminDashboard() {
                   isMeal ? 'bg-amber-50' : isMina ? 'bg-green-50' : 'bg-cyan-50'
                 }`}>
                   {isMeal
-                    ? <Utensils size={14} className="text-amber-500" strokeWidth={1.5} />
-                    : <Mountain size={14} className={isMina ? 'text-green-500' : 'text-cyan-500'} strokeWidth={1.5} />
+                    ? <Utensils size={14} className="text-amber-500" weight="thin" />
+                    : <Mountain size={14} className={isMina ? 'text-green-500' : 'text-cyan-500'} weight="thin" />
                   }
                 </div>
                 <div className="flex-1 min-w-0">

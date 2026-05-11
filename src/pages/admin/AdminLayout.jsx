@@ -4,27 +4,30 @@ import { signOut } from 'firebase/auth';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { auth, db } from '../../config/db.js';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  LayoutDashboard, FileText, Truck, ClipboardList,
-  Users, LogOut, Menu, X, Bell, ChevronRight, ListChecks, Layers,
-} from 'lucide-react';
+  SquaresFour, Warning, Van, ClipboardText, Users, SignOut,
+  Bell, List, X, CaretRight, ListChecks, Stack, CaretLeft,
+} from '@phosphor-icons/react';
 import logo from '../../assets/logo-light.svg';
 import { getCaterer } from '../../config/centers.js';
 
 const NAV = [
-  { to: '/admin/dashboard',  label: 'نظرة عامة',        icon: LayoutDashboard },
-  { to: '/admin/reports',    label: 'البلاغات الميدانية', icon: FileText        },
-  { to: '/admin/logistics',  label: 'الإسناد اللوجستي',  icon: Truck           },
-  { to: '/admin/analytics',  label: 'التقييمات',          icon: ClipboardList   },
-  { to: '/admin/phases',     label: 'المراحل',             icon: Layers          },
-  { to: '/admin/tasks',      label: 'إسناد المهام',       icon: ListChecks      },
-  { to: '/admin/users',      label: 'إدارة المستخدمين',  icon: Users           },
+  { to: '/admin/dashboard',  label: 'نظرة عامة',         icon: SquaresFour  },
+  { to: '/admin/reports',    label: 'البلاغات الميدانية', icon: Warning      },
+  { to: '/admin/logistics',  label: 'الإسناد اللوجستي',  icon: Van          },
+  { to: '/admin/analytics',  label: 'التقييمات',          icon: ClipboardText },
+  { to: '/admin/phases',     label: 'المراحل',             icon: Stack        },
+  { to: '/admin/tasks',      label: 'إسناد المهام',       icon: ListChecks   },
+  { to: '/admin/users',      label: 'إدارة المستخدمين',  icon: Users        },
 ];
 
 const NOTIF_COLS = [
   'reports', 'logistics_requests', 'meal_evaluations',
   'mina_readiness', 'arafat_readiness',
 ];
+
+const spring = { type: 'spring', stiffness: 400, damping: 18 };
 
 export default function AdminLayout() {
   const navigate              = useNavigate();
@@ -38,13 +41,13 @@ export default function AdminLayout() {
     () => Number(localStorage.getItem('notif_last_seen') || 0)
   );
 
-  /* Reports sidebar badge — pending reports only */
+  /* Reports sidebar badge */
   useEffect(() => {
     const q = query(collection(db, 'reports'), where('status', '==', 'pending'));
     return onSnapshot(q, snap => setPendingCount(snap.size));
   }, []);
 
-  /* Bell badge — all new items across every collection since lastSeen */
+  /* Bell badge */
   useEffect(() => {
     const counts = {};
     const unsubs = NOTIF_COLS.map(col => {
@@ -61,7 +64,7 @@ export default function AdminLayout() {
     return () => unsubs.forEach(u => u());
   }, [lastSeen]);
 
-  /* Reset badge when admin visits the notifications page */
+  /* Reset badge on notifications page */
   useEffect(() => {
     if (location.pathname === '/admin/notifications') {
       const now = Date.now();
@@ -84,44 +87,69 @@ export default function AdminLayout() {
       <div className="relative px-5 py-4 border-b border-white/10 overflow-hidden">
         <div className="absolute inset-0 opacity-15"
           style={{ background: 'radial-gradient(ellipse at 70% 50%, #C4A46E 0%, transparent 70%)' }} />
-        <div className="relative flex flex-col items-center gap-1 cursor-default">
-          <img src={logo} alt="ضيوف البيت" className="w-full max-w-[152px] h-auto object-contain transition-transform duration-300 hover:scale-105" />
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+          className="relative flex flex-col items-center gap-1 cursor-default"
+        >
+          <img src={logo} alt="ضيوف البيت" className="w-full max-w-[152px] h-auto object-contain" />
           <p className="text-[9px] font-semibold tracking-widest uppercase opacity-40 text-white">لوحة الإدارة</p>
-        </div>
+        </motion.div>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {NAV.map(({ to, label, icon: Icon }) => (
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+        {NAV.map(({ to, label, icon: Icon }, idx) => (
           <NavLink
             key={to}
             to={to}
             onClick={() => setOpen(false)}
             className={({ isActive }) =>
-              `group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                isActive
-                  ? 'text-white shadow-[0_4px_20px_rgba(169,129,89,0.45)]'
-                  : 'text-white/65 hover:bg-white/8 hover:text-white'
+              `group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-150 ${
+                isActive ? 'text-white' : 'text-white/55 hover:text-white/90'
               }`
             }
             style={({ isActive }) => isActive
-              ? { background: 'linear-gradient(135deg, #C4A46E, #A98159)' }
-              : {}
+              ? { background: 'linear-gradient(135deg, rgba(196,164,110,0.25), rgba(169,129,89,0.15))', borderLeft: '2px solid #C4A46E' }
+              : { borderLeft: '2px solid transparent' }
             }
           >
             {({ isActive }) => (
               <>
-                <div className={`transition-all duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110 group-hover:rotate-3'}`}>
-                  <Icon size={18} strokeWidth={isActive ? 2.25 : 1.75} />
-                </div>
-                <span className="flex-1">{label}</span>
+                <motion.div
+                  initial={{ opacity: 0, x: 8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.25, delay: idx * 0.04 }}
+                  whileHover={{ scale: 1.18 }}
+                  whileTap={{ scale: 0.88 }}
+                  className="w-8 h-8 flex items-center justify-center rounded-xl flex-shrink-0 backdrop-blur-md border"
+                  style={{
+                    background: isActive ? 'rgba(196,164,110,0.18)' : 'rgba(255,255,255,0.04)',
+                    borderColor: isActive ? 'rgba(196,164,110,0.35)' : 'rgba(255,255,255,0.07)',
+                  }}
+                >
+                  <Icon
+                    size={17}
+                    weight={isActive ? 'duotone' : 'thin'}
+                    color={isActive ? '#C4A46E' : 'rgba(255,255,255,0.55)'}
+                  />
+                </motion.div>
+
+                <span className="flex-1 text-[13px]">{label}</span>
+
                 {to === '/admin/reports' && pendingCount > 0 && (
-                  <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center animate-pulse">
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center"
+                  >
                     {pendingCount}
-                  </span>
+                  </motion.span>
                 )}
+
                 {isActive && (
-                  <ChevronRight size={14} className="opacity-60" />
+                  <CaretRight size={12} weight="bold" className="opacity-40 flex-shrink-0" />
                 )}
               </>
             )}
@@ -132,12 +160,15 @@ export default function AdminLayout() {
       {/* Profile + Logout */}
       <div className="px-4 py-4 border-t border-white/10">
         {/* Avatar + info */}
-        <div className="flex items-center gap-3 mb-2 px-1">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#C4A46E] to-[#A98159] flex items-center justify-center flex-shrink-0 shadow-md">
+        <div className="flex items-center gap-3 mb-3 px-1">
+          <motion.div
+            whileHover={{ scale: 1.08 }}
+            className="w-9 h-9 rounded-full bg-gradient-to-br from-[#C4A46E] to-[#A98159] flex items-center justify-center flex-shrink-0 shadow-md cursor-default"
+          >
             <span className="text-white text-sm font-bold">
               {(profile?.nameAr || profile?.name)?.charAt(0) || 'أ'}
             </span>
-          </div>
+          </motion.div>
           <div className="min-w-0">
             <p className="text-white text-xs font-bold truncate">{profile?.nameAr || profile?.name || 'المشرف'}</p>
             <p className="text-white/40 text-[10px] truncate">{profile?.email || ''}</p>
@@ -169,16 +200,18 @@ export default function AdminLayout() {
         )}
 
         {/* Logout */}
-        <button
+        <motion.button
           onClick={handleLogout}
           disabled={loggingOut}
-          className="group w-full flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-white/60 hover:bg-red-500/20 hover:text-red-300 text-sm transition-all duration-200 disabled:opacity-50"
+          whileHover={{ x: -3 }}
+          whileTap={{ scale: 0.96 }}
+          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-white/55 hover:bg-red-500/15 hover:text-red-300 text-sm transition-colors duration-200 disabled:opacity-50"
         >
           {loggingOut
             ? <span className="w-4 h-4 border-2 border-red-400/40 border-t-red-400 rounded-full animate-spin flex-shrink-0" />
-            : <LogOut size={16} className="flex-shrink-0 transition-all duration-300 group-hover:-translate-x-1" />}
-          <span>{loggingOut ? 'جارٍ الخروج...' : 'تسجيل الخروج'}</span>
-        </button>
+            : <SignOut size={16} weight="thin" className="flex-shrink-0" />}
+          <span className="text-xs font-semibold">{loggingOut ? 'جارٍ الخروج...' : 'تسجيل الخروج'}</span>
+        </motion.button>
       </div>
     </div>
   );
@@ -194,21 +227,37 @@ export default function AdminLayout() {
       </aside>
 
       {/* Mobile drawer */}
-      {open && (
-        <div className="lg:hidden fixed inset-0 z-40 flex">
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setOpen(false)} />
-          <aside className="relative w-64 flex flex-col z-50 shadow-2xl"
-            style={{ background: 'linear-gradient(180deg,#4A3B35 0%,#2D2926 60%,#231F1C 100%)' }}>
-            <button
+      <AnimatePresence>
+        {open && (
+          <div className="lg:hidden fixed inset-0 z-40 flex">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm"
               onClick={() => setOpen(false)}
-              className="absolute top-4 left-4 w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/20 transition-all duration-200 hover:rotate-90"
+            />
+            <motion.aside
+              initial={{ x: 240 }}
+              animate={{ x: 0 }}
+              exit={{ x: 240 }}
+              transition={spring}
+              className="relative w-64 flex flex-col z-50 shadow-2xl"
+              style={{ background: 'linear-gradient(180deg,#4A3B35 0%,#2D2926 60%,#231F1C 100%)' }}
             >
-              <X size={18} />
-            </button>
-            <SidebarContent />
-          </aside>
-        </div>
-      )}
+              <motion.button
+                onClick={() => setOpen(false)}
+                whileHover={{ scale: 1.1, rotate: 90 }}
+                whileTap={{ scale: 0.9 }}
+                className="absolute top-4 left-4 w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/20 transition-colors"
+              >
+                <X size={16} weight="thin" />
+              </motion.button>
+              <SidebarContent />
+            </motion.aside>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -217,12 +266,14 @@ export default function AdminLayout() {
         <header className="border-b border-[#D9CEBC] px-6 py-3 flex items-center justify-between flex-shrink-0 shadow-[0_1px_8px_rgba(45,41,38,0.08)]"
           style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, #FDF8F2 100%)' }}>
           <div className="flex items-center gap-3">
-            <button
+            <motion.button
               onClick={() => setOpen(true)}
-              className="group lg:hidden p-2 rounded-xl hover:bg-[#F5EEE4] transition-all duration-200"
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.92 }}
+              className="lg:hidden p-2 rounded-xl hover:bg-[#F5EEE4] transition-colors"
             >
-              <Menu size={20} className="text-[#2D2926] transition-transform duration-300 group-hover:scale-110" />
-            </button>
+              <List size={20} weight="thin" className="text-[#2D2926]" />
+            </motion.button>
             <div>
               <p className="text-[11px] font-semibold text-[#9D8F85]">موسم الحج ١٤٤٧ هـ</p>
               <p className="text-sm font-bold text-[#2D2926]">لجنة التغذية | شركة ضيوف البيت</p>
@@ -230,21 +281,24 @@ export default function AdminLayout() {
           </div>
 
           {/* Bell */}
-          <button
+          <motion.button
             onClick={() => navigate('/admin/notifications')}
-            className="group relative p-2.5 rounded-xl border border-[#D9CEBC] hover:bg-[#FDF8F0] hover:border-[#A98159]/60 hover:shadow-md transition-all duration-200"
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.92 }}
+            className="relative p-2.5 rounded-xl border border-[#D9CEBC] bg-white/60 backdrop-blur-md hover:bg-[#FDF8F0] hover:border-[#A98159]/50 transition-colors"
           >
-            <Bell
-              size={18}
-              className="text-[#6D6E71] transition-all duration-300 group-hover:text-[#A98159] group-hover:scale-110 group-hover:rotate-12"
-            />
+            <Bell size={18} weight="thin" className="text-[#6D6E71]" />
             {newCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-md"
-                style={{ animation: 'badgePulse 2s ease-in-out infinite' }}>
+              <motion.span
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-md"
+                style={{ animation: 'badgePulse 2s ease-in-out infinite' }}
+              >
                 {newCount > 99 ? '99+' : newCount}
-              </span>
+              </motion.span>
             )}
-          </button>
+          </motion.button>
         </header>
 
         <main className="flex-1 overflow-y-auto p-6">
