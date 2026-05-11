@@ -27,10 +27,16 @@ const DAYS = [
   { id: '13', label: '١٣ ذو الحجة' },
 ];
 
+// دالة الوقت المحسنة لمنع الانهيار
 function fmtTime(ts) {
   if (!ts) return null;
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
-  return d.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+  try {
+    const d = ts.toDate ? ts.toDate() : (ts.seconds ? new Date(ts.seconds * 1000) : new Date(ts));
+    if (isNaN(d.getTime())) return null;
+    return d.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+  } catch (e) {
+    return null;
+  }
 }
 
 function PhotoLightbox({ src, onClose }) {
@@ -78,11 +84,14 @@ export default function AdminPhases() {
   const [selectedDay,  setSelectedDay]  = useState('8');
   const [sortBy,       setSortBy]       = useState('progress');
   const [lightboxSrc,  setLightboxSrc]  = useState(null);
+  
+  // حالات المسح (التي كانت ناقصة وتسبب الخطأ)
   const [clearConfirm,    setClearConfirm]    = useState(false);
   const [clearing,        setClearing]        = useState(false);
-  // { center, mealId } | null
   const [mealClearTarget, setMealClearTarget] = useState(null);
   const [mealClearing,    setMealClearing]    = useState(false);
+  const [centerClearConfirm, setCenterClearConfirm] = useState(null);
+  const [centerClearing,     setCenterClearing]     = useState(false);
 
   const handleClearDay = async () => {
     setClearing(true);
@@ -105,6 +114,21 @@ export default function AdminPhases() {
     } catch {}
     setMealClearing(false);
     setMealClearTarget(null);
+  };
+
+  // وظيفة مسح المركز (كانت ناقصة)
+  const handleClearCenter = async (centerId) => {
+    setCenterClearing(true);
+    try {
+      const batch = writeBatch(db);
+      MEALS.forEach(m => {
+        const docId = `${centerId}_d${selectedDay}_${m.id}`;
+        batch.delete(doc(db, 'meal_phases', docId));
+      });
+      await batch.commit();
+    } catch(e) {}
+    setCenterClearing(false);
+    setCenterClearConfirm(null);
   };
 
   useEffect(() => {
@@ -134,18 +158,15 @@ export default function AdminPhases() {
   const fullyDone  = rows.filter(r => r.total === maxDone).length;
   const inProgress = rows.filter(r => r.total > 0 && r.total < maxDone).length;
   const notStarted = rows.filter(r => r.total === 0).length;
-  const overallPct = Math.round((rows.reduce((s, r) => s + r.total, 0) / (rows.length * maxDone)) * 100);
+  const overallPct = Math.round((rows.reduce((s, r) => s + r.total, 0) / (rows.length * maxDone)) * 100) || 0;
 
   return (
     <div className="space-y-5 pb-6" dir="rtl">
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-[#2D2926]">المراحل الميدانية</h1>
-          <p className="text-sm text-[#9D8F85] mt-0.5 font-medium">
-            متابعة مراحل تجهيز وطبخ وتوزيع الوجبات — تحديث فوري
-          </p>
+          <p className="text-sm text-[#9D8F85] mt-0.5 font-medium">متابعة مراحل تجهيز وطبخ وتوزيع الوجبات — تحديث فوري</p>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
@@ -171,7 +192,7 @@ export default function AdminPhases() {
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500 text-white text-xs font-bold hover:bg-red-600 transition-all disabled:opacity-60 flex-shrink-0"
               >
                 <Trash2 size={12} strokeWidth={2} />
-                {clearing ? 'جاري...' : 'تأكيد المسح'}
+                {clearing ? 'جاري...' : 'تأكيد'}
               </button>
               <button
                 onClick={() => setClearConfirm(false)}
@@ -224,7 +245,7 @@ export default function AdminPhases() {
         ))}
       </div>
 
-      {/* Overall Progress Bar */}
+      {/* Progress Bar */}
       <div className="bg-white rounded-2xl px-6 py-4 border border-[#EDE5DC] shadow-[0_2px_8px_rgba(45,41,38,0.07)]">
         <div className="flex items-center justify-between mb-2">
           <p className="text-sm font-bold text-[#2D2926]">
@@ -237,77 +258,48 @@ export default function AdminPhases() {
             className="h-full rounded-full transition-all duration-700"
             style={{
               width: `${overallPct}%`,
-              background: overallPct === 100
-                ? 'linear-gradient(90deg, #10B981, #34D399)'
-                : overallPct > 50
-                  ? 'linear-gradient(90deg, #F59E0B, #FBBF24)'
-                  : 'linear-gradient(90deg, #A98159, #C4A46E)',
+              background: overallPct === 100 ? '#10B981' : overallPct > 50 ? '#F59E0B' : '#A98159',
             }}
           />
         </div>
-        <div className="flex items-center justify-between mt-2">
-          <p className="text-[10px] text-[#9D8F85] font-medium">
-            {rows.reduce((s, r) => s + r.total, 0)} من {rows.length * maxDone} مرحلة مكتملة
-          </p>
-          <div className="flex items-center gap-3">
-            {PHASES.map(p => (
-              <div key={p.id} className="flex items-center gap-1">
-                <div className="w-2.5 h-2.5 rounded-full" style={{ background: p.color }} />
-                <span className="text-[10px] text-[#9D8F85] font-medium">{p.short}</span>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
 
-      {/* Main Table */}
+      {/* Table */}
       <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
-
-        {/* Table Header */}
         <div className="grid gap-2 px-4 py-3 border-b border-[#EDE5DC] bg-[#FAFAF8]"
-          style={{ gridTemplateColumns: '1fr repeat(3, minmax(100px, 1fr)) 70px' }}>
-          <p className="text-[11px] font-bold text-[#9D8F85] uppercase tracking-wider">المركز</p>
+          style={{ gridTemplateColumns: '1.2fr repeat(3, 1fr) 0.6fr 50px' }}>
+          <p className="text-[11px] font-bold text-[#9D8F85]">المركز</p>
           {MEALS.map(m => (
             <div key={m.id} className="flex items-center justify-center gap-1.5">
-              <m.icon size={15} weight="duotone" style={{ color: m.color }} />
+              <m.icon size={14} style={{ color: m.color }} />
               <p className="text-[11px] font-bold text-[#9D8F85]">{m.label}</p>
             </div>
           ))}
           <p className="text-[11px] font-bold text-[#9D8F85] text-center">التقدم</p>
+          <p className="text-[11px] font-bold text-[#9D8F85] text-center">إجراء</p>
         </div>
 
-        {/* Rows */}
         {rows.map((row, idx) => {
           const isLast = idx === rows.length - 1;
           const pct = Math.round((row.total / maxDone) * 100);
           return (
             <div
               key={row.center}
-              className={`group grid gap-2 px-4 py-4 items-center transition-colors hover:bg-[#FDFAF7] ${!isLast ? 'border-b border-[#EDE5DC]' : ''}`}
-              style={{ gridTemplateColumns: '1fr repeat(3, minmax(100px, 1fr)) 70px' }}
+              className={`group grid gap-2 px-4 py-4 items-center ${!isLast ? 'border-b border-[#EDE5DC]' : ''}`}
+              style={{ gridTemplateColumns: '1.2fr repeat(3, 1fr) 0.6fr 50px' }}
             >
-              {/* Center Info */}
               <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-bold text-sm text-[#2D2926]">{row.center}</p>
-                  {row.total === maxDone && (
-                    <span className="inline-flex items-center gap-1 bg-green-50 text-green-600 text-[9px] font-black px-2 py-0.5 rounded-full border border-green-200">
-                      <CheckCircle2 size={9} strokeWidth={2.5} /> مكتمل
-                    </span>
-                  )}
-                </div>
-                <p className="text-[10px] text-[#A98159] font-bold mt-0.5 truncate">{row.caterer}</p>
+                <p className="font-bold text-sm text-[#2D2926]">{row.center}</p>
+                <p className="text-[10px] text-[#A98159] font-bold truncate">{row.caterer}</p>
               </div>
 
-              {/* Meal Columns */}
               {MEALS.map(meal => {
-                const data    = getCell(row.center, selectedDay, meal.id);
-                const done    = cellDone(data);
+                const data = getCell(row.center, selectedDay, meal.id);
+                const done = cellDone(data);
                 const isTarget = mealClearTarget?.center === row.center && mealClearTarget?.mealId === meal.id;
                 return (
                   <div key={meal.id} className="flex flex-col items-center gap-1">
-                    {/* 3 phase dots */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       {PHASES.map(phase => (
                         <PhaseDot
                           key={phase.id}
@@ -319,98 +311,35 @@ export default function AdminPhases() {
                         />
                       ))}
                     </div>
-                    {/* timestamp of latest phase */}
-                    {done > 0 && (() => {
-                      const latestTs = [3, 2, 1].map(n => data[`phase${n}`]).find(Boolean);
-                      return latestTs ? (
-                        <span className="text-[9px] font-bold tabular-nums"
-                          style={{ color: PHASES[done - 1]?.color }}>
-                          {fmtTime(latestTs)}
-                        </span>
-                      ) : null;
-                    })()}
-                    {done === 0 && (
-                      <span className="text-[9px] text-[#D1D5DB] font-medium">—</span>
-                    )}
-                    {/* Per-meal delete */}
                     {done > 0 && (
-                      isTarget ? (
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <button
-                            onClick={handleClearMeal}
-                            disabled={mealClearing}
-                            className="px-1.5 py-0.5 rounded-md bg-red-500 text-white text-[8px] font-bold hover:bg-red-600 disabled:opacity-60 transition-colors"
-                          >
-                            {mealClearing ? '...' : 'مسح'}
-                          </button>
-                          <button
-                            onClick={() => setMealClearTarget(null)}
-                            className="text-[8px] text-[#9D8F85] font-bold hover:text-[#2D2926]"
-                          >
-                            إلغاء
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setMealClearTarget({ center: row.center, mealId: meal.id })}
-                          className="mt-0.5 opacity-0 group-hover:opacity-100 w-5 h-5 rounded flex items-center justify-center hover:bg-red-50 transition-all"
-                          title="مسح بيانات الوجبة"
-                        >
-                          <Trash2 size={10} className="text-[#C9B8A8] hover:text-red-400 transition-colors" strokeWidth={2} />
-                        </button>
-                      )
+                      <div className="flex flex-col items-center">
+                        <span className="text-[9px] font-bold text-[#9D8F85] tabular-nums">
+                          {fmtTime([3,2,1].map(n => data[`phase${n}`]).find(Boolean))}
+                        </span>
+                        {isTarget ? (
+                           <button onClick={handleClearMeal} className="text-[8px] text-red-500 font-bold">تأكيد</button>
+                        ) : (
+                           <button onClick={() => setMealClearTarget({center: row.center, mealId: meal.id})} className="opacity-0 group-hover:opacity-100 text-[8px] text-[#9D8F85]">حذف</button>
+                        )}
+                      </div>
                     )}
                   </div>
                 );
               })}
 
-              {/* Progress */}
-              <div className="flex flex-col items-center gap-1">
-                <p className="text-sm font-black tabular-nums"
-                  style={{ color: pct === 100 ? '#10B981' : pct > 0 ? '#F59E0B' : '#D1D5DB' }}>
-                  {pct}%
-                </p>
-                <div className="w-14 h-1.5 bg-[#F3F4F6] rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{
-                      width: `${pct}%`,
-                      background: pct === 100 ? '#10B981' : pct >= 67 ? '#F59E0B' : pct >= 34 ? '#EF4444' : '#A98159',
-                    }}
-                  />
-                </div>
-                <p className="text-[9px] text-[#9D8F85] font-medium">{row.total}/{maxDone}</p>
+              <div className="text-center">
+                <p className="text-xs font-black" style={{ color: pct === 100 ? '#10B981' : '#F59E0B' }}>{pct}%</p>
               </div>
 
-              {/* Per-center clear */}
-              <div className="flex items-center justify-center">
-                {row.total === 0 ? (
-                  <div className="w-7 h-7" />
-                ) : centerClearConfirm === row.center ? (
-                  <div className="flex flex-col items-center gap-1">
-                    <button
-                      onClick={() => handleClearCenter(row.center)}
-                      disabled={centerClearing}
-                      className="w-7 h-7 rounded-lg bg-red-500 hover:bg-red-600 flex items-center justify-center transition-colors disabled:opacity-60"
-                      title="تأكيد المسح"
-                    >
-                      <Trash2 size={11} className="text-white" strokeWidth={2.5} />
-                    </button>
-                    <button
-                      onClick={() => setCenterClearConfirm(null)}
-                      className="text-[8px] text-[#9D8F85] font-bold hover:text-[#2D2926] leading-none"
-                    >
-                      إلغاء
-                    </button>
-                  </div>
+              <div className="flex justify-center">
+                {centerClearConfirm === row.center ? (
+                   <button onClick={() => handleClearCenter(row.center)} className="w-7 h-7 bg-red-500 rounded-lg flex items-center justify-center text-white">
+                     <Trash2 size={12} />
+                   </button>
                 ) : (
-                  <button
-                    onClick={() => setCenterClearConfirm(row.center)}
-                    className="w-7 h-7 rounded-lg border border-[#EDE5DC] hover:border-red-300 hover:bg-red-50 flex items-center justify-center transition-colors group"
-                    title="مسح بيانات هذا المركز"
-                  >
-                    <Trash2 size={11} className="text-[#C9B8A8] group-hover:text-red-400 transition-colors" strokeWidth={2} />
-                  </button>
+                   <button onClick={() => setCenterClearConfirm(row.center)} className="w-7 h-7 border rounded-lg flex items-center justify-center text-[#C9B8A8]">
+                     <Trash2 size={12} />
+                   </button>
                 )}
               </div>
             </div>
@@ -419,11 +348,7 @@ export default function AdminPhases() {
       </div>
 
       {lightboxSrc && <PhotoLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
-
-      <style>{`
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      `}</style>
+      <style>{`.no-scrollbar::-webkit-scrollbar { display: none; }`}</style>
     </div>
   );
 }
