@@ -252,24 +252,32 @@ export default function Mealcheck() {
     setPhasePhotos(prev => ({ ...prev, [id]: file }));
     setPhaseDone(prev  => ({ ...prev, [id]: true  }));
     const center = profile?.center;
-    if (center && selectedTask) {
-      const docId = `${center}_d${selectedTask.day}_${selectedTask.mealType}`;
-      try {
-        const path    = `meal_phases/${docId}/phase${id}_${Date.now()}`;
-        const sRef    = storageRef(storage, path);
-        await uploadBytes(sRef, file);
-        const photoURL = await getDownloadURL(sRef);
-        await setDoc(doc(db, 'meal_phases', docId), {
-          center, day: selectedTask.day, mealType: selectedTask.mealType,
-          scheduledDate: selectedTask.scheduledDate,
-          observer: profile?.nameAr || profile?.name || '—',
-          uid: profile?.uid,
-          [`phase${id}`]:       serverTimestamp(),
-          [`phase${id}_photo`]: photoURL,
-          updatedAt:            serverTimestamp(),
-        }, { merge: true });
-      } catch { /* silent */ }
-    }
+    if (!center || !selectedTask) return;
+
+    const docId   = `${center}_d${selectedTask.day}_${selectedTask.mealType}`;
+    const baseDoc = {
+      center,
+      day:           selectedTask.day,
+      mealType:      selectedTask.mealType,
+      scheduledDate: selectedTask.scheduledDate,
+      observer:      profile?.nameAr || profile?.name || '—',
+      uid:           profile?.uid,
+      [`phase${id}`]: serverTimestamp(),
+      updatedAt:      serverTimestamp(),
+    };
+
+    /* 1. Save phase timestamp immediately — always, regardless of photo */
+    try {
+      await setDoc(doc(db, 'meal_phases', docId), baseDoc, { merge: true });
+    } catch { /* silent */ }
+
+    /* 2. Upload photo separately — failure doesn't block phase data */
+    try {
+      const sRef     = storageRef(storage, `meal_phases/${docId}/phase${id}_${Date.now()}`);
+      await uploadBytes(sRef, file);
+      const photoURL = await getDownloadURL(sRef);
+      await setDoc(doc(db, 'meal_phases', docId), { [`phase${id}_photo`]: photoURL }, { merge: true });
+    } catch { /* photo upload failed silently */ }
   };
 
   const allPhasesComplete = phaseDone[1] && phaseDone[2] && phaseDone[3];
