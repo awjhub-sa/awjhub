@@ -3,21 +3,22 @@ import { useAuth } from './context/AuthContext.jsx';
 import { RequireAuth, RequireAdmin } from './components/PrivateRoute.jsx';
 
 // Observer pages
-import Login          from './pages/Login';
-import Home           from './pages/Home';
-import Mealcheck      from './pages/Mealcheck';
-import Report         from './pages/Report';
-import MinaReadiness  from './pages/MinaReadiness';
+import Login           from './pages/Login';
+import Home            from './pages/Home';
+import Profile         from './pages/Profile'; // ✅ تم إضافة الاستيراد
+import Mealcheck       from './pages/Mealcheck';
+import Report          from './pages/Report';
+import MinaReadiness   from './pages/MinaReadiness';
 import ArafatReadiness from './pages/ArafatReadiness';
 import LogisticsRequest from './pages/LogisticsRequest';
 
 // Admin pages
-import AdminLayout    from './pages/admin/AdminLayout';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminReports   from './pages/admin/AdminReports';
-import AdminLogistics from './pages/admin/AdminLogistics';
-import AdminAnalytics from './pages/admin/AdminAnalytics';
-import AdminUsers          from './pages/admin/AdminUsers';
+import AdminLayout     from './pages/admin/AdminLayout';
+import AdminDashboard  from './pages/admin/AdminDashboard';
+import AdminReports    from './pages/admin/AdminReports';
+import AdminLogistics  from './pages/admin/AdminLogistics';
+import AdminAnalytics  from './pages/admin/AdminAnalytics';
+import AdminUsers           from './pages/admin/AdminUsers';
 import AdminNotifications from './pages/admin/AdminNotifications';
 
 /* Root redirect based on role */
@@ -38,13 +39,14 @@ export default function App() {
         <Route path="/login" element={<Login />} />
 
         {/* Observer (protected) */}
-        <Route path="/home"            element={<RequireAuth><Home /></RequireAuth>} />
-        <Route path="/mealcheck"       element={<RequireAuth><Mealcheck /></RequireAuth>} />
-        <Route path="/report"          element={<RequireAuth><Report /></RequireAuth>} />
-        <Route path="/mina-readiness"  element={<RequireAuth><MinaReadiness /></RequireAuth>} />
+        <Route path="/home"             element={<RequireAuth><Home /></RequireAuth>} />
+        <Route path="/profile"          element={<RequireAuth><Profile /></RequireAuth>} /> {/* ✅ تمت إضافة المسار */}
+        <Route path="/mealcheck"        element={<RequireAuth><Mealcheck /></RequireAuth>} />
+        <Route path="/report"           element={<RequireAuth><Report /></RequireAuth>} />
+        <Route path="/mina-readiness"   element={<RequireAuth><MinaReadiness /></RequireAuth>} />
         <Route path="/arafat-readiness" element={<RequireAuth><ArafatReadiness /></RequireAuth>} />
-        <Route path="/logistics"       element={<RequireAuth><LogisticsRequest /></RequireAuth>} />
-
+        <Route path="/logistics"        element={<RequireAuth><LogisticsRequest /></RequireAuth>} />
+        
         {/* Admin (protected — admin role only) */}
         <Route path="/admin" element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
           <Route index                element={<Navigate to="dashboard" replace />} />

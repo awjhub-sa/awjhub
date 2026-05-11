@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../config/db.js';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore'; // 👈 أضفنا استيرادات الفايرستور
+import { auth, db } from '../config/db.js'; // 👈 تأكد من استيراد db هنا
 import { useAuth } from '../context/AuthContext.jsx';
 import logo from '../assets/logo.png';
 
@@ -21,20 +22,22 @@ export default function Login() {
 
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
+  const [selectedType, setSelectedType] = useState('observer'); // 👈 حالة لتخزين نوع الدخول المختار
   const [error,    setError]    = useState('');
   const [busy,     setBusy]     = useState(false);
 
-  /* Redirect already-authed users */
+  /* Redirect already-authed users (نتأكد من عدم التوجيه أثناء عملية التحقق) */
   useEffect(() => {
-    if (!loading && role === 'admin')    navigate('/admin/dashboard', { replace: true });
-    if (!loading && role === 'observer') navigate('/home', { replace: true });
-  }, [role, loading]);
+    if (!busy && !loading && role === 'admin')    navigate('/admin/dashboard', { replace: true });
+    if (!busy && !loading && role === 'observer') navigate('/home', { replace: true });
+  }, [role, loading, busy]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     if (!email || !password) { setError('يرجى تعبئة جميع الحقول'); return; }
     setBusy(true);
     setError('');
+    
     try {
       await signInWithEmailAndPassword(auth, email, password);
       // onAuthStateChanged in AuthContext will update role → App.jsx redirects omar
@@ -46,7 +49,7 @@ export default function Login() {
         'auth/invalid-credential': 'بيانات الدخول غير صحيحة',
         'auth/too-many-requests': 'تم تجاوز عدد المحاولات، حاول لاحقاً',
       };
-      setError(map[err.code] || 'حدث خطأ، حاول مجدداً');
+      setError(map[err.code] || 'حدث خطأ، تحقق من صحة البيانات');
     }
     setBusy(false);
   };
@@ -80,6 +83,32 @@ export default function Login() {
           <div>
             <h2 className="text-xl font-bold text-[#2D2926]">تسجيل الدخول</h2>
             <p className="text-[#6D6E71] text-sm mt-1">أدخل بيانات حسابك للمتابعة</p>
+          </div>
+
+          {/* ── أزرار اختيار نوع الدخول (مراقب / مشرف) ── */}
+          <div className="flex bg-[#F5EDE0] p-1 rounded-xl mb-4">
+            <button
+              type="button"
+              onClick={() => { setSelectedType('observer'); setError(''); }}
+              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
+                selectedType === 'observer'
+                  ? 'bg-white text-[#A98159] shadow-sm'
+                  : 'text-[#6D6E71] hover:text-[#2D2926]'
+              }`}
+            >
+              مراقب ميداني
+            </button>
+            <button
+              type="button"
+              onClick={() => { setSelectedType('admin'); setError(''); }}
+              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
+                selectedType === 'admin'
+                  ? 'bg-white text-[#A98159] shadow-sm'
+                  : 'text-[#6D6E71] hover:text-[#2D2926]'
+              }`}
+            >
+              مشرف ميداني
+            </button>
           </div>
 
           {/* Email */}

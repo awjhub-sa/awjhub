@@ -7,14 +7,14 @@ import {
   Utensils, AlertTriangle, Truck,
   Bell, User, ChevronLeft, TrendingUp,
   ClipboardCheck, MapPin, Home as HomeIcon, Mountain, Building2,
-  Package, ChevronDown, ChevronUp, LogOut
+  Package, Clock, LogOut
 } from 'lucide-react';
 import logo from '../assets/logo.png';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getCaterer } from '../config/centers.js';
 import { db, auth } from '../config/db.js';
 
-/* ── Decorative rule ── */
+/* ── Decorative Gold Rule ── */
 const GoldRule = () => (
   <svg width="100" height="6" viewBox="0 0 100 6" fill="none">
     <line x1="0" y1="3" x2="32" y2="3" stroke="#A98159" strokeWidth="0.75" />
@@ -25,7 +25,7 @@ const GoldRule = () => (
   </svg>
 );
 
-/* ── Menu card ── */
+/* ── Reusable Menu Card ── */
 const MenuCard = ({ icon: Icon, title, subtitle, badge, onClick, variant = 'default' }) => {
   const isAccent = variant === 'accent';
   return (
@@ -35,8 +35,8 @@ const MenuCard = ({ icon: Icon, title, subtitle, badge, onClick, variant = 'defa
         group w-full text-right rounded-2xl p-5 flex items-center gap-4
         transition-all duration-300 active:scale-[0.97] border
         ${isAccent
-          ? 'border-transparent hover:brightness-110 hover:shadow-2xl'
-          : 'bg-background border-appBorder hover:border-primary/50 hover:shadow-[0_8px_30px_rgba(169,129,89,0.18)] hover:-translate-y-0.5'}
+          ? 'border-transparent hover:brightness-110 hover:shadow-2xl text-white'
+          : 'bg-white border-[#D1C4B9] hover:border-[#A98159]/50 hover:shadow-lg hover:-translate-y-0.5 text-[#2D2926]'}
       `}
       style={isAccent ? { background: 'linear-gradient(135deg, #3D3330 0%, #2D2926 100%)', boxShadow: '0 4px 20px rgba(45,41,38,0.25)' } : {}}
     >
@@ -45,101 +45,66 @@ const MenuCard = ({ icon: Icon, title, subtitle, badge, onClick, variant = 'defa
         transition-all duration-300 group-hover:scale-110 group-hover:rotate-3
         ${isAccent
           ? 'bg-white/10 group-hover:bg-white/20'
-          : 'bg-primary-50 border border-primary/20 group-hover:bg-primary/10 group-hover:border-primary/40'}
+          : 'bg-[#FDF8F0] border border-[#A98159]/20 group-hover:bg-[#A98159]/10'}
       `}>
-        <Icon size={26} className="text-primary transition-all duration-300 group-hover:scale-105" strokeWidth={1.75} />
+        <Icon size={26} className="text-[#A98159] transition-all duration-300 group-hover:scale-105" strokeWidth={1.75} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className={`font-bold text-base ${isAccent ? 'text-white' : 'text-dark'}`}>{title}</span>
+          <span className="font-bold text-base">{title}</span>
           {badge && (
-            <span className="bg-error text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
+            <span className="bg-[#BA1A1A] text-white text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">
               {badge}
             </span>
           )}
         </div>
-        <p className={`text-sm mt-0.5 truncate transition-colors duration-300 ${isAccent ? 'text-white/50 group-hover:text-white/70' : 'text-secondary group-hover:text-primary/70'}`}>
+        <p className={`text-sm mt-0.5 truncate transition-colors duration-300 ${isAccent ? 'text-white/50 group-hover:text-white/70' : 'text-[#6D6E71] group-hover:text-[#A98159]/70'}`}>
           {subtitle}
         </p>
       </div>
-      <ChevronLeft
-        size={18}
-        className={`flex-shrink-0 transition-all duration-300 group-hover:-translate-x-1 group-hover:opacity-100 opacity-50
-          ${isAccent ? 'text-white' : 'text-primary'}`}
-        strokeWidth={2.5}
-      />
+      <ChevronLeft size={18} className={`flex-shrink-0 transition-all duration-300 group-hover:-translate-x-1 opacity-50 ${isAccent ? 'text-white' : 'text-[#A98159]'}`} strokeWidth={2.5} />
     </button>
   );
 };
 
-/* ── Activity config ── */
+/* ── Activity Display Configuration ── */
 const ACTIVITY_CFG = {
-  reports: {
-    label:   'بلاغ ميداني',
-    Icon:    AlertTriangle,
-    color:   '#DC2626',
-    bg:      '#FEF2F2',
-    border:  '#FECACA',
-  },
-  meal_evaluations: {
-    label:   'تقييم وجبات',
-    Icon:    Utensils,
-    color:   '#A98159',
-    bg:      '#FDF8F0',
-    border:  '#D1C4B9',
-  },
-  mina_readiness: {
-    label:   'جاهزية منى',
-    Icon:    HomeIcon,
-    color:   '#0369A1',
-    bg:      '#F0F9FF',
-    border:  '#BAE6FD',
-  },
-  arafat_readiness: {
-    label:   'جاهزية عرفة',
-    Icon:    Mountain,
-    color:   '#7C3AED',
-    bg:      '#F5F3FF',
-    border:  '#DDD6FE',
-  },
-  logistics_requests: {
-    label:   'طلب إسناد',
-    Icon:    Package,
-    color:   '#059669',
-    bg:      '#ECFDF5',
-    border:  '#A7F3D0',
-  },
+  reports: { label: 'بلاغ طارئ', Icon: AlertTriangle, color: '#DC2626', bg: '#FEF2F2', border: '#FECACA' },
+  meal_evaluations: { label: 'تقييم وجبات', Icon: Utensils, color: '#A98159', bg: '#FDF8F0', border: '#D1C4B9' },
+  mina_readiness: { label: 'جاهزية منى', Icon: HomeIcon, color: '#0369A1', bg: '#F0F9FF', border: '#BAE6FD' },
+  arafat_readiness: { label: 'جاهزية عرفة', Icon: Mountain, color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE' },
+  logistics_requests: { label: 'طلب إسناد', Icon: Package, color: '#3182CE', bg: '#EFF6FF', border: '#BFDBFE' },
+};
+
+/* ── Status Styles ── */
+const STATUS_DATA = {
+  pending:     { label: 'قيد الانتظار', bg: '#FEF9C3', text: '#854D0E' },
+  in_progress: { label: 'جارٍ التنفيذ', bg: '#DBEAFE', text: '#1E40AF' },
+  resolved:    { label: 'تم الحل',      bg: '#DCFCE7', text: '#166534' },
+  approved:    { label: 'موافق عليه',   bg: '#DBEAFE', text: '#1E40AF' },
+  delivered:   { label: 'تم التسليم',   bg: '#DCFCE7', text: '#166534' },
+  rejected:    { label: 'مرفوض',        bg: '#FEE2E2', text: '#991B1B' }
 };
 
 const SEVERITY_LABEL = { high: 'عالي', medium: 'متوسط', low: 'منخفض' };
 const SEVERITY_COLOR  = { high: '#DC2626', medium: '#D97706', low: '#3B82F6' };
-const STATUS_LABEL   = { pending: 'قيد المراجعة', reviewed: 'تمت المراجعة', resolved: 'مُغلق' };
 
-/* timestamp helper */
 function toMs(doc) {
   return doc.timestamp?.toMillis?.() ?? doc.createdAt?.toMillis?.() ?? 0;
 }
+
 function fmtTime(ms) {
   if (!ms) return '';
   return new Date(ms).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit', hour12: true });
 }
 
-/* ══════════════════════════════════════════════════════════gbrbt */
 export default function Home() {
-  const navigate      = useNavigate();
-  const { profile }   = useAuth();
-  const [clock, setClock]       = useState({ hijri: '', time: '' });
-  const [loggingOut, setLoggingOut] = useState(false);
-
-  const handleLogout = async () => {
-    setLoggingOut(true);
-    await signOut(auth).catch(() => {});
-    navigate('/login', { replace: true });
-  };
+  const navigate = useNavigate();
+  const { profile } = useAuth();
+  const [clock, setClock] = useState({ hijri: '', time: '' });
   const [activities, setActivities] = useState([]);
-  const [showAll, setShowAll]   = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
-  /* ── ساعة هجرية حية ── */
   useEffect(() => {
     const tick = () => {
       const now = new Date();
@@ -153,295 +118,196 @@ export default function Home() {
     return () => clearInterval(id);
   }, []);
 
-  /* ── سجل اليوم — الاستماع لكل collections الخاصة بالمراقب ── */
   useEffect(() => {
     if (!profile?.uid) return;
-
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayMs = todayStart.getTime();
-
-    const cols = Object.keys(ACTIVITY_CFG);
-    const unsubs = [];
-    const store  = {};
-
-    cols.forEach(col => {
-      store[col] = [];
+    
+    const collectionsToTrack = Object.keys(ACTIVITY_CFG);
+    const unsubs = collectionsToTrack.map(col => {
       const q = query(collection(db, col), where('uid', '==', profile.uid));
-      const unsub = onSnapshot(q, snap => {
-        store[col] = snap.docs
+      return onSnapshot(q, snap => {
+        const docs = snap.docs
           .map(d => ({ id: d.id, _col: col, ...d.data() }))
           .filter(d => toMs(d) >= todayMs);
-        const all = cols.flatMap(c => store[c]);
-        all.sort((a, b) => toMs(b) - toMs(a));
-        setActivities([...all]);
+        
+        setActivities(prev => {
+          const others = prev.filter(a => a._col !== col);
+          const combined = [...others, ...docs];
+          return combined.sort((a, b) => toMs(b) - toMs(a));
+        });
       });
-      unsubs.push(unsub);
     });
 
-    return () => unsubs.forEach(u => u());
+    return () => unsubs.forEach(unsub => unsub());
   }, [profile?.uid]);
 
-  /* ── Profile helpers ── */
-  const name      = profile?.nameAr || profile?.name || 'المراقب';
-  const center    = profile?.center || '—';
-  const caterer   = profile?.caterer || getCaterer(profile?.center) || '—';
+  const name = profile?.nameAr || profile?.name || 'المراقب الميداني';
+  const center = profile?.center || '—';
+  const caterer = profile?.caterer || getCaterer(profile?.center) || '—';
   const centerNum = center !== '—' ? center.replace('مركز ', '') : '—';
-  const isSup     = profile?.role === 'supervisor' || profile?.role === 'admin';
-  const supCenters = profile?.centers || (profile?.center ? [profile.center] : []);
-
-  /* ── counts per type ── */
-  const counts = Object.fromEntries(
-    Object.keys(ACTIVITY_CFG).map(c => [c, activities.filter(a => a._col === c).length])
-  );
-  const totalToday = activities.length;
+  const isSup = profile?.role === 'supervisor' || profile?.role === 'admin';
+  // التحقق من وجود مصفوفة المراكز لتجنب خطأ length 
+  const centersCount = profile?.centers ? profile.centers.length : (profile?.center ? 1 : 0);
 
   const displayed = showAll ? activities : activities.slice(0, 4);
 
   return (
-    <div dir="rtl" className="min-h-screen bg-background font-arabic"
-      style={{ fontFamily: "'IBM Plex Sans Arabic', 'Noto Kufi Arabic', Tahoma, sans-serif" }}>
-
-      {/* ── Header ── */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-appBorder px-4 py-3">
-        <div className="max-w-md mx-auto flex items-center justify-between">
+    <div dir="rtl" className="min-h-screen bg-[#FDFCFB] font-arabic pb-10">
+      
+      <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 md:px-8 py-3 mb-6 shadow-sm">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <img src={logo} alt="شعار التطبيق" className="w-11 h-11 object-contain" />
+            <img src={logo} alt="Logo" className="w-10 h-10 object-contain" />
             <div>
-              <p className="text-xs font-bold text-dark leading-tight">ضيوف البيت</p>
-              <p className="text-[10px] text-secondary leading-tight">منظومة المراقبة الميدانية</p>
+              <p className="text-xs font-bold text-[#2D2926] leading-tight">ضيوف البيت</p>
+              <p className="text-[10px] text-[#A98159] font-bold leading-tight">منظومة المراقبة الميدانية</p>
             </div>
           </div>
+          
           <div className="flex items-center gap-2">
-            <button className="group relative w-9 h-9 rounded-xl border border-appBorder flex items-center justify-center hover:bg-primary-50 hover:border-primary/30 transition-all duration-200">
-              <Bell size={17} className="text-secondary transition-all duration-300 group-hover:text-primary group-hover:scale-110 group-hover:rotate-12" strokeWidth={1.75} />
+            <button className="w-10 h-10 rounded-xl border border-[#D1C4B9] flex items-center justify-center hover:bg-[#FDF8F0] transition-all">
+              <Bell size={18} className="text-[#6D6E71]" />
             </button>
-            <button
-              onClick={handleLogout}
-              disabled={loggingOut}
-              title="تسجيل الخروج"
-              className="group w-9 h-9 rounded-xl bg-red-50 border border-red-200 flex items-center justify-center hover:bg-red-500 hover:border-red-500 transition-all duration-300 disabled:opacity-50"
+            
+            <button 
+              onClick={() => navigate('/profile')}
+              className="w-10 h-10 rounded-xl bg-[#FDF8F0] border border-[#A98159]/20 flex items-center justify-center hover:bg-[#A98159] hover:text-white group transition-all"
             >
-              {loggingOut
-                ? <span className="w-4 h-4 border-2 border-red-300 border-t-red-600 rounded-full animate-spin" />
-                : <LogOut size={16} className="text-red-500 transition-all duration-300 group-hover:text-white group-hover:-translate-x-0.5" strokeWidth={2} />}
+              <User size={18} className="text-[#A98159] group-hover:text-white transition-all" />
             </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-md mx-auto px-4 pb-10">
+      <main className="max-w-5xl mx-auto px-4 md:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-        {/* ── Welcome Card ── */}
-        <div className="mt-5 rounded-2xl overflow-hidden shadow-card-lg"
-          style={{ animation: 'fadeSlideUp 0.4s ease forwards' }}>
-
-          <div className="p-5 relative overflow-hidden"
-            style={{ background: 'linear-gradient(135deg, #3D3330 0%, #2D2926 55%, #1A1511 100%)' }}>
-            <div className="absolute inset-0 opacity-[0.03]"
-              style={{ backgroundImage: 'repeating-linear-gradient(45deg, #A98159 0, #A98159 1px, transparent 0, transparent 50%)', backgroundSize: '12px 12px' }} />
-
-            {/* Name + center */}
-            <div className="flex items-start justify-between mb-4 relative">
-              <div className="flex-1 min-w-0 ml-3">
-                <p className="text-white/50 text-xs mb-0.5">مرحباً بك،</p>
-                <h2 className="text-white font-bold text-xl leading-tight truncate">{name}</h2>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <MapPin size={11} className="text-primary flex-shrink-0" />
-                  <span className="text-primary text-xs font-medium">
-                    {isSup ? 'مشرف ميداني' : 'مراقب ميداني'}
-                  </span>
+        <div className="lg:col-span-7 space-y-6">
+          
+          <div className="rounded-[2.5rem] overflow-hidden shadow-xl animate-fade-slide-up">
+            <div className="p-8 relative overflow-hidden bg-[#2D2926]">
+              <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'repeating-linear-gradient(45deg, #A98159 0, #A98159 1px, transparent 0, transparent 50%)', backgroundSize: '12px 12px' }} />
+              
+              <div className="flex items-start justify-between mb-6 relative">
+                <div className="flex-1 min-w-0">
+                  <p className="text-white/50 text-sm mb-1">مرحباً بك،</p>
+                  <h2 className="text-white font-bold text-2xl truncate leading-tight">{name}</h2>
+                  <div className="flex items-center gap-2 mt-2">
+                    <MapPin size={14} className="text-[#A98159]" />
+                    <span className="text-[#A98159] text-sm font-bold">{isSup ? 'مشرف ميداني' : 'مراقب ميداني'}</span>
+                  </div>
+                </div>
+                <div className="bg-white/10 rounded-2xl px-5 py-3 text-center border border-white/10 shrink-0">
+                    <p className="text-white/50 text-[10px] mb-1">{isSup ? 'المراكز' : 'مركز رقم'}</p>
+                    <p className="text-[#A98159] font-bold text-2xl leading-tight">{isSup ? centersCount : centerNum}</p>
                 </div>
               </div>
-              {!isSup ? (
-                <div className="bg-white/10 rounded-xl px-4 py-2 text-center border border-white/10 flex-shrink-0">
-                  <p className="text-white/50 text-[10px]">مركز رقم</p>
-                  <p className="text-primary font-bold text-2xl leading-tight">{centerNum}</p>
+
+              <div className="mb-6 relative w-48"><GoldRule /></div>
+
+              <div className="bg-white/5 rounded-2xl px-5 py-4 border border-white/10 backdrop-blur-sm">
+                <div className="flex items-start gap-3">
+                  <Building2 size={18} className="text-[#A98159] mt-0.5" />
+                  <div>
+                    <p className="text-white/50 text-[10px] mb-1">{center} — المتعهد المسجل</p>
+                    <p className="text-white text-sm font-bold leading-snug">{caterer}</p>
+                  </div>
                 </div>
-              ) : (
-                <div className="bg-white/10 rounded-xl px-4 py-2 text-center border border-white/10 flex-shrink-0">
-                  <p className="text-white/50 text-[10px]">مراكزك</p>
-                  <p className="text-primary font-bold text-2xl leading-tight">{supCenters.length}</p>
-                </div>
-              )}
+              </div>
+            </div>
+            <div className="bg-[#FDF8F0] border-t border-[#D1C4B9] px-8 py-3.5 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-[#A98159]">
+                <TrendingUp size={16} />
+                <span className="text-sm font-bold text-[#2D2926]">{clock.hijri}</span>
+              </div>
+              <span className="text-sm text-[#6D6E71] font-bold">{clock.time}</span>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between px-2">
+              <div className="flex items-center gap-2">
+                <ClipboardCheck size={20} className="text-[#A98159]" />
+                <span className="text-lg font-black text-[#2D2926]">سجل النشاط اليومي</span>
+                {activities.length > 0 && <span className="bg-[#A98159] text-white text-xs font-bold px-2.5 py-0.5 rounded-full">{activities.length}</span>}
+              </div>
             </div>
 
-            <div className="mb-3 relative"><GoldRule /></div>
-
-            {/* Caterer */}
-            {!isSup ? (
-              <div className="bg-white/5 rounded-xl px-4 py-3 border border-white/10">
-                <div className="flex items-start gap-2">
-                  <Building2 size={13} className="text-primary mt-0.5 flex-shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-white/50 text-[10px] mb-0.5">{center} — المتعهد</p>
-                    <p className="text-white text-xs font-medium leading-snug">{caterer}</p>
-                  </div>
-                </div>
+            {activities.length === 0 ? (
+              <div className="bg-white border border-[#D1C4B9] rounded-3xl py-12 text-center shadow-sm">
+                <Clock size={40} className="mx-auto text-[#D1C4B9] mb-3 opacity-40" strokeWidth={1.2} />
+                <p className="text-[#6D6E71] text-sm font-bold font-arabic">لا يوجد نشاط مسجل لليوم بعد</p>
               </div>
             ) : (
-              <div className="space-y-1.5 max-h-28 overflow-y-auto">
-                {supCenters.map(cid => (
-                  <div key={cid} className="bg-white/5 rounded-xl px-3 py-2 border border-white/10 flex items-start gap-2">
-                    <Building2 size={11} className="text-primary mt-0.5 flex-shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-primary text-[10px] font-bold">{cid}</p>
-                      <p className="text-white/70 text-[10px] leading-snug truncate">
-                        {profile?.caterers?.[cid] || getCaterer(cid)}
-                      </p>
+              <div className="grid grid-cols-1 gap-3">
+                {displayed.map(item => {
+                  const cfg = ACTIVITY_CFG[item._col];
+                  const { Icon } = cfg;
+                  const ms = toMs(item);
+                  const statusInfo = STATUS_DATA[item.status] || { label: item.status, bg: '#F3F4F6', text: '#374151' };
+                  
+                  let title = item.reportType || item.type || cfg.label;
+                  let sub = item._col === 'reports' && item.severity ? `خطورة: ${SEVERITY_LABEL[item.severity]}` : item.mealType || '';
+
+                  return (
+                    <div key={item.id} className="bg-white border border-[#D1C4B9] rounded-2xl px-5 py-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5">
+                      <div className="w-1.5 self-stretch rounded-full shrink-0" style={{ background: item.severity ? SEVERITY_COLOR[item.severity] : cfg.color }} />
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}>
+                        <Icon size={20} style={{ color: cfg.color }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-base font-bold text-[#2D2926] truncate">{title}</p>
+                          <span className="text-xs text-[#6D6E71] font-bold">{fmtTime(ms)}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {sub && <span className="text-xs text-[#6D6E71] font-bold">{sub}</span>}
+                          {item.status && (
+                            <span className="text-[10px] font-black px-3 py-0.5 rounded-full border border-black/5" 
+                                  style={{ background: statusInfo.bg, color: statusInfo.text }}>
+                              {statusInfo.label}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
+                {activities.length > 4 && (
+                  <button onClick={() => setShowAll(p => !p)} className="w-full py-3 text-[#A98159] font-bold text-sm bg-white hover:bg-gray-50 rounded-2xl transition-all border border-dashed border-[#D1C4B9] mt-2">
+                    {showAll ? 'عرض أقل' : `عرض الكل (${activities.length})`}
+                  </button>
+                )}
               </div>
             )}
           </div>
-
-          {/* Footer — تاريخ هجري + وقت */}
-          <div className="bg-primary-50 border-t border-appBorder px-5 py-2.5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <TrendingUp size={14} className="text-primary" strokeWidth={2} />
-              <span className="text-xs font-medium text-dark">{clock.hijri || '…'}</span>
-            </div>
-            <span className="text-xs text-secondary font-medium">{clock.time}</span>
-          </div>
         </div>
 
-        {/* ── سجل اليوم ── */}
-        <div className="mt-6" style={{ animation: 'fadeSlideUp 0.4s ease 0.15s both' }}>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <ClipboardCheck size={16} className="text-primary" strokeWidth={2} />
-              <span className="text-sm font-bold text-dark">سجل اليوم</span>
-              {totalToday > 0 && (
-                <span className="bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  {totalToday}
-                </span>
-              )}
-            </div>
-            {/* mini counts */}
-            <div className="flex items-center gap-1.5">
-              {Object.entries(ACTIVITY_CFG).map(([col, cfg]) =>
-                counts[col] > 0 ? (
-                  <span key={col}
-                    className="text-[10px] font-bold px-2 py-0.5 rounded-full border"
-                    style={{ color: cfg.color, background: cfg.bg, borderColor: cfg.border }}>
-                    {counts[col]} {cfg.label.split(' ')[0]}
-                  </span>
-                ) : null
-              )}
-            </div>
+        <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1 bg-[#D1C4B9]/50" />
+            <span className="text-[10px] font-black text-[#A98159] uppercase tracking-widest">القائمة الرئيسية</span>
+            <div className="h-px flex-1 bg-[#D1C4B9]/50" />
           </div>
 
-          {activities.length === 0 ? (
-            <div className="bg-white border border-appBorder rounded-2xl py-8 text-center">
-              <ClipboardCheck size={28} className="mx-auto text-primary/30 mb-2" strokeWidth={1.5} />
-              <p className="text-secondary text-sm">لا يوجد نشاط اليوم بعد</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {displayed.map(item => {
-                const cfg = ACTIVITY_CFG[item._col];
-                const { Icon } = cfg;
-                const ms = toMs(item);
-
-                /* عنوان حسب نوع النشاط */
-                let title = cfg.label;
-                let sub   = '';
-                if (item._col === 'reports') {
-                  const typeMap = {
-                    water:'مياه', electric:'كهرباء', crowd:'ازدحام',
-                    food:'غذاء', medical:'طبي', security:'أمن', fire:'حريق', other:'أخرى'
-                  };
-                  title = `بلاغ — ${typeMap[item.reportType || item.type] || item.reportType || 'غير محدد'}`;
-                  sub   = SEVERITY_LABEL[item.severity] ? `خطورة: ${SEVERITY_LABEL[item.severity]}` : '';
-                } else if (item._col === 'meal_evaluations') {
-                  title = 'تقييم جودة وجبات';
-                  sub   = item.mealType || item.meal || '';
-                } else if (item._col === 'mina_readiness') {
-                  title = 'جاهزية مشعر منى';
-                } else if (item._col === 'arafat_readiness') {
-                  title = 'جاهزية مشعر عرفة';
-                } else if (item._col === 'logistics_requests') {
-                  title = 'طلب إسناد';
-                  sub   = item.requestType || item.type || '';
-                }
-
-                const statusLabel = item.status ? (STATUS_LABEL[item.status] || item.status) : '';
-                const sevColor    = item.severity ? SEVERITY_COLOR[item.severity] : cfg.color;
-
-                return (
-                  <div key={item.id}
-                    className="group bg-white border rounded-2xl px-4 py-3 flex items-start gap-3 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5"
-                    style={{ borderColor: cfg.border }}>
-                    {/* left strip */}
-                    <div className="w-1 self-stretch rounded-full flex-shrink-0 transition-all duration-300 group-hover:w-1.5"
-                      style={{ background: sevColor }} />
-
-                    {/* icon */}
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3"
-                      style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}>
-                      <Icon size={16} style={{ color: cfg.color }} strokeWidth={2} />
-                    </div>
-
-                    {/* content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-bold text-dark truncate">{title}</p>
-                        <span className="text-[10px] text-secondary flex-shrink-0">{fmtTime(ms)}</span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        {sub && <span className="text-xs text-secondary">{sub}</span>}
-                        {statusLabel && (
-                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full transition-all duration-200"
-                            style={{
-                              background: item.status === 'pending' ? '#FEF9C3' : item.status === 'reviewed' ? '#DCFCE7' : '#F3F4F6',
-                              color:      item.status === 'pending' ? '#854D0E' : item.status === 'reviewed' ? '#166534' : '#374151',
-                            }}>
-                            {statusLabel}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-
-              {activities.length > 4 && (
-                <button
-                  onClick={() => setShowAll(p => !p)}
-                  className="group w-full flex items-center justify-center gap-1.5 py-2.5 text-sm text-primary font-medium hover:bg-primary-50 rounded-xl transition-all duration-200 hover:shadow-sm">
-                  {showAll
-                    ? <><ChevronUp size={15} className="transition-transform duration-300 group-hover:-translate-y-0.5" /> عرض أقل</>
-                    : <><ChevronDown size={15} className="transition-transform duration-300 group-hover:translate-y-0.5" /> عرض الكل ({activities.length})</>}
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* ── Section label ── */}
-        <div className="flex items-center gap-3 mt-7 mb-4" style={{ animation: 'fadeSlideUp 0.4s ease 0.2s both' }}>
-          <div className="h-px flex-1 bg-appBorder" />
-          <span className="text-xs font-semibold text-secondary uppercase tracking-widest">القائمة الرئيسية</span>
-          <div className="h-px flex-1 bg-appBorder" />
-        </div>
-
-        {/* ── Menu Items ── */}
-        <div className="flex flex-col gap-3" style={{ animation: 'fadeSlideUp 0.4s ease 0.25s both' }}>
-          <MenuCard icon={Utensils}      title="تقييم جودة الوجبات"     subtitle="رفع تقرير جودة وجبات الحجاج"              onClick={() => navigate('/mealcheck')}       variant="accent" />
-          <MenuCard icon={HomeIcon}      title="تقييم جاهزية مشعر منى"  subtitle="فحص جاهزية المطبخ والمرافق الغذائية"    onClick={() => navigate('/mina-readiness')} />
-          <MenuCard icon={Mountain}      title="تقييم جاهزية مشعر عرفة" subtitle="فحص جاهزية المطبخ والمرافق الغذائية"    onClick={() => navigate('/arafat-readiness')} />
-          <MenuCard icon={AlertTriangle} title="بلاغ طارئ"               subtitle="إرسال بلاغ عاجل لغرفة العمليات"          onClick={() => navigate('/report')}          badge="جديد" />
-          <MenuCard icon={Truck}         title="رفع طلب إسناد"           subtitle="طلب معدات أو موارد بشرية"               onClick={() => navigate('/logistics')} />
+          <div className="grid grid-cols-1 gap-4">
+            <MenuCard icon={Utensils} title="تقييم جودة الوجبات" onClick={() => navigate('/mealcheck')} variant="accent" />
+            <MenuCard icon={HomeIcon} title="جاهزية مشعر منى" onClick={() => navigate('/mina-readiness')} />
+            <MenuCard icon={Mountain} title="جاهزية مشعر عرفة" onClick={() => navigate('/arafat-readiness')} />
+            <MenuCard icon={AlertTriangle} title="بلاغ طارئ" onClick={() => navigate('/report')} badge="جديد" />
+            <MenuCard icon={Truck} title="طلب إسناد لوجستي" onClick={() => navigate('/logistics')} />
+          </div>
         </div>
 
       </main>
 
       <style>{`
         @keyframes fadeSlideUp {
-          from { opacity: 0; transform: translateY(14px); }
+          from { opacity: 0; transform: translateY(20px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        .animate-fade-slide-up { animation: fadeSlideUp 0.5s ease-out forwards; }
       `}</style>
     </div>
   );
