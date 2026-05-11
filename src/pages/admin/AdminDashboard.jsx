@@ -24,6 +24,8 @@ const REPORT_TYPE = {
   hygiene:  'مخالفة صحية',
 };
 
+const CATEGORY_LABEL = { meals: 'وجبات', water: 'مياه' };
+
 const SEV = {
   high:   { label: 'عالية',   bg: '#FEF2F2', text: '#DC2626', border: '#FCA5A5' },
   urgent: { label: 'عاجل',    bg: '#FEF2F2', text: '#DC2626', border: '#FCA5A5' },
@@ -90,7 +92,7 @@ function StatCard({ label, value, icon: Icon, color, sub, onClick }) {
 /* ─── Report Detail Modal ─── */
 function ReportDetailModal({ report, onClose, onDelete, onStatusChange }) {
   if (!report) return null;
-  const label = REPORT_TYPE[report.reportType || report.type] || 'بلاغ';
+  const label = REPORT_TYPE[report.reportType || report.type] || report.reportType || report.type || 'بلاغ';
   const sv    = SEV[report.severity];
 
   return (
@@ -361,7 +363,7 @@ export default function AdminDashboard() {
           </div>
         ) : (
           reports.slice(0, 6).map((r, idx) => {
-            const label = REPORT_TYPE[r.reportType || r.type] || 'بلاغ';
+            const label = REPORT_TYPE[r.reportType || r.type] || r.reportType || r.type || 'بلاغ';
             const sv    = SEV[r.severity];
             const sb    = STATUS[r.status] || STATUS.pending;
             const isLast = idx === Math.min(reports.length, 6) - 1;
@@ -467,7 +469,7 @@ export default function AdminDashboard() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-[#2D2926] truncate">
                     {isLogistics
-                      ? `طلب إسناد ${SUPPORT[item.supportType] || ''}`.trim()
+                      ? `طلب إسناد ${CATEGORY_LABEL[item.category] || ''} ${SUPPORT[item.supportType] ? `· ${SUPPORT[item.supportType]}` : ''}`.trim()
                       : isMina ? 'جاهزية مشعر منى' : 'جاهزية مشعر عرفة'}
                   </p>
                   <p className="text-[11px] text-[#9D8F85] truncate mt-0.5 font-medium">
