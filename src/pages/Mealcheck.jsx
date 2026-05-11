@@ -164,7 +164,7 @@ export default function Mealcheck() {
             </div>
 
             {/* Observer info */}
-            <div className="grid grid-cols-2 gap-2 mt-4">
+            <div className="grid grid-cols-3 gap-2 mt-4">
               <div className="bg-white/5 rounded-xl px-3 py-2 border border-white/10 text-center">
                 <p className="text-white/40 text-[9px] mb-0.5">المراقب</p>
                 <p className="text-white font-bold text-[11px] truncate">{profile?.nameAr || profile?.name || '—'}</p>
@@ -172,6 +172,10 @@ export default function Mealcheck() {
               <div className="bg-white/5 rounded-xl px-3 py-2 border border-white/10 text-center">
                 <p className="text-white/40 text-[9px] mb-0.5">المركز</p>
                 <p className="text-[#A98159] font-bold text-[11px]">{profile?.center || '—'}</p>
+              </div>
+              <div className="bg-white/5 rounded-xl px-3 py-2 border border-white/10 text-center">
+                <p className="text-white/40 text-[9px] mb-0.5">المتعهد</p>
+                <p className="text-white font-bold text-[11px] truncate">{profile?.caterer || getCaterer(profile?.center) || '—'}</p>
               </div>
             </div>
           </div>
@@ -325,7 +329,7 @@ export default function Mealcheck() {
             ))}
           </div>
 
-          <div className="grid grid-cols-2 gap-3 relative z-10">
+          <div className="grid grid-cols-3 gap-3 relative z-10">
             <div className="bg-white/5 rounded-2xl py-3 border border-white/10 text-center">
               <span className="text-white/40 text-[9px] block mb-1">المراقب</span>
               <span className="text-white font-bold text-[11px]">{profile?.nameAr || '—'}</span>
@@ -333,6 +337,10 @@ export default function Mealcheck() {
             <div className="bg-white/5 rounded-2xl py-3 border border-white/10 text-center">
               <span className="text-white/40 text-[9px] block mb-1">المركز</span>
               <span className="text-[#A98159] font-bold text-[11px]">{profile?.center || '—'}</span>
+            </div>
+            <div className="bg-white/5 rounded-2xl py-3 border border-white/10 text-center">
+              <span className="text-white/40 text-[9px] block mb-1">المتعهد</span>
+              <span className="text-white font-bold text-[11px] truncate block px-1">{profile?.caterer || getCaterer(profile?.center) || '—'}</span>
             </div>
           </div>
         </div>
