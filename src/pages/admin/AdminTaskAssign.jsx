@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, addDoc, deleteDoc, doc, onSnapshot, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc, onSnapshot, serverTimestamp, query, orderBy, writeBatch } from 'firebase/firestore';
 import { db } from '../../config/db.js';
 import {
   Target, ChefHat, Tent, Compass, Earth, CalendarCheck,
@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Coffee, ForkKnife, Moon } from '@phosphor-icons/react';
 import { CENTERS } from '../../config/centers.js';
+import { extractCenterNum, extractDay } from '../../hooks/useAssignedTasks.js';
 
 /* ── Helpers ── */
 function range(s, e) {
@@ -89,7 +90,30 @@ function AssignmentCard({ item }) {
 
   const handleDelete = async () => {
     setDeleting(true);
-    await deleteDoc(doc(db, 'assigned_tasks', item.id)).catch(() => {});
+    try {
+      const batch = writeBatch(db);
+      batch.delete(doc(db, 'assigned_tasks', item.id));
+      if (
+        item.task_types?.includes('meal_evaluation') &&
+        item.meal_types?.length &&
+        item.target_centers?.length &&
+        item.scheduled_date
+      ) {
+        const day = extractDay(
+          item.scheduled_date?.toDate
+            ? item.scheduled_date.toDate().toLocaleDateString('ar-SA', { dateStyle: 'long' })
+            : String(item.scheduled_date)
+        );
+        item.target_centers.forEach(num => {
+          const centerStr = CENTERS.find(c => extractCenterNum(c.id) === num)?.id;
+          if (!centerStr) return;
+          item.meal_types.forEach(mealType => {
+            batch.delete(doc(db, 'meal_phases', `${centerStr}_d${day}_${mealType}`));
+          });
+        });
+      }
+      await batch.commit();
+    } catch {}
     setDeleting(false);
     setConfirm(false);
   };

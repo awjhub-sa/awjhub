@@ -5,7 +5,7 @@ import {
   Camera, Lock, ArrowLeft, RotateCcw, ClipboardList, Ban,
 } from 'lucide-react';
 import { db, storage } from '../config/db.js';
-import { collection, addDoc, serverTimestamp, setDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, setDoc, doc, getDoc } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getCaterer } from '../config/centers.js';
@@ -206,25 +206,47 @@ export default function Mealcheck() {
 
   /* ── Load saved progress when task changes ── */
   useEffect(() => {
-    if (!selectedTask || !profile?.uid) return;
+    if (!selectedTask || !profile?.uid || !profile?.center) return;
     setScreen('phases');
     setPhaseDone({ 1: false, 2: false, 3: false });
     setPhasePhotos({ 1: null, 2: null, 3: null });
     setAnswers({});
     setRestored(false);
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY(profile.uid, selectedTask.taskId, selectedTask.mealType));
-      if (!raw) return;
-      const data = JSON.parse(raw);
-      const hasPhases  = Object.values(data.phaseDone  || {}).some(Boolean);
-      const hasAnswers = Object.keys(data.answers || {}).length > 0;
-      if (!hasPhases && !hasAnswers) return;
-      if (data.phaseDone) setPhaseDone(data.phaseDone);
-      if (data.answers)   setAnswers(data.answers);
-      if (data.screen)    setScreen(data.screen);
-      setRestored(true);
-    } catch {}
-  }, [selectedTask?.taskId, selectedTask?.mealType, profile?.uid]);
+
+    const storageKey = STORAGE_KEY(profile.uid, selectedTask.taskId, selectedTask.mealType);
+    const docId = `${profile.center}_d${selectedTask.day}_${selectedTask.mealType}`;
+
+    /* Check Firestore first — if admin cleared the day, wipe local progress */
+    getDoc(doc(db, 'meal_phases', docId)).then(snap => {
+      if (!snap.exists()) {
+        localStorage.removeItem(storageKey);
+        return;
+      }
+      try {
+        const raw = localStorage.getItem(storageKey);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        const hasPhases  = Object.values(data.phaseDone  || {}).some(Boolean);
+        const hasAnswers = Object.keys(data.answers || {}).length > 0;
+        if (!hasPhases && !hasAnswers) return;
+        if (data.phaseDone) setPhaseDone(data.phaseDone);
+        if (data.answers)   setAnswers(data.answers);
+        if (data.screen)    setScreen(data.screen);
+        setRestored(true);
+      } catch {}
+    }).catch(() => {
+      /* Network error — fall back to localStorage */
+      try {
+        const raw = localStorage.getItem(storageKey);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        if (data.phaseDone) setPhaseDone(data.phaseDone);
+        if (data.answers)   setAnswers(data.answers);
+        if (data.screen)    setScreen(data.screen);
+        setRestored(true);
+      } catch {}
+    });
+  }, [selectedTask?.taskId, selectedTask?.mealType, profile?.uid, profile?.center]);
 
   /* ── Auto-save ── */
   useEffect(() => {

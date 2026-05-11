@@ -1,8 +1,8 @@
 import { useEffect, useState, useMemo } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, writeBatch, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../config/db.js';
 import { CENTERS } from '../../config/centers.js';
-import { Activity, CheckCircle2, Clock, Layers, RotateCcw, ImageIcon, X } from 'lucide-react';
+import { Activity, CheckCircle2, Clock, Layers, RotateCcw, ImageIcon, X, Trash2 } from 'lucide-react';
 import { Coffee, ForkKnife, Moon } from '@phosphor-icons/react';
 
 const PHASES = [
@@ -74,10 +74,38 @@ function PhaseDot({ done, phase, small, photoUrl, onViewPhoto }) {
 }
 
 export default function AdminPhases() {
-  const [phasesData,  setPhasesData]  = useState({});
-  const [selectedDay, setSelectedDay] = useState('8');
-  const [sortBy,      setSortBy]      = useState('progress');
-  const [lightboxSrc, setLightboxSrc] = useState(null);
+  const [phasesData,   setPhasesData]   = useState({});
+  const [selectedDay,  setSelectedDay]  = useState('8');
+  const [sortBy,       setSortBy]       = useState('progress');
+  const [lightboxSrc,  setLightboxSrc]  = useState(null);
+  const [clearConfirm,    setClearConfirm]    = useState(false);
+  const [clearing,        setClearing]        = useState(false);
+  // { center, mealId } | null
+  const [mealClearTarget, setMealClearTarget] = useState(null);
+  const [mealClearing,    setMealClearing]    = useState(false);
+
+  const handleClearDay = async () => {
+    setClearing(true);
+    try {
+      const batch = writeBatch(db);
+      Object.values(phasesData)
+        .filter(d => d.day === selectedDay)
+        .forEach(d => batch.delete(doc(db, 'meal_phases', d.id)));
+      await batch.commit();
+    } catch {}
+    setClearing(false);
+    setClearConfirm(false);
+  };
+
+  const handleClearMeal = async () => {
+    if (!mealClearTarget) return;
+    setMealClearing(true);
+    try {
+      await deleteDoc(doc(db, 'meal_phases', `${mealClearTarget.center}_d${selectedDay}_${mealClearTarget.mealId}`));
+    } catch {}
+    setMealClearing(false);
+    setMealClearTarget(null);
+  };
 
   useEffect(() => {
     return onSnapshot(collection(db, 'meal_phases'), snap => {
@@ -119,13 +147,41 @@ export default function AdminPhases() {
             متابعة مراحل تجهيز وطبخ وتوزيع الوجبات — تحديث فوري
           </p>
         </div>
-        <button
-          onClick={() => setSortBy(s => s === 'progress' ? 'center' : 'progress')}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[#D9CEBC] bg-white text-[#2D2926] text-xs font-bold hover:border-[#A98159] hover:bg-[#FDF8F0] transition-all flex-shrink-0 self-start sm:self-auto"
-        >
-          <RotateCcw size={13} strokeWidth={2} className="text-[#A98159]" />
-          {sortBy === 'progress' ? 'ترتيب حسب التقدم' : 'ترتيب حسب المركز'}
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={() => setSortBy(s => s === 'progress' ? 'center' : 'progress')}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[#D9CEBC] bg-white text-[#2D2926] text-xs font-bold hover:border-[#A98159] hover:bg-[#FDF8F0] transition-all flex-shrink-0"
+          >
+            <RotateCcw size={13} strokeWidth={2} className="text-[#A98159]" />
+            {sortBy === 'progress' ? 'ترتيب حسب التقدم' : 'ترتيب حسب المركز'}
+          </button>
+          {!clearConfirm ? (
+            <button
+              onClick={() => setClearConfirm(true)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl border border-red-200 bg-white text-red-500 text-xs font-bold hover:border-red-400 hover:bg-red-50 transition-all flex-shrink-0"
+            >
+              <Trash2 size={13} strokeWidth={2} />
+              مسح بيانات اليوم
+            </button>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={handleClearDay}
+                disabled={clearing}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500 text-white text-xs font-bold hover:bg-red-600 transition-all disabled:opacity-60 flex-shrink-0"
+              >
+                <Trash2 size={12} strokeWidth={2} />
+                {clearing ? 'جاري...' : 'تأكيد المسح'}
+              </button>
+              <button
+                onClick={() => setClearConfirm(false)}
+                className="px-3 py-2 rounded-xl border border-[#D9CEBC] bg-white text-[#6D6E71] text-xs font-bold hover:bg-[#F5F0EB] transition-all flex-shrink-0"
+              >
+                إلغاء
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Day Tabs */}
@@ -227,7 +283,7 @@ export default function AdminPhases() {
           return (
             <div
               key={row.center}
-              className={`grid gap-2 px-4 py-4 items-center transition-colors hover:bg-[#FDFAF7] ${!isLast ? 'border-b border-[#EDE5DC]' : ''}`}
+              className={`group grid gap-2 px-4 py-4 items-center transition-colors hover:bg-[#FDFAF7] ${!isLast ? 'border-b border-[#EDE5DC]' : ''}`}
               style={{ gridTemplateColumns: '1fr repeat(3, minmax(100px, 1fr)) 70px' }}
             >
               {/* Center Info */}
@@ -245,10 +301,11 @@ export default function AdminPhases() {
 
               {/* Meal Columns */}
               {MEALS.map(meal => {
-                const data = getCell(row.center, selectedDay, meal.id);
-                const done = cellDone(data);
+                const data    = getCell(row.center, selectedDay, meal.id);
+                const done    = cellDone(data);
+                const isTarget = mealClearTarget?.center === row.center && mealClearTarget?.mealId === meal.id;
                 return (
-                  <div key={meal.id} className="flex flex-col items-center gap-1.5">
+                  <div key={meal.id} className="flex flex-col items-center gap-1">
                     {/* 3 phase dots */}
                     <div className="flex items-center gap-2">
                       {PHASES.map(phase => (
@@ -275,6 +332,34 @@ export default function AdminPhases() {
                     {done === 0 && (
                       <span className="text-[9px] text-[#D1D5DB] font-medium">—</span>
                     )}
+                    {/* Per-meal delete */}
+                    {done > 0 && (
+                      isTarget ? (
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <button
+                            onClick={handleClearMeal}
+                            disabled={mealClearing}
+                            className="px-1.5 py-0.5 rounded-md bg-red-500 text-white text-[8px] font-bold hover:bg-red-600 disabled:opacity-60 transition-colors"
+                          >
+                            {mealClearing ? '...' : 'مسح'}
+                          </button>
+                          <button
+                            onClick={() => setMealClearTarget(null)}
+                            className="text-[8px] text-[#9D8F85] font-bold hover:text-[#2D2926]"
+                          >
+                            إلغاء
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setMealClearTarget({ center: row.center, mealId: meal.id })}
+                          className="mt-0.5 opacity-0 group-hover:opacity-100 w-5 h-5 rounded flex items-center justify-center hover:bg-red-50 transition-all"
+                          title="مسح بيانات الوجبة"
+                        >
+                          <Trash2 size={10} className="text-[#C9B8A8] hover:text-red-400 transition-colors" strokeWidth={2} />
+                        </button>
+                      )
+                    )}
                   </div>
                 );
               })}
@@ -295,6 +380,38 @@ export default function AdminPhases() {
                   />
                 </div>
                 <p className="text-[9px] text-[#9D8F85] font-medium">{row.total}/{maxDone}</p>
+              </div>
+
+              {/* Per-center clear */}
+              <div className="flex items-center justify-center">
+                {row.total === 0 ? (
+                  <div className="w-7 h-7" />
+                ) : centerClearConfirm === row.center ? (
+                  <div className="flex flex-col items-center gap-1">
+                    <button
+                      onClick={() => handleClearCenter(row.center)}
+                      disabled={centerClearing}
+                      className="w-7 h-7 rounded-lg bg-red-500 hover:bg-red-600 flex items-center justify-center transition-colors disabled:opacity-60"
+                      title="تأكيد المسح"
+                    >
+                      <Trash2 size={11} className="text-white" strokeWidth={2.5} />
+                    </button>
+                    <button
+                      onClick={() => setCenterClearConfirm(null)}
+                      className="text-[8px] text-[#9D8F85] font-bold hover:text-[#2D2926] leading-none"
+                    >
+                      إلغاء
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setCenterClearConfirm(row.center)}
+                    className="w-7 h-7 rounded-lg border border-[#EDE5DC] hover:border-red-300 hover:bg-red-50 flex items-center justify-center transition-colors group"
+                    title="مسح بيانات هذا المركز"
+                  >
+                    <Trash2 size={11} className="text-[#C9B8A8] group-hover:text-red-400 transition-colors" strokeWidth={2} />
+                  </button>
+                )}
               </div>
             </div>
           );
