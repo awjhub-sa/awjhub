@@ -259,12 +259,18 @@ export default function Home() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
                           <p className="text-base font-bold text-[#2D2926] truncate">{title}</p>
-                          <span className="text-xs text-[#6D6E71] font-bold">{fmtTime(ms)}</span>
+                          <span className="text-xs text-[#6D6E71] font-bold shrink-0 mr-2">{fmtTime(ms)}</span>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {(item.reportNumber || item.requestNumber) && (
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-md shrink-0"
+                              style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
+                              {item.reportNumber || item.requestNumber}
+                            </span>
+                          )}
                           {sub && <span className="text-xs text-[#6D6E71] font-bold">{sub}</span>}
                           {item.status && (
-                            <span className="text-[10px] font-black px-3 py-0.5 rounded-full border border-black/5" 
+                            <span className="text-[10px] font-black px-3 py-0.5 rounded-full border border-black/5"
                                   style={{ background: statusInfo.bg, color: statusInfo.text }}>
                               {statusInfo.label}
                             </span>
