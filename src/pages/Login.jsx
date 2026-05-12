@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { auth } from '../config/db.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import logo from '../assets/logo.png';
@@ -20,49 +20,96 @@ export default function Login() {
   const navigate = useNavigate();
   const { role, loading } = useAuth();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [selectedType, setSelectedType] = useState('observer'); // 'observer' أو 'supervisor'
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [email,        setEmail]        = useState('');
+  const [password,     setPassword]     = useState('');
+  const [selectedType, setSelectedType] = useState('observer');
+  const [error,        setError]        = useState('');
+  const [busy,         setBusy]         = useState(false);
 
-  /* ── التوجيه التلقائي للمستخدم المسجل دخول مسبقاً ── */
+  /* ── Admin login modal ── */
+  const [adminModal,    setAdminModal]    = useState(false);
+  const [adminEmail,    setAdminEmail]    = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminError,    setAdminError]    = useState('');
+  const [adminBusy,     setAdminBusy]     = useState(false);
+
+  /* loginFlow tracks which login path triggered auth: 'observer' | 'supervisor' | 'admin' | null */
+  const loginFlow = useRef(null);
+
+  /* ── Role-aware redirect ── */
   useEffect(() => {
-    // إذا انتهى التحميل ووجدنا رتبة للمستخدم، نقوم بتوجيهه فوراً
     if (!loading && role) {
+      const flow = loginFlow.current;
+
+      /* Role mismatch — sign out and show error */
+      if (flow === 'observer' && role !== 'observer') {
+        signOut(auth);
+        setBusy(false);
+        setError('هذا الحساب غير مسجّل كمراقب ميداني');
+        loginFlow.current = null;
+        return;
+      }
+      if (flow === 'supervisor' && role !== 'supervisor') {
+        signOut(auth);
+        setBusy(false);
+        setError('هذا الحساب غير مسجّل كمشرف ميداني');
+        loginFlow.current = null;
+        return;
+      }
+      if (flow === 'admin' && role !== 'admin') {
+        signOut(auth);
+        setAdminBusy(false);
+        setAdminError('هذا الحساب غير مسجّل كمسؤول إداري');
+        loginFlow.current = null;
+        return;
+      }
+
+      loginFlow.current = null;
       if (role === 'admin') navigate('/admin/dashboard', { replace: true });
       else if (role === 'supervisor') navigate('/supervisor-home', { replace: true });
       else if (role === 'observer') navigate('/home', { replace: true });
-      
-      setBusy(false); // كسر حالة التحميل بمجرد العثور على الوجهة
+      setBusy(false);
     }
   }, [role, loading, navigate]);
 
+  const handleAdminLogin = async (e) => {
+    e.preventDefault();
+    if (!adminEmail || !adminPassword) { setAdminError('يرجى تعبئة جميع الحقول'); return; }
+    setAdminBusy(true);
+    setAdminError('');
+    loginFlow.current = 'admin';
+    try {
+      await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
+    } catch (err) {
+      loginFlow.current = null;
+      setAdminBusy(false);
+      const map = {
+        'auth/user-not-found':    'البريد الإلكتروني غير مسجّل',
+        'auth/wrong-password':    'كلمة المرور غير صحيحة',
+        'auth/invalid-email':     'صيغة البريد الإلكتروني غير صحيحة',
+        'auth/invalid-credential':'بيانات الدخول غير صحيحة',
+        'auth/too-many-requests': 'تم تجاوز عدد المحاولات، حاول لاحقاً',
+      };
+      setAdminError(map[err.code] || 'حدث خطأ غير متوقع');
+    }
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (!email || !password) {
-      setError('يرجى تعبئة جميع الحقول');
-      return;
-    }
-    
+    if (!email || !password) { setError('يرجى تعبئة جميع الحقول'); return; }
     setBusy(true);
     setError('');
-
+    loginFlow.current = selectedType; // 'observer' or 'supervisor'
     try {
-      // 1. محاولة تسجيل الدخول
       await signInWithEmailAndPassword(auth, email, password);
-      
-      // ملاحظة: لا نضع setBusy(false) هنا عند النجاح لأن الـ AuthContext 
-      // سيقوم بتحديث الـ role والـ useEffect أعلاه سيتولى التوجيه.
-      
     } catch (err) {
-      // 2. معالجة الخطأ وإيقاف حالة الدوران (Spinner)
-      setBusy(false); 
+      loginFlow.current = null;
+      setBusy(false);
       const map = {
-        'auth/user-not-found': 'البريد الإلكتروني غير مسجّل',
-        'auth/wrong-password': 'كلمة المرور غير صحيحة',
-        'auth/invalid-email': 'صيغة البريد الإلكتروني غير صحيحة',
-        'auth/invalid-credential': 'بيانات الدخول غير صحيحة أو نوع الحساب خاطئ',
+        'auth/user-not-found':    'البريد الإلكتروني غير مسجّل',
+        'auth/wrong-password':    'كلمة المرور غير صحيحة',
+        'auth/invalid-email':     'صيغة البريد الإلكتروني غير صحيحة',
+        'auth/invalid-credential':'بيانات الدخول غير صحيحة أو نوع الحساب خاطئ',
         'auth/too-many-requests': 'تم تجاوز عدد المحاولات، حاول لاحقاً بعد دقائق',
       };
       setError(map[err.code] || 'حدث خطأ غير متوقع، يرجى المحاولة ثانية');
@@ -182,6 +229,91 @@ export default function Login() {
       </form>
 
       <p className="mt-8 text-xs text-[#6D6E71]/60 text-center">© ١٤٤٧ هـ — ضيوف البيت لخدمات الحج والعمرة</p>
+
+      <button
+        type="button"
+        onClick={() => { setAdminModal(true); setAdminError(''); setAdminEmail(''); setAdminPassword(''); }}
+        className="mt-4 text-xs text-[#6D6E71]/40 hover:text-[#6D6E71]/70 transition-colors"
+      >
+        دخول الإدارة
+      </button>
+
+      {/* Admin Login Modal */}
+      {adminModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ background: 'rgba(45,41,38,0.45)', backdropFilter: 'blur(4px)' }}
+          onClick={e => { if (e.target === e.currentTarget) setAdminModal(false); }}
+        >
+          <form
+            onSubmit={handleAdminLogin}
+            className="w-full max-w-sm bg-white rounded-2xl shadow-[0_16px_48px_rgba(45,41,38,0.2)] border border-[#D1C4B9] overflow-hidden"
+            style={{ animation: 'fadeUp 0.25s ease forwards' }}
+          >
+            <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg,#4B4B4B,#2D2926)' }} />
+            <div className="px-7 py-7 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-[#2D2926]">دخول الإدارة</h2>
+                  <p className="text-[#6D6E71] text-xs mt-0.5">للمسؤولين المخوّلين فقط</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAdminModal(false)}
+                  className="w-8 h-8 rounded-xl border border-[#D1C4B9] flex items-center justify-center text-[#6D6E71] hover:bg-[#F5EDE0] transition-colors text-lg leading-none"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#2D2926] mb-1.5">البريد الإلكتروني</label>
+                <input
+                  type="email"
+                  value={adminEmail}
+                  onChange={e => { setAdminEmail(e.target.value); setAdminError(''); }}
+                  placeholder="admin@domain.sa"
+                  className="w-full px-4 py-3 border-2 border-[#D1C4B9] rounded-xl text-sm text-[#2D2926] placeholder-[#6D6E71]/30 focus:border-[#2D2926] focus:ring-2 focus:ring-[#2D2926]/10 outline-none transition-all"
+                  dir="ltr"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#2D2926] mb-1.5">كلمة المرور</label>
+                <input
+                  type="password"
+                  value={adminPassword}
+                  onChange={e => { setAdminPassword(e.target.value); setAdminError(''); }}
+                  placeholder="••••••••"
+                  className="w-full px-4 py-3 border-2 border-[#D1C4B9] rounded-xl text-sm text-[#2D2926] placeholder-[#6D6E71]/30 focus:border-[#2D2926] focus:ring-2 focus:ring-[#2D2926]/10 outline-none transition-all"
+                  dir="ltr"
+                />
+              </div>
+
+              {adminError && (
+                <p className="text-[#BA1A1A] text-sm text-center bg-red-50 border border-red-100 rounded-xl py-2 px-3 animate-shake">
+                  {adminError}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={adminBusy}
+                className="w-full py-3.5 rounded-xl font-bold text-white text-sm transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-60 flex items-center justify-center gap-3"
+                style={{ background: 'linear-gradient(135deg,#4B4B4B,#2D2926)' }}
+              >
+                {adminBusy ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>جارٍ التحقق...</span>
+                  </>
+                ) : 'دخول'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* تأثيرات CSS للحركة */}
       <style>{`

@@ -30,6 +30,7 @@ import AdminAnalytics      from './pages/admin/AdminAnalytics';
 import AdminUsers          from './pages/admin/AdminUsers';
 import AdminNotifications  from './pages/admin/AdminNotifications';
 import AdminTaskAssign     from './pages/admin/AdminTaskAssign';
+import AdminPhases         from './pages/admin/AdminPhases';
 
 // شاشة تحميل بسيطة مطابقة لهوية التطبيق
 const FullPageLoader = () => (

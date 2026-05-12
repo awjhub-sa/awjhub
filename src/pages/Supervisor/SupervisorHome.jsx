@@ -10,6 +10,7 @@ import {
 import logo from "../../assets/logo.png";
 import { useAuth } from '../../context/AuthContext.jsx';
 import { getCaterer } from '../../config/centers.js';
+import { extractCenterNum } from '../../hooks/useAssignedTasks.js';
 import { db } from '../../config/db.js';
 
 /* ── المكونات الزخرفية ── */
@@ -24,7 +25,7 @@ const GoldRule = () => (
 );
 
 /* ── بطاقة القائمة (MenuCard) ── */
-const MenuCard = ({ icon: Icon, title, subtitle, badge, onClick, variant = 'default' }) => {
+const MenuCard = ({ icon: Icon, title, subtitle, badge, doneBadge, onClick, variant = 'default' }) => {
   const isAccent = variant === 'accent';
   return (
     <button
@@ -40,9 +41,10 @@ const MenuCard = ({ icon: Icon, title, subtitle, badge, onClick, variant = 'defa
         <Icon size={26} className="text-[#A98159]" />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="font-bold text-base">{title}</span>
           {badge && <span className="bg-[#BA1A1A] text-white text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">{badge}</span>}
+          {doneBadge && <span className="bg-[#386B41] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{doneBadge}</span>}
         </div>
         <p className={`text-sm mt-0.5 truncate ${isAccent ? 'text-white/50' : 'text-[#6D6E71]'}`}>{subtitle}</p>
       </div>
@@ -52,12 +54,20 @@ const MenuCard = ({ icon: Icon, title, subtitle, badge, onClick, variant = 'defa
 };
 
 const ACTIVITY_CFG = {
-  reports: { label: 'بلاغ طارئ', Icon: AlertTriangle, color: '#DC2626', bg: '#FEF2F2', border: '#FECACA' },
-  meal_evaluations: { label: 'تقييم وجبات', Icon: Utensils, color: '#A98159', bg: '#FDF8F0', border: '#D1C4B9' },
-  mina_readiness: { label: 'جاهزية منى', Icon: HomeIcon, color: '#0369A1', bg: '#F0F9FF', border: '#BAE6FD' },
-  arafat_readiness: { label: 'جاهزية عرفة', Icon: Mountain, color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE' },
-  logistics_requests: { label: 'طلب إسناد', Icon: Package, color: '#3182CE', bg: '#EFF6FF', border: '#BFDBFE' },
+  reports:           { label: 'بلاغ طارئ',      Icon: AlertTriangle,  color: '#DC2626', bg: '#FEF2F2', border: '#FECACA' },
+  meal_evaluations:  { label: 'تقييم وجبات',      Icon: Utensils,       color: '#A98159', bg: '#FDF8F0', border: '#D1C4B9' },
+  mina_readiness:    { label: 'جاهزية منى',        Icon: HomeIcon,       color: '#0369A1', bg: '#F0F9FF', border: '#BAE6FD' },
+  arafat_readiness:  { label: 'جاهزية عرفة',      Icon: Mountain,       color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE' },
+  logistics_requests:{ label: 'طلب إسناد',         Icon: Package,        color: '#3182CE', bg: '#EFF6FF', border: '#BFDBFE' },
+  task_completions:  { label: 'مهمة مكتملة',      Icon: ClipboardCheck, color: '#386B41', bg: '#DCFCE7', border: '#86EFAC' },
 };
+
+const TASK_TYPE_LABELS = {
+  meal_evaluation:  'تقييم جودة الوجبات',
+  mina_readiness:   'جاهزية مشعر منى',
+  arafat_readiness: 'جاهزية مشعر عرفة',
+};
+const MEAL_LABELS = { breakfast: 'الإفطار', lunch: 'الغداء', dinner: 'العشاء' };
 
 const STATUS_DATA = {
   pending: { label: 'قيد الانتظار', bg: '#FEF9C3', text: '#854D0E' },
@@ -76,6 +86,12 @@ export default function SupervisorHome() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
+  const [assignedForCenter,    setAssignedForCenter]    = useState([]);
+  const [completionsForCenter, setCompletionsForCenter] = useState([]);
+  const [notifOpen,      setNotifOpen]      = useState(false);
+  
+  // الإصلاح: إضافة الـ State الخاص بالتنبيهات
+  const [observerNotifs, setObserverNotifs] = useState([]);
 
   useEffect(() => {
     const fetchCenters = async () => {
@@ -90,7 +106,8 @@ export default function SupervisorHome() {
             return numA - numB;
           });
           setAssignedCenters(sorted);
-          setSelectedCenter(sorted[0]);
+          const saved = sessionStorage.getItem('sup_selected_center');
+          setSelectedCenter(saved && sorted.includes(saved) ? saved : sorted[0]);
         }
       } catch (e) { console.error(e); }
       finally { setLoadingData(false); }
@@ -110,9 +127,13 @@ export default function SupervisorHome() {
   }, [user]);
 
   useEffect(() => {
-    if (!selectedCenter) return;
-    const todayMs = new Date().setHours(0,0,0,0);
-    const unsubs = Object.keys(ACTIVITY_CFG).map(col => {
+    if (!selectedCenter || !user?.uid) return;
+    const todayMs = new Date().setHours(0, 0, 0, 0);
+    const cn = extractCenterNum(selectedCenter);
+
+    /* Regular activity collections */
+    const regularCols = ['reports', 'meal_evaluations', 'mina_readiness', 'arafat_readiness', 'logistics_requests'];
+    const unsubs = regularCols.map(col => {
       const q = query(collection(db, col), where('center', '==', selectedCenter));
       return onSnapshot(q, snap => {
         const docs = snap.docs
@@ -120,18 +141,50 @@ export default function SupervisorHome() {
           .filter(d => (d.timestamp?.toMillis?.() || 0) >= todayMs);
         setActivities(prev => {
           const others = prev.filter(a => a._col !== col);
-          return [...others, ...docs].sort((a, b) => (b.timestamp?.toMillis?.() || 0) - (a.timestamp?.toMillis?.() || 0));
+          return [...others, ...docs].sort((a, b) => (b._sortTs || 0) - (a._sortTs || 0));
         });
       });
     });
-    return () => unsubs.forEach(unsub => unsub());
-  }, [selectedCenter]);
+
+    /* assigned_tasks for this center */
+    const unsubAssigned = onSnapshot(
+      query(collection(db, 'assigned_tasks'), where('target_centers', 'array-contains', cn)),
+      snap => setAssignedForCenter(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    );
+
+    /* task_completions */
+    const unsubTc = onSnapshot(
+      query(collection(db, 'task_completions'), where('center', '==', selectedCenter)),
+      snap => {
+        const allDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        /* Bell: all observer completions */
+        setCompletionsForCenter(allDocs.filter(d => d.uid !== user.uid));
+
+        /* Activity feed & Notifications: observer completions today only */
+        const todayCompletions = allDocs
+          .filter(d => d.uid !== user.uid && (d.completedAt?.toMillis?.() || 0) >= todayMs)
+          .map(d => ({ ...d, _col: 'task_completions', _sortTs: d.completedAt?.toMillis?.() || 0 }));
+        
+        // تحديث التنبيهات
+        setObserverNotifs(todayCompletions);
+
+        setActivities(prev => {
+          const others = prev.filter(a => a._col !== 'task_completions');
+          const withTs = others.map(a => ({ ...a, _sortTs: a._sortTs ?? (a.timestamp?.toMillis?.() || 0) }));
+          return [...withTs, ...todayCompletions].sort((a, b) => (b._sortTs || 0) - (a._sortTs || 0));
+        });
+      }
+    );
+
+    return () => { unsubs.forEach(u => u()); unsubAssigned(); unsubTc(); };
+  }, [selectedCenter, user?.uid]);
 
   const handleLogout = async () => {
     try {
       setIsProfileOpen(false);
       localStorage.clear();
-      sessionStorage.clear();
+      sessionStorage.removeItem('sup_selected_center');
       await logout();
       window.location.replace('./login');
     } catch (e) {
@@ -146,16 +199,22 @@ export default function SupervisorHome() {
     </div>
   );
 
+  /* ── Derive task badges ── */
+  const taskBadges = {};
+  completionsForCenter.forEach(c => {
+    taskBadges[c.taskType] = (taskBadges[c.taskType] || 0) + 1;
+  });
+
   const caterer = getCaterer(selectedCenter) || '—';
   const displayed = showAll ? activities : activities.slice(0, 4);
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#FDFCFB] font-arabic pb-10 overflow-x-hidden text-right">
       
-      {(isSheetOpen || isProfileOpen) && (
-        <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] transition-opacity duration-300" 
-          onClick={() => { setIsSheetOpen(false); setIsProfileOpen(false); }} 
+      {(isSheetOpen || isProfileOpen || notifOpen) && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] transition-opacity duration-300"
+          onClick={() => { setIsSheetOpen(false); setIsProfileOpen(false); setNotifOpen(false); }}
         />
       )}
 
@@ -169,9 +228,14 @@ export default function SupervisorHome() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button className="w-10 h-10 rounded-xl border border-[#D1C4B9] flex items-center justify-center hover:bg-[#FDF8F0] transition-colors"><Bell size={18} className="text-[#6D6E71]" /></button>
-            <button 
-              onClick={() => setIsProfileOpen(true)} 
+            <div className="relative">
+              <button
+                onClick={() => setNotifOpen(v => !v)}
+                className="w-10 h-10 rounded-xl border border-[#D1C4B9] flex items-center justify-center hover:bg-[#FDF8F0] transition-colors relative"
+              >
+                <Bell size={18} className="text-[#6D6E71]" />
+                {observerNotifs.length > 0 && (
+                  <span className="absolute -top-1 -left-1 w-4 h-4 bg-[#BA1A1A] text-white text-[9px] font-black rounded-full flex items-center justify-center">
               className="w-10 h-10 rounded-xl bg-[#FDF8F0] border border-[#A98159]/20 flex items-center justify-center hover:bg-[#A98159] hover:text-white group transition-all"
             >
               <User size={18} className="text-[#A98159] group-hover:text-white" />
@@ -232,12 +296,28 @@ export default function SupervisorHome() {
                       <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}><cfg.Icon size={20} style={{ color: cfg.color }} /></div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
-                          <p className="text-base font-bold text-[#2D2926] truncate">{item.reportType || item.type || cfg.label}</p>
-                          <span className="text-xs text-[#6D6E71] font-bold">{new Date(item.timestamp?.toMillis?.()).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}</span>
+                          {item._col === 'task_completions' ? (
+                            <p className="text-sm font-bold text-[#2D2926] leading-snug">
+                              تم رفع <span className="text-[#386B41]">{TASK_TYPE_LABELS[item.taskType] || item.taskType}</span>
+                              {item.mealType ? ` — ${MEAL_LABELS[item.mealType] || ''}` : ''}
+                            </p>
+                          ) : (
+                            <p className="text-base font-bold text-[#2D2926] truncate">{item.reportType || item.type || cfg.label}</p>
+                          )}
+                          <span className="text-xs text-[#6D6E71] font-bold shrink-0 mr-2">
+                            {new Date(item._sortTs || item.timestamp?.toMillis?.() || 0).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
                         </div>
                         <div className="flex items-center justify-between">
-                           <p className="text-[10px] text-[#A98159] font-bold flex items-center gap-1"><User size={10} /> بواسطة: {item.observer || 'مراقب ميداني'}</p>
-                           {item.status && <span className="text-[10px] font-black px-3 py-0.5 rounded-full" style={{ background: statusInfo.bg, color: statusInfo.text }}>{statusInfo.label}</span>}
+                          <p className="text-[10px] text-[#A98159] font-bold flex items-center gap-1">
+                            <User size={10} />
+                            {item._col === 'task_completions'
+                              ? `بواسطة: ${item.observerName || 'مراقب'}`
+                              : `بواسطة: ${item.observer || 'مراقب ميداني'}`}
+                          </p>
+                          {item.status && item._col !== 'task_completions' && (
+                            <span className="text-[10px] font-black px-3 py-0.5 rounded-full" style={{ background: statusInfo.bg, color: statusInfo.text }}>{statusInfo.label}</span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -252,15 +332,22 @@ export default function SupervisorHome() {
         <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
           <div className="flex items-center gap-3"><div className="h-px flex-1 bg-[#D1C4B9]/50" /><span className="text-[10px] font-black text-[#A98159] uppercase tracking-widest">إجراءات المشرف</span><div className="h-px flex-1 bg-[#D1C4B9]/50" /></div>
           <div className="grid grid-cols-1 gap-4">
-            <MenuCard icon={Utensils} title="تقييم جودة الوجبات" onClick={() => navigate('/sup-mealcheck', { state: { centerId: selectedCenter } })} variant="accent" />
-            <MenuCard icon={HomeIcon} title="جاهزية مشعر منى" onClick={() => navigate('/sup-mina-readiness', { state: { centerId: selectedCenter } })} />
-            <MenuCard icon={Mountain} title="جاهزية مشعر عرفة" onClick={() => navigate('/sup-arafat-readiness', { state: { centerId: selectedCenter } })} />
+            <MenuCard icon={Utensils} title="تقييم جودة الوجبات"
+              doneBadge={taskBadges['meal_evaluation'] ? `${taskBadges['meal_evaluation']} مكتملة` : undefined}
+              onClick={() => navigate('/sup-mealcheck', { state: { centerId: selectedCenter } })} variant="accent" />
+            <MenuCard icon={HomeIcon} title="جاهزية مشعر منى"
+              doneBadge={taskBadges['mina_readiness'] ? `${taskBadges['mina_readiness']} مكتملة` : undefined}
+              onClick={() => navigate('/sup-mina-readiness', { state: { centerId: selectedCenter } })} />
+            <MenuCard icon={Mountain} title="جاهزية مشعر عرفة"
+              doneBadge={taskBadges['arafat_readiness'] ? `${taskBadges['arafat_readiness']} مكتملة` : undefined}
+              onClick={() => navigate('/sup-arafat-readiness', { state: { centerId: selectedCenter } })} />
             <MenuCard icon={Package} title="طلب إسناد لوجستي" onClick={() => navigate('/sup-logistics', { state: { centerId: selectedCenter } })} />
             <MenuCard icon={AlertTriangle} title="بلاغ ميداني" onClick={() => navigate('/sup-report', { state: { centerId: selectedCenter } })} badge="عاجل" />
           </div>
         </div>
       </main>
 
+      {/* Side Profile Menu */}
       <div className={`fixed inset-y-0 left-0 z-[101] w-full max-w-sm bg-white shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] transform border-r border-[#D1C4B9] ${isProfileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="h-full flex flex-col bg-[#FDFCFB]">
           <div className="p-8 bg-[#2D2926] text-white relative overflow-hidden">
@@ -304,13 +391,14 @@ export default function SupervisorHome() {
         </div>
       </div>
 
+      {/* Bottom Sheet for Center Selection */}
       <div className={`fixed bottom-0 left-0 right-0 z-[101] bg-white rounded-t-[3rem] shadow-2xl transition-transform duration-500 transform border-t border-[#D1C4B9] ${isSheetOpen ? 'translate-y-0' : 'translate-y-full'}`}>
         <div className="flex justify-center py-5 cursor-pointer" onClick={() => setIsSheetOpen(false)}><div className="w-14 h-1.5 bg-[#D1C4B9] rounded-full opacity-40" /></div>
         <div className="px-8 pb-12 max-h-[70vh] overflow-y-auto text-center">
           <h3 className="text-xl font-black text-[#2D2926] mb-6">تبديل مركز الإشراف</h3>
           <div className="grid grid-cols-1 gap-3">
             {assignedCenters.map(centerItem => (
-              <button key={centerItem} onClick={() => { setSelectedCenter(centerItem); setTimeout(() => setIsSheetOpen(false), 200); }} className={`w-full flex items-center justify-between px-6 py-5 rounded-[1.5rem] font-bold transition-all ${selectedCenter === centerItem ? 'bg-[#FDF8F0] text-[#A98159] border-2 border-[#A98159]' : 'bg-[#F9F7F5] border-2 border-transparent hover:border-[#D1C4B9]'}`}>
+              <button key={centerItem} onClick={() => { setSelectedCenter(centerItem); sessionStorage.setItem('sup_selected_center', centerItem); setTimeout(() => setIsSheetOpen(false), 200); }} className={`w-full flex items-center justify-between px-6 py-5 rounded-[1.5rem] font-bold transition-all ${selectedCenter === centerItem ? 'bg-[#FDF8F0] text-[#A98159] border-2 border-[#A98159]' : 'bg-[#F9F7F5] border-2 border-transparent hover:border-[#D1C4B9]'}`}>
                 <div className="flex items-center gap-4"><div className={`w-3 h-3 rounded-full ${selectedCenter === centerItem ? 'bg-[#A98159]' : 'bg-gray-300'}`} /><span>{centerItem}</span></div>
                 {selectedCenter === centerItem && <CheckCircle2 size={20} className="text-[#A98159]" />}
               </button>
@@ -319,7 +407,7 @@ export default function SupervisorHome() {
         </div>
       </div>
       <footer className="max-w-5xl mx-auto px-8 py-6 text-center"><p className="text-[10px] text-[#6D6E71]/60 font-bold uppercase tracking-widest">© ١٤٤٧ هـ — لوحة إشراف منظومة المراقبة الميدانية</p></footer>
-      <style>{`@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } } .animate-fade-slide-up { animation: fadeSlideUp 0.5s ease-out forwards; }`}</style>
+      <style>{`@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } } .animate-fade-slide-up { animation: fadeSlideUp 0.5s ease-out forwards; } @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
     </div>
   );
 }
