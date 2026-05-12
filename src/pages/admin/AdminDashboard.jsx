@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { collection, onSnapshot, deleteDoc, updateDoc, doc } from 'firebase/firestore';
 import { db } from '../../config/db.js';
+import AdminReportGenerator from './AdminReportGenerator.jsx';
 import {
   Warning as AlertTriangle,
   Van as Truck,
@@ -518,22 +519,27 @@ export default function AdminDashboard() {
           <p className="text-sm text-[#9D8F85] mt-1 font-medium">مؤشرات الأداء الميداني — موسم الحج ١٤٤٧ هـ</p>
         </div>
 
-        {/* Hijri clock */}
-        <div className="flex items-stretch rounded-2xl overflow-hidden flex-shrink-0 shadow-[0_4px_20px_rgba(169,129,89,0.35)]"
+        <div className="flex items-center gap-3 flex-shrink-0 flex-wrap sm:flex-nowrap">
+          {/* Report generator button */}
+          <AdminReportGenerator />
+
+          {/* Hijri clock */}
+          <div className="flex items-stretch rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(169,129,89,0.35)]"
           style={{ background: 'linear-gradient(135deg, #C4A46E 0%, #A98159 50%, #8B6840 100%)' }}>
-          <div className="flex items-center gap-3 px-5 py-3.5">
-            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-              <Clock size={15} className="text-white" weight="thin" />
+            <div className="flex items-center gap-3 px-5 py-3.5">
+              <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                <Clock size={15} className="text-white" weight="thin" />
+              </div>
+              <div>
+                <p className="text-white/60 text-[10px] font-semibold leading-none">التاريخ الهجري</p>
+                <p className="text-white text-xs font-bold mt-1 leading-tight drop-shadow">{clock.hijri || '...'}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-white/60 text-[10px] font-semibold leading-none">التاريخ الهجري</p>
-              <p className="text-white text-xs font-bold mt-1 leading-tight drop-shadow">{clock.hijri || '...'}</p>
+            <div className="w-px bg-white/20 my-3" />
+            <div className="px-5 py-3.5 flex flex-col justify-center">
+              <p className="text-white/60 text-[10px] font-semibold leading-none">الوقت الآن</p>
+              <p className="text-white text-sm font-extrabold mt-1 tabular-nums leading-tight drop-shadow">{clock.time || '...'}</p>
             </div>
-          </div>
-          <div className="w-px bg-white/20 my-3" />
-          <div className="px-5 py-3.5 flex flex-col justify-center">
-            <p className="text-white/60 text-[10px] font-semibold leading-none">الوقت الآن</p>
-            <p className="text-white text-sm font-extrabold mt-1 tabular-nums leading-tight drop-shadow">{clock.time || '...'}</p>
           </div>
         </div>
       </div>
