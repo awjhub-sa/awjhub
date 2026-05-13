@@ -223,20 +223,29 @@ export default function Login() {
                 <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 <span>جارٍ التحقق...</span>
               </>
-            ) : 'دخول الآمن'}
+            ) : 'تسجيل الدخول'}
           </button>
         </div>
       </form>
 
-      <p className="mt-8 text-xs text-[#6D6E71]/60 text-center">© ١٤٤٧ هـ — ضيوف البيت لخدمات الحج والعمرة</p>
-
       <button
         type="button"
         onClick={() => { setAdminModal(true); setAdminError(''); setAdminEmail(''); setAdminPassword(''); }}
-        className="mt-4 text-xs text-[#6D6E71]/40 hover:text-[#6D6E71]/70 transition-colors"
+        className="mt-6 w-full max-w-sm py-3 rounded-xl font-bold text-sm text-white transition-all hover:opacity-95 active:scale-[0.98] flex items-center justify-center gap-2"
+        style={{
+          background: 'linear-gradient(135deg,#4B4B4B,#2D2926)',
+          boxShadow: '0 4px 16px rgba(45,41,38,0.25)',
+          animation: 'fadeUp 0.7s ease 0.2s both'
+        }}
       >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
         دخول الإدارة
       </button>
+
+      <p className="mt-6 text-xs text-[#6D6E71]/60 text-center">© ١٤٤٧ هـ — ضيوف البيت لخدمات الحج والعمرة</p>
 
       {/* Admin Login Modal */}
       {adminModal && (

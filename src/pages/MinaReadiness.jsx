@@ -6,6 +6,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getCaterer } from '../config/centers.js';
 import { useAssignedTasks } from '../hooks/useAssignedTasks.js';
+import { computeReadinessTotals } from '../config/readinessScore.js';
 
 const SECTIONS = [
   {
@@ -78,6 +79,7 @@ export default function MinaReadiness() {
     }
     setLoading(true);
     try {
+      const scoring = computeReadinessTotals(ALL_CRITERIA, answers);
       await addDoc(collection(db, 'mina_readiness'), {
         observer: profile?.nameAr || profile?.name || 'مراقب',
         center: profile?.center || '—',
@@ -85,6 +87,7 @@ export default function MinaReadiness() {
         uid: profile?.uid || '',
         answers,
         details,
+        ...scoring,
         taskId: selectedTask?.taskId || null,
         scheduledDate: selectedTask?.scheduledDate || null,
         timestamp: serverTimestamp(),

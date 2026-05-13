@@ -9,6 +9,7 @@ import { collection, addDoc, serverTimestamp, setDoc, doc, onSnapshot } from 'fi
 import { useAuth } from '../../context/AuthContext.jsx';
 import { getCaterer } from '../../config/centers.js';
 import { extractDay, extractCenterNum, MEAL_META } from '../../hooks/useAssignedTasks.js';
+import { MEAL_QUESTIONS, MEAL_MAX_SCORE, computeMealScore } from '../../config/mealQuestions.js';
 
 const PHASES = [
   { id: 1, label: 'مرحلة التجهيز',         desc: 'ارفع صورة لمرحلة تجهيز المواد الخام' },
@@ -16,43 +17,8 @@ const PHASES = [
   { id: 3, label: 'مرحلة التعبئة والتوزيع', desc: 'ارفع صورة لتعبئة وتوزيع الوجبات'    },
 ];
 
-const QUESTIONS = [
-  { id: 1,  text: "هل توجد أغذية من وجبات سابقة داخل المطبخ أو المخيم؟",                                   category: "متطلبات عامة",    score: 0.25 },
-  { id: 2,  text: "هل تم وضع المستندات الرسمية للمنشأة في لوحة ظاهرة داخل المطبخ؟",                        category: "متطلبات عامة",    score: 0.25 },
-  { id: 3,  text: "هل يوجد مراقب للجودة داخل المطبخ (يتابع العمليات ويدون الملاحظات الهامة)؟",             category: "متطلبات عامة",    score: 0.0  },
-  { id: 4,  text: "هل تم توفير حاويات للنفايات داخل المطبخ (بخاصية عمل بضغط القدم)؟",                     category: "متطلبات عامة",    score: 0.25 },
-  { id: 5,  text: "هل تم توفير مغسلة أيدي داخل المطبخ (بخاصية عمل مستشعر / حساس)؟",                      category: "متطلبات عامة",    score: 0.25 },
-  { id: 6,  text: "هل الأرضيات والأسقف والحوائط نظيفة وسليمة إنشائياً؟",                                   category: "البيئة والمنشأة", score: 0.25 },
-  { id: 7,  text: "هل نظام التصريف (المجاري) داخل المطبخ يعمل بشكل جيد ومغطى بإحكام؟",                   category: "البيئة والمنشأة", score: 0.25 },
-  { id: 8,  text: "هل الإضاءة كافية ومحمية ضد الكسر؟",                                                     category: "البيئة والمنشأة", score: 0.25 },
-  { id: 9,  text: "هل التهوية كافية (المراوح والمكيفات تعمل بشكل جيد)؟",                                   category: "البيئة والمنشأة", score: 0.25 },
-  { id: 10, text: "هل توجد حشرات أو قوارض أو فضلات لها داخل المطبخ؟",                                     category: "البيئة والمنشأة", score: 0.5  },
-  { id: 11, text: "هل يتم تخزين المواد الغذائية على طاولات/أرفف (بارتفاع لا يقل عن 20 سم)؟",             category: "التخزين",         score: 0.25 },
-  { id: 12, text: "هل يتم فصل المواد الغذائية عن المنظفات والمواد الكيميائية؟",                            category: "التخزين",         score: 0.5  },
-  { id: 13, text: "هل الثلاجات والمجمدات تعمل بشكل جيد ومزودة بمقياس درجة حرارة؟",                       category: "التخزين",         score: 0.5  },
-  { id: 14, text: "هل يتم ترتيب المواد الغذائية حسب تاريخ الصلاحية (FIFO)؟",                              category: "التخزين",         score: 0.25 },
-  { id: 15, text: "هل جميع العاملين يرتدون الزي الرسمي النظيف (يونيفورم)؟",                               category: "العاملين",        score: 0.25 },
-  { id: 16, text: "هل يرتدي العاملون غطاء الرأس والكمامات والقفازات؟",                                    category: "العاملين",        score: 0.25 },
-  { id: 17, text: "هل يمتلك جميع العاملين شهادات صحية سارية المفعول؟",                                    category: "العاملين",        score: 0.5  },
-  { id: 18, text: "هل تظهر على أي من العاملين علامات مرضية أو جروح مكشوفة؟",                              category: "العاملين",        score: 0.5  },
-  { id: 19, text: "هل يلتزم العاملون بعدم التدخين أو الأكل داخل منطقة التحضير؟",                         category: "العاملين",        score: 0.25 },
-  { id: 20, text: "هل يتم غسل الخضروات والفواكه في أحواض مخصصة لذلك؟",                                   category: "التحضير والطهي",  score: 0.25 },
-  { id: 21, text: "هل يتم تذويب اللحوم المجمدة بطريقة صحيحة (داخل الثلاجة)؟",                            category: "التحضير والطهي",  score: 0.25 },
-  { id: 22, text: "هل يتم طهي الطعام بشكل جيد (وصول الحرارة للمركز)؟",                                   category: "التحضير والطهي",  score: 0.5  },
-  { id: 23, text: "هل يتم استخدام ألواح تقطيع ملونة (لفصل اللحوم عن الخضروات)؟",                        category: "التحضير والطهي",  score: 0.25 },
-  { id: 24, text: "هل درجة حرارة الوجبة مناسبة عند الاستلام؟",                                            category: "الاستلام والتوزيع", score: 0.5 },
-  { id: 25, text: "هل يتم نقل الوجبات في حافظات حرارية مغلقة ونظيفة؟",                                   category: "الاستلام والتوزيع", score: 0.5 },
-  { id: 26, text: "هل التغليف سليم ومحكم الإغلاق ولا يوجد تسريب؟",                                       category: "الاستلام والتوزيع", score: 0.25 },
-  { id: 27, text: "هل ملصق البيانات (تاريخ ووقت التحضير) موجود على الوجبات؟",                            category: "الاستلام والتوزيع", score: 0.25 },
-  { id: 28, text: "هل يتم تنظيف وتعقيم الأدوات والمعدات بعد كل استخدام؟",                                category: "النظافة العامة",  score: 0.25 },
-  { id: 29, text: "هل تستخدم فوط تنظيف نظيفة أو مناديل ورقية (ذات الاستخدام الواحد)؟",                 category: "النظافة العامة",  score: 0.25 },
-  { id: 30, text: "هل منطقة غسيل الأواني نظيفة ومنظمة؟",                                                 category: "النظافة العامة",  score: 0.25 },
-  { id: 31, text: "هل يتم إخراج النفايات من المطبخ بشكل دوري؟",                                          category: "النظافة العامة",  score: 0.25 },
-  { id: 32, text: "هل تتوفر مواد التنظيف والتعقيم المعتمدة؟",                                            category: "النظافة العامة",  score: 0.25 },
-  { id: 33, text: "هل يتم حفظ العينات من الوجبات اليومية بشكل صحيح؟",                                    category: "إجراءات إضافية",  score: 0.5  },
-  { id: 34, text: "هل يوجد سجل لمتابعة درجات حرارة الثلاجات والطعام؟",                                   category: "إجراءات إضافية",  score: 0.25 },
-  { id: 35, text: "هل يتم الالتزام بالوزن المحدد للمكونات داخل الوجبة؟",                                 category: "إجراءات إضافية",  score: 0.25 },
-];
+/* Questions — source of truth in src/config/mealQuestions.js */
+const QUESTIONS = MEAL_QUESTIONS;
 
 const STORAGE_KEY = (uid, taskId, mealType) => `sup_mealcheck_${uid}_${taskId}_${mealType}`;
 
@@ -295,16 +261,21 @@ export default function SupMealcheck() {
     }
     setLoadingSubmit(true);
     try {
-      let totalScore = 0;
-      QUESTIONS.forEach(q => { if (answers[q.id] === 'نعم') totalScore += q.score; });
-      const percentage = (totalScore / 10.75) * 100;
+      const totalScore   = computeMealScore(answers);
+      const maxScore     = MEAL_MAX_SCORE;
+      const scoreOutOf10 = maxScore > 0 ? parseFloat(((totalScore / maxScore) * 10).toFixed(2)) : 0;
+      const percentage   = maxScore > 0 ? (totalScore / maxScore) * 100 : 0;
       await addDoc(collection(db, 'meal_evaluations'), {
         uid:          profile?.uid,
+        center:       centerId,
         centerId,
         caterer:      catererName,
+        observer:     profile?.nameAr || profile?.name || 'مشرف',
         observerName: profile?.nameAr || profile?.name || 'مشرف',
         answers,
-        totalScore:   totalScore.toFixed(2),
+        totalScore,
+        maxScore,
+        scoreOutOf10,
         percentage:   percentage.toFixed(1),
         mealType:     selectedTask?.mealType || null,
         mealLabel:    MEAL_META[selectedTask?.mealType]?.label || null,
@@ -535,15 +506,39 @@ export default function SupMealcheck() {
                   </div>
                 )}
                 <div className={`bg-white border p-6 rounded-3xl shadow-sm transition-all ${answers[q.id] ? 'border-[#A98159]/30' : 'border-[#D1C4B9]'}`}>
-                  <span className="text-[#A98159] font-bold text-sm block mb-2">#{q.id}</span>
-                  <p className="text-[#2D2926] font-bold text-base mb-6 leading-relaxed">{q.text}</p>
+                  <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                    <span className="text-[#A98159] font-bold text-sm">#{q.id}</span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {q.score > 0 ? (
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#FDF8F0] border border-[#A98159]/30 text-[#A98159]">
+                          {q.score.toFixed(2)} نقطة
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200 text-gray-500">
+                          استرشادي
+                        </span>
+                      )}
+                      {q.negative && (
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-red-50 border border-red-200 text-red-700">
+                          سلبي — «لا» تمنح الدرجة
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-[#2D2926] font-bold text-base mb-2 leading-relaxed">{q.text}</p>
+                  {q.note && (
+                    <p className="text-[11px] text-[#6D6E71] mb-5 leading-relaxed italic bg-[#FAFAF8] rounded-xl px-3 py-2 border border-[#EDE8E3]">
+                      {q.note}
+                    </p>
+                  )}
+                  {!q.note && <div className="mb-4" />}
                   <div className="flex gap-3">
                     <button onClick={() => handleAnswer(q.id, 'نعم')}
-                      className={`flex-1 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all ${answers[q.id] === 'نعم' ? 'bg-[#386B41] text-white shadow-lg' : 'bg-gray-50 text-[#6D6E71] border border-gray-100'}`}>
+                      className={`flex-1 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all ${answers[q.id] === 'نعم' ? (q.negative ? 'bg-[#BA1A1A] text-white shadow-lg' : 'bg-[#386B41] text-white shadow-lg') : 'bg-gray-50 text-[#6D6E71] border border-gray-100'}`}>
                       <CheckCircle2 size={18} /> نعم
                     </button>
                     <button onClick={() => handleAnswer(q.id, 'لا')}
-                      className={`flex-1 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all ${answers[q.id] === 'لا' ? 'bg-[#BA1A1A] text-white shadow-lg' : 'bg-gray-50 text-[#6D6E71] border border-gray-100'}`}>
+                      className={`flex-1 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all ${answers[q.id] === 'لا' ? (q.negative ? 'bg-[#386B41] text-white shadow-lg' : 'bg-[#BA1A1A] text-white shadow-lg') : 'bg-gray-50 text-[#6D6E71] border border-gray-100'}`}>
                       <AlertCircle size={18} /> لا
                     </button>
                   </div>

@@ -211,10 +211,17 @@ export default function SupervisorHome() {
   return (
     <div dir="rtl" className="min-h-screen bg-[#FDFCFB] font-arabic pb-10 overflow-x-hidden text-right">
       
-      {(isSheetOpen || isProfileOpen || notifOpen) && (
+      {(isSheetOpen || isProfileOpen) && (
         <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] transition-opacity duration-300"
-          onClick={() => { setIsSheetOpen(false); setIsProfileOpen(false); setNotifOpen(false); }}
+          onClick={() => { setIsSheetOpen(false); setIsProfileOpen(false); }}
+        />
+      )}
+
+      {notifOpen && (
+        <div
+          className="fixed inset-0 z-[40]"
+          onClick={() => setNotifOpen(false)}
         />
       )}
 
@@ -235,7 +242,55 @@ export default function SupervisorHome() {
               >
                 <Bell size={18} className="text-[#6D6E71]" />
                 {observerNotifs.length > 0 && (
-                  <span className="absolute -top-1 -left-1 w-4 h-4 bg-[#BA1A1A] text-white text-[9px] font-black rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -left-1 min-w-[18px] h-[18px] px-1 bg-[#BA1A1A] text-white text-[9px] font-black rounded-full flex items-center justify-center">
+                    {observerNotifs.length}
+                  </span>
+                )}
+              </button>
+
+              {notifOpen && (
+                <div className="absolute top-12 left-0 w-80 max-w-[90vw] bg-white border border-[#D1C4B9] rounded-2xl shadow-2xl z-[102] overflow-hidden">
+                  <div className="px-4 py-3 bg-[#FDF8F0] border-b border-[#D1C4B9] flex items-center justify-between">
+                    <span className="text-sm font-black text-[#2D2926]">إشعارات اليوم</span>
+                    <span className="text-[10px] font-bold text-[#A98159]">{observerNotifs.length} جديد</span>
+                  </div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {observerNotifs.length === 0 ? (
+                      <div className="py-8 text-center">
+                        <Bell size={28} className="mx-auto text-[#D1C4B9] mb-2 opacity-40" />
+                        <p className="text-xs text-[#6D6E71] font-bold">لا توجد إشعارات اليوم</p>
+                      </div>
+                    ) : (
+                      observerNotifs
+                        .slice()
+                        .sort((a, b) => (b._sortTs || 0) - (a._sortTs || 0))
+                        .map(n => (
+                          <div key={n.id} className="px-4 py-3 border-b border-[#D1C4B9]/40 last:border-b-0 hover:bg-[#FDF8F0]/40 transition-colors">
+                            <div className="flex items-start gap-2">
+                              <CheckCircle2 size={14} className="text-[#386B41] mt-0.5 shrink-0" />
+                              <div className="flex-1 min-w-0 text-right">
+                                <p className="text-xs font-bold text-[#2D2926] leading-snug">
+                                  {TASK_TYPE_LABELS[n.taskType] || n.taskType}
+                                  {n.mealType ? ` — ${MEAL_LABELS[n.mealType] || ''}` : ''}
+                                </p>
+                                <p className="text-[10px] text-[#A98159] font-bold mt-0.5">
+                                  بواسطة: {n.observerName || 'مراقب'}
+                                </p>
+                                <p className="text-[9px] text-[#6D6E71] mt-0.5">
+                                  {new Date(n._sortTs || 0).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={() => setIsProfileOpen(true)}
               className="w-10 h-10 rounded-xl bg-[#FDF8F0] border border-[#A98159]/20 flex items-center justify-center hover:bg-[#A98159] hover:text-white group transition-all"
             >
               <User size={18} className="text-[#A98159] group-hover:text-white" />

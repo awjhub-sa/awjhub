@@ -6,6 +6,7 @@ import { collection, addDoc, serverTimestamp, onSnapshot } from 'firebase/firest
 import { useAuth } from '../../context/AuthContext.jsx';
 import { getCaterer } from '../../config/centers.js';
 import { extractCenterNum } from '../../hooks/useAssignedTasks.js';
+import { computeReadinessTotals } from '../../config/readinessScore.js';
 
 const SECTIONS = [
   {
@@ -99,6 +100,7 @@ export default function SupArafatReadiness() {
     if (unanswered.length > 0) { alert(`الرجاء الإجابة على جميع البنود. المتبقي: ${unanswered.length} بند`); return; }
     setLoading(true);
     try {
+      const scoring = computeReadinessTotals(ALL_CRITERIA, answers);
       await addDoc(collection(db, 'arafat_readiness'), {
         observer:      profile?.nameAr || profile?.name || 'مشرف',
         center:        centerId,
@@ -106,6 +108,7 @@ export default function SupArafatReadiness() {
         uid:           profile?.uid || '',
         answers,
         details,
+        ...scoring,
         taskId:        selectedTask?.taskId || null,
         scheduledDate: selectedTask?.scheduledDate || null,
         role:          'supervisor',

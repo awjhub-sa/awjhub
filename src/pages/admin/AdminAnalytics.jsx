@@ -10,15 +10,10 @@ import {
   CheckCircle2, XCircle, TrendingUp, Utensils,
 } from 'lucide-react';
 import { getCaterer } from '../../config/centers.js';
+import { MEAL_QUESTIONS } from '../../config/mealQuestions.js';
 
 /* ── Full question definitions ── */
-const MEAL_Qs = [
-  { id: 1, text: 'هل درجة حرارة الوجبة مناسبة عند الاستلام؟' },
-  { id: 2, text: 'هل الوجبات مغلفة بطريقة سليمة وغير ممزقة؟' },
-  { id: 3, text: 'هل توجد ملصقات توضح تاريخ الإنتاج والانتهاء؟' },
-  { id: 4, text: 'هل شكل الطعام ومظهره العام فاتح للشهية؟' },
-  { id: 5, text: 'هل طاقم التوزيع يلتزم بارتداء القفازات والكمامات؟' },
-];
+const MEAL_Qs = MEAL_QUESTIONS;
 
 const MINA_Qs = [
   { id: 1,  text: 'هل الطبخ في مطبخ واحد أم عدة مطابخ؟',                  type: 'choice' },
@@ -75,10 +70,13 @@ const ARAFAT_Qs = [
   { id: 24, text: 'هل توفرت وجبات جافة احتياطية بكميات كافية؟' },
 ];
 
-const MEAL_CHART_Qs   = [
-  { id: 1, text: 'درجة الحرارة' }, { id: 2, text: 'التغليف' },
-  { id: 3, text: 'الملصقات' },     { id: 4, text: 'المظهر' },
-  { id: 5, text: 'القفازات' },
+/* 5 representative questions plotted on the bar chart for the meal tab */
+const MEAL_CHART_Qs = [
+  { id: 2,  text: 'المستندات الرسمية' },
+  { id: 12, text: 'شهادات صحية' },
+  { id: 16, text: 'الإجراءات الصحية' },
+  { id: 25, text: 'مواعيد التوزيع' },
+  { id: 32, text: 'حافظات النقل' },
 ];
 const MINA_CHART_Qs   = [
   { id: 2, text: 'غسيل المطبخ' }, { id: 6, text: 'قائمة الوجبات' },
@@ -94,7 +92,7 @@ const ARAFAT_CHART_Qs = [
 const PIE_COLORS = ['#386B41', '#BA1A1A'];
 
 const TABS = [
-  { key: 'meal',   label: 'تقييم الوجبات', col: 'meal_evaluations',  color: '#A98159', icon: Utensils,     allQs: MEAL_Qs,   chartQs: MEAL_CHART_Qs,   hasScore: false },
+  { key: 'meal',   label: 'تقييم الوجبات', col: 'meal_evaluations',  color: '#A98159', icon: Utensils,     allQs: MEAL_Qs,   chartQs: MEAL_CHART_Qs,   hasScore: true  },
   { key: 'mina',   label: 'جاهزية منى',    col: 'mina_readiness',   color: '#386B41', icon: Mountain,     allQs: MINA_Qs,   chartQs: MINA_CHART_Qs,   hasScore: true  },
   { key: 'arafat', label: 'جاهزية عرفة',   col: 'arafat_readiness', color: '#1D6FA4', icon: Mountain,     allQs: ARAFAT_Qs, chartQs: ARAFAT_CHART_Qs, hasScore: true  },
 ];
@@ -117,10 +115,19 @@ function fullDate(ts) {
 }
 
 function getScore(doc) {
-  if (doc.scoreOutOf10 != null) return doc.scoreOutOf10;
-  if (doc.maxScore > 0) return parseFloat(((doc.totalScore / doc.maxScore) * 10).toFixed(2));
+  if (doc.scoreOutOf10 != null) return Number(doc.scoreOutOf10);
+  const max = Number(doc.maxScore);
+  const tot = Number(doc.totalScore);
+  if (max > 0 && !isNaN(tot)) return parseFloat(((tot / max) * 10).toFixed(2));
+  // legacy fallback: docs that only have a percentage string (0-100)
+  const pct = parseFloat(doc.percentage);
+  if (!isNaN(pct)) return parseFloat((pct / 10).toFixed(2));
   return null;
 }
+
+/* Field-name normalizers — different pages historically saved different keys. */
+const getObserver = d => d.observer || d.observerName || '—';
+const getCenter   = d => d.center   || d.centerId     || '—';
 
 function scoreBadgeStyle(score) {
   if (score == null) return null;
@@ -404,7 +411,7 @@ export default function AdminAnalytics() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                        <span className="text-sm font-bold text-[#2D2926]">{item.observer || '—'}</span>
+                        <span className="text-sm font-bold text-[#2D2926]">{getObserver(item)}</span>
                         {badge && score != null && (
                           <span className="text-[11px] font-bold px-2 py-0.5 rounded-full border"
                             style={{ background: badge.bg, color: badge.text, borderColor: badge.border }}>
@@ -417,9 +424,9 @@ export default function AdminAnalytics() {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-[#6D6E71]">{item.center || '—'}</p>
+                      <p className="text-xs text-[#6D6E71]">{getCenter(item)}</p>
                       <p className="text-[10px] text-[#A98159] font-medium mt-0.5">
-                        🏭 {item.caterer || getCaterer(item.center) || '—'}
+                        🏭 {item.caterer || getCaterer(getCenter(item)) || '—'}
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
@@ -443,9 +450,9 @@ export default function AdminAnalytics() {
                       {/* Observer / center / caterer / timestamp */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                         {[
-                          { label: 'المراقب',      val: item.observer,                                    bold: true },
-                          { label: 'المركز',        val: item.center,                                      bold: true },
-                          { label: 'المتعهد',       val: item.caterer || getCaterer(item.center),          gold: true },
+                          { label: 'المراقب',      val: getObserver(item),                                bold: true },
+                          { label: 'المركز',        val: getCenter(item),                                  bold: true },
+                          { label: 'المتعهد',       val: item.caterer || getCaterer(getCenter(item)),      gold: true },
                           { label: 'وقت الإرسال',  val: fullDate(item.timestamp),                         time: true },
                         ].map(c => (
                           <div key={c.label} className="bg-white rounded-2xl border border-[#E8E0D8] p-3"
