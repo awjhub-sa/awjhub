@@ -5,6 +5,7 @@ import {
   Target, ChefHat, Tent, Compass, Earth, CalendarCheck,
   Rocket, Sparkles, Building2, CheckCircle2, ChevronDown,
   ChevronUp, Clock, AlertCircle, X, Layers, Search, Trash2,
+  Flame, Package, ShieldCheck,
 } from 'lucide-react';
 import { Coffee, ForkKnife, Moon } from '@phosphor-icons/react';
 import { CENTERS } from '../../config/centers.js';
@@ -47,6 +48,13 @@ const MEALS = [
   { key: 'dinner',    label: 'العشاء',  icon: Moon,      color: '#6366F1' },
 ];
 
+/* ── Meal categories (multi-select, required when meal_evaluation is picked) ── */
+const MEAL_CATEGORIES = [
+  { key: 'cooked',     label: 'وجبة مطبوخة', icon: Flame,       color: '#DC2626' },
+  { key: 'dry',        label: 'وجبة جافة',   icon: Package,     color: '#A98159' },
+  { key: 'sterilized', label: 'وجبة معقمة',  icon: ShieldCheck, color: '#2563EB' },
+];
+
 /* ── Dhu al-Hijjah days ── */
 const DHU_HIJJAH_DAYS = [
   { value: '7',  dayAr: '٧',  label: '٧ ذو الحجة ١٤٤٧'  },
@@ -64,6 +72,7 @@ const TASK_LABEL = {
   arafat_readiness: 'جاهزية عرفة',
 };
 const MEAL_LABEL = { breakfast: 'الإفطار', lunch: 'الغداء', dinner: 'العشاء' };
+const MEAL_CATEGORY_LABEL = Object.fromEntries(MEAL_CATEGORIES.map(c => [c.key, c.label]));
 const NAT_LABEL  = Object.fromEntries(NATIONALITIES.map(n => [n.key, n.label]));
 
 function toggle(arr, val) {
@@ -212,6 +221,18 @@ function AssignmentCard({ item }) {
             </div>
           )}
 
+          {item.meal_categories?.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap text-xs">
+              <Layers size={13} style={{ color: '#A98159' }} strokeWidth={1.5} />
+              <span className="text-[#6D6E71]">الأصناف:</span>
+              {item.meal_categories.map(c => (
+                <span key={c} className="bg-[#FDF8F0] border border-[#E8DDD4] text-[#A98159] font-bold px-2 py-0.5 rounded-lg text-[11px]">
+                  {MEAL_CATEGORY_LABEL[c] || c}
+                </span>
+              ))}
+            </div>
+          )}
+
           <div>
             <p className="text-[11px] text-[#6D6E71] mb-1.5 flex items-center gap-1">
               <Building2 size={11} strokeWidth={1.5} />
@@ -235,6 +256,7 @@ function AssignmentCard({ item }) {
 export default function AdminTaskAssign() {
   const [selTasks,     setSelTasks]     = useState([]);
   const [selMeals,     setSelMeals]     = useState([]);
+  const [selCategories, setSelCategories] = useState([]);
   const [selNats,      setSelNats]      = useState([]);
   const [selMode,      setSelMode]      = useState('nationality'); // 'nationality' | 'center'
   const [selCenters,   setSelCenters]   = useState([]);
@@ -245,8 +267,9 @@ export default function AdminTaskAssign() {
   const [history,      setHistory]      = useState([]);
   const [showAll,      setShowAll]      = useState(false);
 
-  const hasMeal    = selTasks.includes('meal_evaluation');
-  const mealMissing = hasMeal && selMeals.length === 0;
+  const hasMeal         = selTasks.includes('meal_evaluation');
+  const mealMissing     = hasMeal && selMeals.length === 0;
+  const categoryMissing = hasMeal && selCategories.length === 0;
 
   const targetCenters = selMode === 'nationality'
     ? [...new Set(NATIONALITIES.filter(n => selNats.includes(n.key)).flatMap(n => n.centers))].sort((a, b) => a - b)
@@ -268,6 +291,7 @@ export default function AdminTaskAssign() {
   const handleAssign = async () => {
     if (selTasks.length === 0)                              { setFeedback({ type: 'error', msg: 'اختر مهمة واحدة على الأقل' }); return; }
     if (mealMissing)                                        { setFeedback({ type: 'error', msg: 'اختر نوع الوجبة للتقييم' }); return; }
+    if (categoryMissing)                                    { setFeedback({ type: 'error', msg: 'اختر صنف الوجبة للتقييم' }); return; }
     if (selMode === 'nationality' && selNats.length === 0)  { setFeedback({ type: 'error', msg: 'اختر جنسية واحدة على الأقل' }); return; }
     if (selMode === 'center' && selCenters.length === 0)    { setFeedback({ type: 'error', msg: 'اختر مركزاً واحداً على الأقل' }); return; }
     if (!schedDay)                                          { setFeedback({ type: 'error', msg: 'حدد يوم التنفيذ' }); return; }
@@ -278,6 +302,7 @@ export default function AdminTaskAssign() {
       await addDoc(collection(db, 'assigned_tasks'), {
         task_types:           selTasks,
         meal_types:           hasMeal ? selMeals : [],
+        meal_categories:      hasMeal ? selCategories : [],
         target_nationalities: selMode === 'nationality' ? selNats : [],
         target_centers:       targetCenters,
         scheduled_date:       schedLabel,
@@ -285,7 +310,7 @@ export default function AdminTaskAssign() {
         created_at:           serverTimestamp(),
       });
       setFeedback({ type: 'success', msg: 'تم إسناد المهام بنجاح ✓' });
-      setSelTasks([]); setSelMeals([]); setSelNats([]); setSelCenters([]); setSchedDay('');
+      setSelTasks([]); setSelMeals([]); setSelCategories([]); setSelNats([]); setSelCenters([]); setSchedDay('');
       setTimeout(() => setFeedback(null), 4000);
     } catch {
       setFeedback({ type: 'error', msg: 'حدث خطأ أثناء الحفظ، حاول مجدداً' });
@@ -293,7 +318,10 @@ export default function AdminTaskAssign() {
     setSubmitting(false);
   };
 
-  const removeTask   = key => { setSelTasks(p => p.filter(x => x !== key)); if (key === 'meal_evaluation') setSelMeals([]); };
+  const removeTask   = key => {
+    setSelTasks(p => p.filter(x => x !== key));
+    if (key === 'meal_evaluation') { setSelMeals([]); setSelCategories([]); }
+  };
   const removeNat    = key => setSelNats(p => p.filter(x => x !== key));
   const removeMeal   = key => setSelMeals(p => p.filter(x => x !== key));
   const removeCenter = id  => setSelCenters(p => p.filter(x => x !== id));
@@ -360,33 +388,67 @@ export default function AdminTaskAssign() {
 
                     {/* Meal sub-selection — required */}
                     {t.hasMeals && active && (
-                      <div className="mt-2 mr-4">
-                        <div className="flex items-center gap-1.5 mb-2">
-                          <span className="text-[11px] font-semibold text-[#6D6E71]">نوع الوجبة</span>
-                          {mealMissing
-                            ? <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500 border border-red-100 flex items-center gap-0.5">
-                                <AlertCircle size={8} strokeWidth={2.5} /> مطلوب
-                              </span>
-                            : <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">
-                                ✓ محدد
-                              </span>
-                          }
+                      <div className="mt-2 mr-4 space-y-3">
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <span className="text-[11px] font-semibold text-[#6D6E71]">نوع الوجبة</span>
+                            {mealMissing
+                              ? <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500 border border-red-100 flex items-center gap-0.5">
+                                  <AlertCircle size={8} strokeWidth={2.5} /> مطلوب
+                                </span>
+                              : <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">
+                                  ✓ محدد
+                                </span>
+                            }
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            {MEALS.map(m => {
+                              const mActive = selMeals.includes(m.key);
+                              return (
+                                <button key={m.key}
+                                  onClick={() => setSelMeals(p => toggle(p, m.key))}
+                                  className="flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all"
+                                  style={mActive
+                                    ? { background: `${t.color}12`, borderColor: t.color, color: t.color }
+                                    : { background: '#FAFAF8', borderColor: mealMissing ? '#FCA5A5' : '#EDE5DC', color: '#6D6E71' }}>
+                                  <m.icon size={20} weight="duotone" style={{ color: mActive ? t.color : m.color }} />
+                                  <span className="text-xs font-bold">{m.label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          {MEALS.map(m => {
-                            const mActive = selMeals.includes(m.key);
-                            return (
-                              <button key={m.key}
-                                onClick={() => setSelMeals(p => toggle(p, m.key))}
-                                className="flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all"
-                                style={mActive
-                                  ? { background: `${t.color}12`, borderColor: t.color, color: t.color }
-                                  : { background: '#FAFAF8', borderColor: mealMissing ? '#FCA5A5' : '#EDE5DC', color: '#6D6E71' }}>
-                                <m.icon size={20} weight="duotone" style={{ color: mActive ? t.color : m.color }} />
-                                <span className="text-xs font-bold">{m.label}</span>
-                              </button>
-                            );
-                          })}
+
+                        {/* Meal CATEGORY sub-selection — required */}
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <span className="text-[11px] font-semibold text-[#6D6E71]">صنف الوجبة</span>
+                            {categoryMissing
+                              ? <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500 border border-red-100 flex items-center gap-0.5">
+                                  <AlertCircle size={8} strokeWidth={2.5} /> مطلوب
+                                </span>
+                              : <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">
+                                  ✓ {selCategories.length} محدد
+                                </span>
+                            }
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            {MEAL_CATEGORIES.map(c => {
+                              const cActive = selCategories.includes(c.key);
+                              const CIcon   = c.icon;
+                              return (
+                                <button key={c.key}
+                                  onClick={() => setSelCategories(p => toggle(p, c.key))}
+                                  className="flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all"
+                                  style={cActive
+                                    ? { background: `${c.color}12`, borderColor: c.color, color: c.color }
+                                    : { background: '#FAFAF8', borderColor: categoryMissing ? '#FCA5A5' : '#EDE5DC', color: '#6D6E71' }}>
+                                  <CIcon size={20} strokeWidth={1.75} style={{ color: cActive ? c.color : c.color + 'AA' }} />
+                                  <span className="text-xs font-bold">{c.label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
                     )}
@@ -638,7 +700,7 @@ export default function AdminTaskAssign() {
 
                             {/* Meals under meal_evaluation */}
                             {k === 'meal_evaluation' && (
-                              <div className="mt-1.5 mr-2">
+                              <div className="mt-1.5 mr-2 space-y-1.5">
                                 {selMeals.length === 0
                                   ? <div className="flex items-center gap-1 text-[10px] text-red-500 font-semibold">
                                       <AlertCircle size={10} strokeWidth={2} />
@@ -658,6 +720,30 @@ export default function AdminTaskAssign() {
                                           </button>
                                         </div>
                                       ))}
+                                    </div>
+                                }
+                                {selCategories.length === 0
+                                  ? <div className="flex items-center gap-1 text-[10px] text-red-500 font-semibold">
+                                      <AlertCircle size={10} strokeWidth={2} />
+                                      يرجى اختيار صنف الوجبة
+                                    </div>
+                                  : <div className="flex flex-wrap gap-1">
+                                      {selCategories.map(c => {
+                                        const cat = MEAL_CATEGORIES.find(x => x.key === c);
+                                        return (
+                                          <div key={c} className="flex items-center gap-0.5">
+                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg border"
+                                              style={{ background: `${cat.color}0F`, borderColor: `${cat.color}40`, color: cat.color }}>
+                                              {cat.label}
+                                            </span>
+                                            <button onClick={() => setSelCategories(p => p.filter(x => x !== c))}
+                                              className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-red-50 transition-colors"
+                                              style={{ color: cat.color }}>
+                                              <X size={9} strokeWidth={2.5} />
+                                            </button>
+                                          </div>
+                                        );
+                                      })}
                                     </div>
                                 }
                               </div>

@@ -18,11 +18,45 @@ import { collection, getDocs, query, where }     from 'firebase/firestore';
 import { db }                                    from '../../config/db.js';
 import { CENTERS }                               from '../../config/centers.js';
 import { cairoBase64 }                           from '../../assets/fonts/CairoFont.js';
-import logoSrc                                   from '../../assets/logo.png';
+import logoSrc                                   from '../../assets/logo-color.svg';
+import { MEAL_QUESTIONS }                        from '../../config/mealQuestions.js';
+import { MINA_ALL_CRITERIA }                     from '../../config/minaQuestions.js';
+import { ARAFAT_ALL_CRITERIA }                   from '../../config/arafatQuestions.js';
 import {
   FileText, X, ChevronDown, Loader2,
   CheckCircle2, Building2, Calendar, ClipboardList,
+  ListChecks,
 } from 'lucide-react';
+
+/* Map each report-type key to its question list (for detail mode) */
+const QUESTION_BANK = {
+  meal_evaluations: MEAL_QUESTIONS,
+  mina_readiness:   MINA_ALL_CRITERIA,
+  arafat_readiness: ARAFAT_ALL_CRITERIA,
+};
+
+/* Normalize a record's score to /10 across all storage shapes */
+function getRecordScore(rec) {
+  if (rec.scoreOutOf10 != null) return Number(rec.scoreOutOf10);
+  const max = Number(rec.maxScore);
+  const tot = Number(rec.totalScore);
+  if (max > 0 && !isNaN(tot)) return parseFloat(((tot / max) * 10).toFixed(2));
+  const pct = parseFloat(rec.percentage);
+  if (!isNaN(pct)) return parseFloat((pct / 10).toFixed(2));
+  return null;
+}
+
+/* Format a Firestore Timestamp / Date / millis as Arabic short date+time */
+function formatSubmitTime(ts) {
+  if (!ts) return '—';
+  try {
+    const d = ts?.toDate ? ts.toDate() : new Date(ts);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleString('ar-SA', { dateStyle: 'short', timeStyle: 'short' });
+  } catch {
+    return '—';
+  }
+}
 
 /* ══════════════════════════════════════════════════════
    Domain constants
@@ -272,6 +306,12 @@ export function wrapArabicLines(doc, text, maxWidth) {
 ══════════════════════════════════════════════════════ */
 let _logoDataUrl = null;
 
+/* Logo aspect ratio fallback — matches the SVG viewBox (600 × 378.6) so
+   the canvas isn't 0×0 when the browser can't infer SVG natural size. */
+const LOGO_FALLBACK_W = 600;
+const LOGO_FALLBACK_H = 379;
+const LOGO_RASTER_SCALE = 4; // upscale before rasterizing so PDF stays crisp
+
 function getLogoDataUrl() {
   if (_logoDataUrl) return Promise.resolve(_logoDataUrl);
   return new Promise((resolve) => {
@@ -279,10 +319,13 @@ function getLogoDataUrl() {
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       try {
+        const w = img.naturalWidth  || LOGO_FALLBACK_W;
+        const h = img.naturalHeight || LOGO_FALLBACK_H;
         const canvas = document.createElement('canvas');
-        canvas.width  = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        canvas.getContext('2d').drawImage(img, 0, 0);
+        canvas.width  = w * LOGO_RASTER_SCALE;
+        canvas.height = h * LOGO_RASTER_SCALE;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         _logoDataUrl = canvas.toDataURL('image/png');
       } catch { _logoDataUrl = null; }
       resolve(_logoDataUrl);
@@ -291,6 +334,9 @@ function getLogoDataUrl() {
     img.src = logoSrc;
   });
 }
+
+/* Logo aspect ratio for sizing in PDF (landscape SVG) */
+const LOGO_ASPECT = LOGO_FALLBACK_W / LOGO_FALLBACK_H;
 
 /* ══════════════════════════════════════════════════════
    Firestore data fetching
@@ -341,7 +387,7 @@ function hexToRgb(hex) {
         observer, report types, generation timestamp).
      4. Draw data pages grouped by center → report type.
 ══════════════════════════════════════════════════════════════════════════ */
-async function buildPDF({ data, centerFilter, dateFilter, types }) {
+async function buildPDF({ data, centerFilter, dateFilter, types, detailed = false }) {
   /* Dynamic imports — only bundled & loaded when user clicks "generate" */
   const { jsPDF }              = await import('jspdf');
   const { default: autoTable } = await import('jspdf-autotable');
@@ -467,39 +513,36 @@ async function buildPDF({ data, centerFilter, dateFilter, types }) {
   ───────────────────────────────────────────────── */
   function drawPageHeader(isFirst = false) {
     pageNum++;
-    const bandH = isFirst ? 62 : 18;
-
-    doc.setFillColor(...C_DARK);
-    doc.rect(0, 0, PW, bandH, 'F');
 
     if (isFirst) {
-      /* Decorative dot grid */
-      doc.setFillColor(...C_GOLD);
-      for (let x = 8; x < PW; x += 14)
-        for (let y = 6; y < bandH; y += 14)
-          doc.circle(x, y, 0.65, 'F');
-
-      /* Logo — top-right corner */
+      /* Logo — top-right corner, landscape aspect */
       if (logoDataUrl) {
-        try { doc.addImage(logoDataUrl, 'PNG', PW - ML - 12, 4, 12, 12); }
+        const logoW = 32;
+        const logoH = logoW / LOGO_ASPECT;
+        try { doc.addImage(logoDataUrl, 'PNG', PW - ML - logoW, 8, logoW, logoH); }
         catch { /* silently skip */ }
       }
 
       /* Brand name */
       doc.setFont('Cairo', 'normal');
-      doc.setFontSize(24);
+      doc.setFontSize(26);
       doc.setTextColor(...C_GOLD);
-      doc.text(fixArabic('ضيوف البيت'), PW / 2, 27, { align: 'center' });
+      doc.text(fixArabic('ضيوف البيت'), PW / 2, 34, { align: 'center' });
 
       /* Report title */
-      doc.setFontSize(12);
-      doc.setTextColor(...C_WHITE);
-      doc.text(fixArabic('تقرير الرقابة الميدانية'), PW / 2, 40, { align: 'center' });
+      doc.setFontSize(13);
+      doc.setTextColor(...C_DARK);
+      doc.text(fixArabic('تقرير الرقابة الميدانية'), PW / 2, 46, { align: 'center' });
 
       /* Season line */
-      doc.setFontSize(8);
-      doc.setTextColor(195, 175, 148);
-      doc.text(fixArabic('موسم الحج ١٤٤٧ هـ'), PW / 2, 51, { align: 'center' });
+      doc.setFontSize(9);
+      doc.setTextColor(...C_GRAY);
+      doc.text(fixArabic('موسم الحج ١٤٤٧ هـ'), PW / 2, 54, { align: 'center' });
+
+      /* Bottom rule */
+      doc.setDrawColor(...C_GOLD);
+      doc.setLineWidth(0.4);
+      doc.line(ML, 60, PW - MR, 60);
 
     } else {
       /* Mini header: brand + title + page number */
@@ -509,7 +552,7 @@ async function buildPDF({ data, centerFilter, dateFilter, types }) {
       doc.text(fixArabic('ضيوف البيت'), PW - ML, 11, { align: 'right' });
 
       doc.setFontSize(9);
-      doc.setTextColor(200, 185, 165);
+      doc.setTextColor(...C_DARK);
       doc.text(fixArabic('تقرير الرقابة الميدانية'), PW / 2, 11, { align: 'center' });
 
       doc.setFontSize(9);
@@ -535,6 +578,185 @@ async function buildPDF({ data, centerFilter, dateFilter, types }) {
       fixArabic('منظومة المراقبة الميدانية — ضيوف البيت'),
       PW / 2, PH - 8, { align: 'center' }
     );
+  }
+
+  /* ──────────────────────────────────────────────
+     drawDetailSection — for detailed-mode PDFs
+     Renders one breakdown card per record:
+       • header line: observer + score badge
+       • info line:   date + meal type (for meals)
+       • red box:     list of all questions answered «لا»
+                      with full question text
+  ────────────────────────────────────────────── */
+  function drawDetailSection(records, typeKey, typeMeta) {
+    if (!records?.length) return;
+    const allQs   = QUESTION_BANK[typeKey] || [];
+    const qsById  = new Map(allQs.map(q => [String(q.id), q]));
+    const tRgb    = hexToRgb(typeMeta?.color ?? '#A98159');
+
+    /* Section header */
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 6,
+      body:   [[fixArabic(`التفاصيل الفردية — ${toArabicNum(records.length)} سجل`)]],
+      styles: {
+        font:        'Cairo',
+        fontStyle:   'normal',
+        fontSize:    10,
+        halign:      'right',
+        cellPadding: { top: 3, right: 6, bottom: 3, left: 6 },
+        lineWidth:   0,
+        fillColor:   tRgb,
+        textColor:   C_WHITE,
+      },
+      tableWidth:   CW,
+      columnStyles: { 0: { cellWidth: CW } },
+      theme: 'plain',
+      margin: { left: ML, right: ML },
+    });
+
+    for (const rec of records) {
+      const obs     = rec.observer ?? rec.observerName ?? '—';
+      const score   = getRecordScore(rec);
+      const dateStr = rec.scheduled_date ?? rec.scheduledDate ?? '—';
+      const mealLbl = rec.mealType ? (MEAL_LABELS[rec.mealType] ?? rec.mealType) : '';
+
+      /* Collect "no" answers with full question text */
+      const noQs = [];
+      const ans  = rec.answers ?? {};
+      for (const [k, v] of Object.entries(ans)) {
+        if (v !== 'لا') continue;
+        const q = qsById.get(String(k));
+        if (q) noQs.push(q);
+      }
+
+      /* Header row: observer (right) + score (left)
+         NOTE: fontStyle 'bold' would force jsPDF to look up 'Cairo-Bold',
+         which we never registered — that falls back to Helvetica and
+         renders Arabic as garbled bytes. Keep 'normal' everywhere. */
+      const scoreText = score == null ? '—' : toArabicNum(`${score.toFixed(1)} / 10`);
+      autoTable(doc, {
+        startY: doc.lastAutoTable.finalY + 2,
+        body: [[fixArabic(scoreText), fixArabic(obs)]],
+        styles: {
+          font:        'Cairo',
+          fontStyle:   'normal',
+          fontSize:    10,
+          halign:      'right',
+          cellPadding: { top: 3, right: 5, bottom: 3, left: 5 },
+          lineWidth:   0.3,
+          lineColor:   tRgb,
+          fillColor:   C_LIGHT,
+          textColor:   C_DARK,
+        },
+        tableWidth: CW,
+        columnStyles: {
+          0: { cellWidth: 38,      halign: 'center', textColor: tRgb },
+          1: { cellWidth: CW - 38 },
+        },
+        theme: 'plain',
+        margin: { left: ML, right: ML },
+      });
+
+      /* Info grid: center, caterer, date, meal, submission time.
+         Rendered as a 2-column table — value (left) | label+value pair.
+         Each row holds two key/value cells to save vertical space. */
+      const recCenter  = rec.center || rec.centerId || '—';
+      const recCaterer = rec.caterer
+        || (CENTERS.find(c => c.id === recCenter)?.caterer)
+        || '—';
+      const submitStr  = formatSubmitTime(rec.timestamp);
+
+      const pairs = [];
+      pairs.push([`المركز: ${recCenter}`, `التاريخ: ${dateStr}`]);
+      if (mealLbl) {
+        pairs.push([`المتعهد: ${recCaterer}`, `الوجبة: ${mealLbl}`]);
+        pairs.push([`وقت الإرسال: ${submitStr}`, '']);
+      } else {
+        pairs.push([`المتعهد: ${recCaterer}`, `وقت الإرسال: ${submitStr}`]);
+      }
+
+      autoTable(doc, {
+        startY: doc.lastAutoTable.finalY,
+        body:   pairs.map(([left, right]) => [fixArabic(left), fixArabic(right)]),
+        styles: {
+          font:        'Cairo',
+          fontStyle:   'normal',
+          fontSize:    8,
+          halign:      'right',
+          cellPadding: { top: 2, right: 5, bottom: 2, left: 5 },
+          lineWidth:   0.3,
+          lineColor:   tRgb,
+          fillColor:   [250, 250, 248],
+          textColor:   C_DARK,
+          overflow:    'linebreak',
+        },
+        tableWidth: CW,
+        columnStyles: {
+          0: { cellWidth: CW / 2, textColor: C_GRAY },
+          1: { cellWidth: CW / 2, textColor: C_GRAY },
+        },
+        theme: 'plain',
+        margin: { left: ML, right: ML },
+      });
+
+      /* "No" answers list — or "no violations" message.
+         IMPORTANT: explicit cellWidth + tableWidth forces autoTable to
+         honour `overflow: 'linebreak'` for long question texts (otherwise
+         a single-column table with cellWidth:'auto' grows to fit the
+         widest row and never wraps). */
+      if (noQs.length) {
+        autoTable(doc, {
+          startY: doc.lastAutoTable.finalY,
+          head:   [[fixArabic(`الأسئلة المُجابة بـ«لا» (${toArabicNum(noQs.length)})`)]],
+          body:   noQs.map(q => [fixArabic(q.text)]),
+          styles: {
+            font:        'Cairo',
+            fontStyle:   'normal',
+            fontSize:    8.5,
+            halign:      'right',
+            cellPadding: { top: 2.5, right: 6, bottom: 2.5, left: 6 },
+            lineWidth:   0.3,
+            lineColor:   [254, 202, 202],
+            fillColor:   [254, 242, 242],
+            textColor:   [127, 29, 29],
+            overflow:    'linebreak',
+          },
+          headStyles: {
+            font:        'Cairo',
+            fontStyle:   'normal',
+            fontSize:    9,
+            halign:      'right',
+            fillColor:   [220, 38, 38],
+            textColor:   C_WHITE,
+            cellPadding: { top: 2.5, right: 6, bottom: 2.5, left: 6 },
+          },
+          tableWidth:   CW,
+          columnStyles: { 0: { cellWidth: CW } },
+          theme: 'plain',
+          margin: { left: ML, right: ML },
+        });
+      } else {
+        autoTable(doc, {
+          startY: doc.lastAutoTable.finalY,
+          body: [[fixArabic('لا توجد أسئلة مُجابة بـ«لا» في هذا السجل')]],
+          styles: {
+            font:        'Cairo',
+            fontStyle:   'normal',
+            fontSize:    8.5,
+            halign:      'right',
+            cellPadding: { top: 3, right: 6, bottom: 3, left: 6 },
+            lineWidth:   0.3,
+            lineColor:   [187, 247, 208],
+            fillColor:   [220, 252, 231],
+            textColor:   [22, 101, 52],
+          },
+          tableWidth:   CW,
+          columnStyles: { 0: { cellWidth: CW } },
+          theme: 'plain',
+          margin: { left: ML, right: ML },
+        });
+      }
+    }
   }
 
   /* ════════════════════════════════════════════════
@@ -735,8 +957,8 @@ async function buildPDF({ data, centerFilter, dateFilter, types }) {
           const ans   = d.answers ?? {};
           const yes   = Object.values(ans).filter(v => v === 'نعم').length;
           const no    = Object.values(ans).filter(v => v === 'لا').length;
-          const pct   = parseFloat(d.percentage);
-          const score = isNaN(pct) ? '—' : toArabicNum(`${(pct / 10).toFixed(1)}/10`);
+          const s     = getRecordScore(d);
+          const score = s == null ? '—' : toArabicNum(`${s.toFixed(1)}/10`);
           return [
             score,
             toArabicNum(yes),
@@ -776,8 +998,10 @@ async function buildPDF({ data, centerFilter, dateFilter, types }) {
           const ans = d.answers ?? {};
           const yes = Object.values(ans).filter(v => v === 'نعم').length;
           const no  = Object.values(ans).filter(v => v === 'لا').length;
+          const s   = getRecordScore(d);
+          const score = s == null ? '—' : toArabicNum(`${s.toFixed(1)}/10`);
           return [
-            fixArabic(d.status === 'completed' ? 'مكتمل' : 'مُرسَل'),
+            score,
             toArabicNum(yes),
             toArabicNum(no),
             fixArabic(d.scheduledDate ?? d.scheduled_date ?? '—'),
@@ -788,7 +1012,7 @@ async function buildPDF({ data, centerFilter, dateFilter, types }) {
         autoTable(doc, {
           ...TABLE_BASE,
           head: [[
-            fixArabic('الحالة'),
+            fixArabic('الدرجة'),
             fixArabic('نعم'),
             fixArabic('لا'),
             fixArabic('التاريخ'),
@@ -805,6 +1029,13 @@ async function buildPDF({ data, centerFilter, dateFilter, types }) {
             4: { cellWidth: 'auto' },
           },
         });
+      }
+
+      /* ─────────────────────────────────────────
+         DETAILED MODE — per-record breakdown
+      ───────────────────────────────────────── */
+      if (detailed) {
+        drawDetailSection(recs, type, typeMeta);
       }
 
       drawPageFooter();
@@ -833,7 +1064,7 @@ function ReportModal({ onClose }) {
       prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
     );
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (detailed = false) => {
     if (!types.length) { setError('اختر نوعاً واحداً على الأقل'); return; }
     setGenerating(true);
     setError('');
@@ -849,8 +1080,8 @@ function ReportModal({ onClose }) {
         return;
       }
 
-      setProgress(`جاري إنشاء PDF (${total} سجل)...`);
-      await buildPDF({ data, centerFilter, dateFilter, types });
+      setProgress(`جاري إنشاء PDF ${detailed ? 'المفصّل' : ''} (${total} سجل)...`);
+      await buildPDF({ data, centerFilter, dateFilter, types, detailed });
       setProgress('');
       onClose();
     } catch (e) {
@@ -1049,16 +1280,27 @@ function ReportModal({ onClose }) {
               <span className="text-[11px] font-bold text-[#A98159]">{progress}</span>
             </div>
           )}
-          <button
-            onClick={handleGenerate}
-            disabled={generating || !types.length}
-            className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl text-white font-bold text-sm transition-all disabled:opacity-50 active:scale-[0.98] shadow-[0_4px_20px_rgba(169,129,89,0.35)] hover:shadow-[0_6px_28px_rgba(169,129,89,0.45)]"
-            style={{ background: 'linear-gradient(135deg,#C4A46E 0%,#A98159 50%,#8B6840 100%)' }}
-          >
-            {generating
-              ? <><Loader2 size={16} className="animate-spin" /> جاري الإنشاء...</>
-              : <><FileText size={16} /> إنشاء وتنزيل تقرير PDF</>}
-          </button>
+          <div className="space-y-2.5">
+            <button
+              onClick={() => handleGenerate(true)}
+              disabled={generating || !types.length}
+              className="w-full flex items-center justify-center gap-2.5 py-3 rounded-2xl text-[#2D2926] font-bold text-sm transition-all disabled:opacity-50 active:scale-[0.98] bg-white border-2 border-[#2D2926] hover:bg-[#FDF8F0]"
+            >
+              {generating
+                ? <><Loader2 size={16} className="animate-spin" /> جاري الإنشاء...</>
+                : <><ListChecks size={16} /> مع التفاصيل (أسئلة المخالفات لكل سجل)</>}
+            </button>
+            <button
+              onClick={() => handleGenerate(false)}
+              disabled={generating || !types.length}
+              className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl text-white font-bold text-sm transition-all disabled:opacity-50 active:scale-[0.98] shadow-[0_4px_20px_rgba(169,129,89,0.35)] hover:shadow-[0_6px_28px_rgba(169,129,89,0.45)]"
+              style={{ background: 'linear-gradient(135deg,#C4A46E 0%,#A98159 50%,#8B6840 100%)' }}
+            >
+              {generating
+                ? <><Loader2 size={16} className="animate-spin" /> جاري الإنشاء...</>
+                : <><FileText size={16} /> إنشاء وتنزيل تقرير PDF</>}
+            </button>
+          </div>
         </div>
       </div>
 

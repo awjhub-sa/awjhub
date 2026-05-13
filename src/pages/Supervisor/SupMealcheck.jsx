@@ -11,11 +11,20 @@ import { getCaterer } from '../../config/centers.js';
 import { extractDay, extractCenterNum, MEAL_META } from '../../hooks/useAssignedTasks.js';
 import { MEAL_QUESTIONS, MEAL_MAX_SCORE, computeMealScore } from '../../config/mealQuestions.js';
 
+/* Phase 2 (cooking) is skipped for the «وجبة جافة» (dry) category since
+   dry meals are not cooked on-site. See buildPhases() below. */
 const PHASES = [
   { id: 1, label: 'مرحلة التجهيز',         desc: 'ارفع صورة لمرحلة تجهيز المواد الخام' },
   { id: 2, label: 'مرحلة الطبخ',            desc: 'ارفع صورة أثناء عملية الطبخ'         },
   { id: 3, label: 'مرحلة التعبئة والتوزيع', desc: 'ارفع صورة لتعبئة وتوزيع الوجبات'    },
 ];
+
+function buildPhases(categories) {
+  const isDryOnly = Array.isArray(categories)
+    && categories.length === 1
+    && categories[0] === 'dry';
+  return isDryOnly ? [PHASES[0], PHASES[2]] : PHASES;
+}
 
 /* Questions — source of truth in src/config/mealQuestions.js */
 const QUESTIONS = MEAL_QUESTIONS;
@@ -93,7 +102,7 @@ function TaskGate({ profile, centerId, catererName, tasks, completions, loading,
               const meta = MEAL_META[mealType] || {};
               return (
                 <button key={`${task.id}_${mealType}`}
-                  onClick={() => onSelect({ taskId: task.id, mealType, scheduledDate: task.scheduled_date, day: extractDay(task.scheduled_date) })}
+                  onClick={() => onSelect({ taskId: task.id, mealType, scheduledDate: task.scheduled_date, day: extractDay(task.scheduled_date), categories: task.meal_categories || [] })}
                   className="w-full bg-white border-2 border-[#D1C4B9] hover:border-[#A98159] rounded-2xl p-4 flex items-center gap-4 text-right transition-all active:scale-[0.98] shadow-sm hover:shadow-md">
                   <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
                     style={{ background: meta.bg, border: `1.5px solid ${meta.border}` }}>
@@ -251,7 +260,8 @@ export default function SupMealcheck() {
     } catch {}
   };
 
-  const allPhasesComplete = phaseDone[1] && phaseDone[2] && phaseDone[3];
+  const phases            = buildPhases(selectedTask?.categories);
+  const allPhasesComplete = phases.every(p => phaseDone[p.id]);
   const handleAnswer = (id, val) => setAnswers(prev => ({ ...prev, [id]: val }));
 
   const handleSubmit = async () => {
@@ -323,7 +333,8 @@ export default function SupMealcheck() {
      PHASES SCREEN
   ════════════════════════════════════════════ */
   if (screen === 'phases') {
-    const completedCount = [1, 2, 3].filter(id => phaseDone[id]).length;
+    const completedCount = phases.filter(p => phaseDone[p.id]).length;
+    const totalPhases    = phases.length;
     return (
       <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-32 font-arabic">
         <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 py-3 mb-6 shadow-sm">
@@ -358,11 +369,11 @@ export default function SupMealcheck() {
             <div className="mb-4">
               <div className="flex items-center justify-between mb-1.5">
                 <p className="text-white/50 text-[11px] font-semibold">التقدم</p>
-                <p className="text-white/70 text-[11px] font-bold">{completedCount} / 3</p>
+                <p className="text-white/70 text-[11px] font-bold">{completedCount} / {totalPhases}</p>
               </div>
               <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                 <div className="h-full bg-[#A98159] rounded-full transition-all duration-500"
-                  style={{ width: `${(completedCount / 3) * 100}%` }} />
+                  style={{ width: `${(completedCount / totalPhases) * 100}%` }} />
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2">
@@ -380,11 +391,12 @@ export default function SupMealcheck() {
           </div>
 
           <div className="space-y-3">
-            {PHASES.map((phase, idx) => {
-              const isUnlocked = idx === 0 || phaseDone[idx];
+            {phases.map((phase, idx) => {
+              const isUnlocked = idx === 0 || phaseDone[phases[idx - 1].id];
               const isDone     = phaseDone[phase.id];
               const isRestored = isDone && !phasePhotos[phase.id];
               const ref        = fileRefs[idx];
+              const stepNum    = idx + 1;
               return (
                 <div key={phase.id} className={`bg-white rounded-2xl border-2 p-5 transition-all duration-300 ${isDone ? 'border-green-400 shadow-[0_4px_16px_rgba(34,197,94,0.15)]' : isUnlocked ? 'border-[#D1C4B9] hover:border-[#A98159]/50 shadow-sm' : 'border-[#EDE8E3] opacity-50'}`}>
                   <input ref={ref} type="file" accept="image/*" capture="environment" className="hidden"
@@ -392,7 +404,7 @@ export default function SupMealcheck() {
                   <div className="flex items-center gap-4">
                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${isDone ? 'bg-green-100' : isUnlocked ? 'bg-[#FDF8F0] border border-[#A98159]/20' : 'bg-gray-50'}`}>
                       {isDone ? <CheckCircle2 size={24} className="text-green-500" strokeWidth={2} />
-                        : isUnlocked ? <span className="text-[#A98159] font-black text-lg">{phase.id}</span>
+                        : isUnlocked ? <span className="text-[#A98159] font-black text-lg">{stepNum}</span>
                         : <Lock size={18} className="text-gray-300" strokeWidth={1.5} />}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -430,7 +442,7 @@ export default function SupMealcheck() {
               className={`w-full py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-3 transition-all duration-300 ${allPhasesComplete ? 'bg-[#A98159] text-white shadow-xl active:scale-95' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
               {allPhasesComplete
                 ? <>بدء التقييم <ArrowLeft size={18} strokeWidth={2.5} /></>
-                : <>{3 - completedCount} مراحل متبقية</>}
+                : <>{totalPhases - completedCount} مراحل متبقية</>}
             </button>
           </div>
         </div>
@@ -473,7 +485,7 @@ export default function SupMealcheck() {
             </div>
           </div>
           <div className="flex items-center gap-2 mb-4 flex-wrap">
-            {PHASES.map(p => (
+            {phases.map(p => (
               <span key={p.id} className="flex items-center gap-1 bg-green-500/20 text-green-300 text-[10px] font-bold px-2.5 py-1 rounded-full border border-green-500/30">
                 <CheckCircle2 size={10} strokeWidth={2.5} /> {p.label}
               </span>

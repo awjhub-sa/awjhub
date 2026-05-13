@@ -7,47 +7,10 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { getCaterer } from '../../config/centers.js';
 import { extractCenterNum } from '../../hooks/useAssignedTasks.js';
 import { computeReadinessTotals } from '../../config/readinessScore.js';
+import { ARAFAT_SECTIONS, ARAFAT_ALL_CRITERIA } from '../../config/arafatQuestions.js';
 
-const SECTIONS = [
-  {
-    id: 'general',
-    title: 'متطلبات عامة',
-    criteria: [
-      { id: 1,  text: 'هل الطبخ داخل المخيم في مطبخ واحد أم في عدة مطابخ؟', score: null, type: 'choice', choices: ['مطبخ واحد', 'مطبخين', '3 مطابخ', '4 مطابخ أو أكثر'] },
-      { id: 2,  text: 'هل تم غسيل المطبخ (الحوائط / المداخن / مروح الشفط / الأرضيات) بشكل عام؟', score: 0.19, type: 'yesno' },
-      { id: 3,  text: 'هل تم وضع المستندات الرسمية للمنشأة في لوحة ظاهرة داخل/خارج المطبخ؟', score: 0.19, type: 'yesno' },
-      { id: 4,  text: 'هل يوجد مصادر مياه متوفرة داخل المطبخ مع توفر المياه داخل الخزان الاحتياطي؟', score: null, type: 'yesno' },
-      { id: 5,  text: 'هل تم وضع قائمة الوجبات الغذائية (المنيو) بلغة الحاج في لوحة المعلومات طيلة فترة الموسم؟', score: 0.75, type: 'yesno' },
-      { id: 6,  text: 'هل تم وضع مواعيد توزيع الوجبات الغذائية بلغة الحاج في لوحة المعلومات طيلة فترة الموسم؟', score: 0.75, type: 'yesno' },
-      { id: 7,  text: 'هل يوجد ملصقات توعوية عن سلامة الغذاء داخل المطبخ؟', score: 0.75, type: 'yesno' },
-      { id: 8,  text: 'هل صواعق الحشرات الكهربائية نظيفة وتعمل؟', score: 0.19, type: 'yesno' },
-      { id: 9,  text: 'هل تم توفير دولاب مخصص للأغراض الشخصية للعاملين؟', score: null, type: 'yesno' },
-      { id: 10, text: 'هل تم توفير حافظات (غرف الثلج)؟', score: 0.19, type: 'yesno' },
-      { id: 11, text: 'هل تم توفير كميات كافية من الثلج داخل حافظة الثلج؟', score: 0.38, type: 'yesno' },
-      { id: 12, text: 'هل مواقد الطبخ لعمليات الطبخ من حيث الإنشاء وتم تجربتها؟', score: 0.75, type: 'yesno' },
-      { id: 13, text: 'هل تم توفير فلتر للمياه (فلتر ثلاثي) داخل المطبخ؟', score: 0.57, type: 'yesno' },
-      { id: 14, text: 'هل تم توفير (ثلاجات / ترامس) لتبريد مياه الشرب داخل المخيم؟', score: null, type: 'yesno_multi_detail', fields: [{ key: 'fridgeCount', label: 'عدد الثلاجات', type: 'number' }, { key: 'thermosType', label: 'ترامس وانواعها ( درفه أو درفتين )', type: 'text' }] },
-      { id: 15, text: 'هل تم تحديد موقع مهيأ/مخصص لتخزين المواد الغذائية؟', score: null, type: 'yesno' },
-    ],
-  },
-  {
-    id: 'technical',
-    title: 'متطلبات فنية',
-    criteria: [
-      { id: 16, text: 'هل جميع المنتجات المستخدمة بها بطاقة تعريف المنتج (وصف المنتج – تاريخ الصلاحية – بلد المصدر – مسببات الحساسية – شروط التخزين)؟', score: 0.19, type: 'yesno' },
-      { id: 17, text: 'هل يتم تخزين المواد الغذائية بطريقة آمنة وسليمة؟', score: 0.19, type: 'yesno' },
-      { id: 18, text: 'هل تم توفير مياه الشرب بشكل كافٍ داخل الموقع (علب – ريطات / شرنكات)؟', score: 1.51, type: 'yesno' },
-      { id: 19, text: 'هل تم توفير المواد الأساسية الغذائية من المتعهد (المواد الخام + البروتين)؟', score: 1.51, type: 'yesno' },
-      { id: 20, text: 'هل تم توفير معدات وأدوات الطبخ (القدور – مواد التعبئة – المواد الغذائية – الحطب)؟', score: 0.38, type: 'yesno' },
-      { id: 21, text: 'هل يوجد داخل الموقع مستودع (غرفة) تبريد مهيأة وجاهزة للاستخدام؟', score: null, type: 'yesno' },
-      { id: 22, text: 'هل تم توفير مستودع منفصل مطابق للاشتراطات لتخزين الحطب؟', score: null, type: 'yesno' },
-      { id: 23, text: 'هل الحطب متوفر بكميات كافية؟', score: 0.75, type: 'yesno' },
-      { id: 24, text: 'هل توفير الوجبات الجافة الجاهزة بكميات كافية (وجبات احتياطية)؟', score: 0.75, type: 'yesno' },
-    ],
-  },
-];
-
-const ALL_CRITERIA = SECTIONS.flatMap(s => s.criteria);
+const SECTIONS     = ARAFAT_SECTIONS;
+const ALL_CRITERIA = ARAFAT_ALL_CRITERIA;
 const REQUIRED_IDS = ALL_CRITERIA.filter(c => c.type !== 'choice' && c.type !== 'yesno_detail' && c.type !== 'yesno_multi_detail').map(c => c.id);
 
 export default function SupArafatReadiness() {
