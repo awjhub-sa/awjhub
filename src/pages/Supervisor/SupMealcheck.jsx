@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Utensils, ChevronRight, Save, CheckCircle2, AlertCircle,
-  Camera, Lock, ArrowLeft, RotateCcw, Ban, Sparkles, Loader2,
+  Camera, Lock, ArrowLeft, RotateCcw, Ban, Sparkles, Loader2, X,
 } from 'lucide-react';
 import { db, serverTimestamp, uploadFile, STORAGE_BUCKETS } from '../../lib/db.js';
 import { compressImage } from '../../lib/imageCompression.js';
@@ -197,6 +197,9 @@ export default function SupMealcheck() {
   const [phaseUploading, setPhaseUploading] = useState({ 1: false, 2: false, 3: false });
   const fileRefs = [useRef(null), useRef(null), useRef(null)];
   const [answers, setAnswers] = useState({});
+  const [qPhotos, setQPhotos] = useState({});
+  const [qPhotoUploading, setQPhotoUploading] = useState({});
+  const qPhotoInputRefs = useRef({});
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [restored, setRestored] = useState(false);
 
@@ -206,6 +209,7 @@ export default function SupMealcheck() {
     setPhaseDone({ 1: false, 2: false, 3: false });
     setPhasePhotos({ 1: null, 2: null, 3: null });
     setAnswers({});
+    setQPhotos({});
     setRestored(false);
     try {
       const raw = localStorage.getItem(STORAGE_KEY(profile.uid, selectedTask.taskId, selectedTask.mealType));
@@ -213,6 +217,7 @@ export default function SupMealcheck() {
       const data = JSON.parse(raw);
       if (data.answers && Object.keys(data.answers).length > 0) {
         setAnswers(data.answers);
+        if (data.qPhotos) setQPhotos(data.qPhotos);
         if (data.screen) setScreen(data.screen);
         setRestored(true);
       }
@@ -242,9 +247,35 @@ export default function SupMealcheck() {
     if (!selectedTask || !profile?.uid) return;
     localStorage.setItem(
       STORAGE_KEY(profile.uid, selectedTask.taskId, selectedTask.mealType),
-      JSON.stringify({ screen, answers })
+      JSON.stringify({ screen, answers, qPhotos })
     );
-  }, [screen, answers, selectedTask, profile?.uid]);
+  }, [screen, answers, qPhotos, selectedTask, profile?.uid]);
+
+  const handleQPhotoChange = async (qid, file) => {
+    if (!file) return;
+    setQPhotoUploading(prev => ({ ...prev, [qid]: true }));
+    try {
+      const compressed = await compressImage(file);
+      const date = selectedTask?.scheduledDate || 'undated';
+      const url = await uploadFile(
+        STORAGE_BUCKETS.phases,
+        `mealcheck/${centerId}/${date}/${selectedTask?.mealType || 'meal'}/q${qid}_${Date.now()}.jpg`,
+        compressed,
+      );
+      setQPhotos(prev => ({ ...prev, [qid]: url }));
+    } catch (err) {
+      console.error('[SupMealcheck question photo]', err);
+      alert(`فشل رفع الصورة: ${err?.message || err}`);
+    } finally {
+      setQPhotoUploading(prev => ({ ...prev, [qid]: false }));
+    }
+  };
+
+  const removeQPhoto = (qid) => setQPhotos(prev => {
+    const next = { ...prev };
+    delete next[qid];
+    return next;
+  });
 
   const clearProgress = () => {
     if (selectedTask && profile?.uid)
@@ -298,6 +329,12 @@ export default function SupMealcheck() {
       alert('يرجى الإجابة على جميع المعايير قبل الإرسال');
       return;
     }
+    const photoRequiredIds = QUESTIONS.filter(q => q.requiresPhoto).map(q => q.id);
+    const missingPhotos = photoRequiredIds.filter(id => answers[id] && !qPhotos[id]);
+    if (missingPhotos.length > 0) {
+      alert(`الأسئلة التالية تحتاج صورة: ${missingPhotos.join('، ')}`);
+      return;
+    }
     setLoadingSubmit(true);
     try {
       const totalScore   = computeMealScore(answers);
@@ -309,7 +346,7 @@ export default function SupMealcheck() {
         center:        centerId,
         caterer:       catererName,
         observer:      profile?.nameAr || profile?.name || 'مشرف',
-        answers,
+        answers:       { ...answers, __photos: qPhotos },
         totalScore,
         maxScore,
         scoreOutOf10,
@@ -662,6 +699,48 @@ export default function SupMealcheck() {
                         <span className="text-[15px]">لا</span>
                       </button>
                     </div>
+
+                    {q.requiresPhoto && ans && (
+                      <div className="mt-3">
+                        <input
+                          ref={el => { qPhotoInputRefs.current[q.id] = el; }}
+                          type="file" accept="image/*" capture="environment"
+                          className="hidden"
+                          onChange={e => handleQPhotoChange(q.id, e.target.files[0])}
+                        />
+                        {qPhotos[q.id] ? (
+                          <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl p-2.5">
+                            <img src={qPhotos[q.id]} alt="" className="w-14 h-14 rounded-lg object-cover border border-green-300" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-black text-green-700 flex items-center gap-1.5">
+                                <CheckCircle2 size={13} strokeWidth={2.5} /> تم رفع الصورة
+                              </p>
+                              <p className="text-[10px] text-green-600 mt-0.5">اضغط للتغيير</p>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button onClick={() => qPhotoInputRefs.current[q.id]?.click()}
+                                className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-green-700 bg-white border border-green-300 hover:bg-green-50">
+                                تغيير
+                              </button>
+                              <button onClick={() => removeQPhoto(q.id)}
+                                className="w-7 h-7 rounded-lg flex items-center justify-center text-red-500 bg-white border border-red-200 hover:bg-red-50">
+                                <X size={13} strokeWidth={2.5} />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => !qPhotoUploading[q.id] && qPhotoInputRefs.current[q.id]?.click()}
+                            disabled={qPhotoUploading[q.id]}
+                            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-[#A98159]/40 bg-[#FDF8F0] text-[#A98159] font-bold text-sm hover:bg-[#FDF1E0] hover:border-[#A98159] transition-all disabled:opacity-60 disabled:cursor-wait"
+                          >
+                            {qPhotoUploading[q.id]
+                              ? <><Loader2 size={16} className="animate-spin" /> جارٍ رفع الصورة...</>
+                              : <><Camera size={16} strokeWidth={2.25} /> رفع صورة مرفقة (مطلوبة)</>}
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </React.Fragment>
