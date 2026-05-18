@@ -4,8 +4,8 @@ import {
   ChevronRight, Send, Truck, Package, Utensils, Droplets, User, CheckCircle2, Sparkles,
   AlertTriangle, ArrowLeft, FileText, Clock,
 } from 'lucide-react';
-import { db } from '../config/db.js';
-import { collection, addDoc, onSnapshot, query, where, serverTimestamp, runTransaction, doc } from 'firebase/firestore';
+import { supabase } from '../config/supabase.js';
+import { db, serverTimestamp, rowFromDb } from '../lib/db.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getCaterer } from '../config/centers.js';
 import { initialStatusFields } from '../lib/statusTracking.js';
@@ -49,12 +49,12 @@ export default function LogisticsRequest() {
   const navigate = useNavigate();
   const { profile } = useAuth();
 
-  /* ── Report selection (step 0) ── */
+  
   const [pendingReports,  setPendingReports]  = useState([]);
   const [loadingReports,  setLoadingReports]  = useState(true);
   const [selectedReport,  setSelectedReport]  = useState(null);
 
-  /* ── Form fields (step 1+) ── */
+  
   const [category, setCategory] = useState('');
   const [supportType, setSupportType] = useState('');
   const [qtyInternal, setQtyInternal] = useState('');
@@ -68,19 +68,22 @@ export default function LogisticsRequest() {
   /* Subscribe to pending reports for this observer's center */
   useEffect(() => {
     if (!profile?.center) { setLoadingReports(false); return; }
-    const q = query(
-      collection(db, 'reports'),
-      where('center', '==', profile.center),
-      where('status', '==', 'pending')
-    );
-    const unsub = onSnapshot(q, snap => {
-      const list = snap.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => (b.timestamp?.toMillis?.() || 0) - (a.timestamp?.toMillis?.() || 0));
-      setPendingReports(list);
-      setLoadingReports(false);
-    }, () => setLoadingReports(false));
-    return unsub;
+    let mounted = true;
+    const load = async () => {
+      const { data } = await supabase.from('reports').select('*')
+        .eq('center', profile.center)
+        .eq('status', 'pending')
+        .order('timestamp', { ascending: false });
+      if (mounted) {
+        setPendingReports((data || []).map(rowFromDb));
+        setLoadingReports(false);
+      }
+    };
+    load();
+    const ch = supabase.channel(`pending-reports-${profile.center}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reports' }, load)
+      .subscribe();
+    return () => { mounted = false; supabase.removeChannel(ch); };
   }, [profile?.center]);
 
   const showInternal = supportType === 'internal' || supportType === 'both';
@@ -112,15 +115,7 @@ export default function LogisticsRequest() {
     if (!isFormValid || loading) return;
     setLoading(true);
     try {
-      const counterRef = doc(db, 'counters', 'logistics');
-      const nextNum = await runTransaction(db, async (tx) => {
-        const snap = await tx.get(counterRef);
-        const n = (snap.exists() ? snap.data().value : 0) + 1;
-        tx.set(counterRef, { value: n });
-        return n;
-      });
-      const requestNumber = `ISN-${String(nextNum).padStart(4, '0')}`;
-      await addDoc(collection(db, 'logistics_requests'), {
+      const inserted = await db.logistics_requests.insert({
         uid: profile?.uid,
         observer: profile?.nameAr || profile?.name || '—',
         center: profile?.center || '—',
@@ -130,7 +125,6 @@ export default function LogisticsRequest() {
         qtyInternal: showInternal ? parseInt(qtyInternal) : null,
         qtyExternal: showExternal ? parseInt(qtyExternal) : null,
         notes,
-        requestNumber,
         /* Link to the report this request is for */
         reportId:     selectedReport?.id           || null,
         reportNumber: selectedReport?.reportNumber || null,
@@ -138,9 +132,10 @@ export default function LogisticsRequest() {
         timestamp: serverTimestamp(),
         ...initialStatusFields('pending'),
       });
-      setRequestNum(requestNumber);
+      setRequestNum(inserted.requestNumber);
       setSubmitted(true);
     } catch (e) {
+      console.error('[Logistics submit]', e);
       alert('خطأ في الإرسال');
     }
     setLoading(false);
@@ -171,9 +166,7 @@ export default function LogisticsRequest() {
     );
   }
 
-  /* ════════════════════════════════════════════════════════════
-     STEP 0 — Pick a pending report this request is for
-  ════════════════════════════════════════════════════════════ */
+  
   if (!selectedReport) {
     return (
       <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-10 font-arabic">
@@ -294,9 +287,7 @@ export default function LogisticsRequest() {
     );
   }
 
-  /* ════════════════════════════════════════════════════════════
-     STEP 1+ — Logistics form (only after a report is selected)
-  ════════════════════════════════════════════════════════════ */
+  
   return (
     <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-28 font-arabic px-0">
       <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 md:px-8 py-3 mb-6 shadow-sm">

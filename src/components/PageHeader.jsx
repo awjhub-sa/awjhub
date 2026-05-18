@@ -1,18 +1,5 @@
 import { Sparkles } from 'lucide-react';
 
-/**
- * Shared page header with creative gradient icon container,
- * soft glow, and sparkle accent. Use across admin pages for consistency.
- *
- * Props:
- *   Icon       — lucide-react icon component
- *   title      — h1 text
- *   subtitle   — small description below title
- *   gradient   — { from, to } CSS color stops for the icon container
- *   glowColor  — rgba string used for the soft glow behind the icon
- *   right      — optional ReactNode rendered on the left (RTL → visually right end)
- *   sparkle    — boolean, show sparkle accent (default true)
- */
 export default function PageHeader({
   Icon,
   title,

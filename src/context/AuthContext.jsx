@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { auth, db } from '../config/db.js';
+import { supabase } from '../config/supabase.js';
+import { db } from '../lib/db.js';
 
 const AuthContext = createContext(null);
 
@@ -15,8 +14,10 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   /* On mount: check the lightweight monitor session FIRST; otherwise fall back
-     to Firebase Auth (admin). */
+     to Supabase Auth (admin/staff). */
   useEffect(() => {
+    let mounted = true;
+
     // 1) Monitor session in localStorage takes precedence
     const stored = localStorage.getItem(MONITOR_SESSION_KEY);
     if (stored) {
@@ -35,27 +36,43 @@ export function AuthProvider({ children }) {
       }
     }
 
-    // 2) Firebase Auth listener (admin / staff)
-    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
-          const snap = await getDoc(doc(db, 'users', firebaseUser.uid));
-          const data = snap.exists() ? snap.data() : {};
-          setRole(data.role || 'observer');
-          setProfile({ uid: firebaseUser.uid, email: firebaseUser.email, ...data });
-        } catch {
+    // 2) Supabase Auth session (admin / staff)
+    const hydrateFromSession = async (session) => {
+      if (!mounted) return;
+      if (!session?.user) {
+        setUser(null); setRole(null); setProfile(null); setLoading(false);
+        return;
+      }
+      const authUser = session.user;
+      try {
+        // Look up the user's profile row by auth_uid
+        const profileRow = await db.users.findBy('authUid', authUser.id);
+        if (!mounted) return;
+        if (profileRow) {
+          setUser({ uid: profileRow.uid, email: authUser.email });
+          setRole(profileRow.role || 'observer');
+          setProfile({ ...profileRow, email: authUser.email });
+        } else {
+          // Auth user with no profile row — treat as observer placeholder
+          setUser({ uid: authUser.id, email: authUser.email });
           setRole('observer');
-          setProfile({ uid: firebaseUser.uid, email: firebaseUser.email });
+          setProfile({ uid: authUser.id, email: authUser.email });
         }
-        setUser(firebaseUser);
-      } else {
-        setUser(null);
-        setRole(null);
-        setProfile(null);
+      } catch (e) {
+        console.error('[AuthContext] profile lookup failed:', e);
+        setUser({ uid: authUser.id, email: authUser.email });
+        setRole('observer');
+        setProfile({ uid: authUser.id, email: authUser.email });
       }
       setLoading(false);
+    };
+
+    supabase.auth.getSession().then(({ data }) => hydrateFromSession(data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      hydrateFromSession(session);
     });
-    return unsub;
+
+    return () => { mounted = false; sub?.subscription?.unsubscribe(); };
   }, []);
 
   /* Sign-in a monitor/supervisor by national ID.
@@ -66,26 +83,35 @@ export function AuthProvider({ children }) {
     if (!id) throw new Error('أدخل رقم الهوية');
     if (id.length !== 10) throw new Error('رقم الهوية يجب أن يكون 10 أرقام');
 
-    const q    = query(collection(db, 'users'), where('idNumber', '==', id));
-    const snap = await getDocs(q);
-    if (snap.empty) throw new Error('رقم الهوية غير مسجل في النظام');
+    const row = await db.users.findBy('idNumber', id);
+    if (!row) throw new Error('رقم الهوية غير مسجل في النظام');
 
-    const docSnap = snap.docs[0];
-    const data    = { uid: docSnap.id, ...docSnap.data() };
-
-    if (data.role !== 'observer' && data.role !== 'supervisor') {
+    if (row.role !== 'observer' && row.role !== 'supervisor') {
       throw new Error('هذا الحساب غير صالح للدخول بهذه الطريقة');
     }
-    if (expectedRole && data.role !== expectedRole) {
+    if (expectedRole && row.role !== expectedRole) {
       const label = expectedRole === 'observer' ? 'كمراقب' : 'كمشرف';
       throw new Error(`هذا الحساب غير مسجّل ${label} ميداني`);
     }
 
-    localStorage.setItem(MONITOR_SESSION_KEY, JSON.stringify(data));
-    setUser({ uid: data.uid, idNumber: data.idNumber });
-    setRole(data.role);
-    setProfile(data);
-    return data;
+    localStorage.setItem(MONITOR_SESSION_KEY, JSON.stringify(row));
+    setUser({ uid: row.uid, idNumber: row.idNumber });
+    setRole(row.role);
+    setProfile(row);
+    return row;
+  };
+
+  /* Admin/staff login with email + password through Supabase Auth */
+  const loginAsAdmin = async (email, password) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: (email || '').trim(),
+      password,
+    });
+    if (error) {
+      if (error.message?.includes('Invalid')) throw new Error('بيانات الدخول غير صحيحة');
+      throw new Error(error.message || 'فشل تسجيل الدخول');
+    }
+    return data.user;
   };
 
   /* Universal logout — clears both session types. */
@@ -94,11 +120,11 @@ export function AuthProvider({ children }) {
     setUser(null);
     setRole(null);
     setProfile(null);
-    await signOut(auth).catch(() => {});
+    await supabase.auth.signOut().catch(() => {});
   };
 
   return (
-    <AuthContext.Provider value={{ user, role, profile, loading, logout, loginAsMonitor }}>
+    <AuthContext.Provider value={{ user, role, profile, loading, logout, loginAsMonitor, loginAsAdmin }}>
       {children}
     </AuthContext.Provider>
   );

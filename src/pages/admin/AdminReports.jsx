@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { collection, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '../../config/db.js';
+import { db } from '../../lib/db.js';
 import {
   AlertTriangle, ChevronRight, Pencil, Trash2, X, Save, ImageIcon, Video,
   User, Building2, Clock, ShieldAlert, Play, ExternalLink, Search,
@@ -95,7 +94,6 @@ const isNewReport = r => {
   return ts > 0 && (Date.now() - ts) < NEW_THRESHOLD_MS;
 };
 
-/* ══════════════════════════════════════════════════════════ */
 export default function AdminReports() {
   const [reports,       setReports]       = useState([]);
   const [filter,        setFilter]        = useState('all');
@@ -105,9 +103,8 @@ export default function AdminReports() {
   const [lightbox,      setLightbox]      = useState(null);
 
   useEffect(() => {
-    return onSnapshot(collection(db, 'reports'), snap => {
-      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      docs.sort((a, b) =>
+    return db.reports.subscribe(rows => {
+      const docs = [...rows].sort((a, b) =>
         (b.timestamp?.toMillis?.() ?? b.createdAt?.toMillis?.() ?? 0) -
         (a.timestamp?.toMillis?.() ?? a.createdAt?.toMillis?.() ?? 0)
       );
@@ -117,14 +114,14 @@ export default function AdminReports() {
 
   const handleStatus = (id, newStatus) => {
     const current = reports.find(r => r.id === id);
-    if (!current) return updateDoc(doc(db, 'reports', id), { status: newStatus });
+    if (!current) return db.reports.update(id, { status: newStatus });
     const update = computeStatusUpdate(current, newStatus, TERMINAL_REPORT_STATUSES);
-    return updateDoc(doc(db, 'reports', id), update || { status: newStatus });
+    return db.reports.update(id, update || { status: newStatus });
   };
   const handleSaveEdit = (id, form) => {
     const current = reports.find(r => r.id === id) || {};
     const statusUpdate = computeStatusUpdate(current, form.status, TERMINAL_REPORT_STATUSES);
-    return updateDoc(doc(db, 'reports', id), {
+    return db.reports.update(id, {
       ...(statusUpdate || { status: form.status }),
       ...(form.severity    && { severity:    form.severity    }),
       ...(form.description && { description: form.description }),
@@ -132,7 +129,7 @@ export default function AdminReports() {
   };
   const handleDelete = async (id) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا البلاغ؟ لا يمكن التراجع عن هذا الإجراء.')) return;
-    await deleteDoc(doc(db, 'reports', id));
+    await db.reports.delete(id);
     if (expanded === id) setExpanded(null);
   };
 
@@ -301,9 +298,6 @@ export default function AdminReports() {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   Report Card — modern, clean card layout with hierarchical info
-══════════════════════════════════════════════════════════════════ */
 function ReportCard({ report: r, isOpen, onToggle, onStatus, onEdit, onDelete, onMedia }) {
   const rt = getRT(r);
   const sv = getSV(r);
@@ -638,9 +632,6 @@ function ReportCard({ report: r, isOpen, onToggle, onStatus, onEdit, onDelete, o
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   Edit Modal
-══════════════════════════════════════════════════════════════════ */
 function EditModal({ report, onClose, onSave }) {
   const [form, setForm] = useState({
     status:      report.status      || 'pending',

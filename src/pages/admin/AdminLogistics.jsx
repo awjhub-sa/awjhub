@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { collection, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '../../config/db.js';
+import { db } from '../../lib/db.js';
 import {
   Truck, Package, ChevronRight, Pencil, Trash2, X, Save, User, Building2, Clock,
   Filter, CheckCircle2, XCircle, ThumbsUp, Sparkles, AlertTriangle, Search,
@@ -66,7 +65,6 @@ function fullDate(ts) {
   } catch { return '—'; }
 }
 
-/* ══════════════════════════════════════════════════════════ */
 export default function AdminLogistics() {
   const [requests,    setRequests]    = useState([]);
   const [filter,      setFilter]      = useState('all');
@@ -75,18 +73,18 @@ export default function AdminLogistics() {
   const [editingReq,  setEditingReq]  = useState(null);
 
   useEffect(() => {
-    return onSnapshot(collection(db, 'logistics_requests'), snap => {
-      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      docs.sort((a, b) => (b.timestamp?.toMillis?.() ?? 0) - (a.timestamp?.toMillis?.() ?? 0));
+    return db.logistics_requests.subscribe(rows => {
+      const docs = [...rows].sort((a, b) =>
+        (b.timestamp?.toMillis?.() ?? 0) - (a.timestamp?.toMillis?.() ?? 0));
       setRequests(docs);
     });
   }, []);
 
   const handleStatus = (id, newStatus) => {
     const current = requests.find(r => r.id === id);
-    if (!current) return updateDoc(doc(db, 'logistics_requests', id), { status: newStatus });
+    if (!current) return db.logistics_requests.update(id, { status: newStatus });
     const update = computeStatusUpdate(current, newStatus, TERMINAL_LOGISTICS_STATUSES);
-    return updateDoc(doc(db, 'logistics_requests', id), update || { status: newStatus });
+    return db.logistics_requests.update(id, update || { status: newStatus });
   };
 
   const handleSaveEdit = async (id, form) => {
@@ -101,12 +99,12 @@ export default function AdminLogistics() {
       data.qtyInternal = Number(form.qtyInternal);
     if ((form.supportType === 'external' || form.supportType === 'both') && form.qtyExternal !== '')
       data.qtyExternal = Number(form.qtyExternal);
-    await updateDoc(doc(db, 'logistics_requests', id), data);
+    await db.logistics_requests.update(id, data);
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا الطلب؟ لا يمكن التراجع عن هذا الإجراء.')) return;
-    await deleteDoc(doc(db, 'logistics_requests', id));
+    await db.logistics_requests.delete(id);
     if (expanded === id) setExpanded(null);
   };
 
@@ -267,9 +265,6 @@ export default function AdminLogistics() {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   Request Card — modern, clean card layout with hierarchical info
-══════════════════════════════════════════════════════════════════ */
 function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete }) {
   const b  = getSB(r);
   const st = SUPPORT_LOOKUP[r.supportType] || SUPPORT_TYPES[0];
@@ -614,9 +609,6 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete 
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   Edit Modal
-══════════════════════════════════════════════════════════════════ */
 function EditModal({ req, onClose, onSave }) {
   const [form, setForm] = useState({
     supportType: req.supportType || 'internal',

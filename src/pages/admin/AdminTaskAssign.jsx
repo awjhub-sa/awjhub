@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, addDoc, deleteDoc, doc, onSnapshot, serverTimestamp, query, orderBy, writeBatch } from 'firebase/firestore';
-import { db } from '../../config/db.js';
+import { db, serverTimestamp } from '../../lib/db.js';
 import {
   Target, ChefHat, Tent, Compass, Earth, CalendarCheck,
   Rocket, Sparkles, Building2, CheckCircle2, ChevronDown,
@@ -13,7 +12,6 @@ import { CENTERS } from '../../config/centers.js';
 import { NATIONALITIES, NAT_LABEL as NAT_LABEL_SHARED } from '../../config/nationalities.js';
 import { extractCenterNum, extractDay } from '../../hooks/useAssignedTasks.js';
 
-/* ── Helpers ── */
 function centerNum(id) {
   return parseInt((id || '').replace(/[^0-9]/g, '')) || 0;
 }
@@ -23,7 +21,6 @@ function fullDate(ts) {
     .toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
-/* ── Task types ── */
 const TASKS = [
   { key: 'meal_evaluation',  label: 'تقييم الوجبات', icon: ChefHat,  color: '#A98159', hasMeals: true  },
   { key: 'mina_readiness',   label: 'جاهزية منى',    icon: Tent,     color: '#2F855A', hasMeals: false },
@@ -36,14 +33,12 @@ const MEALS = [
   { key: 'dinner',    label: 'العشاء',  icon: Moon,      color: '#6366F1' },
 ];
 
-/* ── Meal categories (multi-select, required when meal_evaluation is picked) ── */
 const MEAL_CATEGORIES = [
   { key: 'cooked',     label: 'وجبة مطبوخة', icon: Flame,       color: '#DC2626' },
   { key: 'dry',        label: 'وجبة جافة',   icon: Package,     color: '#A98159' },
   { key: 'sterilized', label: 'وجبة معقمة',  icon: ShieldCheck, color: '#2563EB' },
 ];
 
-/* ── Dhu al-Hijjah days ── */
 const DHU_HIJJAH_DAYS = [
   { value: '7',  dayAr: '٧',  label: '٧ ذو الحجة ١٤٤٧'  },
   { value: '8',  dayAr: '٨',  label: '٨ ذو الحجة ١٤٤٧'  },
@@ -67,49 +62,48 @@ function toggle(arr, val) {
   return arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val];
 }
 
-/* ── History card ── */
 function AssignmentCard({ item }) {
   const [open,      setOpen]      = useState(false);
   const [confirm,   setConfirm]   = useState(false);
   const [deleting,  setDeleting]  = useState(false);
 
-  const natLabels   = item.target_nationalities?.length
-    ? item.target_nationalities.map(k => NAT_LABEL[k] || k).join('، ')
+  const natLabels   = item.targetNationalities?.length
+    ? item.targetNationalities.map(k => NAT_LABEL[k] || k).join('، ')
     : null;
-  const taskLabels  = item.task_types?.map(k => TASK_LABEL[k] || k).join(' + ') || '—';
-  const centerCount = item.target_centers?.length ?? 0;
+  const taskLabels  = item.taskTypes?.map(k => TASK_LABEL[k] || k).join(' + ') || '—';
+  const centerCount = item.targetCenters?.length ?? 0;
 
-  const dateDisplay = item.scheduled_date
-    ? (item.scheduled_date?.toDate
-        ? new Date(item.scheduled_date.toDate()).toLocaleDateString('ar-SA', { dateStyle: 'long' })
-        : String(item.scheduled_date))
+  const dateDisplay = item.scheduledDate
+    ? (item.scheduledDate?.toDate
+        ? new Date(item.scheduledDate.toDate()).toLocaleDateString('ar-SA', { dateStyle: 'long' })
+        : String(item.scheduledDate))
     : '—';
 
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      const batch = writeBatch(db);
-      batch.delete(doc(db, 'assigned_tasks', item.id));
+      await db.assigned_tasks.delete(item.id);
       if (
-        item.task_types?.includes('meal_evaluation') &&
-        item.meal_types?.length &&
-        item.target_centers?.length &&
-        item.scheduled_date
+        item.taskTypes?.includes('meal_evaluation') &&
+        item.mealTypes?.length &&
+        item.targetCenters?.length &&
+        item.scheduledDate
       ) {
         const day = extractDay(
-          item.scheduled_date?.toDate
-            ? item.scheduled_date.toDate().toLocaleDateString('ar-SA', { dateStyle: 'long' })
-            : String(item.scheduled_date)
+          item.scheduledDate?.toDate
+            ? item.scheduledDate.toDate().toLocaleDateString('ar-SA', { dateStyle: 'long' })
+            : String(item.scheduledDate)
         );
-        item.target_centers.forEach(num => {
+        const phaseIds = [];
+        item.targetCenters.forEach(num => {
           const centerStr = CENTERS.find(c => extractCenterNum(c.id) === num)?.id;
           if (!centerStr) return;
-          item.meal_types.forEach(mealType => {
-            batch.delete(doc(db, 'meal_phases', `${centerStr}_d${day}_${mealType}`));
+          item.mealTypes.forEach(mealType => {
+            phaseIds.push(`${centerStr}_d${day}_${mealType}`);
           });
         });
+        if (phaseIds.length) await db.meal_phases.deleteMany(phaseIds);
       }
-      await batch.commit();
     } catch {}
     setDeleting(false);
     setConfirm(false);
@@ -149,7 +143,7 @@ function AssignmentCard({ item }) {
           </span>
           <div className="flex items-center gap-1 text-[10px] text-[#B5A99E]">
             <Clock size={9} strokeWidth={1.5} />
-            {fullDate(item.created_at)}
+            {fullDate(item.createdAt)}
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => setOpen(p => !p)}
@@ -197,11 +191,11 @@ function AssignmentCard({ item }) {
             <span className="font-bold text-[#2D2926]">{dateDisplay}</span>
           </div>
 
-          {item.meal_types?.length > 0 && (
+          {item.mealTypes?.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap text-xs">
               <ChefHat size={13} style={{ color: '#A98159' }} strokeWidth={1.5} />
               <span className="text-[#6D6E71]">وجبات:</span>
-              {item.meal_types.map(m => (
+              {item.mealTypes.map(m => (
                 <span key={m} className="bg-[#FDF8F0] border border-[#E8DDD4] text-[#A98159] font-bold px-2 py-0.5 rounded-lg text-[11px]">
                   {MEAL_LABEL[m] || m}
                 </span>
@@ -209,11 +203,11 @@ function AssignmentCard({ item }) {
             </div>
           )}
 
-          {item.meal_categories?.length > 0 && (
+          {item.mealCategories?.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap text-xs">
               <Layers size={13} style={{ color: '#A98159' }} strokeWidth={1.5} />
               <span className="text-[#6D6E71]">الأصناف:</span>
-              {item.meal_categories.map(c => (
+              {item.mealCategories.map(c => (
                 <span key={c} className="bg-[#FDF8F0] border border-[#E8DDD4] text-[#A98159] font-bold px-2 py-0.5 rounded-lg text-[11px]">
                   {MEAL_CATEGORY_LABEL[c] || c}
                 </span>
@@ -227,7 +221,7 @@ function AssignmentCard({ item }) {
               المراكز المستهدفة ({centerCount})
             </p>
             <div className="flex flex-wrap gap-1">
-              {item.target_centers?.map(c => (
+              {item.targetCenters?.map(c => (
                 <span key={c} className="bg-white border border-[#EDE5DC] text-[#2D2926] text-[10px] font-bold px-2 py-0.5 rounded-lg">
                   {c}
                 </span>
@@ -240,7 +234,6 @@ function AssignmentCard({ item }) {
   );
 }
 
-/* ══════════════════════════════════════════════════════════ */
 export default function AdminTaskAssign() {
   const [selTasks,     setSelTasks]     = useState([]);
   const [selMeals,     setSelMeals]     = useState([]);
@@ -270,10 +263,12 @@ export default function AdminTaskAssign() {
   const schedLabel = DHU_HIJJAH_DAYS.find(d => d.value === schedDay)?.label || '';
 
   useEffect(() => {
-    const q = query(collection(db, 'assigned_tasks'), orderBy('created_at', 'desc'));
-    return onSnapshot(q, snap =>
-      setHistory(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-    );
+    return db.assigned_tasks.subscribe(rows => {
+      const sorted = [...rows].sort((a, b) =>
+        (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0)
+      );
+      setHistory(sorted);
+    });
   }, []);
 
   const handleAssign = async () => {
@@ -287,15 +282,14 @@ export default function AdminTaskAssign() {
     setSubmitting(true);
     setFeedback(null);
     try {
-      await addDoc(collection(db, 'assigned_tasks'), {
-        task_types:           selTasks,
-        meal_types:           hasMeal ? selMeals : [],
-        meal_categories:      hasMeal ? selCategories : [],
-        target_nationalities: selMode === 'nationality' ? selNats : [],
-        target_centers:       targetCenters,
-        scheduled_date:       schedLabel,
-        status:               'pending',
-        created_at:           serverTimestamp(),
+      await db.assigned_tasks.insert({
+        taskTypes:           selTasks,
+        mealTypes:           hasMeal ? selMeals : [],
+        mealCategories:      hasMeal ? selCategories : [],
+        targetNationalities: selMode === 'nationality' ? selNats : [],
+        targetCenters:       targetCenters,
+        scheduledDate:       schedLabel,
+        createdAt:           serverTimestamp(),
       });
       setFeedback({ type: 'success', msg: 'تم إسناد المهام بنجاح ✓' });
       setSelTasks([]); setSelMeals([]); setSelCategories([]); setSelNats([]); setSelCenters([]); setSchedDay('');
@@ -319,7 +313,7 @@ export default function AdminTaskAssign() {
   return (
     <div className="space-y-5">
 
-      {/* ── Page header ── */}
+      {}
       <PageHeader
         Icon={Target}
         title="إسناد المهام"
@@ -328,7 +322,7 @@ export default function AdminTaskAssign() {
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
 
-        {/* ══ FORM ══ */}
+        {/* Form */}
         <div className="lg:col-span-3 space-y-4">
 
           {/* 1. Task selection */}
@@ -644,7 +638,7 @@ export default function AdminTaskAssign() {
           </button>
         </div>
 
-        {/* ══ PREVIEW ══ */}
+        {/* Preview */}
         <div className="lg:col-span-2">
           <div className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgba(169,129,89,0.14)] overflow-hidden sticky top-4">
             <div className="px-5 py-3.5 border-b border-[#EDE5DC]"
@@ -844,7 +838,7 @@ export default function AdminTaskAssign() {
         </div>
       </div>
 
-      {/* ── History ── */}
+      {}
       {history.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">

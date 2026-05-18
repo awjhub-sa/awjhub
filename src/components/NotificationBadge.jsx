@@ -1,21 +1,3 @@
-/**
- * Elegant notification badge with ripple-pulse animation.
- * Uses CSS keyframes defined in src/index.css (badge-pulse-red/blue/gold).
- *
- * Variants:
- *   red   — for critical/pending reports (default)
- *   blue  — for logistics
- *   gold  — for general / brand-aligned counts
- *
- * Renders nothing when count is 0/null/undefined.
- *
- * Props:
- *   count       — number to display
- *   variant     — 'red' | 'blue' | 'gold'
- *   floating    — boolean; absolute-positioned over a parent (top-right)
- *   className   — extra classes for fine-tuning
- *   label       — optional aria-label (default: "{count} عنصر جديد")
- */
 export default function NotificationBadge({
   count,
   variant = 'red',

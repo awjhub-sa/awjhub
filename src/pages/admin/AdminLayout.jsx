@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
-import { db } from '../../config/db.js';
+import { db } from '../../lib/db.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -45,8 +44,9 @@ export default function AdminLayout() {
 
   /* Reports sidebar badge */
   useEffect(() => {
-    const q = query(collection(db, 'reports'), where('status', '==', 'pending'));
-    return onSnapshot(q, snap => setPendingCount(snap.size));
+    return db.reports.subscribe(rows =>
+      setPendingCount(rows.filter(r => (r.status || 'pending') === 'pending').length)
+    );
   }, []);
 
   /* Bell badge */
@@ -54,12 +54,8 @@ export default function AdminLayout() {
     const counts = {};
     const unsubs = NOTIF_COLS.map(col => {
       counts[col] = 0;
-      return onSnapshot(collection(db, col), snap => {
-        counts[col] = snap.docs.filter(d => {
-          const ts = d.data().timestamp?.toMillis?.()
-                  ?? d.data().createdAt?.toMillis?.() ?? 0;
-          return ts > lastSeen;
-        }).length;
+      return db[col].subscribe(rows => {
+        counts[col] = rows.filter(d => (d.timestamp?.toMillis?.() ?? 0) > lastSeen).length;
         setNewCount(Object.values(counts).reduce((a, b) => a + b, 0));
       });
     });

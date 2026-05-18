@@ -18,7 +18,7 @@ export default function Profile() {
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#FDFCFB] font-arabic">
-      {/* ── الشريط العلوي ── */}
+      {}
       <header className="bg-white border-b border-[#D1C4B9] px-4 py-4 flex items-center justify-between sticky top-0 z-50">
         <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-50 rounded-full transition-colors text-[#6D6E71]">
           <ChevronRight size={24} />
@@ -29,7 +29,7 @@ export default function Profile() {
 
       <main className="max-w-md mx-auto px-4 py-6">
         
-        {/* ── كارت الهوية الأساسي ── */}
+        {}
         <div 
           className="rounded-[2.5rem] p-8 mb-8 text-center shadow-lg relative overflow-hidden"
           style={{ background: 'linear-gradient(135deg, #3D3330 0%, #2D2926 100%)' }}
@@ -57,7 +57,7 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* ── تفاصيل البيانات ── */}
+        {}
         <div className="bg-white rounded-3xl border border-[#D1C4B9] shadow-sm overflow-hidden mb-8">
           <div className="p-4 border-b border-[#D1C4B9] bg-gray-50/50">
             <p className="text-xs font-bold text-[#6D6E71] tracking-widest uppercase">بيانات الارتباط</p>
@@ -86,7 +86,7 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* ── إجراءات الحساب ── */}
+        {}
         <div className="space-y-4">
           <button 
             onClick={handleSignOut}

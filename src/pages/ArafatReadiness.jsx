@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Save, CheckCircle2, AlertCircle, Mountain, ArrowLeft, Ban, Calendar } from 'lucide-react';
-import { db } from '../config/db.js';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db, serverTimestamp } from '../lib/db.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getCaterer } from '../config/centers.js';
 import { useAssignedTasks } from '../hooks/useAssignedTasks.js';
@@ -23,7 +22,7 @@ export default function ArafatReadiness() {
 
   const { tasks, completions, loading: tasksLoading } = useAssignedTasks(profile);
 
-  const arafatTasks = tasks.filter(t => t.task_types?.includes('arafat_readiness'));
+  const arafatTasks = tasks.filter(t => t.taskTypes?.includes('arafat_readiness'));
   const isDone = (task) => completions.some(c => c.taskId === task.id && c.taskType === 'arafat_readiness');
   const pendingTasks = arafatTasks.filter(t => !isDone(t));
   const doneTasks = arafatTasks.filter(t => isDone(t));
@@ -42,29 +41,26 @@ export default function ArafatReadiness() {
     setLoading(true);
     try {
       const scoring = computeReadinessTotals(ALL_CRITERIA, answers);
-      await addDoc(collection(db, 'arafat_readiness'), {
+      await db.arafat_readiness.insert({
         observer: profile?.nameAr || profile?.name || 'مراقب',
         center: profile?.center || '—',
         caterer: profile?.caterer || getCaterer(profile?.center) || '—',
-        uid: profile?.uid || '',
+        uid: profile?.uid || null,
         answers,
         details,
         ...scoring,
-        taskId: selectedTask?.taskId || null,
         scheduledDate: selectedTask?.scheduledDate || null,
         timestamp: serverTimestamp(),
-        status: 'completed',
       });
       if (selectedTask?.taskId) {
-        await addDoc(collection(db, 'task_completions'), {
+        await db.task_completions.insert({
           taskId: selectedTask.taskId,
           taskType: 'arafat_readiness',
           mealType: null,
           scheduledDate: selectedTask.scheduledDate || null,
           center: profile?.center || '—',
-          uid: profile?.uid || '',
-          observerName: profile?.nameAr || profile?.name || '—',
-          completedAt: serverTimestamp(),
+          uid: profile?.uid || null,
+          timestamp: serverTimestamp(),
         });
       }
       alert('تم إرسال تقييم الجاهزية بنجاح');
@@ -77,7 +73,7 @@ export default function ArafatReadiness() {
     setLoading(false);
   };
 
-  /* ── Gate Screen ── */
+  
   if (!selectedTask) {
     return (
       <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-28 font-arabic px-4 md:px-8">
@@ -116,7 +112,7 @@ export default function ArafatReadiness() {
                   <p className="text-sm font-black text-[#2D2926] px-1 mb-2">المهام المعلقة</p>
                   {pendingTasks.map(task => (
                     <button key={task.id}
-                      onClick={() => setSelectedTask({ taskId: task.id, scheduledDate: task.scheduled_date })}
+                      onClick={() => setSelectedTask({ taskId: task.id, scheduledDate: task.scheduledDate })}
                       className="w-full bg-gradient-to-br from-white to-[#FDF8F0]/60 border border-[#D1C4B9] rounded-3xl p-5 text-right flex items-center gap-4 hover:border-[#A98159] hover:shadow-[0_8px_24px_rgba(169,129,89,0.18)] hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98]">
                       <div className="w-12 h-12 bg-[#FDF8F0] border border-[#A98159]/20 rounded-2xl flex items-center justify-center shrink-0">
                         <Mountain className="text-[#A98159]" size={22} />
@@ -126,7 +122,7 @@ export default function ArafatReadiness() {
                         {task.scheduledDate && (
                           <div className="flex items-center gap-1.5 mt-1">
                             <Calendar size={12} className="text-[#A98159]" />
-                            <span className="text-xs text-[#A98159] font-bold">{task.scheduled_date}</span>
+                            <span className="text-xs text-[#A98159] font-bold">{task.scheduledDate}</span>
                           </div>
                         )}
                       </div>
@@ -146,10 +142,10 @@ export default function ArafatReadiness() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-green-800 text-sm">جاهزية مشعر عرفة</p>
-                        {task.scheduled_date && (
+                        {task.scheduledDate && (
                           <div className="flex items-center gap-1.5 mt-1">
                             <Calendar size={12} className="text-green-600" />
-                            <span className="text-xs text-green-600 font-bold">{task.scheduled_date}</span>
+                            <span className="text-xs text-green-600 font-bold">{task.scheduledDate}</span>
                           </div>
                         )}
                         <p className="text-xs text-green-600 font-bold mt-0.5">تم الإرسال</p>
@@ -175,7 +171,7 @@ export default function ArafatReadiness() {
     );
   }
 
-  /* ── Form Screen ── */
+  
   return (
     <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-28 font-arabic px-4 md:px-8">
       <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 md:px-8 py-3 mb-6 shadow-sm">

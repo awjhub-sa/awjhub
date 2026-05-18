@@ -1,20 +1,11 @@
-/**
- * Shared professional card primitives — used across the app for visual consistency.
- *
- * Card        — base wrapper with subtle gradient bg, rounded-2xl, hover lift + glow.
- * CardHeader  — colored gradient header strip with optional icon container.
- * SectionPanel — Card + CardHeader composition used for list/feed sections.
- */
-
 import { Sparkles } from 'lucide-react';
 
-/* ── Base Card ───────────────────────────────────────────── */
 export function Card({
   children,
   className = '',
   hover = true,
-  accentColor,        // optional — adds 3px right border + radial glow on hover
-  topAccent = false,  // shows a thin gradient strip at top
+  accentColor,
+  topAccent = false,
   ...rest
 }) {
   return (
@@ -49,7 +40,6 @@ export function Card({
   );
 }
 
-/* ── Card Header ─────────────────────────────────────────── */
 export function CardHeader({
   Icon,
   title,
@@ -103,7 +93,6 @@ export function CardHeader({
   );
 }
 
-/* ── Section Panel — Card + Header composition ───────────── */
 export function SectionPanel({
   Icon,
   title,

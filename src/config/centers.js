@@ -67,7 +67,7 @@ export const CENTERS = [
 export const getCaterer = (centerId) =>
   CENTERS.find(c => c.id === centerId)?.caterer || '';
 
-/* ── Shakhis (marker) numbers per center ── */
+
 const SHAKHIS = {
   5:   '10/56',   7:   '12/56',   8:   '6/510',
   20:  '3/210',   21:  '11/210',  22:  '37/68',
@@ -97,7 +97,7 @@ export const getShakhis = (centerId) => {
   return SHAKHIS[num] || null;
 };
 
-/* ── Google Maps locations per center ── */
+
 const LOCATIONS = {
   'مركز 5':    'https://www.google.com/maps/search/21.411943,+39.886138?entry=tts&g_ep=EgoyMDI2MDMxNS4wIPu8ASoASAFQAw%3D%3D&skid=33bd6264-2674-4cb8-a809-d9783381d55e',
   'مركز 7':    'https://www.google.com/maps/search/21.411943,+39.886138?entry=tts&g_ep=EgoyMDI2MDMxNS4wIPu8ASoASAFQAw%3D%3D&skid=33bd6264-2674-4cb8-a809-d9783381d55e',

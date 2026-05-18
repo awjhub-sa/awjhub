@@ -1,6 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { collection, onSnapshot, deleteDoc, updateDoc, doc } from 'firebase/firestore';
-import { db } from '../../config/db.js';
+import { db } from '../../lib/db.js';
 import AdminReportGenerator from './AdminReportGenerator.jsx';
 import {
   AlertTriangle, Truck, ClipboardList, Mountain, Clock, Trash2, X, ArrowLeft,
@@ -279,6 +278,17 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange }) {
               </div>
             </div>
           )}
+
+          {report.videoUrl && (
+            <div>
+              <p className="text-[10px] text-[#9D8F85] font-bold mb-2 flex items-center gap-1.5">
+                <span className="w-1.5 h-4 rounded-full bg-indigo-500" />
+                الفيديو المرفق
+              </p>
+              <video src={report.videoUrl} controls
+                className="w-full rounded-xl border border-[#EDE5DC] bg-black max-h-72" />
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -499,7 +509,6 @@ function PanelHeader({ title, subtitle, count, gradient, Icon, onViewAll, viewAl
   );
 }
 
-/* ══════════════════════════════════════════════════════════ */
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [counts,            setCounts]            = useState({ reports: 0, evals: 0, logistics: 0, mina: 0, arafat: 0 });
@@ -530,29 +539,28 @@ export default function AdminDashboard() {
 
   const handleDeleteReport = async (id) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا البلاغ؟')) return;
-    await deleteDoc(doc(db, 'reports', id));
+    await db.reports.delete(id);
     setSelectedReport(null);
   };
   const handleStatusChange = async (id, status) => {
     const current = reports.find(r => r.id === id) || selectedReport || {};
     const update  = computeStatusUpdate(current, status, TERMINAL_REPORT_STATUSES) || { status };
-    await updateDoc(doc(db, 'reports', id), update);
+    await db.reports.update(id, update);
     setSelectedReport(prev => prev?.id === id ? { ...prev, ...update, status } : prev);
   };
   const handleLogisticsStatusChange = async (id, status) => {
     const current = logisticsFeed.find(i => i.id === id) || selectedLogistics || {};
     const update  = computeStatusUpdate(current, status, TERMINAL_LOGISTICS_STATUSES) || { status };
-    await updateDoc(doc(db, 'logistics_requests', id), update);
+    await db.logistics_requests.update(id, update);
     setLogisticsFeed(prev => prev.map(i => i.id === id ? { ...i, ...update, status } : i));
     setSelectedLogistics(prev => prev?.id === id ? { ...prev, ...update, status } : prev);
   };
   const handleDeleteLogistics = async (id) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا الطلب؟')) return;
-    await deleteDoc(doc(db, 'logistics_requests', id));
+    await db.logistics_requests.delete(id);
     setSelectedLogistics(null);
   };
 
-  /* Firestore listeners */
   useEffect(() => {
     const byTime = arr => [...arr].sort((a, b) =>
       (b.timestamp?.toMillis?.() ?? b.createdAt?.toMillis?.() ?? 0) -
@@ -560,35 +568,35 @@ export default function AdminDashboard() {
     );
 
     const unsubs = [
-      onSnapshot(collection(db, 'reports'), s => {
-        setCounts(p => ({ ...p, reports: s.size }));
-        const items = byTime(s.docs.map(d => ({ id: d.id, ...d.data() })));
-        setReports(items);
-        setPendingReports(items.filter(i => (i.status || 'pending') === 'pending').length);
+      db.reports.subscribe(items => {
+        const sorted = byTime(items);
+        setCounts(p => ({ ...p, reports: sorted.length }));
+        setReports(sorted);
+        setPendingReports(sorted.filter(i => (i.status || 'pending') === 'pending').length);
       }),
-      onSnapshot(collection(db, 'logistics_requests'), s => {
-        setCounts(p => ({ ...p, logistics: s.size }));
-        const items = byTime(s.docs.map(d => ({ id: d.id, ...d.data() })));
-        setLogisticsFeed(items);
-        setPendingLogistics(items.filter(i => (i.status || 'pending') === 'pending').length);
+      db.logistics_requests.subscribe(items => {
+        const sorted = byTime(items);
+        setCounts(p => ({ ...p, logistics: sorted.length }));
+        setLogisticsFeed(sorted);
+        setPendingLogistics(sorted.filter(i => (i.status || 'pending') === 'pending').length);
       }),
-      onSnapshot(collection(db, 'meal_evaluations'), s => {
-        setCounts(p => ({ ...p, evals: s.size }));
-        const items = byTime(s.docs.map(d => ({ id: d.id, ...d.data(), _col: 'meal' })));
-        setActivityFeed(p => byTime([...p.filter(i => i._col !== 'meal'), ...items]));
+      db.meal_evaluations.subscribe(items => {
+        const tagged = items.map(i => ({ ...i, _col: 'meal' }));
+        setCounts(p => ({ ...p, evals: tagged.length }));
+        setActivityFeed(p => byTime([...p.filter(i => i._col !== 'meal'), ...tagged]));
       }),
-      onSnapshot(collection(db, 'mina_readiness'), s => {
-        setCounts(p => ({ ...p, mina: s.size }));
-        const items = byTime(s.docs.map(d => ({ id: d.id, ...d.data(), _col: 'mina' })));
-        setActivityFeed(p => byTime([...p.filter(i => i._col !== 'mina'), ...items]));
+      db.mina_readiness.subscribe(items => {
+        const tagged = items.map(i => ({ ...i, _col: 'mina' }));
+        setCounts(p => ({ ...p, mina: tagged.length }));
+        setActivityFeed(p => byTime([...p.filter(i => i._col !== 'mina'), ...tagged]));
       }),
-      onSnapshot(collection(db, 'arafat_readiness'), s => {
-        setCounts(p => ({ ...p, arafat: s.size }));
-        const items = byTime(s.docs.map(d => ({ id: d.id, ...d.data(), _col: 'arafat' })));
-        setActivityFeed(p => byTime([...p.filter(i => i._col !== 'arafat'), ...items]));
+      db.arafat_readiness.subscribe(items => {
+        const tagged = items.map(i => ({ ...i, _col: 'arafat' }));
+        setCounts(p => ({ ...p, arafat: tagged.length }));
+        setActivityFeed(p => byTime([...p.filter(i => i._col !== 'arafat'), ...tagged]));
       }),
     ];
-    return () => unsubs.forEach(u => u());
+    return () => unsubs.forEach(u => u?.());
   }, []);
 
   const centerOptions = useMemo(() => {
@@ -1049,9 +1057,6 @@ export default function AdminDashboard() {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   MenuOverview — strip showing menu coverage per nationality
-══════════════════════════════════════════════════════════════════ */
 function MenuOverview({ navigate }) {
   /* For each nationality, count filled meals out of 21 (7 days × 3 meals) */
   const summaries = NATIONALITIES.map(n => {

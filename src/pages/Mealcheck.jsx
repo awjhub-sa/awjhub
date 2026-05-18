@@ -4,8 +4,8 @@ import {
   Utensils, ChevronRight, Save, CheckCircle2, AlertCircle,
   Camera, Lock, ArrowLeft, RotateCcw, ClipboardList, Ban, Sparkles,
 } from 'lucide-react';
-import { db } from '../config/db.js';
-import { collection, addDoc, serverTimestamp, setDoc, doc, onSnapshot } from 'firebase/firestore';
+import { db, serverTimestamp, uploadFile, STORAGE_BUCKETS } from '../lib/db.js';
+import { compressImage } from '../lib/imageCompression.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getCaterer } from '../config/centers.js';
 import { useAssignedTasks, extractDay, MEAL_META } from '../hooks/useAssignedTasks.js';
@@ -49,9 +49,9 @@ function TaskGate({ profile, tasks, completions, loading, onSelect }) {
   // Expand tasks into individual (taskId, mealType) items
   const items = [];
   tasks
-    .filter(t => t.task_types?.includes('meal_evaluation'))
+    .filter(t => t.taskTypes?.includes('meal_evaluation'))
     .forEach(task => {
-      const mealTypes = task.meal_types?.length > 0 ? task.meal_types : [];
+      const mealTypes = task.mealTypes?.length > 0 ? task.mealTypes : [];
       mealTypes.forEach(mealType => {
         const done = completions.some(c => c.taskId === task.id && c.mealType === mealType);
         items.push({ task, mealType, done });
@@ -126,7 +126,7 @@ function TaskGate({ profile, tasks, completions, loading, onSelect }) {
               const meta = MEAL_META[mealType] || {};
               return (
                 <button key={`${task.id}_${mealType}`}
-                  onClick={() => onSelect({ taskId: task.id, mealType, scheduledDate: task.scheduled_date, day: extractDay(task.scheduled_date), categories: task.meal_categories || [] })}
+                  onClick={() => onSelect({ taskId: task.id, mealType, scheduledDate: task.scheduledDate, day: extractDay(task.scheduledDate), categories: task.mealCategories || [] })}
                   className="group/task relative w-full bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 border-2 border-[#EDE5DC] hover:border-[#A98159]/60 rounded-2xl p-4 flex items-center gap-4 text-right transition-all duration-300 active:scale-[0.98] hover:shadow-[0_8px_24px_rgba(169,129,89,0.18)] hover:-translate-y-0.5 overflow-hidden"
                 >
                   {/* Side accent stripe */}
@@ -145,7 +145,7 @@ function TaskGate({ profile, tasks, completions, loading, onSelect }) {
                     <p className="font-bold text-base text-[#2D2926]">{meta.label}</p>
                     <p className="text-[11px] text-[#9D8F85] mt-0.5 flex items-center gap-1">
                       <span className="w-1 h-1 rounded-full bg-[#A98159]" />
-                      {task.scheduled_date}
+                      {task.scheduledDate}
                     </p>
                   </div>
                   <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-[#FDF8F0] flex items-center justify-center group-hover/task:bg-[#A98159] group-hover/task:-translate-x-1 transition-all duration-300">
@@ -178,7 +178,7 @@ function TaskGate({ profile, tasks, completions, loading, onSelect }) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-base text-green-700">{meta.label}</p>
-                    <p className="text-[11px] text-green-600 mt-0.5">{task.scheduled_date}</p>
+                    <p className="text-[11px] text-green-600 mt-0.5">{task.scheduledDate}</p>
                   </div>
                   <div className="flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-500 text-white text-[10px] font-extrabold shadow-sm ring-2 ring-white">
                     <CheckCircle2 size={11} strokeWidth={2.5} />
@@ -194,7 +194,6 @@ function TaskGate({ profile, tasks, completions, loading, onSelect }) {
   );
 }
 
-/* ══════════════════════════════════════════════════════════ */
 export default function Mealcheck() {
   const navigate = useNavigate();
   const { profile } = useAuth();
@@ -237,13 +236,13 @@ export default function Mealcheck() {
     } catch {}
   }, [selectedTask?.taskId, selectedTask?.mealType, profile?.uid]);
 
-  /* ── Real-time phaseDone sync from Firestore ── */
   useEffect(() => {
     if (!selectedTask || !profile?.center || !profile?.uid) return;
     const docId      = `${profile.center}_d${selectedTask.day}_${selectedTask.mealType}`;
     const storageKey = STORAGE_KEY(profile.uid, selectedTask.taskId, selectedTask.mealType);
-    return onSnapshot(doc(db, 'meal_phases', docId), snap => {
-      if (!snap.exists()) {
+    return db.meal_phases.subscribe(rows => {
+      const row = rows.find(r => r.id === docId);
+      if (!row) {
         localStorage.removeItem(storageKey);
         setPhaseDone({ 1: false, 2: false, 3: false });
         setPhasePhotos({ 1: null, 2: null, 3: null });
@@ -251,13 +250,11 @@ export default function Mealcheck() {
         setScreen('phases');
         setRestored(false);
       } else {
-        const d = snap.data();
-        setPhaseDone({ 1: !!d.phase1, 2: !!d.phase2, 3: !!d.phase3 });
+        setPhaseDone({ 1: !!row.phase1, 2: !!row.phase2, 3: !!row.phase3 });
       }
     });
   }, [selectedTask?.taskId, selectedTask?.mealType, profile?.center, profile?.uid]);
 
-  /* ── Auto-save answers + screen (phaseDone comes from Firestore) ── */
   useEffect(() => {
     if (!selectedTask || !profile?.uid) return;
     localStorage.setItem(
@@ -276,24 +273,30 @@ export default function Mealcheck() {
     setRestored(false);
   };
 
-  /* ── Photo capture — save timestamp to Firestore only ── */
   const handlePhotoChange = async (id, file) => {
     if (!file) return;
     setPhasePhotos(prev => ({ ...prev, [id]: file }));
     const center = profile?.center;
     if (!center || !selectedTask) return;
     try {
-      await setDoc(doc(db, 'meal_phases', `${center}_d${selectedTask.day}_${selectedTask.mealType}`), {
+      const docId = `${center}_d${selectedTask.day}_${selectedTask.mealType}`;
+      const compressed = await compressImage(file);
+      const photoUrl = await uploadFile(
+        STORAGE_BUCKETS.phases,
+        `${docId}/phase${id}_${Date.now()}.jpg`,
+        compressed,
+      );
+      await db.meal_phases.upsert({
+        id:             docId,
         center,
-        day:           selectedTask.day,
-        mealType:      selectedTask.mealType,
-        scheduledDate: selectedTask.scheduledDate,
-        observer:      profile?.nameAr || profile?.name || '—',
-        uid:           profile?.uid,
-        [`phase${id}`]: serverTimestamp(),
+        day:            selectedTask.day,
+        mealId:         selectedTask.mealType,
+        [`phase${id}`]:      serverTimestamp(),
+        [`phase${id}Photo`]: photoUrl,
+        [`phase${id}Uid`]:   profile?.uid,
         updatedAt:      serverTimestamp(),
-      }, { merge: true });
-    } catch {}
+      });
+    } catch (err) { console.error('[Mealcheck phase upload]', err); }
   };
 
   const phases            = buildPhases(selectedTask?.categories);
@@ -311,52 +314,45 @@ export default function Mealcheck() {
       const maxScore     = MEAL_MAX_SCORE;
       const scoreOutOf10 = maxScore > 0 ? parseFloat(((totalScore / maxScore) * 10).toFixed(2)) : 0;
       const percentage   = maxScore > 0 ? (totalScore / maxScore) * 100 : 0;
-      await addDoc(collection(db, 'meal_evaluations'), {
+      await db.meal_evaluations.insert({
         uid: profile?.uid,
         center: profile?.center || 'N/A',
         caterer: profile?.caterer || getCaterer(profile?.center),
         observer: profile?.nameAr || profile?.name || 'مراقب',
-        observerName: profile?.nameAr || profile?.name || 'مراقب',
         answers,
         totalScore,
         maxScore,
         scoreOutOf10,
-        percentage: percentage.toFixed(1),
+        percentage: parseFloat(percentage.toFixed(1)),
         mealType: selectedTask?.mealType || null,
-        mealLabel: MEAL_META[selectedTask?.mealType]?.label || null,
         scheduledDate: selectedTask?.scheduledDate || null,
-        taskId: selectedTask?.taskId || null,
-        status: 'pending',
         timestamp: serverTimestamp(),
       });
-      // Mark task complete
-      await addDoc(collection(db, 'task_completions'), {
+      await db.task_completions.insert({
         taskId: selectedTask?.taskId,
         taskType: 'meal_evaluation',
         mealType: selectedTask?.mealType,
         scheduledDate: selectedTask?.scheduledDate,
         center: profile?.center,
         uid: profile?.uid,
-        observerName: profile?.nameAr || profile?.name || '—',
-        completedAt: serverTimestamp(),
+        timestamp: serverTimestamp(),
       });
       localStorage.removeItem(STORAGE_KEY(profile?.uid, selectedTask?.taskId, selectedTask?.mealType));
       alert('تم إرسال التقييم بنجاح');
       setSelectedTask(null);
-    } catch { alert('حدث خطأ أثناء الإرسال'); }
+    } catch (err) {
+      console.error('[Mealcheck submit]', err);
+      alert('حدث خطأ أثناء الإرسال');
+    }
     finally { setLoadingSubmit(false); }
   };
 
-  /* ── Task gate ── */
   if (!selectedTask) {
     return <TaskGate profile={profile} tasks={tasks} completions={completions} loading={loading} onSelect={setSelectedTask} />;
   }
 
   const meta = MEAL_META[selectedTask.mealType] || {};
 
-  /* ════════════════════════════════════════════
-     PHASES SCREEN
-  ════════════════════════════════════════════ */
   if (screen === 'phases') {
     const completedCount = phases.filter(p => phaseDone[p.id]).length;
     const totalPhases    = phases.length;
@@ -523,9 +519,6 @@ export default function Mealcheck() {
     );
   }
 
-  /* ════════════════════════════════════════════
-     QUESTIONS SCREEN
-  ════════════════════════════════════════════ */
   const answeredCount = Object.keys(answers).length;
   return (
     <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-32 font-arabic">

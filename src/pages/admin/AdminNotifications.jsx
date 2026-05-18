@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '../../config/db.js';
+import { db } from '../../lib/db.js';
 import { getCaterer } from '../../config/centers.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import FilterChip from '../../components/FilterChip.jsx';
@@ -9,7 +8,7 @@ import {
   User, Building2, Clock, CheckCheck, Filter, Sparkles,
 } from 'lucide-react';
 
-/* ── Sources ── */
+
 const SOURCES = [
   { key: 'reports',           col: 'reports',            label: 'بلاغ ميداني',   icon: AlertTriangle, color: '#E53E3E' },
   { key: 'logistics_requests',col: 'logistics_requests', label: 'طلب إسناد',     icon: Truck,         color: '#3182CE' },
@@ -23,7 +22,7 @@ const FILTERS = [
   ...SOURCES.map(s => ({ value: s.key, label: s.label, color: s.color, icon: s.icon })),
 ];
 
-/* ── Helpers ── */
+
 function getTs(doc) {
   return doc.timestamp?.toMillis?.() ?? doc.createdAt?.toMillis?.() ?? 0;
 }
@@ -44,7 +43,7 @@ function fullDate(ts) {
     .toLocaleString('ar-SA', { dateStyle: 'long', timeStyle: 'short' });
 }
 
-/* ══════════════════════════════════════════════════════════ */
+
 export default function AdminNotifications() {
   const [items,  setItems]  = useState([]);
   const [filter, setFilter] = useState('all');
@@ -63,11 +62,11 @@ export default function AdminNotifications() {
 
     const unsubs = SOURCES.map(src => {
       allItems[src.key] = [];
-      return onSnapshot(collection(db, src.col), snap => {
-        allItems[src.key] = snap.docs.map(d => ({
+      return db[src.col].subscribe(rows => {
+        allItems[src.key] = rows.map(d => ({
           _id:  `${src.key}_${d.id}`,
           _src: src.key,
-          ...d.data(),
+          ...d,
         }));
 
         const merged = Object.values(allItems).flat();

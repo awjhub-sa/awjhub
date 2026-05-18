@@ -16,14 +16,6 @@ const MEAL_META = {
 };
 const MEAL_ORDER = ['breakfast', 'lunch', 'dinner'];
 
-/**
- * Compact widget showing today's menu for the user's assigned center(s).
- *
- * Props:
- *   centerId          — single center string ('مركز 7') for observers
- *   centerIds         — array of center strings for supervisors
- *   defaultDay        — '7'..'13' (default '7')
- */
 export default function TodayMenuCard({ centerId, centerIds, defaultDay = '7' }) {
   const [selectedDay,    setSelectedDay]    = useState(defaultDay);
   const [activeCenterId, setActiveCenterId] = useState(centerId || (centerIds && centerIds[0]) || null);

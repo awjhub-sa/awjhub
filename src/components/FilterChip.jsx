@@ -1,16 +1,3 @@
-/**
- * Creative filter chip with optional icon, count badge, and color theming.
- * - When `active`, fills with gradient + shadow + slight scale.
- * - When idle, white background; icon and count use the accent color.
- *
- * Props:
- *   active   — boolean
- *   onClick  — handler
- *   count    — optional number/string for the badge
- *   Icon     — optional lucide-react component
- *   color    — accent color (default brand gold)
- *   children — label text
- */
 export default function FilterChip({
   active,
   onClick,

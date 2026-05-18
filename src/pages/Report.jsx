@@ -1,8 +1,8 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, AlertTriangle, Zap, Image as ImageIcon, Video, Upload, X, CheckCircle2, Sparkles } from 'lucide-react';
-import { db } from '../config/db.js';
-import { collection, addDoc, serverTimestamp, runTransaction, doc } from 'firebase/firestore';
+import { db, serverTimestamp, uploadFile, STORAGE_BUCKETS } from '../lib/db.js';
+import { compressImage } from '../lib/imageCompression.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getCaterer } from '../config/centers.js';
 import { initialStatusFields } from '../lib/statusTracking.js';
@@ -71,15 +71,16 @@ export default function Report() {
     }
     setLoading(true);
     try {
-      const counterRef = doc(db, 'counters', 'reports');
-      const nextNum = await runTransaction(db, async (tx) => {
-        const snap = await tx.get(counterRef);
-        const n = (snap.exists() ? snap.data().value : 0) + 1;
-        tx.set(counterRef, { value: n });
-        return n;
-      });
-      const reportNumber = `BLG-${String(nextNum).padStart(4, '0')}`;
-      await addDoc(collection(db, 'reports'), {
+      const ts = Date.now();
+      const folder = `${profile?.center || 'unknown'}/${ts}`;
+      /* Compress image then upload media in parallel */
+      const compressedImage = await compressImage(imageFile);
+      const [imgUrl, vidUrl] = await Promise.all([
+        uploadFile(STORAGE_BUCKETS.reports, `${folder}/image_${compressedImage.name}`, compressedImage),
+        uploadFile(STORAGE_BUCKETS.reports, `${folder}/video_${videoFile.name}`, videoFile),
+      ]);
+      /* Insert — report_number is generated server-side by sequence default */
+      const inserted = await db.reports.insert({
         uid:        profile?.uid,
         observer:   profile?.nameAr || profile?.name || 'مراقب',
         center:     profile?.center || '—',
@@ -87,15 +88,17 @@ export default function Report() {
         reportType: selectedReport,
         severity,
         description,
-        reportNumber,
         timestamp:  serverTimestamp(),
-        images:     [],
-        videoUrl:   null,
+        images:     [imgUrl],
+        videoUrl:   vidUrl,
         ...initialStatusFields('pending'),
       });
-      setReportNum(reportNumber);
+      setReportNum(inserted.reportNumber);
       setSubmitted(true);
-    } catch { alert('خطأ في الإرسال'); }
+    } catch (err) {
+      console.error('[Report submit]', err);
+      alert('خطأ في الإرسال');
+    }
     setLoading(false);
   };
 

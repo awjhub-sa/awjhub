@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '../../config/db.js';
+import { db } from '../../lib/db.js';
 import {
   ShieldCheck, Mountain, ChevronRight, CheckCircle2, XCircle,
   Sparkles, AlertCircle, User, Calendar, Building2, X, Search, Award,
@@ -79,7 +78,6 @@ function scoreStyle(score) {
 const getObserver = d => d.observer || d.observerName || '—';
 const getCenter   = d => d.center   || d.centerId     || '—';
 
-/* ══════════════════════════════════════════════════════════ */
 export default function AdminAnalytics() {
   const [activeTab, setActiveTab] = useState('mina');
   const [data,      setData]      = useState({ mina: null, arafat: null });
@@ -88,14 +86,13 @@ export default function AdminAnalytics() {
 
   useEffect(() => {
     const unsubs = TABS.map(t =>
-      onSnapshot(collection(db, t.col), snap => {
-        const docs = snap.docs
-          .map(d => ({ id: d.id, ...d.data() }))
-          .sort((a, b) => (b.timestamp?.toMillis?.() ?? 0) - (a.timestamp?.toMillis?.() ?? 0));
+      db[t.col].subscribe(rows => {
+        const docs = [...rows].sort((a, b) =>
+          (b.timestamp?.toMillis?.() ?? 0) - (a.timestamp?.toMillis?.() ?? 0));
         setData(prev => ({ ...prev, [t.key]: docs }));
       })
     );
-    return () => unsubs.forEach(u => u());
+    return () => unsubs.forEach(u => u?.());
   }, []);
 
   const tab  = TABS.find(t => t.key === activeTab);
@@ -306,9 +303,6 @@ export default function AdminAnalytics() {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   Center Card — summarises readiness for one center under one Mash'ar
-══════════════════════════════════════════════════════════════════ */
 function CenterCard({ summary, tab, onSelect }) {
   const sst = scoreStyle(summary.avgScore);
   const hasData = summary.count > 0;
@@ -418,9 +412,6 @@ function CenterCard({ summary, tab, onSelect }) {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   Center Detail — all evaluations for one center under the Mash'ar
-══════════════════════════════════════════════════════════════════ */
 function CenterDetail({ tab, summary, onBack }) {
   const [openEval, setOpenEval] = useState(summary.evaluations[0]?.id || null);
   const centerNum = (summary.center.match(/\d+\S*/) || ['—'])[0];
@@ -477,9 +468,6 @@ function CenterDetail({ tab, summary, onBack }) {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   Evaluation Card — single evaluation with expandable details
-══════════════════════════════════════════════════════════════════ */
 function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle }) {
   const score = getScore(evalDoc);
   const sst   = scoreStyle(score);

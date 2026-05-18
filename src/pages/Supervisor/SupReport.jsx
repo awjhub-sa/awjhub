@@ -1,8 +1,8 @@
 import { useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ChevronRight, AlertTriangle, Zap, Image as ImageIcon, Video, Upload, X, CheckCircle2, Sparkles } from 'lucide-react';
-import { db } from '../../config/db.js';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db, serverTimestamp, uploadFile, STORAGE_BUCKETS } from '../../lib/db.js';
+import { compressImage } from '../../lib/imageCompression.js';
 import { useAuth } from "../../context/AuthContext.jsx";
 import { getCaterer } from '../../config/centers.js';
 import { initialStatusFields } from '../../lib/statusTracking.js';
@@ -72,21 +72,33 @@ export default function SupReport() {
     
     setLoading(true);
     try {
-      await addDoc(collection(db, 'reports'), {
+      const ts = Date.now();
+      const folder = `${selectedCenter || 'unknown'}/${ts}`;
+      const compressedImage = await compressImage(imageFile);
+      const [imgUrl, vidUrl] = await Promise.all([
+        uploadFile(STORAGE_BUCKETS.reports, `${folder}/image_${compressedImage.name}`, compressedImage),
+        uploadFile(STORAGE_BUCKETS.reports, `${folder}/video_${videoFile.name}`, videoFile),
+      ]);
+      await db.reports.insert({
         uid: profile?.uid,
         observer: profile?.nameAr || profile?.name || 'مشرف',
-        center: selectedCenter, // الربط بالمركز المختار
-        caterer: getCaterer(selectedCenter) || '—', // الربط بمتعهد المركز المختار
+        center: selectedCenter,
+        caterer: getCaterer(selectedCenter) || '—',
         reportType: selectedReport,
         severity,
         description,
-        role: 'supervisor', // تحديد الرتبة
+        images: [imgUrl],
+        videoUrl: vidUrl,
+        role: 'supervisor',
         timestamp: serverTimestamp(),
         ...initialStatusFields('pending'),
       });
       alert('تم إرسال البلاغ لغرفة العمليات');
-      navigate('/supervisor-home'); // الرجوع لهوم المشرف
-    } catch (e) { alert('خطأ في الإرسال'); }
+      navigate('/supervisor-home');
+    } catch (e) {
+      console.error('[SupReport submit]', e);
+      alert('خطأ في الإرسال');
+    }
     setLoading(false);
   };
 

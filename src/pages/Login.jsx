@@ -1,12 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { auth } from '../config/db.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import logo from '../assets/logo.png';
 import { Fingerprint } from 'lucide-react';
 
-/* ── الزخرفة الذهبية العلويّة ── */
+
 const GoldOrnament = () => (
   <svg width="120" height="8" viewBox="0 0 120 8" fill="none" className="mx-auto">
     <line x1="0" y1="4" x2="42" y2="4" stroke="#A98159" strokeWidth="0.75" />
@@ -19,14 +17,14 @@ const GoldOrnament = () => (
 
 export default function Login() {
   const navigate = useNavigate();
-  const { role, loading, loginAsMonitor } = useAuth();
+  const { role, loading, loginAsMonitor, loginAsAdmin, logout } = useAuth();
 
   const [idNumber,     setIdNumber]     = useState('');
   const [selectedType, setSelectedType] = useState('observer');
   const [error,        setError]        = useState('');
   const [busy,         setBusy]         = useState(false);
 
-  /* ── Admin login modal ── */
+  
   const [adminModal,    setAdminModal]    = useState(false);
   const [adminEmail,    setAdminEmail]    = useState('');
   const [adminPassword, setAdminPassword] = useState('');
@@ -36,14 +34,14 @@ export default function Login() {
   /* loginFlow tracks the admin path — observer/supervisor are resolved synchronously */
   const loginFlow = useRef(null);
 
-  /* ── Auto-redirect once role is resolved ── */
+  
   useEffect(() => {
     if (loading || !role) return;
     const flow = loginFlow.current;
 
-    /* Admin path: role mismatch (e.g. signed in as observer via Firebase Auth somehow) */
+    /* Admin path: role mismatch */
     if (flow === 'admin' && role !== 'admin' && role !== 'staff') {
-      signOut(auth);
+      logout();
       setAdminBusy(false);
       setAdminError('هذا الحساب غير مسجّل كمسؤول إداري');
       loginFlow.current = null;
@@ -65,18 +63,11 @@ export default function Login() {
     setAdminError('');
     loginFlow.current = 'admin';
     try {
-      await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
+      await loginAsAdmin(adminEmail, adminPassword);
     } catch (err) {
       loginFlow.current = null;
       setAdminBusy(false);
-      const map = {
-        'auth/user-not-found':    'البريد الإلكتروني غير مسجّل',
-        'auth/wrong-password':    'كلمة المرور غير صحيحة',
-        'auth/invalid-email':     'صيغة البريد الإلكتروني غير صحيحة',
-        'auth/invalid-credential':'بيانات الدخول غير صحيحة',
-        'auth/too-many-requests': 'تم تجاوز عدد المحاولات، حاول لاحقاً',
-      };
-      setAdminError(map[err.code] || 'حدث خطأ غير متوقع');
+      setAdminError(err.message || 'حدث خطأ غير متوقع');
     }
   };
 

@@ -14,8 +14,7 @@
  */
 
 import { useState }                              from 'react';
-import { collection, getDocs, query, where }     from 'firebase/firestore';
-import { db }                                    from '../../config/db.js';
+import { db }                                    from '../../lib/db.js';
 import { CENTERS }                               from '../../config/centers.js';
 import { cairoBase64 }                           from '../../assets/fonts/CairoFont.js';
 import logoSrc                                   from '../../assets/logo-color.svg';
@@ -58,9 +57,6 @@ function formatSubmitTime(ts) {
   }
 }
 
-/* ══════════════════════════════════════════════════════
-   Domain constants
-══════════════════════════════════════════════════════ */
 const DHU_DAYS = [
   '٧ ذو الحجة ١٤٤٧',
   '٨ ذو الحجة ١٤٤٧',
@@ -78,21 +74,6 @@ const REPORT_TYPES = [
 ];
 
 const MEAL_LABELS = { breakfast: 'الإفطار', lunch: 'الغداء', dinner: 'العشاء' };
-
-/* ══════════════════════════════════════════════════════════════════════════
-   Arabic Reshaper
-   ─────────────────────────────────────────────────────────────────────────
-   jsPDF renders glyphs left-to-right using raw Unicode codepoints without
-   any OpenType shaping.  Arabic requires two corrections:
-     1. RESHAPING  – replace standard-block letters (U+0621–U+064A) with
-                     their contextual Presentation Forms-B equivalents
-                     (isolated / final / initial / medial).
-     2. REVERSAL   – flip word and character order so jsPDF's LTR renderer
-                     produces the correct right-to-left visual layout.
-
-   fixArabic(text) is the public API.  Pass ANY string through it before
-   handing it to doc.text() or autoTable body/head cells.
-══════════════════════════════════════════════════════════════════════════ */
 
 // Presentation forms: char → [isolated, final, initial, medial]
 const _AR = {
@@ -298,12 +279,6 @@ export function wrapArabicLines(doc, text, maxWidth) {
   return lines.map(l => l.slice().reverse().join(' '));
 }
 
-/* ══════════════════════════════════════════════════════
-   Logo pre-loader
-   Converts the Vite asset URL → base64 data-URL via
-   canvas so jsPDF's addImage() can embed it without CORS.
-   Result is module-level cached after the first call.
-══════════════════════════════════════════════════════ */
 let _logoDataUrl = null;
 
 /* Logo aspect ratio fallback — matches the SVG viewBox (600 × 378.6) so
@@ -338,24 +313,13 @@ function getLogoDataUrl() {
 /* Logo aspect ratio for sizing in PDF (landscape SVG) */
 const LOGO_ASPECT = LOGO_FALLBACK_W / LOGO_FALLBACK_H;
 
-/* ══════════════════════════════════════════════════════
-   Firestore data fetching
-══════════════════════════════════════════════════════ */
 async function fetchReportData({ centerFilter, dateFilter, types }) {
   const result = {};
   await Promise.all(types.map(async (type) => {
-    const constraints = centerFilter !== 'all'
-      ? [where('center', '==', centerFilter)]
-      : [];
-    const q    = constraints.length
-      ? query(collection(db, type), ...constraints)
-      : collection(db, type);
-    const snap = await getDocs(q);
-    let docs   = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const opts = centerFilter !== 'all' ? { filter: { center: centerFilter } } : {};
+    let docs = await db[type].list(opts);
     if (dateFilter) {
-      docs = docs.filter(d =>
-        (d.scheduled_date ?? d.scheduledDate ?? '') === dateFilter
-      );
+      docs = docs.filter(d => (d.scheduledDate ?? '') === dateFilter);
     }
     docs.sort((a, b) =>
       (b.timestamp?.toMillis?.() ?? 0) - (a.timestamp?.toMillis?.() ?? 0)
@@ -365,9 +329,6 @@ async function fetchReportData({ centerFilter, dateFilter, types }) {
   return result;
 }
 
-/* ══════════════════════════════════════════════════════
-   Colour helpers
-══════════════════════════════════════════════════════ */
 function hexToRgb(hex) {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return m
@@ -375,18 +336,6 @@ function hexToRgb(hex) {
     : [0, 0, 0];
 }
 
-/* ══════════════════════════════════════════════════════════════════════════
-   PDF Builder
-   ─────────────────────────────────────────────────────────────────────────
-   Critical order inside buildPDF():
-     1. Register Cairo font (addFileToVFS → addFont → setFont) FIRST —
-        before ANY doc.text() / splitTextToSize / autoTable call, otherwise:
-        TypeError: Cannot read properties of undefined (reading 'widths')
-     2. Await logo data-URL (Promise.all-compatible).
-     3. Draw cover page with metadata card (center, contractor, date,
-        observer, report types, generation timestamp).
-     4. Draw data pages grouped by center → report type.
-══════════════════════════════════════════════════════════════════════════ */
 async function buildPDF({ data, centerFilter, dateFilter, types, detailed = false }) {
   /* Dynamic imports — only bundled & loaded when user clicks "generate" */
   const { jsPDF }              = await import('jspdf');
@@ -811,9 +760,6 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
     }
   }
 
-  /* ════════════════════════════════════════════════
-     COVER PAGE
-  ════════════════════════════════════════════════ */
   drawPageHeader(true);
 
   /* ── Metadata card ──
@@ -954,9 +900,6 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
 
   drawPageFooter();
 
-  /* ════════════════════════════════════════════════
-     DATA PAGES — grouped by center → report type
-  ════════════════════════════════════════════════ */
   const centers =
     centerFilter === 'all'
       ? [
@@ -1132,9 +1075,6 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
-/* ══════════════════════════════════════════════════════
-   Filter Modal
-══════════════════════════════════════════════════════ */
 function ReportModal({ onClose }) {
   const [centerFilter, setCenterFilter] = useState('all');
   const [dateFilter,   setDateFilter]   = useState('');
@@ -1410,9 +1350,6 @@ function ReportModal({ onClose }) {
   );
 }
 
-/* ══════════════════════════════════════════════════════
-   Public component — gold "إصدار تقرير" trigger button
-══════════════════════════════════════════════════════ */
 export default function AdminReportGenerator() {
   const [open, setOpen] = useState(false);
   return (

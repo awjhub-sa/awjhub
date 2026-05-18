@@ -1,7 +1,8 @@
 // src/pages/Home.jsx
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { supabase } from '../config/supabase.js';
+import { rowFromDb } from '../lib/db.js';
 import {
   ForkKnife as Utensils, Warning as AlertTriangle, Van as Truck,
   Bell, User, CaretLeft as ChevronLeft, TrendUp as TrendingUp,
@@ -13,11 +14,9 @@ import { motion } from 'framer-motion';
 import logo from '../assets/logo.png';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getCaterer } from '../config/centers.js';
-import { db } from '../config/db.js';
 import { useAssignedTasks } from '../hooks/useAssignedTasks.js';
 import TodayMenuCard from '../components/TodayMenuCard.jsx';
 
-/* ── Decorative Gold Rule ── */
 const GoldRule = () => (
   <svg width="100" height="6" viewBox="0 0 100 6" fill="none">
     <line x1="0" y1="3" x2="32" y2="3" stroke="#A98159" strokeWidth="0.75" />
@@ -30,7 +29,6 @@ const GoldRule = () => (
 
 const _cardSpring = { type: 'spring', stiffness: 380, damping: 18 };
 
-/* ── Reusable Menu Card ── */
 const MenuCard = ({ icon: Icon, title, subtitle, badge, onClick, variant = 'default' }) => {
   const isAccent = variant === 'accent';
   return (
@@ -104,7 +102,6 @@ const MenuCard = ({ icon: Icon, title, subtitle, badge, onClick, variant = 'defa
   );
 };
 
-/* ── Activity Display Configuration ── */
 const ACTIVITY_CFG = {
   reports: { label: 'بلاغ طارئ', Icon: AlertTriangle, color: '#DC2626', bg: '#FEF2F2', border: '#FECACA' },
   meal_evaluations: { label: 'تقييم وجبات', Icon: Utensils, color: '#A98159', bg: '#FDF8F0', border: '#D1C4B9' },
@@ -113,7 +110,6 @@ const ACTIVITY_CFG = {
   logistics_requests: { label: 'طلب إسناد', Icon: Package, color: '#3182CE', bg: '#EFF6FF', border: '#BFDBFE' },
 };
 
-/* ── Status Styles ── */
 const STATUS_DATA = {
   pending:     { label: 'قيد الانتظار', bg: '#FEF9C3', text: '#854D0E' },
   in_progress: { label: 'جارٍ التنفيذ', bg: '#DBEAFE', text: '#1E40AF' },
@@ -164,31 +160,35 @@ export default function Home() {
     /* Listen by CENTER (not uid) so the observer sees anything submitted on
        their center — whether they uploaded it or the supervisor did. */
     const collectionsToTrack = Object.keys(ACTIVITY_CFG);
-    const unsubs = collectionsToTrack.map(col => {
-      const q = query(collection(db, col), where('center', '==', profile.center));
-      return onSnapshot(q, snap => {
-        const docs = snap.docs
-          .map(d => ({ id: d.id, _col: col, ...d.data() }))
-          .filter(d => toMs(d) >= todayMs);
-
-        setActivities(prev => {
-          const others = prev.filter(a => a._col !== col);
-          const combined = [...others, ...docs];
-          return combined.sort((a, b) => toMs(b) - toMs(a));
-        });
+    let mounted = true;
+    const loadFor = async (table) => {
+      const { data } = await supabase.from(table).select('*').eq('center', profile.center);
+      if (!mounted) return;
+      const docs = (data || [])
+        .map(d => ({ ...rowFromDb(d), _col: table }))
+        .filter(d => toMs(d) >= todayMs);
+      setActivities(prev => {
+        const others = prev.filter(a => a._col !== table);
+        return [...others, ...docs].sort((a, b) => toMs(b) - toMs(a));
       });
+    };
+    const channels = collectionsToTrack.map(col => {
+      loadFor(col);
+      return supabase.channel(`home-${col}-${profile.center}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: col }, () => loadFor(col))
+        .subscribe();
     });
 
-    return () => unsubs.forEach(unsub => unsub());
+    return () => { mounted = false; channels.forEach(ch => supabase.removeChannel(ch)); };
   }, [profile?.uid, profile?.center]);
 
   const { tasks, completions } = useAssignedTasks(profile);
 
   const pendingMealBadge = (() => {
-    const mealTasks = tasks.filter(t => t.task_types?.includes('meal_evaluation'));
+    const mealTasks = tasks.filter(t => t.taskTypes?.includes('meal_evaluation'));
     let count = 0;
     mealTasks.forEach(task => {
-      (task.meal_types || []).forEach(mt => {
+      (task.mealTypes || []).forEach(mt => {
         if (!completions.some(c => c.taskId === task.id && c.mealType === mt)) count++;
       });
     });
@@ -196,13 +196,13 @@ export default function Home() {
   })();
 
   const pendingMinaBadge = (() => {
-    const count = tasks.filter(t => t.task_types?.includes('mina_readiness') &&
+    const count = tasks.filter(t => t.taskTypes?.includes('mina_readiness') &&
       !completions.some(c => c.taskId === t.id && c.taskType === 'mina_readiness')).length;
     return count || null;
   })();
 
   const pendingArafatBadge = (() => {
-    const count = tasks.filter(t => t.task_types?.includes('arafat_readiness') &&
+    const count = tasks.filter(t => t.taskTypes?.includes('arafat_readiness') &&
       !completions.some(c => c.taskId === t.id && c.taskType === 'arafat_readiness')).length;
     return count || null;
   })();

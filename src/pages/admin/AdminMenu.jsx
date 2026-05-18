@@ -149,7 +149,7 @@ export default function AdminMenu() {
           </div>
         </>
       ) : (
-        /* ─── Nationality detail view ─── */
+        
         <NationalityDetail
           nat={activeNat}
           selectedDay={selectedDay}
@@ -161,9 +161,6 @@ export default function AdminMenu() {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   NationalityDetail — day tabs + 3 meal panels with dishes
-══════════════════════════════════════════════════════════════════ */
 function NationalityDetail({ nat, selectedDay, setSelectedDay, onBack }) {
   return (
     <div className="space-y-4">

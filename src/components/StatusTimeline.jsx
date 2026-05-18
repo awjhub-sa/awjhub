@@ -4,16 +4,6 @@ import {
   fmtDuration, getStatusDurationMs, getTotalElapsedMs, isClosed, toMs,
 } from '../lib/statusTracking.js';
 
-/**
- * Compact pill showing total elapsed time + current-status time.
- * Use in card headers / list rows.
- *
- * Props:
- *   doc                — Firestore doc with timestamp/status/statusSince/durations/closedAt
- *   terminalStatuses   — e.g. ['resolved']
- *   statusMeta         — { [statusKey]: { label, color, bg, border } }
- *   compact            — boolean, smaller variant
- */
 export function StatusTimerChip({ doc, terminalStatuses, statusMeta, compact }) {
   const nowTick  = useNow(30000);
   const closed   = isClosed(doc, terminalStatuses);
@@ -48,14 +38,6 @@ export function StatusTimerChip({ doc, terminalStatuses, statusMeta, compact }) 
   );
 }
 
-/**
- * Full breakdown: each status as a row showing its accumulated time + total at bottom.
- * Use in expanded cards / detail modals.
- *
- * Props:
- *   doc, terminalStatuses, statusOrder, statusMeta, accentColor
- *   statusOrder — array of status keys in display order
- */
 export function StatusTimeline({ doc, terminalStatuses, statusOrder, statusMeta, accentColor = '#A98159' }) {
   const nowTick   = useNow(30000);
   const total     = getTotalElapsedMs(doc, terminalStatuses, nowTick);

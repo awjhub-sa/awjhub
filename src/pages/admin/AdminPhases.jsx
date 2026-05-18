@@ -1,6 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { collection, onSnapshot, writeBatch, doc, deleteDoc } from 'firebase/firestore';
-import { db } from '../../config/db.js';
+import { db } from '../../lib/db.js';
 import { CENTERS } from '../../config/centers.js';
 import {
   Activity, CheckCircle2, Clock, Layers, RotateCcw, ImageIcon, X, Trash2,
@@ -11,7 +10,7 @@ import { Coffee, ForkKnife, Moon } from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
 import { extractCenterNum, extractDay } from '../../hooks/useAssignedTasks.js';
 
-/* Meal category metadata — matches what's stored under assigned_tasks.meal_categories */
+/* Meal category metadata — matches what's stored under assigned_tasks.mealCategories */
 const MEAL_CATEGORY_META = {
   cooked:     { label: 'مطبوخة', Icon: Flame,       color: '#DC2626', bg: '#FEF2F2', border: '#FECACA' },
   dry:        { label: 'جافة',   Icon: Package,     color: '#A98159', bg: '#FDF8F0', border: '#E8DDD4' },
@@ -140,15 +139,14 @@ export default function AdminPhases() {
   const handleClearDay = async () => {
     setClearing(true);
     try {
-      const batch = writeBatch(db);
-      /* Use docID pattern — more reliable than filtering by day field */
+      const ids = [];
       CENTERS.forEach(c => {
         MEALS.forEach(m => {
           const docId = `${c.id}_d${selectedDay}_${m.id}`;
-          if (phasesData[docId]) batch.delete(doc(db, 'meal_phases', docId));
+          if (phasesData[docId]) ids.push(docId);
         });
       });
-      await batch.commit();
+      await db.meal_phases.deleteMany(ids);
     } catch {}
     setClearing(false);
     setClearConfirm(false);
@@ -158,61 +156,48 @@ export default function AdminPhases() {
     if (!mealClearTarget) return;
     setMealClearing(true);
     try {
-      await deleteDoc(doc(db, 'meal_phases', `${mealClearTarget.center}_d${selectedDay}_${mealClearTarget.mealId}`));
+      await db.meal_phases.delete(`${mealClearTarget.center}_d${selectedDay}_${mealClearTarget.mealId}`);
     } catch {}
     setMealClearing(false);
     setMealClearTarget(null);
   };
 
-  // وظيفة مسح المركز (كانت ناقصة)
   const handleClearCenter = async (centerId) => {
     setCenterClearing(true);
     try {
-      const batch = writeBatch(db);
-      MEALS.forEach(m => {
-        const docId = `${centerId}_d${selectedDay}_${m.id}`;
-        batch.delete(doc(db, 'meal_phases', docId));
-      });
-      await batch.commit();
+      const ids = MEALS.map(m => `${centerId}_d${selectedDay}_${m.id}`);
+      await db.meal_phases.deleteMany(ids);
     } catch(e) {}
     setCenterClearing(false);
     setCenterClearConfirm(null);
   };
 
   useEffect(() => {
-    return onSnapshot(collection(db, 'meal_phases'), snap => {
+    return db.meal_phases.subscribe(rows => {
       const map = {};
-      snap.docs.forEach(d => { map[d.id] = { id: d.id, ...d.data() }; });
+      rows.forEach(d => { map[d.id] = d; });
       setPhasesData(map);
     });
   }, []);
 
-  /* Subscribe to assigned_tasks so we know each center's meal category
-     (cooked / dry / sterilized) for the selected day. */
   useEffect(() => {
-    return onSnapshot(collection(db, 'assigned_tasks'), snap => {
-      setAssignedTasks(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
+    return db.assigned_tasks.subscribe(rows => setAssignedTasks(rows));
   }, []);
 
-  /* Subscribe to meal_evaluations — used to surface the meal-quality score
-     right next to each meal's phases (was previously buried inside Analytics). */
   const [mealEvals, setMealEvals] = useState([]);
   useEffect(() => {
-    return onSnapshot(collection(db, 'meal_evaluations'), snap => {
-      setMealEvals(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
+    return db.meal_evaluations.subscribe(rows => setMealEvals(rows));
   }, []);
 
   /* Map: centerNum → Set<category> for the selected day's meal-evaluation tasks. */
   const centerCategories = useMemo(() => {
     const map = new Map();
     assignedTasks.forEach(t => {
-      const types = t.task_types || [];
+      const types = t.taskTypes || [];
       if (!types.includes('meal_evaluation')) return;
-      if (extractDay(t.scheduled_date) !== String(selectedDay)) return;
-      const cats = t.meal_categories || [];
-      (t.target_centers || []).forEach(cn => {
+      if (extractDay(t.scheduledDate) !== String(selectedDay)) return;
+      const cats = t.mealCategories || [];
+      (t.targetCenters || []).forEach(cn => {
         const key = Number(cn);
         if (!map.has(key)) map.set(key, new Set());
         cats.forEach(c => map.get(key).add(c));
@@ -230,7 +215,7 @@ export default function AdminPhases() {
   const evalLookup = useMemo(() => {
     const map = new Map();
     mealEvals.forEach(e => {
-      const day = extractDay(e.scheduled_date ?? e.scheduledDate ?? '');
+      const day = extractDay(e.scheduledDate ?? e.scheduledDate ?? '');
       const key = `${e.center}|${day}|${e.mealType}`;
       map.set(key, e);
     });
@@ -629,9 +614,7 @@ export default function AdminPhases() {
 
       </>}
 
-      {/* ════════════════════════════════════════════════════════════
-         REPORTS VIEW — center cards / per-center detailed report
-      ════════════════════════════════════════════════════════════ */}
+      {}
       {view === 'reports' && !reportCenter && (
         <ReportsCenterList
           centers={CENTERS}
@@ -662,9 +645,6 @@ export default function AdminPhases() {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   Meal Evaluation Detail Modal — opens when admin taps a score chip
-══════════════════════════════════════════════════════════════════ */
 function EvalDetailModal({ record, onClose }) {
   if (!record) return null;
   const score = (() => {
@@ -713,7 +693,7 @@ function EvalDetailModal({ record, onClose }) {
             <div className="min-w-0">
               <h2 className="text-base font-bold text-[#2D2926] truncate">تقييم الوجبة</h2>
               <p className="text-[11px] text-[#9D8F85] mt-0.5 truncate">
-                {record.center} · {mealLabel} · {record.scheduled_date}
+                {record.center} · {mealLabel} · {record.scheduledDate}
               </p>
             </div>
           </div>
@@ -803,9 +783,6 @@ function EvalDetailModal({ record, onClose }) {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   REPORTS — list of centers (grid of cards summarising each center)
-══════════════════════════════════════════════════════════════════ */
 function ReportsCenterList({ centers, selectedDay, phasesData, evalLookup, centerCategories, onSelect }) {
   /* For each center, count total phases done across all 3 meals + total evaluations */
   const summaries = useMemo(() => {
@@ -983,9 +960,6 @@ function ReportsCenterList({ centers, selectedDay, phasesData, evalLookup, cente
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   REPORTS — detailed per-center report (photos + eval per meal)
-══════════════════════════════════════════════════════════════════ */
 function CenterReport({ center, selectedDay, phasesData, evalLookup, centerCategories, onBack, onViewPhoto, onViewEval }) {
   const centerObj = CENTERS.find(c => c.id === center) || { id: center, caterer: '' };
   const cats = [...(centerCategories.get(extractCenterNum(center)) || [])];

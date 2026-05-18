@@ -1,21 +1,3 @@
-/**
- * Static menu data by (nationality → day → meal → category).
- *
- *   MENUS[nationalityKey][day][mealKey] = {
- *     main:    ['طبق رئيسي ١', ...],     // الطبق الرئيسي
- *     side:    ['طبق جانبي ١', ...],     // الأصناف الجانبية
- *     drinks:  ['مشروب ١', ...],          // المشروبات
- *     snacks:  ['سناك ١', ...],           // السناكات
- *   }
- *
- *   • nationalityKey  — see config/nationalities.js (indonesia, iraq, yemen, ...)
- *   • day             — '7' | '8' | '9' | '10' | '11' | '12' | '13'   (Dhu al-Hijjah)
- *   • mealKey         — 'breakfast' | 'lunch' | 'dinner'
- *
- * Leave a category empty (or omit it) and the UI will hide it.
- * Leave all 4 empty for a meal and the UI shows "لم يتم إضافة المنيو بعد".
- */
-
 import { NATIONALITIES } from './nationalities.js';
 
 export const HAJJ_DAYS = [
@@ -39,9 +21,6 @@ export const CATEGORY_META = {
   snacks: { label: 'السناكات',      color: '#8B5CF6', bg: '#F5F3FF', border: '#DDD6FE' },
 };
 
-/* ════════════════════════════════════════════════════════════════════
-   Empty shape generator
-════════════════════════════════════════════════════════════════════ */
 /**
  * Each meal object: { main, side, drinks, snacks, location?, time? }
  *   location — 'منى' | 'عرفات' | 'مزدلفة' | undefined
@@ -63,13 +42,6 @@ function emptyMenuShape() {
 }
 
 export const MENUS = emptyMenuShape();
-
-/* ══════════════════════════════════════════════════════════════════
-   🇮🇩 إندونيسيا — Indonesia
-   Source: قائمة طعام حجاج جمهورية إندونيسيا لحج عام 1447هـ
-   • أيام ٨-٩: مشعر عرفات
-   • أيام ١٠-١٣: مشعر منى
-══════════════════════════════════════════════════════════════════ */
 
 // 8 ذو الحجة — عرفات
 MENUS.indonesia['8'] = {
@@ -235,11 +207,6 @@ MENUS.indonesia['13'] = {
   lunch:  { main: [], side: [], drinks: [], snacks: [] },
   dinner: { main: [], side: [], drinks: [], snacks: [] },
 };
-
-/* ══════════════════════════════════════════════════════════════════
-   🇮🇶 العراق — Iraq
-   Source: قائمة طعام حجاج العراق لحج عام 1447هـ (ضيوف البيت)
-═══════════════════════════════════════════════════════════════════ */
 
 // 8 ذو الحجة — منى (وجبة جافة مغلفة)
 MENUS.iraq['8'] = {
@@ -411,12 +378,6 @@ MENUS.iraq['11'] = {
 };
 
 // أيام ١٢ و ١٣: لم تُرفق ضمن البيانات المُسلَّمة (تبقى فارغة)
-
-
-/* ══════════════════════════════════════════════════════════════════
-   🇾🇪 اليمن — Yemen
-   Source: قائمة طعام حجاج اليمن لحج عام 1447هـ (ضيوف البيت)
-═══════════════════════════════════════════════════════════════════ */
 
 // 8 ذو الحجة — منى
 MENUS.yemen['8'] = {
@@ -598,12 +559,6 @@ MENUS.yemen['13'] = {
   dinner: { main: [], side: [], drinks: [], snacks: [] },
 };
 
-
-/* ══════════════════════════════════════════════════════════════════
-   🇦🇫 أفغانستان — Afghanistan
-   Source: قائمة طعام حجاج أفغانستان لحج عام 1447هـ (ضيوف البيت)
-═══════════════════════════════════════════════════════════════════ */
-
 // 8 ذو الحجة — منى
 MENUS.afghanistan['8'] = {
   breakfast: {
@@ -773,12 +728,6 @@ MENUS.afghanistan['13'] = {
   },
 };
 
-
-/* ══════════════════════════════════════════════════════════════════
-   🇰🇲 جزر القمر — Comoros
-   Source: قائمة طعام حجاج جزر القمر لحج عام 1447هـ (ضيوف البيت)
-═══════════════════════════════════════════════════════════════════ */
-
 // 8 ذو الحجة — منى
 MENUS.comoros['8'] = {
   breakfast: {
@@ -920,6 +869,59 @@ MENUS.comoros['12'] = {
   },
 };
 
+const BAHRAIN_SNACK_PACK = {
+  main:   [],
+  side:   [],
+  drinks: [],
+  snacks: [
+    'فاكهة (تفاح / برتقال) شربتلي — 2',
+    'مكسرات أكياس مشكلة باجة — 120 جم',
+    'تصبيرة لوزين (حشوات متنوعة) المراعي — 70 جم',
+  ],
+};
+
+// 8 ذو الحجة — منى (وجبة خفيفة)
+MENUS.bahrain['8'] = {
+  breakfast: { ...BAHRAIN_SNACK_PACK, snacks: [...BAHRAIN_SNACK_PACK.snacks], location: 'منى' },
+  lunch:     { main: [], side: [], drinks: [], snacks: [] },
+  dinner:    { main: [], side: [], drinks: [], snacks: [] },
+};
+
+// 9 ذو الحجة — عرفات (وجبتان خفيفتان: عادية + النفرة)
+MENUS.bahrain['9'] = {
+  breakfast: { ...BAHRAIN_SNACK_PACK, snacks: [...BAHRAIN_SNACK_PACK.snacks], location: 'عرفات' },
+  lunch:     { main: [], side: [], drinks: [], snacks: [] },
+  // النفرة من عرفات إلى مزدلفة بعد الغروب
+  dinner: {
+    ...BAHRAIN_SNACK_PACK,
+    snacks: [...BAHRAIN_SNACK_PACK.snacks],
+    location: 'عرفات → مزدلفة (وجبة النفرة)',
+  },
+};
+
+// 10 ذو الحجة — منى
+MENUS.bahrain['10'] = {
+  breakfast: { ...BAHRAIN_SNACK_PACK, snacks: [...BAHRAIN_SNACK_PACK.snacks], location: 'منى' },
+  lunch:     { main: [], side: [], drinks: [], snacks: [] },
+  dinner:    { main: [], side: [], drinks: [], snacks: [] },
+};
+
+// 11 ذو الحجة — منى
+MENUS.bahrain['11'] = {
+  breakfast: { ...BAHRAIN_SNACK_PACK, snacks: [...BAHRAIN_SNACK_PACK.snacks], location: 'منى' },
+  lunch:     { main: [], side: [], drinks: [], snacks: [] },
+  dinner:    { main: [], side: [], drinks: [], snacks: [] },
+};
+
+// 12 ذو الحجة — منى
+MENUS.bahrain['12'] = {
+  breakfast: { ...BAHRAIN_SNACK_PACK, snacks: [...BAHRAIN_SNACK_PACK.snacks], location: 'منى' },
+  lunch:     { main: [], side: [], drinks: [], snacks: [] },
+  dinner:    { main: [], side: [], drinks: [], snacks: [] },
+};
+
+// يوم ١٣: لم يُذكر في القائمة (يبقى فارغ)
+
 // 13 ذو الحجة — منى
 MENUS.comoros['13'] = {
   breakfast: {
@@ -947,15 +949,6 @@ MENUS.comoros['13'] = {
     time:    '07:00 م — 10:00 م',
   },
 };
-
-/* ──────────────────────────────────────────────────────────────────
-   ⬇ TODO: أضف باقي الجنسيات هنا بنفس النمط
-       MENUS.iraq['7'].breakfast = { main: [...], side: [...], drinks: [...], snacks: [...] };
-─────────────────────────────────────────────────────────────────── */
-
-/* ══════════════════════════════════════════════════════════════════
-   Helpers
-══════════════════════════════════════════════════════════════════ */
 
 /** Returns the meal object for (nationality, day, meal) — always a defined shape */
 export function getMeal(nationalityKey, day, mealKey) {

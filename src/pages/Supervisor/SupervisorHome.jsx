@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, onSnapshot, query, where, doc, getDoc } from 'firebase/firestore';
+import { supabase } from '../../config/supabase.js';
+import { db as supaDb, rowFromDb } from '../../lib/db.js';
 import {
   Utensils, AlertTriangle, Bell, User, ChevronDown, ChevronLeft,
   TrendingUp, ClipboardCheck, MapPin, Home as HomeIcon,
@@ -11,10 +12,8 @@ import logo from "../../assets/logo.png";
 import { useAuth } from '../../context/AuthContext.jsx';
 import { getCaterer } from '../../config/centers.js';
 import { extractCenterNum } from '../../hooks/useAssignedTasks.js';
-import { db } from '../../config/db.js';
 import TodayMenuCard from '../../components/TodayMenuCard.jsx';
 
-/* ── المكونات الزخرفية ── */
 const GoldRule = () => (
   <svg width="100" height="6" viewBox="0 0 100 6" fill="none">
     <line x1="0" y1="3" x2="32" y2="3" stroke="#A98159" strokeWidth="0.75" />
@@ -25,7 +24,6 @@ const GoldRule = () => (
   </svg>
 );
 
-/* ── بطاقة القائمة (MenuCard) ── */
 const MenuCard = ({ icon: Icon, title, subtitle, badge, doneBadge, onClick, variant = 'default' }) => {
   const isAccent = variant === 'accent';
   return (
@@ -105,7 +103,6 @@ const TASK_TYPE_META = {
 };
 const MEAL_LABELS = { breakfast: 'الإفطار', lunch: 'الغداء', dinner: 'العشاء' };
 
-/* ── Helper sub-components for the unified dashboard ───────────── */
 function StatMini({ label, value, accent, Icon }) {
   return (
     <div className="group/stat relative bg-gradient-to-br from-white to-[#FDF8F0]/40 rounded-2xl p-3 sm:p-3.5 border border-[#EDE5DC] shadow-[0_2px_8px_rgba(45,41,38,0.05)] hover:shadow-[0_6px_18px_rgba(169,129,89,0.15)] transition-all duration-300 overflow-hidden"
@@ -243,7 +240,7 @@ export default function SupervisorHome() {
   const [globalNotifs,   setGlobalNotifs]   = useState([]);  // cross-center observer notifs
   const [observerNotifs, setObserverNotifs] = useState([]);  // per-center activity feed
 
-  /* ── Cross-center aggregates (for unified dashboard view) ── */
+  
   const [allAssignedTasks, setAllAssignedTasks] = useState([]);
   const [allCompletions,   setAllCompletions]   = useState([]);
 
@@ -251,10 +248,10 @@ export default function SupervisorHome() {
     const fetchCenters = async () => {
       if (!user?.uid) return;
       try {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          const centers = userDoc.data().centers || [];
-          const sorted = centers.sort((a, b) => {
+        const userRow = await supaDb.users.get(user.uid);
+        if (userRow) {
+          const centers = userRow.assignedCenters || userRow.centers || [];
+          const sorted = [...centers].sort((a, b) => {
             const numA = parseInt(String(a).replace(/\D/g, '')) || 0;
             const numB = parseInt(String(b).replace(/\D/g, '')) || 0;
             return numA - numB;
@@ -298,186 +295,54 @@ export default function SupervisorHome() {
        they each create a corresponding task_completions row, which already
        produces a "تم الرفع" notification. Listening to both was causing the
        supervisor's feed to show every evaluation twice. */
+    let mounted = true;
     const regularCols = ['reports', 'logistics_requests'];
-    const unsubs = regularCols.map(col => {
-      const q = query(collection(db, col), where('center', '==', selectedCenter));
-      return onSnapshot(q, snap => {
-        const docs = snap.docs
-          .map(d => ({ id: d.id, _col: col, ...d.data() }))
-          .filter(d => (d.timestamp?.toMillis?.() || 0) >= todayMs);
-        setActivities(prev => {
-          const others = prev.filter(a => a._col !== col);
-          return [...others, ...docs].sort((a, b) => (b._sortTs || 0) - (a._sortTs || 0));
-        });
+    const loadCol = async (col) => {
+      const { data } = await supabase.from(col).select('*').eq('center', selectedCenter);
+      if (!mounted) return;
+      const docs = (data || []).map(rowFromDb)
+        .map(d => ({ ...d, _col: col, _sortTs: d.timestamp?.toMillis?.() || 0 }))
+        .filter(d => d._sortTs >= todayMs);
+      setActivities(prev => {
+        const others = prev.filter(a => a._col !== col);
+        return [...others, ...docs].sort((a, b) => (b._sortTs || 0) - (a._sortTs || 0));
       });
+    };
+    const channels = regularCols.map(col => {
+      loadCol(col);
+      return supabase.channel(`sup-${col}-${selectedCenter}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: col }, () => loadCol(col))
+        .subscribe();
     });
 
     /* assigned_tasks for this center */
-    const unsubAssigned = onSnapshot(
-      query(collection(db, 'assigned_tasks'), where('target_centers', 'array-contains', cn)),
-      snap => setAssignedForCenter(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    const unsubAssigned = supaDb.assigned_tasks.subscribe(rows =>
+      setAssignedForCenter(rows.filter(t => (t.targetCenters || []).includes(cn)))
     );
 
     /* task_completions */
-    const unsubTc = onSnapshot(
-      query(collection(db, 'task_completions'), where('center', '==', selectedCenter)),
-      snap => {
-        const allDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-        /* Task badges should reflect "done on this center" — regardless of who.
-           Either observer OR supervisor uploaded counts as completed. */
-        setCompletionsForCenter(allDocs);
-
-        /* Activity feed & Notifications: observer completions today only */
-        const todayCompletions = allDocs
-          .filter(d => d.uid !== user.uid && (d.completedAt?.toMillis?.() || 0) >= todayMs)
-          .map(d => ({ ...d, _col: 'task_completions', _sortTs: d.completedAt?.toMillis?.() || 0 }));
-        
-        // تحديث التنبيهات
-        setObserverNotifs(todayCompletions);
-
-        setActivities(prev => {
-          const others = prev.filter(a => a._col !== 'task_completions');
-          const withTs = others.map(a => ({ ...a, _sortTs: a._sortTs ?? (a.timestamp?.toMillis?.() || 0) }));
-          return [...withTs, ...todayCompletions].sort((a, b) => (b._sortTs || 0) - (a._sortTs || 0));
-        });
-      }
-    );
-
-    return () => { unsubs.forEach(u => u()); unsubAssigned(); unsubTc(); };
-  }, [selectedCenter, user?.uid]);
-
-  /* ── Cross-center listeners (used by the unified dashboard view) ────
-     Tracks every assigned task and every completion across ALL of the
-     supervisor's assigned centers so we can build:
-       • global notifications  (today's completions)
-       • cross-center pending  (what still needs upload)
-       • per-center stat cards */
-  useEffect(() => {
-    if (!user?.uid || !assignedCenters.length) {
-      setGlobalNotifs([]);
-      setAllAssignedTasks([]);
-      setAllCompletions([]);
-      return;
-    }
-    const todayMs = new Date().setHours(0, 0, 0, 0);
-    const allowed = new Set(assignedCenters);
-
-    /* Assigned tasks where any target center belongs to this supervisor */
-    const unsubAssigned = onSnapshot(collection(db, 'assigned_tasks'), snap => {
-      const tasks = snap.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .filter(t =>
-          (t.target_centers || []).some(cn => allowed.has(`مركز ${cn}`))
-        );
-      setAllAssignedTasks(tasks);
-    });
-
-    /* All completions for any assigned center */
-    const unsubCompletions = onSnapshot(collection(db, 'task_completions'), snap => {
-      const all = snap.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .filter(c => allowed.has(c.center));
-      setAllCompletions(all);
-
-      /* Today-only notifications for the bell (other users' uploads) */
-      const notifs = all
-        .filter(c => c.uid !== user.uid && (c.completedAt?.toMillis?.() || 0) >= todayMs)
-        .sort((a, b) => (b.completedAt?.toMillis?.() || 0) - (a.completedAt?.toMillis?.() || 0));
-      setGlobalNotifs(notifs);
-    });
-
-    return () => { unsubAssigned(); unsubCompletions(); };
-  }, [user?.uid, assignedCenters]);
-
-  const handleLogout = async () => {
-    try {
-      setIsProfileOpen(false);
-      localStorage.clear();
-      sessionStorage.removeItem('sup_selected_center');
-      await logout();
-      window.location.replace('./login');
-    } catch (e) {
-      console.error("Logout Error:", e);
-      window.location.replace('./login');
-    }
-  };
-
-  if (loadingData) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FDFCFB]">
-      <Loader2 className="animate-spin text-[#A98159]" size={40} />
-    </div>
-  );
-
-  /* ── Derive task badges ──
-     Count completions only for task types that ARE currently assigned to
-     this center. Otherwise a completed task from a previous day (still in
-     Firestore) would falsely mark a center with no tasks as "مكتملة". */
-  const activeTaskTypes = new Set(
-    assignedForCenter.flatMap(t => t.task_types || [])
-  );
-  const taskBadges = {};
-  completionsForCenter.forEach(c => {
-    if (activeTaskTypes.has(c.taskType)) {
-      taskBadges[c.taskType] = (taskBadges[c.taskType] || 0) + 1;
-    }
-  });
-  const hasAnyTask = activeTaskTypes.size > 0;
-
-  /* ── Cross-center pending tasks ─────────────────────────────────
-     Expand each assigned task into per-center instances (and per-meal
-     for meal_evaluation). A task is "pending" when no matching
-     completion exists for (taskId, center, taskType, mealType). */
-  const pendingTasks = (() => {
-    const list = [];
-    const allowedCenters = new Set(assignedCenters);
-    allAssignedTasks.forEach(task => {
-      const centers = (task.target_centers || [])
-        .map(cn => `مركز ${cn}`)
-        .filter(c => allowedCenters.has(c));
-      const types = task.task_types || [];
-      centers.forEach(center => {
-        types.forEach(type => {
-          if (type === 'meal_evaluation') {
-            (task.meal_types || []).forEach(mealType => {
-              const done = allCompletions.some(c =>
-                c.taskId === task.id &&
-                c.center  === center &&
-                c.taskType === type &&
-                c.mealType === mealType
-              );
-              if (!done) {
-                list.push({
-                  key: `${task.id}__${center}__${type}__${mealType}`,
-                  taskId: task.id, center, taskType: type, mealType,
-                  scheduledDate: task.scheduled_date,
-                  createdAt: task.created_at?.toMillis?.() || 0,
-                });
-              }
-            });
-          } else {
-            const done = allCompletions.some(c =>
-              c.taskId === task.id &&
-              c.center  === center &&
-              c.taskType === type
-            );
-            if (!done) {
-              list.push({
-                key: `${task.id}__${center}__${type}`,
-                taskId: task.id, center, taskType: type, mealType: null,
-                scheduledDate: task.scheduled_date,
-                createdAt: task.created_at?.toMillis?.() || 0,
-              });
-            }
-          }
-        });
+    const unsubTc = supaDb.task_completions.subscribe(rows => {
+      const allDocs = rows.filter(c => c.center === selectedCenter);
+      setCompletionsForCenter(allDocs);
+      const todayCompletions = allDocs
+        .filter(d => d.uid !== user.uid && (d.timestamp?.toMillis?.() || 0) >= todayMs)
+        .map(d => ({ ...d, _col: 'task_completions', _sortTs: d.timestamp?.toMillis?.() || 0 }));
+      setObserverNotifs(todayCompletions);
+      setActivities(prev => {
+        const others = prev.filter(a => a._col !== 'task_completions');
+        const withTs = others.map(a => ({ ...a, _sortTs: a._sortTs ?? (a.timestamp?.toMillis?.() || 0) }));
+        return [...withTs, ...todayCompletions].sort((a, b) => (b._sortTs || 0) - (a._sortTs || 0));
       });
     });
-    /* Newest tasks first */
-    return list.sort((a, b) => b.createdAt - a.createdAt);
-  })();
 
-  /* ── Per-center stats for the centers grid ────────────────────── */
+    return () => {
+      mounted = false;
+      channels.forEach(ch => supabase.removeChannel(ch));
+      unsubAssigned(); unsubTc();
+    };
+  }, [selectedCenter, user?.uid]);
+
+  
   const centerStats = (() => {
     const map = {};
     assignedCenters.forEach(c => { map[c] = { pending: 0, completed: 0, total: 0 }; });
@@ -500,7 +365,7 @@ export default function SupervisorHome() {
 
   const todayMs = new Date().setHours(0, 0, 0, 0);
   const completedToday = allCompletions.filter(c =>
-    (c.completedAt?.toMillis?.() || 0) >= todayMs
+    (c.timestamp?.toMillis?.() || 0) >= todayMs
   ).length;
 
   /* Navigate to the correct upload page for a pending task */
@@ -583,7 +448,7 @@ export default function SupervisorHome() {
                                 {n.center} · بواسطة: {n.observerName || 'مراقب'}
                               </p>
                               <p className="text-[9px] text-[#6D6E71] mt-0.5">
-                                {new Date(n.completedAt?.toMillis?.() || 0).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}
+                                {new Date(n.timestamp?.toMillis?.() || 0).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}
                               </p>
                             </div>
                           </div>
@@ -605,9 +470,7 @@ export default function SupervisorHome() {
         </div>
       </header>
 
-      {/* ════════════════════════════════════════════════════════════
-         UNIFIED DASHBOARD — shown when no center is drilled into
-      ════════════════════════════════════════════════════════════ */}
+      {}
       {!selectedCenter && (
         <main className="max-w-5xl mx-auto px-4 md:px-8 py-6 space-y-6">
 
@@ -747,7 +610,7 @@ export default function SupervisorHome() {
                       </p>
                     </div>
                     <span className="text-[11px] text-[#9D8F85] font-bold tabular-nums shrink-0">
-                      {new Date(n.completedAt?.toMillis?.() || 0).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(n.timestamp?.toMillis?.() || 0).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
                 ))
@@ -799,9 +662,7 @@ export default function SupervisorHome() {
         </main>
       )}
 
-      {/* ════════════════════════════════════════════════════════════
-         PER-CENTER DETAIL VIEW — existing flow, shown only after drill-in
-      ════════════════════════════════════════════════════════════ */}
+      {}
       {selectedCenter && (
       <main className="max-w-5xl mx-auto px-4 md:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         <div className="lg:col-span-7 space-y-6">

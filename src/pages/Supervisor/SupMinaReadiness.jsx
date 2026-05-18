@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ChevronRight, Save, CheckCircle2, AlertCircle, Home, ArrowLeft, Ban, Calendar } from 'lucide-react';
-import { db } from '../../config/db.js';
-import { collection, addDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import { db, serverTimestamp } from '../../lib/db.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { getCaterer } from '../../config/centers.js';
 import { extractCenterNum } from '../../hooks/useAssignedTasks.js';
@@ -26,7 +25,7 @@ export default function SupMinaReadiness() {
   const [loading,     setLoading]     = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
 
-  /* ── Load tasks for this center ── */
+  
   const [tasks,        setTasks]        = useState([]);
   const [completions,  setCompletions]  = useState([]);
   const [tasksLoading, setTasksLoading] = useState(true);
@@ -38,19 +37,18 @@ export default function SupMinaReadiness() {
     let t1 = false, t2 = false;
     const done = () => { if (t1 && t2) setTasksLoading(false); };
 
-    const u1 = onSnapshot(collection(db, 'assigned_tasks'), snap => {
-      const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setTasks(all.filter(t => t.target_centers?.includes(cn)));
+    const u1 = db.assigned_tasks.subscribe(rows => {
+      setTasks(rows.filter(t => t.targetCenters?.includes(cn)));
       t1 = true; done();
     });
-    const u2 = onSnapshot(collection(db, 'task_completions'), snap => {
-      setCompletions(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(c => c.center === centerId));
+    const u2 = db.task_completions.subscribe(rows => {
+      setCompletions(rows.filter(c => c.center === centerId));
       t2 = true; done();
     });
     return () => { u1(); u2(); };
   }, [profile?.uid, centerId]);
 
-  const minaTasks   = tasks.filter(t => t.task_types?.includes('mina_readiness'));
+  const minaTasks   = tasks.filter(t => t.taskTypes?.includes('mina_readiness'));
   const isDone      = (task) => completions.some(c => c.taskId === task.id && c.taskType === 'mina_readiness');
   const pendingTasks = minaTasks.filter(t => !isDone(t));
   const doneTasks    = minaTasks.filter(t => isDone(t));
@@ -64,30 +62,26 @@ export default function SupMinaReadiness() {
     setLoading(true);
     try {
       const scoring = computeReadinessTotals(ALL_CRITERIA, answers);
-      await addDoc(collection(db, 'mina_readiness'), {
+      await db.mina_readiness.insert({
         observer:      profile?.nameAr || profile?.name || 'مشرف',
         center:        centerId,
         caterer:       catererName,
-        uid:           profile?.uid || '',
+        uid:           profile?.uid || null,
         answers,
         details,
         ...scoring,
-        taskId:        selectedTask?.taskId || null,
         scheduledDate: selectedTask?.scheduledDate || null,
-        role:          'supervisor',
         timestamp:     serverTimestamp(),
-        status:        'completed',
       });
       if (selectedTask?.taskId) {
-        await addDoc(collection(db, 'task_completions'), {
+        await db.task_completions.insert({
           taskId:        selectedTask.taskId,
           taskType:      'mina_readiness',
           mealType:      null,
           scheduledDate: selectedTask.scheduledDate || null,
           center:        centerId,
-          uid:           profile?.uid || '',
-          observerName:  profile?.nameAr || profile?.name || '—',
-          completedAt:   serverTimestamp(),
+          uid:           profile?.uid || null,
+          timestamp:     serverTimestamp(),
         });
       }
       alert('تم إرسال التقييم بنجاح');
@@ -98,7 +92,7 @@ export default function SupMinaReadiness() {
     setLoading(false);
   };
 
-  /* ── Gate Screen ── */
+  
   if (!selectedTask) {
     return (
       <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-28 font-arabic px-4 md:px-8">
@@ -137,7 +131,7 @@ export default function SupMinaReadiness() {
                   <p className="text-sm font-black text-[#2D2926] px-1 mb-2">المهام المعلقة</p>
                   {pendingTasks.map(task => (
                     <button key={task.id}
-                      onClick={() => setSelectedTask({ taskId: task.id, scheduledDate: task.scheduled_date })}
+                      onClick={() => setSelectedTask({ taskId: task.id, scheduledDate: task.scheduledDate })}
                       className="w-full bg-gradient-to-br from-white to-[#FDF8F0]/60 border border-[#D1C4B9] rounded-3xl p-5 text-right flex items-center gap-4 hover:border-[#A98159] hover:shadow-[0_8px_24px_rgba(169,129,89,0.18)] hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98]">
                       <div className="w-12 h-12 bg-[#FDF8F0] border border-[#A98159]/20 rounded-2xl flex items-center justify-center shrink-0">
                         <Home className="text-[#A98159]" size={22} />
@@ -147,10 +141,10 @@ export default function SupMinaReadiness() {
                           <p className="font-bold text-[#2D2926] text-sm">جاهزية مشعر منى</p>
                           <span className="text-[9px] font-black text-[#A98159] bg-[#FDF8F0] border border-[#A98159]/30 px-1.5 py-0.5 rounded-full">معلقة</span>
                         </div>
-                        {task.scheduled_date && (
+                        {task.scheduledDate && (
                           <div className="flex items-center gap-1.5 mt-1">
                             <Calendar size={12} className="text-[#A98159]" />
-                            <span className="text-xs text-[#A98159] font-bold">{task.scheduled_date}</span>
+                            <span className="text-xs text-[#A98159] font-bold">{task.scheduledDate}</span>
                           </div>
                         )}
                       </div>
@@ -174,7 +168,7 @@ export default function SupMinaReadiness() {
     );
   }
 
-  /* ── Form Screen ── */
+  
   return (
     <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-28 font-arabic px-4 md:px-8">
       <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 md:px-8 py-3 mb-6 shadow-sm">

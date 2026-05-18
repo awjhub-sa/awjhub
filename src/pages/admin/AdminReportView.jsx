@@ -1,7 +1,6 @@
 import { useEffect, useState, useMemo, Fragment } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '../../config/db.js';
+import { db } from '../../lib/db.js';
 import { CENTERS, getCaterer } from '../../config/centers.js';
 import { MEAL_QUESTIONS } from '../../config/mealQuestions.js';
 import { MINA_ALL_CRITERIA } from '../../config/minaQuestions.js';
@@ -65,12 +64,10 @@ function formatTime(ts) {
 async function fetchReportData({ centerFilter, dateFilter, types }) {
   const result = {};
   await Promise.all(types.map(async (type) => {
-    const constraints = centerFilter !== 'all' ? [where('center', '==', centerFilter)] : [];
-    const q    = constraints.length ? query(collection(db, type), ...constraints) : collection(db, type);
-    const snap = await getDocs(q);
-    let docs   = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const opts = centerFilter !== 'all' ? { filter: { center: centerFilter } } : {};
+    let docs = await db[type].list(opts);
     if (dateFilter) {
-      docs = docs.filter(d => (d.scheduled_date ?? d.scheduledDate ?? '') === dateFilter);
+      docs = docs.filter(d => (d.scheduledDate ?? '') === dateFilter);
     }
     docs.sort((a, b) =>
       (b.timestamp?.toMillis?.() ?? 0) - (a.timestamp?.toMillis?.() ?? 0)
@@ -80,7 +77,6 @@ async function fetchReportData({ centerFilter, dateFilter, types }) {
   return result;
 }
 
-/* ══════════════════════════════════════════════════════════════════ */
 export default function AdminReportView() {
   const [params] = useSearchParams();
 
@@ -180,9 +176,6 @@ export default function AdminReportView() {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   Toolbar
-══════════════════════════════════════════════════════════════════ */
 function Toolbar() {
   return (
     <div className="report-toolbar no-print">
@@ -233,9 +226,6 @@ function ErrorCard({ message }) {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   Cover Page
-══════════════════════════════════════════════════════════════════ */
 function CoverPage({ centerFilter, dateFilter, types, totals }) {
   const now = new Date();
   const generatedAt = now.toLocaleString('ar-SA', {
@@ -343,9 +333,6 @@ function StatBlock({ label, value, accent }) {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   Type Cover Page — divider before each report-type block
-══════════════════════════════════════════════════════════════════ */
 function TypeCoverPage({ type, records, centers }) {
   const meta = REPORT_TYPES[type];
   if (!meta) return null;
@@ -489,9 +476,6 @@ function DistPill({ label, value, color }) {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   Section Page (per center × type)
-══════════════════════════════════════════════════════════════════ */
 function SectionPage({ center, type, records, detailed }) {
   const meta = REPORT_TYPES[type] || REPORT_TYPES.meal_evaluations;
   const caterer = CENTERS.find(c => c.id === center)?.caterer ?? '';

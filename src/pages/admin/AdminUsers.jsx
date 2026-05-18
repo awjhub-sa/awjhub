@@ -1,8 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import {
-  collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, serverTimestamp,
-} from 'firebase/firestore';
-import { db } from '../../config/db.js';
+import { db, serverTimestamp } from '../../lib/db.js';
 import { CENTERS, getCaterer } from '../../config/centers.js';
 import {
   Users, Plus, X, Save, ChevronDown, UserPlus,
@@ -77,12 +74,56 @@ function MultiCenterSelect({ selected, onChange }) {
   );
 }
 
+/* Collapsible centers cell — shows count chip + expandable list */
+function CentersCell({ user }) {
+  const [open, setOpen] = useState(false);
+  if (user.role === 'observer') {
+    return user.center
+      ? <span className="text-[#2D2926]">{user.center}</span>
+      : <span>—</span>;
+  }
+  const centers = user.assignedCenters || user.centers || [];
+  if (centers.length === 0) {
+    return user.center
+      ? <span className="text-[#2D2926]">{user.center}</span>
+      : <span>—</span>;
+  }
+  return (
+    <div className="space-y-1.5">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-br from-[#FDF8F0] to-white border border-[#E8DDD4] hover:border-[#A98159] hover:shadow-sm font-bold text-[#A98159] tabular-nums transition-all"
+      >
+        <ChevronDown size={11} strokeWidth={2.5}
+          className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+        {centers.length} {centers.length === 1 ? 'مركز' : 'مراكز'}
+      </button>
+      {open && (
+        <div className="flex flex-wrap gap-1 max-w-xs">
+          {centers.map(c => (
+            <span key={c}
+              className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-md bg-white border border-[#EDE5DC] text-[#2D2926]">
+              {c}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const EMPTY_SINGLE = {
   nameAr: '', nameEn: '', idNumber: '', phone: '',
   role: 'observer', center: '', centers: [], supervisorId: '',
   roleCode: '', bravoCode: '',
 };
-const emptyBulkRow = () => ({ nameAr: '', idNumber: '', role: 'observer', center: '' });
+const emptyBulkRow = () => ({
+  nameAr: '', nameEn: '', idNumber: '', phone: '',
+  role: 'observer',
+  center: '', centers: [], supervisorId: '',
+  roleCode: '', bravoCode: '',
+});
 
 export default function AdminUsers() {
   const [allUsers, setAllUsers] = useState([]);
@@ -112,18 +153,10 @@ export default function AdminUsers() {
 
   useEffect(() => {
     setLoading(true);
-    const unsub = onSnapshot(
-      collection(db, 'users'),
-      (snap) => {
-        setAllUsers(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-        setLoading(false);
-      },
-      (err) => {
-        setListError(err.message);
-        setLoading(false);
-      },
-    );
-    return unsub;
+    return db.users.subscribe((rows) => {
+      setAllUsers(rows.map(r => ({ ...r, id: r.uid })));
+      setLoading(false);
+    });
   }, []);
 
   const numOnly = (v) => v.replace(/\D/g, '');
@@ -149,7 +182,18 @@ export default function AdminUsers() {
 
   const counts = { all: users.length, observer: observers.length, supervisor: supervisors.length };
 
-  /* ── helpers ─────────────────────────────────────────── */
+  /* Build center → supervisor map so observer rows can show their supervisor.
+     A supervisor's assigned_centers array tells us which centers they cover. */
+  const centerToSupervisor = useMemo(() => {
+    const map = new Map();
+    supervisors.forEach((s) => {
+      const centers = s.assignedCenters || s.centers || (s.center ? [s.center] : []);
+      centers.forEach((c) => { if (c && !map.has(c)) map.set(c, s); });
+    });
+    return map;
+  }, [supervisors]);
+
+  
   const validateSingle = (f) => {
     if (!f.nameAr.trim()) return 'الاسم العربي مطلوب';
     if (!f.idNumber.trim()) return 'رقم الهوية مطلوب';
@@ -161,7 +205,6 @@ export default function AdminUsers() {
     }
     if (!f.bravoCode.trim()) return 'رمز البرافو مطلوب';
     if (f.role === 'observer' && !f.center) return 'مركز الخدمة مطلوب';
-    if (f.role === 'observer' && !f.supervisorId) return 'اختر المشرف المسؤول';
     if (f.role === 'supervisor' && (!f.centers || f.centers.length === 0))
       return 'اختر مركزاً واحداً على الأقل';
     if (allUsers.some((u) => u.idNumber === f.idNumber && u.id !== f.id))
@@ -177,7 +220,6 @@ export default function AdminUsers() {
     );
     return {
       nameAr: f.nameAr.trim(),
-      nameEn: (f.nameEn || '').trim(),
       name:   f.nameAr.trim(),
       idNumber: f.idNumber.trim(),
       phone:    (f.phone || '').trim(),
@@ -188,17 +230,15 @@ export default function AdminUsers() {
         ? {
             center: f.center,
             caterer: getCaterer(f.center),
-            supervisorId: f.supervisorId || '',
           }
         : {
-            centers: f.centers,
-            center:  f.centers[0] || '',
-            caterers: caterersMap,
+            assignedCenters: f.centers,
+            center:          f.centers[0] || '',
           }),
     };
   };
 
-  /* ── single add ──────────────────────────────────────── */
+  
   const resetSingle = () => {
     setForm(EMPTY_SINGLE);
     setSingleError(null);
@@ -213,7 +253,7 @@ export default function AdminUsers() {
 
     setSingleSaving(true);
     try {
-      await addDoc(collection(db, 'users'), {
+      await db.users.insert({
         ...buildPayload(form),
         createdAt: serverTimestamp(),
       });
@@ -226,7 +266,7 @@ export default function AdminUsers() {
     setSingleSaving(false);
   };
 
-  /* ── bulk add ────────────────────────────────────────── */
+  
   const updateRow = (i, patch) =>
     setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
   const addRow = () =>
@@ -239,16 +279,33 @@ export default function AdminUsers() {
     setBulkError(null);
 
     const filled = rows
-      .map((r) => ({ ...r, nameAr: r.nameAr.trim(), idNumber: r.idNumber.trim() }))
+      .map((r) => ({
+        ...r,
+        nameAr:    r.nameAr.trim(),
+        nameEn:    (r.nameEn || '').trim(),
+        idNumber:  r.idNumber.trim(),
+        phone:     (r.phone || '').trim(),
+        roleCode:  (r.roleCode  || '').trim(),
+        bravoCode: (r.bravoCode || '').trim(),
+      }))
       .filter((r) => r.nameAr || r.idNumber);
 
     if (filled.length === 0) return setBulkError('أضف بيانات مستخدم واحد على الأقل');
 
     for (const [i, r] of filled.entries()) {
-      if (!r.nameAr || !r.idNumber)
-        return setBulkError(`الصف ${i + 1}: الاسم ورقم الهوية مطلوبان`);
-      if (r.idNumber.length !== 10) return setBulkError(`الصف ${i + 1}: رقم الهوية 10 أرقام`);
-      if (!r.center) return setBulkError(`الصف ${i + 1}: اختر المركز`);
+      if (!r.nameAr)                return setBulkError(`الصف ${i + 1}: الاسم العربي مطلوب`);
+      if (!r.idNumber)              return setBulkError(`الصف ${i + 1}: رقم الهوية مطلوب`);
+      if (r.idNumber.length !== 10) return setBulkError(`الصف ${i + 1}: رقم الهوية يجب أن يكون 10 أرقام`);
+      if (!r.phone)                 return setBulkError(`الصف ${i + 1}: رقم الجوال مطلوب`);
+      if (r.phone.length !== 10)    return setBulkError(`الصف ${i + 1}: رقم الجوال يجب أن يكون 10 أرقام`);
+      if (!r.roleCode)              return setBulkError(`الصف ${i + 1}: ${r.role === 'observer' ? 'رمز المراقب' : 'رمز المشرف'} مطلوب`);
+      if (!r.bravoCode)             return setBulkError(`الصف ${i + 1}: رمز البرافو مطلوب`);
+      if (r.role === 'observer') {
+        if (!r.center)              return setBulkError(`الصف ${i + 1}: مركز الخدمة مطلوب`);
+      } else {
+        if (!r.centers || r.centers.length === 0)
+                                    return setBulkError(`الصف ${i + 1}: اختر مركزاً واحداً على الأقل`);
+      }
     }
 
     const ids = filled.map((r) => r.idNumber);
@@ -263,18 +320,17 @@ export default function AdminUsers() {
     try {
       await Promise.all(
         filled.map((r) =>
-          addDoc(collection(db, 'users'), {
-            nameAr: r.nameAr,
-            name:   r.nameAr,
-            idNumber: r.idNumber,
-            role:     r.role,
+          db.users.insert({
+            nameAr:    r.nameAr,
+            name:      r.nameAr,
+            idNumber:  r.idNumber,
+            phone:     r.phone,
+            role:      r.role,
+            roleCode:  r.roleCode,
+            bravoCode: r.bravoCode,
             ...(r.role === 'observer'
-              ? { center: r.center, caterer: getCaterer(r.center), supervisorId: '' }
-              : {
-                  centers: [r.center],
-                  center:  r.center,
-                  caterers: { [r.center]: getCaterer(r.center) },
-                }),
+              ? { center: r.center, caterer: getCaterer(r.center) }
+              : { assignedCenters: r.centers, center: r.centers[0] || '' }),
             createdAt: serverTimestamp(),
           }),
         ),
@@ -286,7 +342,7 @@ export default function AdminUsers() {
     setBulkSaving(false);
   };
 
-  /* ── edit ────────────────────────────────────────────── */
+  
   const openEdit = (u) => {
     setEditTarget(u);
     setEditError(null);
@@ -298,7 +354,7 @@ export default function AdminUsers() {
       phone:    u.phone || '',
       role:     u.role || 'observer',
       center:   u.center || '',
-      centers:  u.centers || (u.center ? [u.center] : []),
+      centers:  u.assignedCenters || u.centers || (u.center ? [u.center] : []),
       supervisorId: u.supervisorId || '',
       roleCode:  u.roleCode  || '',
       bravoCode: u.bravoCode || '',
@@ -311,9 +367,8 @@ export default function AdminUsers() {
     if (err) return setEditError(err);
     setEditSaving(true);
     try {
-      await updateDoc(doc(db, 'users', editForm.id), {
+      await db.users.update(editForm.id, {
         ...buildPayload(editForm),
-        updatedAt: serverTimestamp(),
       });
       closeEdit();
     } catch (ex) {
@@ -322,17 +377,17 @@ export default function AdminUsers() {
     setEditSaving(false);
   };
 
-  /* ── delete ──────────────────────────────────────────── */
+  
   const handleDelete = async (u) => {
     if (!confirm(`حذف "${u.nameAr || u.name}" نهائياً؟`)) return;
     try {
-      await deleteDoc(doc(db, 'users', u.id));
+      await db.users.delete(u.id);
     } catch (ex) {
       setListError(ex.message);
     }
   };
 
-  /* ════════════════════════════════════════════════════════ */
+  
   return (
     <div className="space-y-5" dir="rtl">
       {/* Header */}
@@ -369,7 +424,7 @@ export default function AdminUsers() {
 
       {/* Main grid */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-        {/* ── Add panel (left) ─────────────────────────── */}
+        {}
         <section className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgba(169,129,89,0.14)] lg:col-span-2 h-fit relative">
           <div className="bg-[#FDF8F0] p-1 m-3 rounded-xl flex">
             <button
@@ -584,36 +639,7 @@ export default function AdminUsers() {
                         × إزالة
                       </button>
                     </div>
-                    <input
-                      value={row.nameAr}
-                      onChange={(e) => updateRow(i, { nameAr: e.target.value })}
-                      placeholder="الاسم (عربي)"
-                      className="w-full border border-[#E8DDD4] rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-[#A98159]"
-                    />
-                    <input
-                      value={row.idNumber}
-                      onChange={(e) => {
-                        const v = numOnly(e.target.value);
-                        if (v.length <= 10) updateRow(i, { idNumber: v });
-                      }}
-                      placeholder="رقم الهوية"
-                      dir="ltr"
-                      maxLength={10}
-                      inputMode="numeric"
-                      className="w-full border border-[#E8DDD4] rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-[#A98159]"
-                    />
-                    <select
-                      value={row.center}
-                      onChange={(e) => updateRow(i, { center: e.target.value })}
-                      className="w-full border border-[#E8DDD4] rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-[#A98159]"
-                    >
-                      <option value="">-- اختر المركز --</option>
-                      {CENTERS.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.id} — {c.caterer}
-                        </option>
-                      ))}
-                    </select>
+                    {/* Role selector — first so the rest of the form adapts */}
                     <div className="grid grid-cols-2 gap-1.5">
                       {ROLES.map((r) => {
                         const RIcon = r.Icon;
@@ -622,7 +648,10 @@ export default function AdminUsers() {
                           <button
                             key={r.value}
                             type="button"
-                            onClick={() => updateRow(i, { role: r.value })}
+                            onClick={() => updateRow(i, {
+                              role: r.value,
+                              center: '', centers: [], supervisorId: '',
+                            })}
                             className={`px-2 py-1 rounded-md text-xs font-bold border transition flex items-center justify-center gap-1.5 ${
                               active
                                 ? 'bg-gradient-to-br from-[#C4A46E] to-[#A98159] text-white border-[#A98159] shadow-sm'
@@ -635,6 +664,92 @@ export default function AdminUsers() {
                         );
                       })}
                     </div>
+                    <input
+                      value={row.nameAr}
+                      onChange={(e) => updateRow(i, { nameAr: e.target.value })}
+                      placeholder="الاسم (عربي)"
+                      className="w-full border border-[#E8DDD4] rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-[#A98159]"
+                    />
+                    <input
+                      value={row.nameEn}
+                      onChange={(e) => updateRow(i, { nameEn: e.target.value })}
+                      placeholder="الاسم (إنجليزي — اختياري)"
+                      dir="ltr"
+                      className="w-full border border-[#E8DDD4] rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-[#A98159]"
+                    />
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <input
+                        value={row.idNumber}
+                        onChange={(e) => {
+                          const v = numOnly(e.target.value);
+                          if (v.length <= 10) updateRow(i, { idNumber: v });
+                        }}
+                        placeholder="رقم الهوية"
+                        dir="ltr"
+                        maxLength={10}
+                        inputMode="numeric"
+                        className="w-full border border-[#E8DDD4] rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-[#A98159]"
+                      />
+                      <input
+                        value={row.phone}
+                        onChange={(e) => {
+                          const v = numOnly(e.target.value);
+                          if (v.length <= 10) updateRow(i, { phone: v });
+                        }}
+                        placeholder="رقم الجوال"
+                        dir="ltr"
+                        maxLength={10}
+                        inputMode="numeric"
+                        className="w-full border border-[#E8DDD4] rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-[#A98159]"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <input
+                        value={row.roleCode}
+                        onChange={(e) => updateRow(i, { roleCode: e.target.value })}
+                        placeholder={row.role === 'observer' ? 'رمز المراقب' : 'رمز المشرف'}
+                        className="w-full border border-[#E8DDD4] rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-[#A98159]"
+                      />
+                      <input
+                        value={row.bravoCode}
+                        onChange={(e) => updateRow(i, { bravoCode: e.target.value })}
+                        placeholder="رمز البرافو"
+                        className="w-full border border-[#E8DDD4] rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-[#A98159]"
+                      />
+                    </div>
+                    {row.role === 'observer' ? (
+                      <>
+                        <select
+                          value={row.center}
+                          onChange={(e) => updateRow(i, { center: e.target.value })}
+                          className="w-full border border-[#E8DDD4] rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-[#A98159]"
+                        >
+                          <option value="">-- اختر مركز الخدمة --</option>
+                          {CENTERS.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.id} — {c.caterer}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          value={row.supervisorId}
+                          onChange={(e) => updateRow(i, { supervisorId: e.target.value })}
+                          className="w-full border border-[#E8DDD4] rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-[#A98159]"
+                        >
+                          <option value="">-- اختر المشرف المسؤول --</option>
+                          {supervisors.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.nameAr || s.name}
+                            </option>
+                          ))}
+                        </select>
+                      </>
+                    ) : (
+                      <MultiCenterSelect
+                        selected={row.centers}
+                        onChange={(v) => updateRow(i, { centers: v })}
+                      />
+                    )}
                   </div>
                 ))}
               </div>
@@ -674,7 +789,7 @@ export default function AdminUsers() {
           )}
         </section>
 
-        {/* ── List panel (right) ───────────────────────── */}
+        {}
         <section className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgba(169,129,89,0.14)] overflow-hidden lg:col-span-3">
           <div className="p-4 border-b border-[#EDE5DC] space-y-3">
             <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -753,21 +868,24 @@ export default function AdminUsers() {
                   <th className="px-4 py-3 text-right font-semibold">الهوية</th>
                   <th className="px-4 py-3 text-right font-semibold">الجوال</th>
                   <th className="px-4 py-3 text-right font-semibold">الدور</th>
+                  <th className="px-4 py-3 text-right font-semibold">رمز المراقب/المشرف</th>
+                  <th className="px-4 py-3 text-right font-semibold">رمز البرافو</th>
                   <th className="px-4 py-3 text-right font-semibold">المركز/المراكز</th>
+                  <th className="px-4 py-3 text-right font-semibold">المشرف المسؤول</th>
                   <th className="px-4 py-3 text-right font-semibold">إجراء</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#EDE5DC]">
                 {loading && (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-[#6D6E71]">
+                    <td colSpan={9} className="p-8 text-center text-[#6D6E71]">
                       جارٍ التحميل...
                     </td>
                   </tr>
                 )}
                 {!loading && visible.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-[#6D6E71]">
+                    <td colSpan={9} className="p-8 text-center text-[#6D6E71]">
                       {search ? `لم يتم العثور على نتائج لـ "${search}"` : 'لا يوجد مستخدمون'}
                     </td>
                   </tr>
@@ -821,9 +939,36 @@ export default function AdminUsers() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-[#6D6E71] text-xs">
-                        {u.role === 'observer'
-                          ? u.center || '—'
-                          : u.centers?.join('، ') || u.center || '—'}
+                        {u.roleCode ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-[#FDF8F0] border border-[#E8DDD4] text-[#A98159] font-bold">
+                            {u.roleCode}
+                          </span>
+                        ) : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-[#6D6E71] text-xs" dir="ltr">
+                        {u.bravoCode ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-violet-50 border border-violet-200 text-violet-700 font-bold tabular-nums">
+                            {u.bravoCode}
+                          </span>
+                        ) : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-[#6D6E71] text-xs">
+                        <CentersCell user={u} />
+                      </td>
+                      <td className="px-4 py-3 text-xs">
+                        {u.role === 'observer' ? (() => {
+                          const sup = centerToSupervisor.get(u.center);
+                          return sup ? (
+                            <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gradient-to-br from-[#FDF8F0] to-white border border-[#E8DDD4]">
+                              <ShieldCheck size={11} className="text-[#A98159]" strokeWidth={2.25} />
+                              <span className="font-bold text-[#2D2926]">{sup.nameAr || sup.name}</span>
+                            </div>
+                          ) : (
+                            <span className="text-[#C9B8A8]">— غير محدد —</span>
+                          );
+                        })() : (
+                          <span className="text-[#C9B8A8]">—</span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5">
@@ -854,7 +999,7 @@ export default function AdminUsers() {
         </section>
       </div>
 
-      {/* ── Edit modal ───────────────────────────────── */}
+      {}
       {editTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeEdit} />

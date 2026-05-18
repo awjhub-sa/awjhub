@@ -4,8 +4,8 @@ import {
   ChevronRight, Send, Truck, Package, Utensils, Droplets, User, Sparkles,
   AlertTriangle, ArrowLeft, FileText, Clock,
 } from 'lucide-react';
-import { db } from '../../config/db.js';
-import { collection, addDoc, onSnapshot, query, where, serverTimestamp } from 'firebase/firestore';
+import { supabase } from '../../config/supabase.js';
+import { db, serverTimestamp, rowFromDb } from '../../lib/db.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { getCaterer } from '../../config/centers.js';
 import { initialStatusFields } from '../../lib/statusTracking.js';
@@ -49,19 +49,22 @@ export default function SupLogisticsRequest() {
   /* Subscribe to pending reports for this center */
   useEffect(() => {
     if (!selectedCenter || selectedCenter === '—') { setLoadingReports(false); return; }
-    const q = query(
-      collection(db, 'reports'),
-      where('center', '==', selectedCenter),
-      where('status', '==', 'pending')
-    );
-    const unsub = onSnapshot(q, snap => {
-      setPendingReports(
-        snap.docs.map(d => ({ id: d.id, ...d.data() }))
-          .sort((a, b) => (b.timestamp?.toMillis?.() || 0) - (a.timestamp?.toMillis?.() || 0))
-      );
-      setLoadingReports(false);
-    }, () => setLoadingReports(false));
-    return unsub;
+    let mounted = true;
+    const load = async () => {
+      const { data } = await supabase.from('reports').select('*')
+        .eq('center', selectedCenter)
+        .eq('status', 'pending')
+        .order('timestamp', { ascending: false });
+      if (mounted) {
+        setPendingReports((data || []).map(rowFromDb));
+        setLoadingReports(false);
+      }
+    };
+    load();
+    const ch = supabase.channel(`pending-reports-sup-${selectedCenter}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reports' }, load)
+      .subscribe();
+    return () => { mounted = false; supabase.removeChannel(ch); };
   }, [selectedCenter]);
   const showInternal = supportType === 'internal' || supportType === 'both';
   const showExternal = supportType === 'external' || supportType === 'both';
@@ -90,7 +93,7 @@ export default function SupLogisticsRequest() {
     if (!isFormValid || loading) return;
     setLoading(true);
     try {
-      await addDoc(collection(db, 'logistics_requests'), {
+      await db.logistics_requests.insert({
         uid: profile?.uid,
         observer: profile?.nameAr || profile?.name || '—',
         center: selectedCenter,

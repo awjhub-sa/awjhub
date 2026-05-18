@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import {
-  collection, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp, setDoc,
-} from 'firebase/firestore';
-import { initializeApp, deleteApp } from 'firebase/app';
-import { createUserWithEmailAndPassword, getAuth } from 'firebase/auth';
-import { db } from '../../config/db.js';
+import { db, serverTimestamp } from '../../lib/db.js';
+import { supabase } from '../../config/supabase.js';
 import { CENTERS, getCaterer } from '../../config/centers.js';
 import {
   UserCog, Plus, X, Save, ChevronDown, Eye, EyeOff,
@@ -12,29 +8,11 @@ import {
 } from 'lucide-react';
 import PageHeader from '../../components/PageHeader.jsx';
 
-/* ── Secondary Firebase app for creating users without signing-out the admin ── */
-const FIREBASE_CONFIG = {
-  apiKey: 'AIzaSyDuLOt2vtIU1unFc6lR-ZSixntCrCW685c',
-  authDomain: 'hajj-2026-70c2b.firebaseapp.com',
-  projectId: 'hajj-2026-70c2b',
-  storageBucket: 'hajj-2026-70c2b.firebasestorage.app',
-  messagingSenderId: '834784102995',
-  appId: '1:834784102995:web:629acdcfb8a1984af814a6',
-};
-
-async function createAuthAccount(email, password, userData) {
-  const tempApp  = initializeApp(FIREBASE_CONFIG, `temp_${Date.now()}`);
-  const tempAuth = getAuth(tempApp);
-  try {
-    const cred = await createUserWithEmailAndPassword(tempAuth, email, password);
-    await setDoc(doc(db, 'users', cred.user.uid), {
-      ...userData, email, createdAt: serverTimestamp(),
-    });
-    return cred.user.uid;
-  } finally {
-    await tempAuth.signOut().catch(() => {});
-    await deleteApp(tempApp).catch(() => {});
-  }
+/* Auth-creation is intentionally a no-op in dev mode: only inserts the row
+   into public.users. The matching auth.users entry must be created in
+   Supabase Studio (or via service_role) before the user can log in. */
+async function createStaffRow(email, userData) {
+  await db.users.insert({ email, ...userData });
 }
 
 const ROLES = [
@@ -122,17 +100,12 @@ export default function AdminStaff() {
   const [editSaving, setEditSaving] = useState(false);
   const [editError,  setEditError]  = useState(null);
 
-  /* Subscribe to users collection — filter to admin roles */
   useEffect(() => {
     setLoading(true);
-    const unsub = onSnapshot(
-      collection(db, 'users'),
-      (snap) => {
-        setAllUsers(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-        setLoading(false);
-      },
-      (err) => { setListError(err.message); setLoading(false); }
-    );
+    const unsub = db.users.subscribe((rows) => {
+      setAllUsers(rows);
+      setLoading(false);
+    });
     return unsub;
   }, []);
 
@@ -181,25 +154,19 @@ export default function AdminStaff() {
     setSaving(true);
     try {
       const userData = {
-        nameAr: form.nameAr.trim(),
-        nameEn: form.nameEn.trim(),
-        name:   form.nameAr.trim(),
-        phone:  form.phone.trim(),
-        role:   form.role,
-        assigned_centers: form.role === 'admin' ? [] : form.assigned_centers,
+        nameAr:          form.nameAr.trim(),
+        name:            form.nameAr.trim(),
+        phone:           form.phone.trim(),
+        role:            form.role,
+        assignedCenters: form.role === 'admin' ? [] : form.assigned_centers,
       };
-      await createAuthAccount(form.email.trim(), form.password, userData);
-      setSuccess('تم إنشاء حساب الموظف بنجاح');
+      await createStaffRow(form.email.trim(), userData);
+      setSuccess('تم إنشاء سجل الموظف. أنشئ له حساب المصادقة من Supabase Studio.');
       setForm(EMPTY_FORM);
       setShowPass(false);
-      setTimeout(() => setSuccess(null), 2500);
+      setTimeout(() => setSuccess(null), 4000);
     } catch (ex) {
-      const map = {
-        'auth/email-already-in-use': 'البريد الإلكتروني مستخدم مسبقاً',
-        'auth/invalid-email':        'صيغة البريد الإلكتروني غير صحيحة',
-        'auth/weak-password':        'كلمة المرور ضعيفة جداً',
-      };
-      setError(map[ex.code] || ex.message);
+      setError(ex.message);
     }
     setSaving(false);
   };
@@ -209,14 +176,14 @@ export default function AdminStaff() {
     setEditTarget(u);
     setEditError(null);
     setEditForm({
-      id: u.id,
+      id:       u.uid || u.id,
       nameAr:   u.nameAr || u.name || '',
-      nameEn:   u.nameEn || '',
+      nameEn:   '',
       email:    u.email || '',
       password: '',
       phone:    u.phone || '',
       role:     u.role || 'admin',
-      assigned_centers: u.assigned_centers || u.centers || [],
+      assigned_centers: u.assignedCenters || [],
     });
   };
   const closeEdit = () => { setEditTarget(null); setEditError(null); };
@@ -226,14 +193,12 @@ export default function AdminStaff() {
     if (err) return setEditError(err);
     setEditSaving(true);
     try {
-      await updateDoc(doc(db, 'users', editForm.id), {
-        nameAr: editForm.nameAr.trim(),
-        nameEn: editForm.nameEn.trim(),
-        name:   editForm.nameAr.trim(),
-        phone:  editForm.phone.trim(),
-        role:   editForm.role,
-        assigned_centers: editForm.role === 'admin' ? [] : editForm.assigned_centers,
-        updatedAt: serverTimestamp(),
+      await db.users.update(editForm.id, {
+        nameAr:          editForm.nameAr.trim(),
+        name:            editForm.nameAr.trim(),
+        phone:           editForm.phone.trim(),
+        role:            editForm.role,
+        assignedCenters: editForm.role === 'admin' ? [] : editForm.assigned_centers,
       });
       closeEdit();
     } catch (ex) {
@@ -243,15 +208,14 @@ export default function AdminStaff() {
   };
 
   const handleDelete = async (u) => {
-    if (!confirm(`حذف الموظف "${u.nameAr || u.name}" نهائياً؟\nملاحظة: حساب المصادقة سيبقى في Firebase Auth ولكن لن يستطيع الدخول للوحة.`)) return;
+    if (!confirm(`حذف الموظف "${u.nameAr || u.name}" نهائياً؟\nملاحظة: حساب المصادقة في Supabase يجب حذفه يدوياً من Studio.`)) return;
     try {
-      await deleteDoc(doc(db, 'users', u.id));
+      await db.users.delete(u.uid || u.id);
     } catch (ex) {
       setListError(ex.message);
     }
   };
 
-  /* ════════════════════════════════════════ */
   return (
     <div className="space-y-5" dir="rtl">
       <PageHeader
@@ -469,9 +433,9 @@ export default function AdminStaff() {
                 {visible.map((u) => {
                   const meta = ROLE_META[u.role] || ROLE_META.staff;
                   const RoleIcon = meta.Icon;
-                  const assignedCenters = u.assigned_centers || u.centers || [];
+                  const assignedCenters = u.assignedCenters || [];
                   return (
-                    <tr key={u.id} className="group/row hover:bg-[#FDF8F0] transition-colors">
+                    <tr key={u.uid || u.id} className="group/row hover:bg-[#FDF8F0] transition-colors">
                       <td className="px-4 py-3 font-medium text-[#2D2926]">
                         <div className="flex items-center gap-2.5">
                           <div className="relative flex-shrink-0">

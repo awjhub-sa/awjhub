@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '../config/db.js';
+import { db } from '../lib/db.js';
 import { Coffee, ForkKnife, Moon } from '@phosphor-icons/react';
 
 export function extractCenterNum(centerStr) {
@@ -28,20 +27,15 @@ export function useAssignedTasks(profile) {
     let t1 = false, t2 = false;
     const done = () => { if (t1 && t2) setLoading(false); };
 
-    const u1 = onSnapshot(collection(db, 'assigned_tasks'), snap => {
-      const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setTasks(all.filter(t => t.target_centers?.includes(cn)));
+    const u1 = db.assigned_tasks.subscribe(rows => {
+      setTasks(rows.filter(t => t.targetCenters?.includes(cn)));
       t1 = true; done();
     });
 
     /* Filter by CENTER not uid — so observer's task badge clears when
        the supervisor uploads on their behalf, and vice-versa. */
-    const u2 = onSnapshot(collection(db, 'task_completions'), snap => {
-      setCompletions(
-        snap.docs
-          .map(d => ({ id: d.id, ...d.data() }))
-          .filter(c => c.center === center)
-      );
+    const u2 = db.task_completions.subscribe(rows => {
+      setCompletions(rows.filter(c => c.center === center));
       t2 = true; done();
     });
 

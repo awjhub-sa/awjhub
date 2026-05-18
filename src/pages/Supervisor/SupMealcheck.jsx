@@ -4,8 +4,8 @@ import {
   Utensils, ChevronRight, Save, CheckCircle2, AlertCircle,
   Camera, Lock, ArrowLeft, RotateCcw, Ban, Sparkles,
 } from 'lucide-react';
-import { db } from '../../config/db.js';
-import { collection, addDoc, serverTimestamp, setDoc, doc, onSnapshot } from 'firebase/firestore';
+import { db, serverTimestamp, uploadFile, STORAGE_BUCKETS } from '../../lib/db.js';
+import { compressImage } from '../../lib/imageCompression.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { getCaterer } from '../../config/centers.js';
 import { extractDay, extractCenterNum, MEAL_META } from '../../hooks/useAssignedTasks.js';
@@ -31,7 +31,6 @@ const QUESTIONS = MEAL_QUESTIONS;
 
 const STORAGE_KEY = (uid, taskId, mealType) => `sup_mealcheck_${uid}_${taskId}_${mealType}`;
 
-/* ── Task Gate ── */
 function TaskGate({ profile, centerId, catererName, tasks, completions, loading, onSelect }) {
   if (loading) {
     return (
@@ -42,8 +41,8 @@ function TaskGate({ profile, centerId, catererName, tasks, completions, loading,
   }
 
   const items = [];
-  tasks.filter(t => t.task_types?.includes('meal_evaluation')).forEach(task => {
-    (task.meal_types?.length > 0 ? task.meal_types : []).forEach(mealType => {
+  tasks.filter(t => t.taskTypes?.includes('meal_evaluation')).forEach(task => {
+    (task.mealTypes?.length > 0 ? task.mealTypes : []).forEach(mealType => {
       const done = completions.some(c => c.taskId === task.id && c.mealType === mealType);
       items.push({ task, mealType, done });
     });
@@ -114,7 +113,7 @@ function TaskGate({ profile, centerId, catererName, tasks, completions, loading,
               const meta = MEAL_META[mealType] || {};
               return (
                 <button key={`${task.id}_${mealType}`}
-                  onClick={() => onSelect({ taskId: task.id, mealType, scheduledDate: task.scheduled_date, day: extractDay(task.scheduled_date), categories: task.meal_categories || [] })}
+                  onClick={() => onSelect({ taskId: task.id, mealType, scheduledDate: task.scheduledDate, day: extractDay(task.scheduledDate), categories: task.mealCategories || [] })}
                   className="group/task relative w-full bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 border-2 border-[#EDE5DC] hover:border-[#A98159]/60 rounded-2xl p-4 flex items-center gap-4 text-right transition-all duration-300 active:scale-[0.98] hover:shadow-[0_8px_24px_rgba(169,129,89,0.18)] hover:-translate-y-0.5 overflow-hidden"
                 >
                   <div className="absolute top-0 bottom-0 right-0 w-1"
@@ -137,7 +136,7 @@ function TaskGate({ profile, centerId, catererName, tasks, completions, loading,
                     </div>
                     <p className="text-[11px] text-[#9D8F85] mt-0.5 flex items-center gap-1">
                       <span className="w-1 h-1 rounded-full bg-[#A98159]" />
-                      {task.scheduled_date}
+                      {task.scheduledDate}
                     </p>
                   </div>
                   <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-[#FDF8F0] flex items-center justify-center group-hover/task:bg-[#A98159] group-hover/task:-translate-x-1 transition-all duration-300">
@@ -161,7 +160,6 @@ function TaskGate({ profile, centerId, catererName, tasks, completions, loading,
   );
 }
 
-/* ══════════════════════════════════════════════════════════ */
 export default function SupMealcheck() {
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -170,7 +168,6 @@ export default function SupMealcheck() {
   const centerId    = state?.centerId || '—';
   const catererName = getCaterer(centerId) || '—';
 
-  /* ── Load tasks for this center ── */
   const [tasks,       setTasks]       = useState([]);
   const [completions, setCompletions] = useState([]);
   const [tasksLoading, setTasksLoading] = useState(true);
@@ -182,35 +179,26 @@ export default function SupMealcheck() {
     let t1 = false, t2 = false;
     const done = () => { if (t1 && t2) setTasksLoading(false); };
 
-    const u1 = onSnapshot(collection(db, 'assigned_tasks'), snap => {
-      const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setTasks(all.filter(t => t.target_centers?.includes(cn)));
+    const u1 = db.assigned_tasks.subscribe(all => {
+      setTasks(all.filter(t => t.targetCenters?.includes(cn)));
       t1 = true; done();
     });
-    const u2 = onSnapshot(collection(db, 'task_completions'), snap => {
-      setCompletions(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(c => c.center === centerId));
+    const u2 = db.task_completions.subscribe(all => {
+      setCompletions(all.filter(c => c.center === centerId));
       t2 = true; done();
     });
-    return () => { u1(); u2(); };
+    return () => { u1?.(); u2?.(); };
   }, [profile?.uid, centerId]);
 
-  /* ── Selected task ── */
   const [selectedTask, setSelectedTask] = useState(null);
-
-  /* ── Screen ── */
   const [screen, setScreen] = useState('phases');
-
-  /* ── Phase state ── */
   const [phaseDone,   setPhaseDone]   = useState({ 1: false, 2: false, 3: false });
   const [phasePhotos, setPhasePhotos] = useState({ 1: null,  2: null,  3: null  });
   const fileRefs = [useRef(null), useRef(null), useRef(null)];
-
-  /* ── Questions ── */
   const [answers, setAnswers] = useState({});
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [restored, setRestored] = useState(false);
 
-  /* ── Reset + restore answers from localStorage when task changes ── */
   useEffect(() => {
     if (!selectedTask || !profile?.uid) return;
     setScreen('phases');
@@ -230,13 +218,13 @@ export default function SupMealcheck() {
     } catch {}
   }, [selectedTask?.taskId, selectedTask?.mealType, profile?.uid]);
 
-  /* ── Real-time phaseDone sync from Firestore ── */
   useEffect(() => {
     if (!selectedTask || !centerId || centerId === '—' || !profile?.uid) return;
     const docId      = `${centerId}_d${selectedTask.day}_${selectedTask.mealType}`;
     const storageKey = STORAGE_KEY(profile.uid, selectedTask.taskId, selectedTask.mealType);
-    return onSnapshot(doc(db, 'meal_phases', docId), snap => {
-      if (!snap.exists()) {
+    return db.meal_phases.subscribe(rows => {
+      const row = rows.find(r => r.id === docId);
+      if (!row) {
         localStorage.removeItem(storageKey);
         setPhaseDone({ 1: false, 2: false, 3: false });
         setPhasePhotos({ 1: null, 2: null, 3: null });
@@ -244,13 +232,11 @@ export default function SupMealcheck() {
         setScreen('phases');
         setRestored(false);
       } else {
-        const d = snap.data();
-        setPhaseDone({ 1: !!d.phase1, 2: !!d.phase2, 3: !!d.phase3 });
+        setPhaseDone({ 1: !!row.phase1, 2: !!row.phase2, 3: !!row.phase3 });
       }
     });
   }, [selectedTask?.taskId, selectedTask?.mealType, centerId, profile?.uid]);
 
-  /* ── Auto-save ── */
   useEffect(() => {
     if (!selectedTask || !profile?.uid) return;
     localStorage.setItem(
@@ -273,18 +259,24 @@ export default function SupMealcheck() {
     setPhasePhotos(prev => ({ ...prev, [id]: file }));
     if (!centerId || centerId === '—' || !selectedTask) return;
     try {
-      await setDoc(doc(db, 'meal_phases', `${centerId}_d${selectedTask.day}_${selectedTask.mealType}`), {
-        center:        centerId,
-        day:           selectedTask.day,
-        mealType:      selectedTask.mealType,
-        scheduledDate: selectedTask.scheduledDate,
-        observer:      profile?.nameAr || profile?.name || '—',
-        uid:           profile?.uid,
-        [`phase${id}`]: serverTimestamp(),
+      const docId = `${centerId}_d${selectedTask.day}_${selectedTask.mealType}`;
+      const compressed = await compressImage(file);
+      const photoUrl = await uploadFile(
+        STORAGE_BUCKETS.phases,
+        `${docId}/phase${id}_${Date.now()}.jpg`,
+        compressed,
+      );
+      await db.meal_phases.upsert({
+        id:             docId,
+        center:         centerId,
+        day:            selectedTask.day,
+        mealId:         selectedTask.mealType,
+        [`phase${id}`]:      serverTimestamp(),
+        [`phase${id}Photo`]: photoUrl,
+        [`phase${id}Uid`]:   profile?.uid,
         updatedAt:      serverTimestamp(),
-        role:          'supervisor',
-      }, { merge: true });
-    } catch {}
+      });
+    } catch (err) { console.error('[SupMealcheck phase upload]', err); }
   };
 
   const phases            = buildPhases(selectedTask?.categories);
@@ -302,44 +294,39 @@ export default function SupMealcheck() {
       const maxScore     = MEAL_MAX_SCORE;
       const scoreOutOf10 = maxScore > 0 ? parseFloat(((totalScore / maxScore) * 10).toFixed(2)) : 0;
       const percentage   = maxScore > 0 ? (totalScore / maxScore) * 100 : 0;
-      await addDoc(collection(db, 'meal_evaluations'), {
-        uid:          profile?.uid,
-        center:       centerId,
-        centerId,
-        caterer:      catererName,
-        observer:     profile?.nameAr || profile?.name || 'مشرف',
-        observerName: profile?.nameAr || profile?.name || 'مشرف',
+      await db.meal_evaluations.insert({
+        uid:           profile?.uid,
+        center:        centerId,
+        caterer:       catererName,
+        observer:      profile?.nameAr || profile?.name || 'مشرف',
         answers,
         totalScore,
         maxScore,
         scoreOutOf10,
-        percentage:   percentage.toFixed(1),
-        mealType:     selectedTask?.mealType || null,
-        mealLabel:    MEAL_META[selectedTask?.mealType]?.label || null,
+        percentage:    parseFloat(percentage.toFixed(1)),
+        mealType:      selectedTask?.mealType || null,
         scheduledDate: selectedTask?.scheduledDate || null,
-        taskId:       selectedTask?.taskId || null,
-        status:       'pending',
-        role:         'supervisor',
-        timestamp:    serverTimestamp(),
+        timestamp:     serverTimestamp(),
       });
-      await addDoc(collection(db, 'task_completions'), {
+      await db.task_completions.insert({
         taskId:        selectedTask?.taskId,
         taskType:      'meal_evaluation',
         mealType:      selectedTask?.mealType,
         scheduledDate: selectedTask?.scheduledDate,
         center:        centerId,
         uid:           profile?.uid,
-        observerName:  profile?.nameAr || profile?.name || '—',
-        completedAt:   serverTimestamp(),
+        timestamp:     serverTimestamp(),
       });
       localStorage.removeItem(STORAGE_KEY(profile?.uid, selectedTask?.taskId, selectedTask?.mealType));
       alert('تم إرسال التقييم بنجاح');
       setSelectedTask(null);
-    } catch { alert('حدث خطأ أثناء الإرسال'); }
+    } catch (err) {
+      console.error('[SupMealcheck submit]', err);
+      alert('حدث خطأ أثناء الإرسال');
+    }
     finally { setLoadingSubmit(false); }
   };
 
-  /* ── Task gate ── */
   if (!selectedTask) {
     return (
       <TaskGate
@@ -356,9 +343,6 @@ export default function SupMealcheck() {
 
   const meta = MEAL_META[selectedTask.mealType] || {};
 
-  /* ════════════════════════════════════════════
-     PHASES SCREEN
-  ════════════════════════════════════════════ */
   if (screen === 'phases') {
     const completedCount = phases.filter(p => phaseDone[p.id]).length;
     const totalPhases    = phases.length;
@@ -521,9 +505,6 @@ export default function SupMealcheck() {
     );
   }
 
-  /* ════════════════════════════════════════════
-     QUESTIONS SCREEN
-  ════════════════════════════════════════════ */
   const answeredCount = Object.keys(answers).length;
   return (
     <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-32 font-arabic">
