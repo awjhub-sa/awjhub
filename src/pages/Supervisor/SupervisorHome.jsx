@@ -342,7 +342,112 @@ export default function SupervisorHome() {
     };
   }, [selectedCenter, user?.uid]);
 
-  
+  /* Cross-center listeners: tracks every assigned task and every completion
+     across ALL of the supervisor's assigned centers — drives the unified
+     dashboard's pending list, stats cards, and bell notifications. */
+  useEffect(() => {
+    if (!user?.uid || !assignedCenters.length) {
+      setGlobalNotifs([]);
+      setAllAssignedTasks([]);
+      setAllCompletions([]);
+      return;
+    }
+    const todayMs = new Date().setHours(0, 0, 0, 0);
+    const allowed = new Set(assignedCenters);
+
+    const unsubAssigned = supaDb.assigned_tasks.subscribe(rows => {
+      setAllAssignedTasks(
+        rows.filter(t => (t.targetCenters || []).some(cn => allowed.has(`مركز ${cn}`)))
+      );
+    });
+
+    const unsubCompletions = supaDb.task_completions.subscribe(rows => {
+      const all = rows.filter(c => allowed.has(c.center));
+      setAllCompletions(all);
+
+      const notifs = all
+        .filter(c => c.uid !== user.uid && (c.timestamp?.toMillis?.() || 0) >= todayMs)
+        .sort((a, b) => (b.timestamp?.toMillis?.() || 0) - (a.timestamp?.toMillis?.() || 0));
+      setGlobalNotifs(notifs);
+    });
+
+    return () => { unsubAssigned(); unsubCompletions(); };
+  }, [user?.uid, assignedCenters]);
+
+  const handleLogout = async () => {
+    try {
+      setIsProfileOpen(false);
+      localStorage.clear();
+      sessionStorage.removeItem('sup_selected_center');
+      await logout();
+      window.location.replace('./login');
+    } catch (e) {
+      console.error('Logout Error:', e);
+      window.location.replace('./login');
+    }
+  };
+
+  if (loadingData) return (
+    <div className="min-h-screen flex items-center justify-center bg-[#FDFCFB]">
+      <Loader2 className="animate-spin text-[#A98159]" size={40} />
+    </div>
+  );
+
+  /* Task badges per center — only count completions whose taskType is still
+     in the active assignment list for that center. */
+  const activeTaskTypes = new Set(
+    assignedForCenter.flatMap(t => t.taskTypes || [])
+  );
+  const taskBadges = {};
+  completionsForCenter.forEach(c => {
+    if (activeTaskTypes.has(c.taskType)) {
+      taskBadges[c.taskType] = (taskBadges[c.taskType] || 0) + 1;
+    }
+  });
+
+  /* Cross-center pending tasks — expand each assigned task into per-center
+     and (for meal_evaluation) per-meal instances; a task is pending when no
+     matching completion exists. */
+  const pendingTasks = (() => {
+    const list = [];
+    const allowedCenters = new Set(assignedCenters);
+    allAssignedTasks.forEach(task => {
+      const centers = (task.targetCenters || [])
+        .map(cn => `مركز ${cn}`)
+        .filter(c => allowedCenters.has(c));
+      const types = task.taskTypes || [];
+      centers.forEach(center => {
+        types.forEach(type => {
+          if (type === 'meal_evaluation') {
+            (task.mealTypes || []).forEach(mealType => {
+              const done = allCompletions.some(c =>
+                c.taskId === task.id && c.center === center &&
+                c.taskType === type && c.mealType === mealType
+              );
+              if (!done) list.push({
+                key: `${task.id}__${center}__${type}__${mealType}`,
+                taskId: task.id, center, taskType: type, mealType,
+                scheduledDate: task.scheduledDate,
+                createdAt: task.createdAt?.toMillis?.() || 0,
+              });
+            });
+          } else {
+            const done = allCompletions.some(c =>
+              c.taskId === task.id && c.center === center && c.taskType === type
+            );
+            if (!done) list.push({
+              key: `${task.id}__${center}__${type}`,
+              taskId: task.id, center, taskType: type, mealType: null,
+              scheduledDate: task.scheduledDate,
+              createdAt: task.createdAt?.toMillis?.() || 0,
+            });
+          }
+        });
+      });
+    });
+    return list.sort((a, b) => b.createdAt - a.createdAt);
+  })();
+
   const centerStats = (() => {
     const map = {};
     assignedCenters.forEach(c => { map[c] = { pending: 0, completed: 0, total: 0 }; });

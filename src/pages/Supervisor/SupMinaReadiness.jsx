@@ -67,8 +67,7 @@ export default function SupMinaReadiness() {
         center:        centerId,
         caterer:       catererName,
         uid:           profile?.uid || null,
-        answers,
-        details,
+        answers:       { ...answers, __details: details },
         ...scoring,
         scheduledDate: selectedTask?.scheduledDate || null,
         timestamp:     serverTimestamp(),
@@ -81,6 +80,7 @@ export default function SupMinaReadiness() {
           scheduledDate: selectedTask.scheduledDate || null,
           center:        centerId,
           uid:           profile?.uid || null,
+          observerName:  profile?.nameAr || profile?.name || 'مشرف',
           timestamp:     serverTimestamp(),
         });
       }
@@ -88,7 +88,10 @@ export default function SupMinaReadiness() {
       setSelectedTask(null);
       setAnswers({});
       setDetails({});
-    } catch { alert('خطأ في الإرسال'); }
+    } catch (e) {
+      console.error('[SupMinaReadiness submit]', e);
+      alert(`خطأ في الإرسال: ${e?.message || e}`);
+    }
     setLoading(false);
   };
 

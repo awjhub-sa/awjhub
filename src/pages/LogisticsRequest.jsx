@@ -136,7 +136,7 @@ export default function LogisticsRequest() {
       setSubmitted(true);
     } catch (e) {
       console.error('[Logistics submit]', e);
-      alert('خطأ في الإرسال');
+      alert(`خطأ في الإرسال: ${e?.message || e}`);
     }
     setLoading(false);
   };

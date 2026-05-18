@@ -1,13 +1,17 @@
 import { useEffect, useState, useMemo, Fragment } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { db } from '../../lib/db.js';
+import {
+  toMs, getTotalElapsedMs, fmtDuration,
+  TERMINAL_REPORT_STATUSES, TERMINAL_LOGISTICS_STATUSES,
+} from '../../lib/statusTracking.js';
 import { CENTERS, getCaterer } from '../../config/centers.js';
 import { MEAL_QUESTIONS } from '../../config/mealQuestions.js';
 import { MINA_ALL_CRITERIA } from '../../config/minaQuestions.js';
 import { ARAFAT_ALL_CRITERIA } from '../../config/arafatQuestions.js';
 import {
   Printer, X, FileText, Building2, Calendar, User, AlertCircle, CheckCircle2,
-  Utensils, Mountain,
+  Utensils, Mountain, AlertTriangle, Truck,
 } from 'lucide-react';
 import logoSrc from '../../assets/logo-color.svg';
 import './report-view.css';
@@ -31,6 +35,18 @@ const REPORT_TYPES = {
     Icon: Mountain,
     intro: 'جاهزية المطابخ والتجهيزات في مشعر عرفة',
   },
+  reports: {
+    label: 'البلاغات الميدانية', short: 'البلاغات',
+    color: '#DC2626', accent: '#FEF2F2', border: '#FECACA',
+    Icon: AlertTriangle,
+    intro: 'البلاغات والمشكلات المُسجَّلة في المراكز',
+  },
+  logistics_requests: {
+    label: 'طلبات الإسناد', short: 'الإسناد',
+    color: '#3B82F6', accent: '#EFF6FF', border: '#BFDBFE',
+    Icon: Truck,
+    intro: 'طلبات الدعم اللوجستي للوجبات والمياه',
+  },
 };
 
 const QUESTION_BANK = {
@@ -40,6 +56,27 @@ const QUESTION_BANK = {
 };
 
 const MEAL_LABELS = { breakfast: 'الإفطار', lunch: 'الغداء', dinner: 'العشاء' };
+
+const REPORT_TYPE_LABELS = {
+  water: 'تسرب مياه', electric: 'عطل كهربائي', crowd: 'ازدحام حرج',
+  food: 'مشكلة غذائية', medical: 'حالة طبية طارئة', security: 'بلاغ أمني',
+  fire: 'حريق / دخان', other: 'بلاغ آخر', shortage: 'نقص في الكميات',
+  delay: 'تأخر في التوزيع', quality: 'مشكلة في الجودة', hygiene: 'مخالفة صحية',
+};
+const SEVERITY_LABELS = {
+  high: 'عالية', urgent: 'عاجل', medium: 'متوسطة', low: 'منخفضة',
+};
+const REPORT_STATUS_LABELS = {
+  pending: 'قيد الانتظار', in_progress: 'جارٍ التنفيذ', resolved: 'تم الحل',
+};
+const SUPPORT_LABELS = {
+  internal: 'داخلي', external: 'خارجي', both: 'مشترك',
+};
+const LOGISTICS_CATEGORY_LABELS = { meals: 'وجبات', water: 'مياه' };
+const LOGISTICS_STATUS_LABELS = {
+  pending: 'قيد الانتظار', approved: 'معتمد',
+  delivered: 'تم التسليم', rejected: 'مرفوض',
+};
 
 /* ── Helpers ─────────────────────────────────────────────────────── */
 function getRecordScore(rec) {
@@ -480,7 +517,8 @@ function SectionPage({ center, type, records, detailed }) {
   const meta = REPORT_TYPES[type] || REPORT_TYPES.meal_evaluations;
   const caterer = CENTERS.find(c => c.id === center)?.caterer ?? '';
 
-  const avgScore = records.length
+  const isScorable = type === 'meal_evaluations' || type === 'mina_readiness' || type === 'arafat_readiness';
+  const avgScore = isScorable && records.length
     ? (records.reduce((s, d) => s + (getRecordScore(d) ?? 0), 0) / records.length).toFixed(1)
     : '—';
 
@@ -517,8 +555,8 @@ function SectionPage({ center, type, records, detailed }) {
       {/* Records summary table */}
       <RecordsTable type={type} records={records} accent={meta.color} />
 
-      {/* Detailed mode: per-record "no" answers */}
-      {detailed && (
+      {/* Detailed mode: per-record "no" answers — only for types with a question bank */}
+      {detailed && QUESTION_BANK[type] && (
         <div className="mt-5 space-y-4">
           <div className="rounded-xl py-2 px-4 text-white font-bold text-sm"
             style={{ background: meta.color }}>
@@ -534,6 +572,9 @@ function SectionPage({ center, type, records, detailed }) {
 }
 
 function RecordsTable({ type, records, accent }) {
+  if (type === 'reports') return <ReportsTable records={records} accent={accent} />;
+  if (type === 'logistics_requests') return <LogisticsTable records={records} accent={accent} />;
+
   const isMeal = type === 'meal_evaluations';
 
   return (
@@ -573,6 +614,122 @@ function RecordsTable({ type, records, accent }) {
           })}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function InfoRow({ label, value, mono = false }) {
+  return (
+    <div className="flex items-baseline gap-2 text-[11px]">
+      <span className="text-[#9D8F85] font-bold shrink-0">{label}:</span>
+      <span className={`text-[#2D2926] font-medium ${mono ? 'tabular-nums' : ''}`}>{value ?? '—'}</span>
+    </div>
+  );
+}
+
+function ReportCard({ rec, accent }) {
+  const closedMs = toMs(rec.closedAt);
+  const isClosed = TERMINAL_REPORT_STATUSES.includes(rec.status) && closedMs != null;
+  const elapsedMs = getTotalElapsedMs(rec, TERMINAL_REPORT_STATUSES);
+
+  return (
+    <div className="rounded-2xl border border-[#EDE5DC] overflow-hidden bg-white"
+      style={{ breakInside: 'avoid' }}>
+      <div className="flex items-center justify-between px-4 py-2.5"
+        style={{ background: `${accent}12`, borderBottom: `1px solid ${accent}25` }}>
+        <span className="font-black tabular-nums text-sm" style={{ color: accent }}>
+          {rec.reportNumber ?? '—'}
+        </span>
+        <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border"
+          style={{ background: '#fff', borderColor: `${accent}40`, color: accent }}>
+          {REPORT_STATUS_LABELS[rec.status] ?? '—'}
+        </span>
+      </div>
+
+      <div className="p-4 grid grid-cols-2 gap-x-4 gap-y-1.5">
+        <InfoRow label="المراقب"   value={rec.observer} />
+        <InfoRow label="النوع"     value={REPORT_TYPE_LABELS[rec.reportType] ?? rec.reportType} />
+        <InfoRow label="الخطورة"   value={SEVERITY_LABELS[rec.severity]} />
+        <InfoRow label="المركز"    value={rec.center} />
+        <InfoRow label="جاء في" value={formatTime(rec.timestamp)} mono />
+        {isClosed && (
+          <InfoRow label="تاريخ الإغلاق" value={formatTime(rec.closedAt)} mono />
+        )}
+        <InfoRow label={isClosed ? 'المدة الكاملة (مغلق)' : 'المدة حتى الآن'}
+                 value={fmtDuration(elapsedMs)} mono />
+      </div>
+
+      {rec.description && (
+        <div className="px-4 pb-4">
+          <p className="text-[10px] font-bold text-[#9D8F85] mb-1">الوصف</p>
+          <p className="text-[12px] text-[#2D2926] leading-relaxed whitespace-pre-wrap bg-[#FAFAF8] border border-[#EDE5DC] rounded-xl p-2.5">
+            {rec.description}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ReportsTable({ records, accent }) {
+  return (
+    <div className="space-y-3">
+      {records.map(rec => <ReportCard key={rec.id} rec={rec} accent={accent} />)}
+    </div>
+  );
+}
+
+function LogisticsCard({ rec, accent }) {
+  const closedMs = toMs(rec.closedAt);
+  const isClosed = TERMINAL_LOGISTICS_STATUSES.includes(rec.status) && closedMs != null;
+  const elapsedMs = getTotalElapsedMs(rec, TERMINAL_LOGISTICS_STATUSES);
+
+  return (
+    <div className="rounded-2xl border border-[#EDE5DC] overflow-hidden bg-white"
+      style={{ breakInside: 'avoid' }}>
+      <div className="flex items-center justify-between px-4 py-2.5"
+        style={{ background: `${accent}12`, borderBottom: `1px solid ${accent}25` }}>
+        <span className="font-black tabular-nums text-sm" style={{ color: accent }}>
+          {rec.requestNumber ?? '—'}
+        </span>
+        <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border"
+          style={{ background: '#fff', borderColor: `${accent}40`, color: accent }}>
+          {LOGISTICS_STATUS_LABELS[rec.status] ?? '—'}
+        </span>
+      </div>
+
+      <div className="p-4 grid grid-cols-2 gap-x-4 gap-y-1.5">
+        <InfoRow label="المراقب"   value={rec.observer} />
+        <InfoRow label="الفئة"     value={LOGISTICS_CATEGORY_LABELS[rec.category] ?? rec.category} />
+        <InfoRow label="نوع الإسناد" value={SUPPORT_LABELS[rec.supportType] ?? rec.supportType} />
+        <InfoRow label="المركز"    value={rec.center} />
+        {rec.qtyInternal != null && <InfoRow label="كمية داخلي" value={rec.qtyInternal} mono />}
+        {rec.qtyExternal != null && <InfoRow label="كمية خارجي" value={rec.qtyExternal} mono />}
+        {rec.reportNumber && <InfoRow label="بلاغ مرتبط" value={`#${rec.reportNumber}`} mono />}
+        <InfoRow label="جاء في" value={formatTime(rec.timestamp)} mono />
+        {isClosed && (
+          <InfoRow label="تاريخ الإغلاق" value={formatTime(rec.closedAt)} mono />
+        )}
+        <InfoRow label={isClosed ? 'المدة الكاملة (مغلق)' : 'المدة حتى الآن'}
+                 value={fmtDuration(elapsedMs)} mono />
+      </div>
+
+      {rec.notes && (
+        <div className="px-4 pb-4">
+          <p className="text-[10px] font-bold text-[#9D8F85] mb-1">ملاحظات</p>
+          <p className="text-[12px] text-[#2D2926] leading-relaxed whitespace-pre-wrap bg-[#FAFAF8] border border-[#EDE5DC] rounded-xl p-2.5">
+            {rec.notes}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LogisticsTable({ records, accent }) {
+  return (
+    <div className="space-y-3">
+      {records.map(rec => <LogisticsCard key={rec.id} rec={rec} accent={accent} />)}
     </div>
   );
 }

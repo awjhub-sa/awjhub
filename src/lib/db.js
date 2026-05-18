@@ -1,8 +1,13 @@
 // Supabase abstraction: per-table CRUD + realtime + storage helpers
 import { supabase, STORAGE_BUCKETS } from '../config/supabase.js';
 
-const toCamel = s => s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
-const toSnake = s => s.replace(/([A-Z])/g, '_$1').toLowerCase();
+/* Split on every lowercase|digit → uppercase boundary so:
+     scoreOutOf10 → score_out_of10
+     phase1Photo  → phase1_photo
+     phase1       → phase1
+     mealId       → meal_id  */
+const toCamel = s => s.replace(/_([a-z0-9])/g, (_, c) => c.toUpperCase());
+const toSnake = s => s.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
 
 class Timestamp {
   constructor(date) { this._date = date instanceof Date ? date : new Date(date); }

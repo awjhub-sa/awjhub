@@ -16,7 +16,6 @@ import {
 } from '../../lib/statusTracking.js';
 import { StatusTimerChip, StatusTimeline } from '../../components/StatusTimeline.jsx';
 import { NATIONALITIES } from '../../config/nationalities.js';
-import { HAJJ_DAYS, hasMealContent } from '../../config/menus.js';
 
 /* ─── Lookup tables ─── */
 const REPORT_TYPE = {
@@ -137,7 +136,7 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" dir="rtl">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div className="relative bg-white rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl">
 
         <div className="sticky top-0 bg-white border-b border-[#EDE5DC] px-5 py-4 flex items-center justify-between rounded-t-3xl z-10">
           <div className="flex items-center gap-3 min-w-0">
@@ -304,7 +303,7 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" dir="rtl">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div className="relative bg-white rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl">
 
         <div className="sticky top-0 bg-white border-b border-[#EDE5DC] px-5 py-4 flex items-center justify-between rounded-t-3xl z-10">
           <div className="flex items-center gap-3 min-w-0">
@@ -684,8 +683,8 @@ export default function AdminDashboard() {
         )}
       </div>
 
-      {/* Reports + Logistics: 2-column on desktop */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Reports + Logistics: stacked, full width */}
+      <div className="space-y-4">
 
         {/* Field reports */}
         <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_10px_rgba(45,41,38,0.06)] overflow-hidden">
@@ -1058,16 +1057,6 @@ export default function AdminDashboard() {
 }
 
 function MenuOverview({ navigate }) {
-  /* For each nationality, count filled meals out of 21 (7 days × 3 meals) */
-  const summaries = NATIONALITIES.map(n => {
-    let filled = 0;
-    const total = HAJJ_DAYS.length * 3;
-    HAJJ_DAYS.forEach(d => ['breakfast', 'lunch', 'dinner'].forEach(m => {
-      if (hasMealContent(n.key, d.value, m)) filled++;
-    }));
-    return { ...n, filled, total, pct: Math.round((filled / total) * 100) };
-  });
-
   return (
     <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_10px_rgba(45,41,38,0.06)] overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#EDE5DC]">
@@ -1095,11 +1084,11 @@ function MenuOverview({ navigate }) {
       </div>
 
       <div className="p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
-        {summaries.map(s => (
+        {NATIONALITIES.map(s => (
           <button key={s.key}
             onClick={() => navigate('/admin/menu')}
             className="group text-right bg-white rounded-xl border-2 border-[#EDE5DC] p-3 hover:shadow-md hover:border-[#D9CEBC] hover:-translate-y-0.5 transition-all">
-            <div className="flex items-center gap-2.5 mb-2">
+            <div className="flex items-center gap-2.5">
               <div className="relative shrink-0">
                 <div className="absolute inset-0 rounded-lg blur-sm opacity-40"
                   style={{ background: s.color }} />
@@ -1111,22 +1100,6 @@ function MenuOverview({ navigate }) {
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-black text-[#2D2926] truncate">{s.label}</p>
                 <p className="text-[9px] text-[#9D8F85] font-bold mt-0.5">{s.centers.length} مركز</p>
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[9px] font-bold text-[#9D8F85]">المنيو</span>
-                <span className="text-[10px] font-black tabular-nums"
-                  style={{ color: s.pct === 100 ? '#10B981' : s.pct > 0 ? s.color : '#9D8F85' }}>
-                  {s.filled}/{s.total}
-                </span>
-              </div>
-              <div className="h-1.5 bg-[#F5F0EB] rounded-full overflow-hidden">
-                <div className="h-full rounded-full transition-all"
-                  style={{
-                    width: `${s.pct}%`,
-                    background: s.pct === 100 ? '#10B981' : s.color,
-                  }} />
               </div>
             </div>
           </button>

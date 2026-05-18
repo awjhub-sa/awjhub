@@ -100,7 +100,7 @@ CREATE TABLE public.meal_evaluations (
   answers            jsonb        NOT NULL DEFAULT '{}'::jsonb,
   total_score        numeric,
   max_score          numeric,
-  score_out_of_10    numeric,
+  score_out_of10     numeric,
   percentage         numeric,
   scheduled_date     text,
   timestamp          timestamptz  NOT NULL DEFAULT now()
@@ -119,7 +119,7 @@ CREATE TABLE public.mina_readiness (
   answers            jsonb        NOT NULL DEFAULT '{}'::jsonb,
   total_score        numeric,
   max_score          numeric,
-  score_out_of_10    numeric,
+  score_out_of10     numeric,
   percentage         numeric,
   scheduled_date     text,
   timestamp          timestamptz  NOT NULL DEFAULT now()
@@ -136,7 +136,7 @@ CREATE TABLE public.arafat_readiness (
   answers            jsonb        NOT NULL DEFAULT '{}'::jsonb,
   total_score        numeric,
   max_score          numeric,
-  score_out_of_10    numeric,
+  score_out_of10     numeric,
   percentage         numeric,
   scheduled_date     text,
   timestamp          timestamptz  NOT NULL DEFAULT now()
@@ -182,6 +182,7 @@ CREATE TABLE public.task_completions (
   id                 uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   task_id            uuid REFERENCES public.assigned_tasks(id) ON DELETE SET NULL,
   uid                uuid REFERENCES public.users(uid) ON DELETE SET NULL,
+  observer_name      text,
   center             text,
   task_type          text,
   meal_type          text,

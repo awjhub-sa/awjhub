@@ -46,8 +46,7 @@ export default function MinaReadiness() {
         center: profile?.center || '—',
         caterer: profile?.caterer || getCaterer(profile?.center) || '—',
         uid: profile?.uid || null,
-        answers,
-        details,
+        answers: { ...answers, __details: details },
         ...scoring,
         scheduledDate: selectedTask?.scheduledDate || null,
         timestamp: serverTimestamp(),
@@ -60,6 +59,7 @@ export default function MinaReadiness() {
           scheduledDate: selectedTask.scheduledDate || null,
           center: profile?.center || '—',
           uid: profile?.uid || null,
+          observerName: profile?.nameAr || profile?.name || 'مراقب',
           timestamp: serverTimestamp(),
         });
       }
@@ -68,7 +68,8 @@ export default function MinaReadiness() {
       setAnswers({});
       setDetails({});
     } catch (e) {
-      alert('خطأ في الإرسال');
+      console.error('[MinaReadiness submit]', e);
+      alert(`خطأ في الإرسال: ${e?.message || e}`);
     }
     setLoading(false);
   };

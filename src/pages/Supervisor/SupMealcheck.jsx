@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Utensils, ChevronRight, Save, CheckCircle2, AlertCircle,
-  Camera, Lock, ArrowLeft, RotateCcw, Ban, Sparkles,
+  Camera, Lock, ArrowLeft, RotateCcw, Ban, Sparkles, Loader2,
 } from 'lucide-react';
 import { db, serverTimestamp, uploadFile, STORAGE_BUCKETS } from '../../lib/db.js';
 import { compressImage } from '../../lib/imageCompression.js';
@@ -194,6 +194,7 @@ export default function SupMealcheck() {
   const [screen, setScreen] = useState('phases');
   const [phaseDone,   setPhaseDone]   = useState({ 1: false, 2: false, 3: false });
   const [phasePhotos, setPhasePhotos] = useState({ 1: null,  2: null,  3: null  });
+  const [phaseUploading, setPhaseUploading] = useState({ 1: false, 2: false, 3: false });
   const fileRefs = [useRef(null), useRef(null), useRef(null)];
   const [answers, setAnswers] = useState({});
   const [loadingSubmit, setLoadingSubmit] = useState(false);
@@ -256,8 +257,10 @@ export default function SupMealcheck() {
 
   const handlePhotoChange = async (id, file) => {
     if (!file) return;
-    setPhasePhotos(prev => ({ ...prev, [id]: file }));
     if (!centerId || centerId === '—' || !selectedTask) return;
+
+    setPhasePhotos(prev => ({ ...prev, [id]: file }));
+    setPhaseUploading(prev => ({ ...prev, [id]: true }));
     try {
       const docId = `${centerId}_d${selectedTask.day}_${selectedTask.mealType}`;
       const compressed = await compressImage(file);
@@ -276,7 +279,14 @@ export default function SupMealcheck() {
         [`phase${id}Uid`]:   profile?.uid,
         updatedAt:      serverTimestamp(),
       });
-    } catch (err) { console.error('[SupMealcheck phase upload]', err); }
+      setPhaseDone(prev => ({ ...prev, [id]: true }));
+    } catch (err) {
+      console.error('[SupMealcheck phase upload]', err);
+      setPhasePhotos(prev => ({ ...prev, [id]: null }));
+      alert(`فشل رفع الصورة: ${err?.message || err}`);
+    } finally {
+      setPhaseUploading(prev => ({ ...prev, [id]: false }));
+    }
   };
 
   const phases            = buildPhases(selectedTask?.categories);
@@ -315,6 +325,7 @@ export default function SupMealcheck() {
         scheduledDate: selectedTask?.scheduledDate,
         center:        centerId,
         uid:           profile?.uid,
+        observerName:  profile?.nameAr || profile?.name || 'مشرف',
         timestamp:     serverTimestamp(),
       });
       localStorage.removeItem(STORAGE_KEY(profile?.uid, selectedTask?.taskId, selectedTask?.mealType));
@@ -322,7 +333,7 @@ export default function SupMealcheck() {
       setSelectedTask(null);
     } catch (err) {
       console.error('[SupMealcheck submit]', err);
-      alert('حدث خطأ أثناء الإرسال');
+      alert(`حدث خطأ أثناء الإرسال: ${err?.message || err}`);
     }
     finally { setLoadingSubmit(false); }
   };
@@ -403,11 +414,12 @@ export default function SupMealcheck() {
 
           <div className="space-y-3">
             {phases.map((phase, idx) => {
-              const isUnlocked = idx === 0 || phaseDone[phases[idx - 1].id];
-              const isDone     = phaseDone[phase.id];
-              const isRestored = isDone && !phasePhotos[phase.id];
-              const ref        = fileRefs[idx];
-              const stepNum    = idx + 1;
+              const isUnlocked  = idx === 0 || phaseDone[phases[idx - 1].id];
+              const isDone      = phaseDone[phase.id];
+              const isUploading = phaseUploading[phase.id];
+              const isRestored  = isDone && !phasePhotos[phase.id];
+              const ref         = fileRefs[idx];
+              const stepNum     = idx + 1;
               return (
                 <div key={phase.id} className={`group/phase relative rounded-2xl border-2 p-5 transition-all duration-300 overflow-hidden ${
                   isDone
@@ -462,16 +474,18 @@ export default function SupMealcheck() {
                       }
                     </div>
                     {isUnlocked && (
-                      <button onClick={() => ref.current?.click()}
-                        className={`flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                      <button onClick={() => !isUploading && ref.current?.click()}
+                        disabled={isUploading}
+                        className={`flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all disabled:opacity-70 disabled:cursor-wait ${
                           isDone
                             ? 'bg-white border-2 border-green-300 text-green-600 hover:bg-green-50 hover:border-green-400'
                             : 'text-white shadow-[0_4px_14px_rgba(169,129,89,0.4)] active:scale-95 hover:shadow-[0_6px_20px_rgba(169,129,89,0.5)]'
                         }`}
                         style={isDone ? undefined : { background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}
                       >
-                        <Camera size={14} strokeWidth={2.5} />
-                        {isDone ? 'تغيير' : 'رفع صورة'}
+                        {isUploading
+                          ? <><Loader2 size={14} className="animate-spin" strokeWidth={2.5} /> جارٍ الرفع...</>
+                          : <><Camera size={14} strokeWidth={2.5} /> {isDone ? 'تغيير' : 'رفع صورة'}</>}
                       </button>
                     )}
                   </div>

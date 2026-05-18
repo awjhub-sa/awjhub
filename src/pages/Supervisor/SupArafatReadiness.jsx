@@ -67,8 +67,7 @@ export default function SupArafatReadiness() {
         center:        centerId,
         caterer:       catererName,
         uid:           profile?.uid || null,
-        answers,
-        details,
+        answers:       { ...answers, __details: details },
         ...scoring,
         scheduledDate: selectedTask?.scheduledDate || null,
         timestamp:     serverTimestamp(),
@@ -81,6 +80,7 @@ export default function SupArafatReadiness() {
           scheduledDate: selectedTask.scheduledDate || null,
           center:        centerId,
           uid:           profile?.uid || null,
+          observerName:  profile?.nameAr || profile?.name || 'مشرف',
           timestamp:     serverTimestamp(),
         });
       }
@@ -88,7 +88,10 @@ export default function SupArafatReadiness() {
       setSelectedTask(null);
       setAnswers({});
       setDetails({});
-    } catch { alert('حدث خطأ أثناء الإرسال'); }
+    } catch (e) {
+      console.error('[SupArafatReadiness submit]', e);
+      alert(`حدث خطأ أثناء الإرسال: ${e?.message || e}`);
+    }
     setLoading(false);
   };
 

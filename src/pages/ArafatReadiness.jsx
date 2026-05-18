@@ -46,8 +46,7 @@ export default function ArafatReadiness() {
         center: profile?.center || '—',
         caterer: profile?.caterer || getCaterer(profile?.center) || '—',
         uid: profile?.uid || null,
-        answers,
-        details,
+        answers: { ...answers, __details: details },
         ...scoring,
         scheduledDate: selectedTask?.scheduledDate || null,
         timestamp: serverTimestamp(),
@@ -60,6 +59,7 @@ export default function ArafatReadiness() {
           scheduledDate: selectedTask.scheduledDate || null,
           center: profile?.center || '—',
           uid: profile?.uid || null,
+          observerName: profile?.nameAr || profile?.name || 'مراقب',
           timestamp: serverTimestamp(),
         });
       }
@@ -68,7 +68,8 @@ export default function ArafatReadiness() {
       setAnswers({});
       setDetails({});
     } catch (e) {
-      alert('حدث خطأ أثناء الإرسال');
+      console.error('[ArafatReadiness submit]', e);
+      alert(`حدث خطأ أثناء الإرسال: ${e?.message || e}`);
     }
     setLoading(false);
   };

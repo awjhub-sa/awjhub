@@ -97,7 +97,7 @@ export default function SupReport() {
       navigate('/supervisor-home');
     } catch (e) {
       console.error('[SupReport submit]', e);
-      alert('خطأ في الإرسال');
+      alert(`خطأ في الإرسال: ${e?.message || e}`);
     }
     setLoading(false);
   };

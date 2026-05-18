@@ -112,7 +112,10 @@ export default function SupLogisticsRequest() {
       });
       alert('تم إرسال طلب الإسناد بنجاح');
       navigate('/supervisor-home');
-    } catch (e) { alert('خطأ في الإرسال'); }
+    } catch (e) {
+      console.error('[SupLogistics submit]', e);
+      alert(`خطأ في الإرسال: ${e?.message || e}`);
+    }
     setLoading(false);
   };
 

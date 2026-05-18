@@ -492,7 +492,7 @@ export default function AdminPhases() {
               {PHASES.map(phase => {
                 const done = !!data[`phase${phase.id}`];
                 const time = fmtTime(data[`phase${phase.id}`]);
-                const photoUrl = data[`phase${phase.id}_photo`] || null;
+                const photoUrl = data[`phase${phase.id}Photo`] || null;
                 return (
                   <div key={phase.id} className="flex flex-col items-center gap-1.5">
                     <PhaseDot
@@ -796,7 +796,7 @@ function ReportsCenterList({ centers, selectedDay, phasesData, evalLookup, cente
         const cell = phasesData[`${c.id}_d${selectedDay}_${m.id}`] || {};
         PHASES.forEach(p => {
           if (cell[`phase${p.id}`]) phasesDone++;
-          if (cell[`phase${p.id}_photo`]) photoCount++;
+          if (cell[`phase${p.id}Photo`]) photoCount++;
         });
         const ev = evalLookup.get(`${c.id}|${selectedDay}|${m.id}`);
         if (ev) {
@@ -1069,7 +1069,7 @@ function CenterReport({ center, selectedDay, phasesData, evalLookup, centerCateg
                   {PHASES.map(p => {
                     const isDone   = !!cell[`phase${p.id}`];
                     const time     = fmtTime(cell[`phase${p.id}`]);
-                    const photoUrl = cell[`phase${p.id}_photo`] || null;
+                    const photoUrl = cell[`phase${p.id}Photo`] || null;
                     return (
                       <div key={p.id}
                         className="rounded-xl border-2 overflow-hidden"

@@ -15,6 +15,10 @@
 
 import { useState }                              from 'react';
 import { db }                                    from '../../lib/db.js';
+import {
+  toMs, getTotalElapsedMs, fmtDuration,
+  TERMINAL_REPORT_STATUSES, TERMINAL_LOGISTICS_STATUSES,
+}                                                from '../../lib/statusTracking.js';
 import { CENTERS }                               from '../../config/centers.js';
 import { cairoBase64 }                           from '../../assets/fonts/CairoFont.js';
 import logoSrc                                   from '../../assets/logo-color.svg';
@@ -68,12 +72,35 @@ const DHU_DAYS = [
 ];
 
 const REPORT_TYPES = [
-  { key: 'meal_evaluations', label: 'تقييم جودة الوجبات', color: '#A98159' },
-  { key: 'mina_readiness',   label: 'جاهزية مشعر منى',   color: '#2F855A' },
-  { key: 'arafat_readiness', label: 'جاهزية مشعر عرفة',  color: '#0987A0' },
+  { key: 'meal_evaluations',   label: 'تقييم جودة الوجبات', color: '#A98159' },
+  { key: 'mina_readiness',     label: 'جاهزية مشعر منى',    color: '#2F855A' },
+  { key: 'arafat_readiness',   label: 'جاهزية مشعر عرفة',   color: '#0987A0' },
+  { key: 'reports',            label: 'البلاغات الميدانية', color: '#DC2626' },
+  { key: 'logistics_requests', label: 'طلبات الإسناد',      color: '#3B82F6' },
 ];
 
 const MEAL_LABELS = { breakfast: 'الإفطار', lunch: 'الغداء', dinner: 'العشاء' };
+
+const REPORT_TYPE_LABELS = {
+  water: 'تسرب مياه', electric: 'عطل كهربائي', crowd: 'ازدحام حرج',
+  food: 'مشكلة غذائية', medical: 'حالة طبية طارئة', security: 'بلاغ أمني',
+  fire: 'حريق / دخان', other: 'بلاغ آخر', shortage: 'نقص في الكميات',
+  delay: 'تأخر في التوزيع', quality: 'مشكلة في الجودة', hygiene: 'مخالفة صحية',
+};
+const SEVERITY_LABELS = {
+  high: 'عالية', urgent: 'عاجل', medium: 'متوسطة', low: 'منخفضة',
+};
+const REPORT_STATUS_LABELS = {
+  pending: 'قيد الانتظار', in_progress: 'جارٍ التنفيذ', resolved: 'تم الحل',
+};
+const SUPPORT_LABELS = {
+  internal: 'داخلي', external: 'خارجي', both: 'مشترك',
+};
+const LOGISTICS_CATEGORY_LABELS = { meals: 'وجبات', water: 'مياه' };
+const LOGISTICS_STATUS_LABELS = {
+  pending: 'قيد الانتظار', approved: 'معتمد',
+  delivered: 'تم التسليم', rejected: 'مرفوض',
+};
 
 // Presentation forms: char → [isolated, final, initial, medial]
 const _AR = {
@@ -581,6 +608,72 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
     );
   }
 
+  /* Render one info-table per incident report / logistics request.
+     Each card lists key→value pairs (number, observer, type, status,
+     timestamps, elapsed duration) + a description/notes block. */
+  function drawIncidentCards(records, typeKey, tRgb) {
+    const isReport = typeKey === 'reports';
+    const terminals = isReport ? TERMINAL_REPORT_STATUSES : TERMINAL_LOGISTICS_STATUSES;
+
+    records.forEach((rec) => {
+      const closedMs = toMs(rec.closedAt);
+      const isClosed = terminals.includes(rec.status) && closedMs != null;
+      const elapsedMs = getTotalElapsedMs(rec, terminals);
+
+      const rows = [];
+      const num = isReport ? rec.reportNumber : rec.requestNumber;
+      rows.push([fixArabic(isReport ? 'رقم البلاغ' : 'رقم الطلب'),  num ?? '—']);
+      rows.push([fixArabic('المراقب'),                                fixArabic(rec.observer ?? '—')]);
+      if (isReport) {
+        rows.push([fixArabic('النوع'),    fixArabic(REPORT_TYPE_LABELS[rec.reportType] ?? rec.reportType ?? '—')]);
+        rows.push([fixArabic('الخطورة'),  fixArabic(SEVERITY_LABELS[rec.severity] ?? rec.severity ?? '—')]);
+        rows.push([fixArabic('الحالة'),   fixArabic(REPORT_STATUS_LABELS[rec.status] ?? rec.status ?? '—')]);
+      } else {
+        rows.push([fixArabic('الفئة'),       fixArabic(LOGISTICS_CATEGORY_LABELS[rec.category] ?? rec.category ?? '—')]);
+        rows.push([fixArabic('نوع الإسناد'), fixArabic(SUPPORT_LABELS[rec.supportType] ?? rec.supportType ?? '—')]);
+        if (rec.qtyInternal != null) rows.push([fixArabic('كمية داخلي'), toArabicNum(String(rec.qtyInternal))]);
+        if (rec.qtyExternal != null) rows.push([fixArabic('كمية خارجي'), toArabicNum(String(rec.qtyExternal))]);
+        if (rec.reportNumber) rows.push([fixArabic('بلاغ مرتبط'), `#${rec.reportNumber}`]);
+        rows.push([fixArabic('الحالة'), fixArabic(LOGISTICS_STATUS_LABELS[rec.status] ?? rec.status ?? '—')]);
+      }
+      rows.push([fixArabic('جاء في'), fixArabic(formatSubmitTime(rec.timestamp))]);
+      if (isClosed) rows.push([fixArabic('تاريخ الإغلاق'), fixArabic(formatSubmitTime(rec.closedAt))]);
+      rows.push([
+        fixArabic(isClosed ? 'المدة الكاملة' : 'المدة حتى الآن'),
+        fixArabic(fmtDuration(elapsedMs)),
+      ]);
+
+      const body = rec.reportNumber || rec.requestNumber ? rows : rows;
+
+      autoTable(doc, {
+        ...TABLE_BASE,
+        startY: (doc.lastAutoTable?.finalY ?? 24) + 4,
+        body,
+        headStyles: { ...TABLE_BASE.headStyles, fillColor: tRgb },
+        styles:     { ...TABLE_BASE.styles, fontSize: 9, cellPadding: 2.5 },
+        columnStyles: {
+          0: { cellWidth: 40, halign: 'right', fontStyle: 'bold', fillColor: [248, 245, 240] },
+          1: { cellWidth: 'auto', halign: 'right' },
+        },
+        theme: 'grid',
+      });
+
+      const longText = isReport ? rec.description : rec.notes;
+      if (longText) {
+        autoTable(doc, {
+          ...TABLE_BASE,
+          startY: doc.lastAutoTable.finalY,
+          head:   [[fixArabic(isReport ? 'الوصف' : 'ملاحظات')]],
+          body:   [[fixArabic(longText)]],
+          headStyles: { ...TABLE_BASE.headStyles, fillColor: tRgb, fontSize: 9 },
+          styles:     { ...TABLE_BASE.styles, fontSize: 9, cellPadding: 3 },
+          columnStyles: { 0: { cellWidth: 'auto', halign: 'right' } },
+          theme: 'grid',
+        });
+      }
+    });
+  }
+
   /* ──────────────────────────────────────────────
      drawDetailSection — for detailed-mode PDFs
      Renders one breakdown card per record:
@@ -1012,6 +1105,9 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
           },
         });
 
+      } else if (type === 'reports' || type === 'logistics_requests') {
+        drawIncidentCards(recs, type, tRgb);
+
       } else {
         /* mina_readiness / arafat_readiness */
         const rows = recs.map(d => {
@@ -1054,7 +1150,7 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
       /* ─────────────────────────────────────────
          DETAILED MODE — per-record breakdown
       ───────────────────────────────────────── */
-      if (detailed) {
+      if (detailed && QUESTION_BANK[type]) {
         drawDetailSection(recs, type, typeMeta);
       }
 
@@ -1078,9 +1174,7 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
 function ReportModal({ onClose }) {
   const [centerFilter, setCenterFilter] = useState('all');
   const [dateFilter,   setDateFilter]   = useState('');
-  const [types, setTypes] = useState([
-    'meal_evaluations', 'mina_readiness', 'arafat_readiness',
-  ]);
+  const [types, setTypes] = useState([]);
   const [generating, setGenerating] = useState(false);
   const [progress,   setProgress]   = useState('');
   const [error,      setError]      = useState('');

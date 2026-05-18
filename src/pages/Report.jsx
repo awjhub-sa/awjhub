@@ -97,7 +97,7 @@ export default function Report() {
       setSubmitted(true);
     } catch (err) {
       console.error('[Report submit]', err);
-      alert('خطأ في الإرسال');
+      alert(`خطأ في الإرسال: ${err?.message || err}`);
     }
     setLoading(false);
   };

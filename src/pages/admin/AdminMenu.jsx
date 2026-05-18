@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react';
 import {
   UtensilsCrossed, ChevronRight, X, Search, Building2,
-  Sparkles, Coffee, Sun, Moon, AlertCircle, MapPin, Clock as ClockIcon,
+  Sparkles, Coffee, Sun, Moon, MapPin, Clock as ClockIcon,
 } from 'lucide-react';
 import PageHeader from '../../components/PageHeader.jsx';
 import { NATIONALITIES } from '../../config/nationalities.js';
 import {
   MENUS, HAJJ_DAYS, MEAL_LABEL, CATEGORY_KEYS, CATEGORY_META,
-  getMeal, getMealItems, hasMealContent,
+  getMeal, getMealItems,
 } from '../../config/menus.js';
 
 const MEAL_META = {
@@ -21,20 +21,6 @@ export default function AdminMenu() {
   const [selectedNat, setSelectedNat] = useState(null);
   const [selectedDay, setSelectedDay] = useState('7');
   const [searchTerm,  setSearchTerm]  = useState('');
-
-  /* Coverage per nationality — counts how many meals have any dishes filled in */
-  const coverage = useMemo(() => {
-    const map = {};
-    NATIONALITIES.forEach(n => {
-      let filled = 0;
-      const total = HAJJ_DAYS.length * MEAL_ORDER.length; // 7×3 = 21
-      HAJJ_DAYS.forEach(d => MEAL_ORDER.forEach(m => {
-        if (hasMealContent(n.key, d.value, m)) filled++;
-      }));
-      map[n.key] = { filled, total, pct: Math.round((filled / total) * 100) };
-    });
-    return map;
-  }, []);
 
   /* Filter nationalities by search */
   const filteredNats = useMemo(() => {
@@ -77,61 +63,32 @@ export default function AdminMenu() {
 
           {/* Nationality cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredNats.map(n => {
-              const cov = coverage[n.key];
-              return (
-                <button key={n.key}
-                  onClick={() => setSelectedNat(n.key)}
-                  className="group text-right bg-white rounded-2xl border-2 border-[#EDE5DC] p-4 shadow-[0_2px_8px_rgba(45,41,38,0.07)] hover:shadow-[0_6px_24px_rgba(169,129,89,0.18)] hover:border-[#D9CEBC] hover:-translate-y-0.5 transition-all"
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="relative shrink-0">
-                      <div className="absolute inset-0 rounded-2xl blur-md opacity-40 group-hover:opacity-60 transition-opacity"
-                        style={{ background: n.color }} />
-                      <div className="relative w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-md"
-                        style={{ background: `linear-gradient(135deg, ${n.color}, ${n.color}CC)` }}>
-                        <span className="drop-shadow">{n.flag}</span>
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-base font-black text-[#2D2926] truncate">{n.label}</p>
-                      <p className="text-[10px] text-[#A98159] font-bold mt-0.5 flex items-center gap-1">
-                        <Building2 size={9} strokeWidth={2.5} />
-                        {n.centers.length} مركز
-                      </p>
-                    </div>
-                    <ChevronRight size={16} className="text-[#C9B8A8] group-hover:text-[#A98159] transition-colors shrink-0"
-                      strokeWidth={2.25} />
-                  </div>
-
-                  {/* Coverage bar */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-bold text-[#9D8F85]">المنيو المعبأ</span>
-                      <span className="text-[11px] font-black tabular-nums"
-                        style={{ color: cov.pct === 100 ? '#10B981' : cov.pct > 0 ? n.color : '#9D8F85' }}>
-                        {cov.filled}/{cov.total} · {cov.pct}%
-                      </span>
-                    </div>
-                    <div className="h-2 bg-[#F5F0EB] rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${cov.pct}%`,
-                          background: cov.pct === 100 ? '#10B981' : n.color,
-                        }} />
+            {filteredNats.map(n => (
+              <button key={n.key}
+                onClick={() => setSelectedNat(n.key)}
+                className="group text-right bg-white rounded-2xl border-2 border-[#EDE5DC] p-4 shadow-[0_2px_8px_rgba(45,41,38,0.07)] hover:shadow-[0_6px_24px_rgba(169,129,89,0.18)] hover:border-[#D9CEBC] hover:-translate-y-0.5 transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="relative shrink-0">
+                    <div className="absolute inset-0 rounded-2xl blur-md opacity-40 group-hover:opacity-60 transition-opacity"
+                      style={{ background: n.color }} />
+                    <div className="relative w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-md"
+                      style={{ background: `linear-gradient(135deg, ${n.color}, ${n.color}CC)` }}>
+                      <span className="drop-shadow">{n.flag}</span>
                     </div>
                   </div>
-
-                  {/* Hint */}
-                  {cov.filled === 0 && (
-                    <div className="mt-2.5 inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1">
-                      <AlertCircle size={10} strokeWidth={2.5} />
-                      لم يُضف منيو بعد
-                    </div>
-                  )}
-                </button>
-              );
-            })}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-base font-black text-[#2D2926] truncate">{n.label}</p>
+                    <p className="text-[10px] text-[#A98159] font-bold mt-0.5 flex items-center gap-1">
+                      <Building2 size={9} strokeWidth={2.5} />
+                      {n.centers.length} مركز
+                    </p>
+                  </div>
+                  <ChevronRight size={16} className="text-[#C9B8A8] group-hover:text-[#A98159] transition-colors shrink-0"
+                    strokeWidth={2.25} />
+                </div>
+              </button>
+            ))}
           </div>
 
           <div className="bg-gradient-to-br from-[#FDF8F0] to-white border border-[#E8DDD4] rounded-2xl p-4 flex items-start gap-3">
