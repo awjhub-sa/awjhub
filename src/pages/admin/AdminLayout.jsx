@@ -261,7 +261,7 @@ export default function AdminLayout() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
         {/* Top header */}
-        <header className="border-b border-[#D9CEBC] px-6 py-3 flex items-center justify-between flex-shrink-0 shadow-[0_1px_8px_rgba(45,41,38,0.08)]"
+        <header className="border-b border-[#D9CEBC] px-3 sm:px-6 py-3 flex items-center justify-between flex-shrink-0 shadow-[0_1px_8px_rgba(45,41,38,0.08)]"
           style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, #FDF8F2 100%)' }}>
           <div className="flex items-center gap-3">
             <motion.button
@@ -299,7 +299,7 @@ export default function AdminLayout() {
           </motion.button>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
           <Outlet />
         </main>
       </div>
