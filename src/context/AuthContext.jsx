@@ -13,39 +13,27 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  /* On mount: check the lightweight monitor session FIRST; otherwise fall back
-     to Supabase Auth (admin/staff). */
+  /* On mount: hydrate from whichever session exists (monitor in localStorage
+     OR Supabase Auth for admin/staff). The Supabase listener is wired up
+     unconditionally so admin logins after a prior monitor session still
+     update the context. */
   useEffect(() => {
     let mounted = true;
 
-    // 1) Monitor session in localStorage takes precedence
-    const stored = localStorage.getItem(MONITOR_SESSION_KEY);
-    if (stored) {
-      try {
-        const data = JSON.parse(stored);
-        if (data && (data.role === 'observer' || data.role === 'supervisor')) {
-          setUser({ uid: data.uid, idNumber: data.idNumber });
-          setRole(data.role);
-          setProfile(data);
-          setLoading(false);
-          return;
-        }
-        localStorage.removeItem(MONITOR_SESSION_KEY);
-      } catch {
-        localStorage.removeItem(MONITOR_SESSION_KEY);
-      }
-    }
-
-    // 2) Supabase Auth session (admin / staff)
+    /* Hydrate from a Supabase Auth session (admin / staff). */
     const hydrateFromSession = async (session) => {
       if (!mounted) return;
       if (!session?.user) {
+        /* Don't clobber a live monitor session when Supabase fires
+           SIGNED_OUT / INITIAL_SESSION with no user. */
+        if (localStorage.getItem(MONITOR_SESSION_KEY)) return;
         setUser(null); setRole(null); setProfile(null); setLoading(false);
         return;
       }
       const authUser = session.user;
+      /* Admin auth always wins over a stale monitor session. */
+      localStorage.removeItem(MONITOR_SESSION_KEY);
       try {
-        // Look up the user's profile row by auth_uid
         const profileRow = await db.users.findBy('authUid', authUser.id);
         if (!mounted) return;
         if (profileRow) {
@@ -53,7 +41,6 @@ export function AuthProvider({ children }) {
           setRole(profileRow.role || 'observer');
           setProfile({ ...profileRow, email: authUser.email });
         } else {
-          // Auth user with no profile row — treat as observer placeholder
           setUser({ uid: authUser.id, email: authUser.email });
           setRole('observer');
           setProfile({ uid: authUser.id, email: authUser.email });
@@ -67,7 +54,30 @@ export function AuthProvider({ children }) {
       setLoading(false);
     };
 
-    supabase.auth.getSession().then(({ data }) => hydrateFromSession(data.session));
+    /* 1) Seed state synchronously from localStorage if a monitor is logged in. */
+    const stored = localStorage.getItem(MONITOR_SESSION_KEY);
+    if (stored) {
+      try {
+        const data = JSON.parse(stored);
+        if (data && (data.role === 'observer' || data.role === 'supervisor')) {
+          setUser({ uid: data.uid, idNumber: data.idNumber });
+          setRole(data.role);
+          setProfile(data);
+          setLoading(false);
+        } else {
+          localStorage.removeItem(MONITOR_SESSION_KEY);
+        }
+      } catch {
+        localStorage.removeItem(MONITOR_SESSION_KEY);
+      }
+    }
+
+    /* 2) Always wire up the Supabase Auth listener so admin sign-in works
+          regardless of prior monitor sessions. */
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) hydrateFromSession(data.session);
+      else if (!localStorage.getItem(MONITOR_SESSION_KEY)) setLoading(false);
+    });
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       hydrateFromSession(session);
     });
