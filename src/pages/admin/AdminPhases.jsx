@@ -658,11 +658,12 @@ function EvalDetailModal({ record, onClose }) {
   })();
 
   const ans = record.answers || {};
-  const yes = Object.values(ans).filter(v => v === 'نعم').length;
-  const no  = Object.values(ans).filter(v => v === 'لا').length;
+  const photos = ans.__photos || {};
+  const yes = MEAL_QUESTIONS.filter(q => ans[q.id] === 'نعم').length;
+  const no  = MEAL_QUESTIONS.filter(q => ans[q.id] === 'لا').length;
   const qsById = new Map(MEAL_QUESTIONS.map(q => [String(q.id), q]));
   const noQs = Object.entries(ans)
-    .filter(([, v]) => v === 'لا')
+    .filter(([k, v]) => v === 'لا' && !String(k).startsWith('__'))
     .map(([k]) => qsById.get(String(k)))
     .filter(Boolean);
   const mealLabel = MEALS.find(m => m.id === record.mealType)?.label || record.mealType;
@@ -776,6 +777,53 @@ function EvalDetailModal({ record, onClose }) {
                 ))}
               </ul>
             )}
+          </div>
+
+          {/* All answered questions with photos */}
+          <div>
+            <div className="flex items-center gap-2 mb-2.5">
+              <div className="w-1.5 h-5 rounded-full bg-[#A98159]" />
+              <p className="text-sm font-black text-[#2D2926]">جميع الإجابات والصور</p>
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#FDF8F0] border border-[#E8DDD4] text-[#A98159] tabular-nums">
+                {MEAL_QUESTIONS.filter(q => ans[q.id]).length} سؤال
+              </span>
+            </div>
+            <div className="space-y-2">
+              {MEAL_QUESTIONS.map(q => {
+                const a = ans[q.id];
+                if (!a) return null;
+                const isYes = a === 'نعم';
+                const isNo  = a === 'لا';
+                const photoUrl = photos[q.id];
+                return (
+                  <div key={q.id}
+                    className={`rounded-xl px-3 py-2.5 border ${
+                      isYes ? 'bg-green-50/40 border-green-200/60'
+                    : isNo  ? 'bg-red-50/40 border-red-200/60'
+                    :         'bg-white border-[#EDE5DC]'
+                    }`}>
+                    <div className="flex items-start gap-2">
+                      <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md text-white tabular-nums shrink-0 mt-0.5"
+                        style={{ background: '#A98159' }}>
+                        {q.id}
+                      </span>
+                      <p className="text-[12px] text-[#2D2926] leading-relaxed flex-1">{q.text}</p>
+                      <span className={`text-[10px] font-black flex-shrink-0 flex items-center gap-0.5 ${
+                        isYes ? 'text-green-700' : isNo ? 'text-red-700' : 'text-[#6D6E71]'
+                      }`}>
+                        {a}
+                      </span>
+                    </div>
+                    {photoUrl && (
+                      <a href={photoUrl} target="_blank" rel="noreferrer" className="mt-2 block">
+                        <img src={photoUrl} alt={`q${q.id}`}
+                          className="rounded-lg border border-[#EDE5DC] max-h-48 object-cover hover:opacity-90 transition-opacity" />
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
