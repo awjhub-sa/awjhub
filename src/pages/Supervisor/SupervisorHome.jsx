@@ -13,6 +13,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { getCaterer } from '../../config/centers.js';
 import { extractCenterNum } from '../../hooks/useAssignedTasks.js';
 import TodayMenuCard from '../../components/TodayMenuCard.jsx';
+import { formatHijri } from '../../lib/hijri.js';
 
 const GoldRule = () => (
   <svg width="100" height="6" viewBox="0 0 100 6" fill="none">
@@ -270,7 +271,7 @@ export default function SupervisorHome() {
     const tick = () => {
       const now = new Date();
       setClock({
-        hijri: now.toLocaleDateString('ar-SA-u-ca-islamic', { year: 'numeric', month: 'long', day: 'numeric' }),
+        hijri: formatHijri(now),
         time: now.toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit', hour12: true }),
       });
     };

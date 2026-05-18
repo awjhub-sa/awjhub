@@ -15,6 +15,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { getCaterer } from '../config/centers.js';
 import { useAssignedTasks } from '../hooks/useAssignedTasks.js';
 import TodayMenuCard from '../components/TodayMenuCard.jsx';
+import { formatHijri } from '../lib/hijri.js';
 
 const _cardSpring = { type: 'spring', stiffness: 380, damping: 18 };
 
@@ -125,7 +126,7 @@ export default function Home() {
     const tick = () => {
       const now = new Date();
       setClock({
-        hijri: now.toLocaleDateString('ar-SA-u-ca-islamic', { year: 'numeric', month: 'long', day: 'numeric' }),
+        hijri: formatHijri(now),
         time:  now.toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit', hour12: true }),
       });
     };

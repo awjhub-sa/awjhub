@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { db } from '../../lib/db.js';
+import { formatHijri } from '../../lib/hijri.js';
 import AdminReportGenerator from './AdminReportGenerator.jsx';
 import {
   AlertTriangle, Truck, ClipboardList, Mountain, Clock, Trash2, X, ArrowLeft,
@@ -527,7 +528,7 @@ export default function AdminDashboard() {
     const tick = () => {
       const now = new Date();
       setClock({
-        hijri: now.toLocaleDateString('ar-SA-u-ca-islamic', { year: 'numeric', month: 'long', day: 'numeric' }),
+        hijri: formatHijri(now),
         time:  now.toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }),
       });
     };
