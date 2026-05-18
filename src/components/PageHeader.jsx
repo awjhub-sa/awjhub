@@ -14,7 +14,7 @@ export default function PageHeader({
   return (
     <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden group">
       <div
-        className="flex items-center justify-between px-6 py-4 relative gap-3"
+        className="flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 relative gap-3"
         style={{ background: 'linear-gradient(135deg, #FDF8F0 0%, #fff 55%)' }}
       >
         <div

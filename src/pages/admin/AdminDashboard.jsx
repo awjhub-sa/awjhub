@@ -481,7 +481,7 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange }) {
 /* ─── Section panel header ─── */
 function PanelHeader({ title, subtitle, count, gradient, Icon, onViewAll, viewAllColor, badge, badgeVariant }) {
   return (
-    <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#EDE5DC]">
+    <div className="flex items-center justify-between px-3 sm:px-5 py-3 sm:py-3.5 border-b border-[#EDE5DC] gap-2">
       <div className="flex items-center gap-3 min-w-0">
         <div className="relative shrink-0">
           <div className="absolute inset-0 rounded-xl blur-md opacity-50" style={{ background: gradient.from }} />
@@ -635,9 +635,9 @@ export default function AdminDashboard() {
         title="نظرة عامة"
         subtitle="مؤشرات الأداء الميداني — موسم الحج ١٤٤٧ هـ"
         right={
-          <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
             <AdminReportGenerator />
-            <div className="flex items-stretch rounded-2xl overflow-hidden shadow-[0_4px_16px_rgba(169,129,89,0.25)]"
+            <div className="hidden md:flex items-stretch rounded-2xl overflow-hidden shadow-[0_4px_16px_rgba(169,129,89,0.25)]"
               style={{ background: 'linear-gradient(135deg, #C4A46E 0%, #A98159 50%, #8B6840 100%)' }}>
               <div className="flex items-center gap-2.5 px-4 py-3">
                 <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
@@ -728,7 +728,7 @@ export default function AdminDashboard() {
               return (
                 <button key={r.id}
                   onClick={() => setSelectedReport(r)}
-                  className={`group relative w-full text-right flex items-center gap-3 px-5 py-3.5 transition-colors ${!isLast ? 'border-b border-[#EDE5DC]' : ''} ${isNew ? 'row-pulse-red' : 'hover:bg-red-50/30'}`}>
+                  className={`group relative w-full text-right flex items-center gap-3 px-3 sm:px-5 py-3 sm:py-3.5 transition-colors ${!isLast ? 'border-b border-[#EDE5DC]' : ''} ${isNew ? 'row-pulse-red' : 'hover:bg-red-50/30'}`}>
                   {/* "جديد" pill on new rows */}
                   {isNew && (
                     <span className="absolute top-2 left-2 inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-md text-white shadow-md tabular-nums tracking-wide"
@@ -842,7 +842,7 @@ export default function AdminDashboard() {
               return (
                 <button key={item.id}
                   onClick={() => setSelectedLogistics(item)}
-                  className={`group relative w-full text-right flex items-center gap-3 px-5 py-3.5 transition-colors ${!isLast ? 'border-b border-[#EDE5DC]' : ''} ${isNew ? 'row-pulse-blue' : 'hover:bg-blue-50/30'}`}>
+                  className={`group relative w-full text-right flex items-center gap-3 px-3 sm:px-5 py-3 sm:py-3.5 transition-colors ${!isLast ? 'border-b border-[#EDE5DC]' : ''} ${isNew ? 'row-pulse-blue' : 'hover:bg-blue-50/30'}`}>
                   {/* "جديد" pill on new rows */}
                   {isNew && (
                     <span className="absolute top-2 left-2 inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-md text-white shadow-md tabular-nums tracking-wide"

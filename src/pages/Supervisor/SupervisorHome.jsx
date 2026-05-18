@@ -239,8 +239,8 @@ export default function SupervisorHome() {
   const [notifOpen,      setNotifOpen]      = useState(false);
   const [globalNotifs,   setGlobalNotifs]   = useState([]);  // cross-center observer notifs
   const [observerNotifs, setObserverNotifs] = useState([]);  // per-center activity feed
+  const [view, setView] = useState('actions');  // 'actions' | 'menu' | 'activity'
 
-  
   const [allAssignedTasks, setAllAssignedTasks] = useState([]);
   const [allCompletions,   setAllCompletions]   = useState([]);
 
@@ -575,9 +575,8 @@ export default function SupervisorHome() {
         </div>
       </header>
 
-      {}
       {!selectedCenter && (
-        <main className="max-w-5xl mx-auto px-4 md:px-8 py-6 space-y-6">
+        <main className="max-w-5xl mx-auto px-4 md:px-8 py-6 pb-32 space-y-6">
 
           {/* Welcome strip */}
           <div className="animate-fade-slide-up rounded-[2rem] overflow-hidden shadow-xl">
@@ -632,6 +631,7 @@ export default function SupervisorHome() {
             />
           </div>
 
+          {view === 'actions' && (<>
           {/* Pending tasks (cross-center) */}
           <section className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-3xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
             <div className="px-5 py-4 border-b border-[#EDE5DC] flex items-center justify-between"
@@ -677,7 +677,34 @@ export default function SupervisorHome() {
             )}
           </section>
 
-          {/* Today's activity feed (cross-center) */}
+          {/* Centers grid — actions tab */}
+          <section className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-3xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#EDE5DC] flex items-center gap-2.5"
+              style={{ background: 'linear-gradient(135deg, #FDF8F0 0%, #fff 55%)' }}>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+                style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
+                <Building2 size={16} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-[#2D2926]">مراكزي</h2>
+                <p className="text-[11px] text-[#9D8F85] mt-0.5">ادخل على مركز للاطلاع التفصيلي</p>
+              </div>
+            </div>
+            <div className="p-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {assignedCenters.map(c => (
+                <CenterCard key={c} centerId={c} stats={centerStats[c]}
+                  onClick={() => {
+                    setSelectedCenter(c);
+                    sessionStorage.setItem('sup_selected_center', c);
+                  }}
+                />
+              ))}
+            </div>
+          </section>
+          </>)}
+
+          {/* Today's activity feed (cross-center) — ORIGINAL POSITION (will be hidden in old slot) */}
+          {view === 'activity' && (
           <section className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-3xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
             <div className="px-5 py-4 border-b border-[#EDE5DC] flex items-center gap-2.5"
               style={{ background: 'linear-gradient(135deg, #F0FDF4 0%, #fff 55%)' }}>
@@ -722,63 +749,27 @@ export default function SupervisorHome() {
               )}
             </div>
           </section>
-
-          {/* Centers grid */}
-          <section className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-3xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
-            <div className="px-5 py-4 border-b border-[#EDE5DC] flex items-center gap-2.5"
-              style={{ background: 'linear-gradient(135deg, #FDF8F0 0%, #fff 55%)' }}>
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
-                <Building2 size={16} className="text-white" />
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-[#2D2926]">مراكزي</h2>
-                <p className="text-[11px] text-[#9D8F85] mt-0.5">ادخل على مركز للاطلاع التفصيلي</p>
-              </div>
-            </div>
-            <div className="p-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {assignedCenters.map(c => (
-                <CenterCard
-                  key={c}
-                  centerId={c}
-                  stats={centerStats[c]}
-                  onClick={() => {
-                    setSelectedCenter(c);
-                    sessionStorage.setItem('sup_selected_center', c);
-                  }}
-                />
-              ))}
-            </div>
-          </section>
-
-          {/* Today's menu — supervisor sees menu per assigned center */}
-          {assignedCenters.length > 0 && (
-            <TodayMenuCard centerIds={assignedCenters} />
           )}
 
-          {/* Quick logout */}
-          <div className="pt-2 pb-8 text-center">
-            <button onClick={handleLogout}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-red-500 hover:text-white text-sm font-bold border border-red-200 hover:bg-red-500 hover:border-red-500 transition-all">
-              <LogOut size={14} />
-              تسجيل الخروج
-            </button>
-          </div>
+          {/* Today's menu — supervisor sees menu per assigned center */}
+          {view === 'menu' && assignedCenters.length > 0 && (
+            <TodayMenuCard centerIds={assignedCenters} />
+          )}
         </main>
       )}
 
-      {}
       {selectedCenter && (
-      <main className="max-w-5xl mx-auto px-4 md:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <div className="lg:col-span-7 space-y-6">
-          {/* Back to dashboard */}
-          <button
-            onClick={() => { setSelectedCenter(null); sessionStorage.removeItem('sup_selected_center'); }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[#EDE5DC] bg-white text-[#6D6E71] hover:text-[#A98159] hover:border-[#A98159]/40 text-xs font-bold transition-all"
-          >
-            <ChevronLeft size={14} strokeWidth={2.5} />
-            العودة للوحة الرئيسية
-          </button>
+      <main className="max-w-5xl mx-auto px-4 md:px-8 pb-32 space-y-6">
+        <button
+          onClick={() => { setSelectedCenter(null); sessionStorage.removeItem('sup_selected_center'); }}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[#EDE5DC] bg-white text-[#6D6E71] hover:text-[#A98159] hover:border-[#A98159]/40 text-xs font-bold transition-all"
+        >
+          <ChevronLeft size={14} strokeWidth={2.5} />
+          العودة للوحة الرئيسية
+        </button>
+
+        <div className="space-y-6">
+          {/* Header card always visible */}
 
           <div className="animate-fade-slide-up shadow-xl rounded-[2.5rem] overflow-hidden">
             <div className="p-8 relative overflow-hidden bg-[#2D2926]">
@@ -809,11 +800,12 @@ export default function SupervisorHome() {
             </div>
           </div>
 
-          {/* Today's menu for the selected center */}
-          {selectedCenter && (
+          {/* Today's menu — menu tab only */}
+          {view === 'menu' && selectedCenter && (
             <TodayMenuCard centerId={selectedCenter} />
           )}
 
+          {view === 'activity' && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 px-2">
               <ClipboardCheck size={20} className="text-[#A98159]" />
@@ -866,23 +858,26 @@ export default function SupervisorHome() {
               </div>
             )}
           </div>
-        </div>
+          )}
 
-        <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
-          <div className="flex items-center gap-3"><div className="h-px flex-1 bg-[#D1C4B9]/50" /><span className="text-[10px] font-black text-[#A98159] uppercase tracking-widest">إجراءات المشرف</span><div className="h-px flex-1 bg-[#D1C4B9]/50" /></div>
-          <div className="grid grid-cols-1 gap-4">
-            <MenuCard icon={Utensils} title="تقييم جودة الوجبات"
-              doneBadge={taskBadges['meal_evaluation'] ? `${taskBadges['meal_evaluation']} مكتملة` : undefined}
-              onClick={() => navigate('/sup-mealcheck', { state: { centerId: selectedCenter } })} variant="accent" />
-            <MenuCard icon={HomeIcon} title="جاهزية مشعر منى"
-              doneBadge={taskBadges['mina_readiness'] ? `${taskBadges['mina_readiness']} مكتملة` : undefined}
-              onClick={() => navigate('/sup-mina-readiness', { state: { centerId: selectedCenter } })} />
-            <MenuCard icon={Mountain} title="جاهزية مشعر عرفة"
-              doneBadge={taskBadges['arafat_readiness'] ? `${taskBadges['arafat_readiness']} مكتملة` : undefined}
-              onClick={() => navigate('/sup-arafat-readiness', { state: { centerId: selectedCenter } })} />
-            <MenuCard icon={Package} title="طلب إسناد لوجستي" onClick={() => navigate('/sup-logistics', { state: { centerId: selectedCenter } })} />
-            <MenuCard icon={AlertTriangle} title="بلاغ ميداني" onClick={() => navigate('/sup-report', { state: { centerId: selectedCenter } })} badge="عاجل" />
+          {view === 'actions' && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3"><div className="h-px flex-1 bg-[#D1C4B9]/50" /><span className="text-[10px] font-black text-[#A98159] uppercase tracking-widest">إجراءات المشرف</span><div className="h-px flex-1 bg-[#D1C4B9]/50" /></div>
+            <div className="grid grid-cols-1 gap-4">
+              <MenuCard icon={Utensils} title="تقييم جودة الوجبات"
+                doneBadge={taskBadges['meal_evaluation'] ? `${taskBadges['meal_evaluation']} مكتملة` : undefined}
+                onClick={() => navigate('/sup-mealcheck', { state: { centerId: selectedCenter } })} variant="accent" />
+              <MenuCard icon={HomeIcon} title="جاهزية مشعر منى"
+                doneBadge={taskBadges['mina_readiness'] ? `${taskBadges['mina_readiness']} مكتملة` : undefined}
+                onClick={() => navigate('/sup-mina-readiness', { state: { centerId: selectedCenter } })} />
+              <MenuCard icon={Mountain} title="جاهزية مشعر عرفة"
+                doneBadge={taskBadges['arafat_readiness'] ? `${taskBadges['arafat_readiness']} مكتملة` : undefined}
+                onClick={() => navigate('/sup-arafat-readiness', { state: { centerId: selectedCenter } })} />
+              <MenuCard icon={Package} title="طلب إسناد لوجستي" onClick={() => navigate('/sup-logistics', { state: { centerId: selectedCenter } })} />
+              <MenuCard icon={AlertTriangle} title="بلاغ ميداني" onClick={() => navigate('/sup-report', { state: { centerId: selectedCenter } })} badge="عاجل" />
+            </div>
           </div>
+          )}
         </div>
       </main>
       )}
@@ -946,7 +941,38 @@ export default function SupervisorHome() {
           </div>
         </div>
       </div>
-      <footer className="max-w-5xl mx-auto px-8 py-6 text-center"><p className="text-[10px] text-[#6D6E71]/60 font-bold uppercase tracking-widest">© ١٤٤٧ هـ — لوحة إشراف منظومة المراقبة الميدانية</p></footer>
+      {/* Bottom Tab Bar */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#D1C4B9] shadow-[0_-4px_20px_rgba(45,41,38,0.06)] pb-[env(safe-area-inset-bottom)]">
+        <div className="max-w-5xl mx-auto grid grid-cols-3">
+          {[
+            { key: 'actions',  label: 'الإجراءات', Icon: ClipboardCheck, badge: pendingTasks.length || null },
+            { key: 'menu',     label: 'المنيو',     Icon: Utensils,       badge: null },
+            { key: 'activity', label: 'النشاط',     Icon: Bell,           badge: globalNotifs.length || null },
+          ].map(tab => {
+            const active = view === tab.key;
+            const TIcon = tab.Icon;
+            return (
+              <button key={tab.key} onClick={() => setView(tab.key)}
+                className={`relative flex flex-col items-center justify-center gap-1 py-3 transition-colors ${
+                  active ? 'text-[#A98159]' : 'text-[#9D8F85] hover:text-[#A98159]'
+                }`}
+              >
+                {active && <span className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 rounded-b-full bg-[#A98159]" />}
+                <div className="relative">
+                  <TIcon size={22} />
+                  {tab.badge && (
+                    <span className="absolute -top-1 -right-2 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center ring-2 ring-white tabular-nums">
+                      {tab.badge}
+                    </span>
+                  )}
+                </div>
+                <span className="text-[11px] font-bold">{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+      <footer className="max-w-5xl mx-auto px-8 py-6 pb-28 text-center"><p className="text-[10px] text-[#6D6E71]/60 font-bold uppercase tracking-widest">© ١٤٤٧ هـ — لوحة إشراف منظومة المراقبة الميدانية</p></footer>
       <style>{`@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } } .animate-fade-slide-up { animation: fadeSlideUp 0.5s ease-out forwards; } @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
     </div>
   );
