@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronRight, Save, CheckCircle2, AlertCircle, Mountain, ArrowLeft, Ban, Calendar } from 'lucide-react';
-import { db, serverTimestamp } from '../../lib/db.js';
+import { ChevronRight, Save, CheckCircle2, AlertCircle, Mountain, ArrowLeft, Ban, Calendar, Camera, Loader2, X } from 'lucide-react';
+import { db, serverTimestamp, uploadFile, STORAGE_BUCKETS } from '../../lib/db.js';
+import { compressImage } from '../../lib/imageCompression.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { getCaterer } from '../../config/centers.js';
 import { extractCenterNum } from '../../hooks/useAssignedTasks.js';
@@ -22,8 +23,11 @@ export default function SupArafatReadiness() {
 
   const [answers,      setAnswers]      = useState({});
   const [details,      setDetails]      = useState({});
+  const [photos,       setPhotos]       = useState({});
+  const [uploadingPhotos, setUploadingPhotos] = useState({});
   const [loading,      setLoading]      = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
+  const photoInputRefs = useRef({});
 
   
   const [tasks,        setTasks]        = useState([]);
@@ -56,9 +60,41 @@ export default function SupArafatReadiness() {
   const handleAnswer = (id, value) => setAnswers(prev => ({ ...prev, [id]: value }));
   const handleDetail = (id, value) => setDetails(prev => ({ ...prev, [id]: value }));
 
+  const handlePhotoChange = async (qid, file) => {
+    if (!file) return;
+    setUploadingPhotos(prev => ({ ...prev, [qid]: true }));
+    try {
+      const compressed = await compressImage(file);
+      const date = selectedTask?.scheduledDate || 'undated';
+      const url = await uploadFile(
+        STORAGE_BUCKETS.phases,
+        `readiness/arafat/${centerId}/${date}/q${qid}_${Date.now()}.jpg`,
+        compressed,
+      );
+      setPhotos(prev => ({ ...prev, [qid]: url }));
+    } catch (err) {
+      console.error('[SupArafatReadiness photo upload]', err);
+      alert(`فشل رفع الصورة: ${err?.message || err}`);
+    } finally {
+      setUploadingPhotos(prev => ({ ...prev, [qid]: false }));
+    }
+  };
+
+  const removePhoto = (qid) => setPhotos(prev => {
+    const next = { ...prev };
+    delete next[qid];
+    return next;
+  });
+
   const handleSubmit = async () => {
     const unanswered = REQUIRED_IDS.filter(id => !answers[id]);
     if (unanswered.length > 0) { alert(`الرجاء الإجابة على جميع البنود. المتبقي: ${unanswered.length} بند`); return; }
+    const photoRequiredIds = ALL_CRITERIA.filter(c => c.requiresPhoto).map(c => c.id);
+    const missingPhotos = photoRequiredIds.filter(id => answers[id] && !photos[id]);
+    if (missingPhotos.length > 0) {
+      alert(`الأسئلة التالية تحتاج صورة: ${missingPhotos.join('، ')}`);
+      return;
+    }
     setLoading(true);
     try {
       const scoring = computeReadinessTotals(ALL_CRITERIA, answers);
@@ -67,7 +103,7 @@ export default function SupArafatReadiness() {
         center:        centerId,
         caterer:       catererName,
         uid:           profile?.uid || null,
-        answers:       { ...answers, __details: details },
+        answers:       { ...answers, __details: details, __photos: photos },
         ...scoring,
         scheduledDate: selectedTask?.scheduledDate || null,
         timestamp:     serverTimestamp(),
@@ -88,6 +124,7 @@ export default function SupArafatReadiness() {
       setSelectedTask(null);
       setAnswers({});
       setDetails({});
+      setPhotos({});
     } catch (e) {
       console.error('[SupArafatReadiness submit]', e);
       alert(`حدث خطأ أثناء الإرسال: ${e?.message || e}`);
@@ -331,6 +368,48 @@ export default function SupArafatReadiness() {
                                 className="w-full border-2 border-[#E8DDD4] rounded-xl px-4 py-3 text-sm focus:border-[#A98159] focus:ring-2 focus:ring-[#A98159]/15 outline-none transition-all"
                                 placeholder={field.label} />
                             ))}
+                          </div>
+                        )}
+
+                        {c.requiresPhoto && answers[c.id] && (
+                          <div className="mt-3">
+                            <input
+                              ref={el => { photoInputRefs.current[c.id] = el; }}
+                              type="file" accept="image/*" capture="environment"
+                              className="hidden"
+                              onChange={e => handlePhotoChange(c.id, e.target.files[0])}
+                            />
+                            {photos[c.id] ? (
+                              <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl p-2.5">
+                                <img src={photos[c.id]} alt="" className="w-14 h-14 rounded-lg object-cover border border-green-300" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-black text-green-700 flex items-center gap-1.5">
+                                    <CheckCircle2 size={13} strokeWidth={2.5} /> تم رفع الصورة
+                                  </p>
+                                  <p className="text-[10px] text-green-600 mt-0.5">اضغط للتغيير</p>
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <button onClick={() => photoInputRefs.current[c.id]?.click()}
+                                    className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-green-700 bg-white border border-green-300 hover:bg-green-50">
+                                    تغيير
+                                  </button>
+                                  <button onClick={() => removePhoto(c.id)}
+                                    className="w-7 h-7 rounded-lg flex items-center justify-center text-red-500 bg-white border border-red-200 hover:bg-red-50">
+                                    <X size={13} strokeWidth={2.5} />
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => !uploadingPhotos[c.id] && photoInputRefs.current[c.id]?.click()}
+                                disabled={uploadingPhotos[c.id]}
+                                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-[#A98159]/40 bg-[#FDF8F0] text-[#A98159] font-bold text-sm hover:bg-[#FDF1E0] hover:border-[#A98159] transition-all disabled:opacity-60 disabled:cursor-wait"
+                              >
+                                {uploadingPhotos[c.id]
+                                  ? <><Loader2 size={16} className="animate-spin" /> جارٍ رفع الصورة...</>
+                                  : <><Camera size={16} strokeWidth={2.25} /> رفع صورة مرفقة (مطلوبة)</>}
+                              </button>
+                            )}
                           </div>
                         )}
                       </>
