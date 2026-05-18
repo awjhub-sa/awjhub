@@ -25,7 +25,7 @@ import { ARAFAT_ALL_CRITERIA }                   from '../../config/arafatQuesti
 import {
   FileText, X, ChevronDown, Loader2,
   CheckCircle2, Building2, Calendar, ClipboardList,
-  ListChecks,
+  ListChecks, Eye, Info,
 } from 'lucide-react';
 
 /* Map each report-type key to its question list (for detail mode) */
@@ -461,10 +461,10 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
       font:        'Cairo',
       fontStyle:   'normal',
       halign:      'right',
-      fontSize:    9,
-      cellPadding: 3.5,
+      fontSize:    9.5,
+      cellPadding: { top: 4, right: 5, bottom: 4, left: 5 },
       lineColor:   C_LINE,
-      lineWidth:   0.25,
+      lineWidth:   0.2,
       textColor:   C_DARK,
       valign:      'middle',
       overflow:    'linebreak',
@@ -474,11 +474,12 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
       fontStyle: 'normal',
       halign:    'right',
       textColor: C_WHITE,
-      fontSize:  9,
-      cellPadding: 4,
+      fontSize:  10,
+      cellPadding: { top: 4.5, right: 5, bottom: 4.5, left: 5 },
       valign:    'middle',
+      lineWidth: 0,
     },
-    alternateRowStyles: { fillColor: C_LIGHT },
+    alternateRowStyles: { fillColor: [253, 248, 240] },  // softer cream
     theme:  'grid',
     margin: { right: ML, left: MR },
   };
@@ -515,68 +516,119 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
     pageNum++;
 
     if (isFirst) {
-      /* Logo — top-right corner, landscape aspect */
+      /* ── Top decorative band ── */
+      doc.setFillColor(...C_LIGHT);
+      doc.rect(0, 0, PW, 14, 'F');
+      doc.setDrawColor(...C_GOLD);
+      doc.setLineWidth(0.6);
+      doc.line(0, 14, PW, 14);
+
+      /* ── Centered logo ── */
       if (logoDataUrl) {
-        const logoW = 32;
+        const logoW = 46;
         const logoH = logoW / LOGO_ASPECT;
-        try { doc.addImage(logoDataUrl, 'PNG', PW - ML - logoW, 8, logoW, logoH); }
+        const logoX = (PW - logoW) / 2;
+        try { doc.addImage(logoDataUrl, 'PNG', logoX, 22, logoW, logoH); }
         catch { /* silently skip */ }
       }
 
-      /* Brand name */
+      /* ── Brand name ── */
       doc.setFont('Cairo', 'normal');
-      doc.setFontSize(26);
+      doc.setFontSize(30);
       doc.setTextColor(...C_GOLD);
-      doc.text(fixArabic('ضيوف البيت'), PW / 2, 34, { align: 'center' });
+      doc.text(fixArabic('ضيوف البيت'), PW / 2, 56, { align: 'center' });
 
-      /* Report title */
-      doc.setFontSize(13);
+      /* ── Small decorative dots flanking the title divider ── */
+      doc.setFillColor(...C_GOLD);
+      doc.circle(PW / 2 - 38, 62, 0.9, 'F');
+      doc.circle(PW / 2,      62, 1.2, 'F');
+      doc.circle(PW / 2 + 38, 62, 0.9, 'F');
+
+      /* ── Report title ── */
+      doc.setFontSize(16);
       doc.setTextColor(...C_DARK);
-      doc.text(fixArabic('تقرير الرقابة الميدانية'), PW / 2, 46, { align: 'center' });
+      doc.text(fixArabic('تقرير الرقابة الميدانية'), PW / 2, 70, { align: 'center' });
 
-      /* Season line */
-      doc.setFontSize(9);
+      /* ── Season line ── */
+      doc.setFontSize(10);
       doc.setTextColor(...C_GRAY);
-      doc.text(fixArabic('موسم الحج ١٤٤٧ هـ'), PW / 2, 54, { align: 'center' });
+      doc.text(fixArabic('موسم الحج ١٤٤٧ هـ'), PW / 2, 77, { align: 'center' });
 
-      /* Bottom rule */
+      /* ── Double-line divider (thicker + thinner under it) ── */
       doc.setDrawColor(...C_GOLD);
-      doc.setLineWidth(0.4);
-      doc.line(ML, 60, PW - MR, 60);
+      doc.setLineWidth(0.6);
+      doc.line(ML, 82.5, PW - MR, 82.5);
+      doc.setLineWidth(0.2);
+      doc.line(ML, 83.7, PW - MR, 83.7);
 
     } else {
-      /* Mini header: brand + title + page number */
+      /* ── Mini header band ── */
+      doc.setFillColor(...C_LIGHT);
+      doc.rect(0, 0, PW, 16, 'F');
+
+      /* Small accent square on the right side */
+      doc.setFillColor(...C_GOLD);
+      doc.rect(PW - ML - 1.5, 5, 1.5, 6, 'F');
+
+      /* Brand on the right */
       doc.setFont('Cairo', 'normal');
-      doc.setFontSize(10);
+      doc.setFontSize(11);
       doc.setTextColor(...C_GOLD);
-      doc.text(fixArabic('ضيوف البيت'), PW - ML, 11, { align: 'right' });
+      doc.text(fixArabic('ضيوف البيت'), PW - ML - 4, 10, { align: 'right' });
 
-      doc.setFontSize(9);
+      /* Title centered */
+      doc.setFontSize(9.5);
       doc.setTextColor(...C_DARK);
-      doc.text(fixArabic('تقرير الرقابة الميدانية'), PW / 2, 11, { align: 'center' });
+      doc.text(fixArabic('تقرير الرقابة الميدانية'), PW / 2, 10, { align: 'center' });
 
-      doc.setFontSize(9);
+      /* Page number with prefix */
+      doc.setFontSize(8.5);
       doc.setTextColor(...C_GRAY);
-      doc.text(toArabicNum(pageNum), ML, 11, { align: 'left' });
+      doc.text(
+        fixArabic(`صفحة ${toArabicNum(pageNum)}`),
+        ML, 10, { align: 'left' }
+      );
 
+      /* Gold divider line */
       doc.setDrawColor(...C_GOLD);
-      doc.setLineWidth(0.4);
-      doc.line(ML, 19, PW - MR, 19);
+      doc.setLineWidth(0.5);
+      doc.line(0, 16, PW, 16);
     }
   }
 
   /* ── drawPageFooter ── */
   function drawPageFooter() {
+    /* Gold accent line */
+    doc.setDrawColor(...C_GOLD);
+    doc.setLineWidth(0.4);
+    doc.line(ML, PH - 14, PW - MR, PH - 14);
+
+    /* Thin secondary line below the gold one */
     doc.setDrawColor(...C_LINE);
-    doc.setLineWidth(0.3);
+    doc.setLineWidth(0.15);
     doc.line(ML, PH - 13, PW - MR, PH - 13);
 
     doc.setFont('Cairo', 'normal');
+
+    /* Brand label on the right */
+    doc.setFontSize(8);
+    doc.setTextColor(...C_GOLD);
+    doc.text(fixArabic('ضيوف البيت'), PW - MR, PH - 8, { align: 'right' });
+
+    /* Centered tagline */
     doc.setFontSize(8);
     doc.setTextColor(...C_GRAY);
     doc.text(
-      fixArabic('منظومة المراقبة الميدانية — ضيوف البيت'),
+      fixArabic('منظومة المراقبة الميدانية'),
       PW / 2, PH - 8, { align: 'center' }
+    );
+
+    /* Page number on the left */
+    doc.setFontSize(8);
+    doc.setTextColor(...C_GRAY);
+    doc.text(
+      fixArabic(`صفحة ${toArabicNum(pageNum)}`),
+      ML, PH - 8, { align: 'left' }
     );
   }
 
@@ -783,32 +835,36 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
   /* Precompute wrapped lines for each value at the value font size,
      so we can size the card and rows correctly before drawing. */
   doc.setFont('Cairo', 'normal');
-  doc.setFontSize(10);
+  doc.setFontSize(11);
   const VAL_MAX_W = CW - 16;
   const metaPrep = metaRows.map(([lbl, val]) => ({
     lbl,
     lines: wrapArabicLines(doc, val, VAL_MAX_W).slice(0, 2),
   }));
 
-  const ROW_TOP    = 3.5;
+  const ROW_TOP    = 4;
   const LABEL_OFF  = 0;       // label sits at top of row
-  const VAL_OFF    = 4.5;     // first value line offset below label
-  const VAL_LINE_H = 5;       // gap between wrapped value lines
-  const ROW_BOT    = 2.5;
+  const VAL_OFF    = 5.5;     // first value line offset below label
+  const VAL_LINE_H = 5.5;     // gap between wrapped value lines
+  const ROW_BOT    = 3;
   const rowHeights = metaPrep.map(r =>
     ROW_TOP + 2.5 + VAL_OFF + (r.lines.length - 1) * VAL_LINE_H + ROW_BOT
   );
   const cardH = rowHeights.reduce((s, h) => s + h, 0) + 4;
-  const cardY = 65;
+  const cardY = 90;
 
   doc.setFillColor(...C_LIGHT);
   doc.setDrawColor(...C_GOLD);
-  doc.setLineWidth(0.5);
-  doc.roundedRect(ML, cardY, CW, cardH, 3, 3, 'FD');
+  doc.setLineWidth(0.4);
+  doc.roundedRect(ML, cardY, CW, cardH, 4, 4, 'FD');
 
-  /* Gold right accent bar (RTL → visually leading edge is on the right) */
+  /* Gold right accent bar with a softer width (RTL → leading edge on the right) */
   doc.setFillColor(...C_GOLD);
-  doc.rect(PW - ML - 2.5, cardY, 2.5, cardH, 'F');
+  doc.rect(PW - ML - 3, cardY, 3, cardH, 'F');
+
+  /* Small gold cap at top of accent bar for elegance */
+  doc.setFillColor(196, 164, 110); // lighter gold
+  doc.rect(PW - ML - 3, cardY, 3, 5, 'F');
 
   let my = cardY + 2;
   metaPrep.forEach((r, idx) => {
@@ -817,12 +873,12 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
 
     /* Label */
     doc.setFont('Cairo', 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(...C_GRAY);
-    doc.text(fixArabic(`${r.lbl}:`), PW - ML - 6, my, { align: 'right' });
+    doc.setFontSize(8.5);
+    doc.setTextColor(...C_GOLD);
+    doc.text(fixArabic(r.lbl), PW - ML - 6, my, { align: 'right' });
 
     /* Value lines (already reshaped + reversed) */
-    doc.setFontSize(10);
+    doc.setFontSize(11);
     doc.setTextColor(...C_DARK);
     r.lines.forEach((line, lineIdx) => {
       doc.text(line, PW - ML - 6, my + VAL_OFF + lineIdx * VAL_LINE_H, { align: 'right' });
@@ -840,15 +896,23 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
 
   const afterCardY = cardY + cardH + 8;
 
-  /* ── Summary count ── */
+  /* ── Summary count — boxed badge for visual weight ── */
   const totalRecs = types.reduce((s, t) => s + (data[t]?.length ?? 0), 0);
   doc.setFont('Cairo', 'normal');
+
+  /* Right-aligned pill background */
+  const badgeText = fixArabic(`إجمالي السجلات: ${toArabicNum(totalRecs)}`);
   doc.setFontSize(11);
-  doc.setTextColor(...C_GOLD);
-  doc.text(
-    fixArabic(`إجمالي السجلات: ${toArabicNum(totalRecs)}`),
-    PW - ML, afterCardY, { align: 'right' }
-  );
+  const badgeW = doc.getTextWidth(badgeText) + 10;
+  const badgeH = 8;
+  const badgeY = afterCardY - 5.5;
+  const badgeX = PW - ML - badgeW;
+
+  doc.setFillColor(...C_GOLD);
+  doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 2, 2, 'F');
+
+  doc.setTextColor(...C_WHITE);
+  doc.text(badgeText, PW - ML - 5, afterCardY, { align: 'right' });
 
   /* ── Summary table ── */
   const summaryBody = types
@@ -917,39 +981,52 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
       doc.addPage();
       drawPageHeader(false);
 
-      let y = 28;
+      let y = 24;
 
-      /* Center name */
+      /* ── Center title with gold square accent on the right ── */
+      doc.setFillColor(...C_GOLD);
+      doc.rect(PW - ML - 1.2, y - 4.5, 1.5, 6, 'F');
+
       doc.setFont('Cairo', 'normal');
-      doc.setFontSize(14);
+      doc.setFontSize(15);
       doc.setTextColor(...C_DARK);
-      doc.text(fixArabic(center), PW - ML, y, { align: 'right' });
-      y += 6;
+      doc.text(fixArabic(center), PW - ML - 4, y, { align: 'right' });
+      y += 6.5;
 
-      /* Contractor name for this center — multi-line aware */
+      /* Contractor name — multi-line aware */
       const pageCaterer = CENTERS.find(c => c.id === center)?.caterer ?? '';
       if (pageCaterer) {
         doc.setFont('Cairo', 'normal');
-        doc.setFontSize(8);
+        doc.setFontSize(8.5);
         doc.setTextColor(...C_GRAY);
-        const catLines = wrapArabicLines(doc, pageCaterer, CW).slice(0, 2);
+        const catLines = wrapArabicLines(doc, pageCaterer, CW - 4).slice(0, 2);
         catLines.forEach((line, i) => {
-          doc.text(line, PW - ML, y + i * 4.5, { align: 'right' });
+          doc.text(line, PW - ML - 4, y + i * 4.5, { align: 'right' });
         });
-        y += catLines.length * 4.5 + 1;
+        y += catLines.length * 4.5 + 2;
       }
 
-      /* Report-type label + coloured rule */
+      /* ── Report-type tag (pill with bg color) ── */
       const tRgb = hexToRgb(typeMeta?.color ?? '#A98159');
       doc.setFont('Cairo', 'normal');
-      doc.setFontSize(10);
-      doc.setTextColor(...tRgb);
-      doc.text(fixArabic(typeMeta?.label ?? type), PW - ML, y, { align: 'right' });
-      y += 3;
-      doc.setDrawColor(...tRgb);
-      doc.setLineWidth(0.4);
-      doc.line(ML, y, PW - MR, y);
+      doc.setFontSize(9.5);
+      const tagText = fixArabic(typeMeta?.label ?? type);
+      const tagW = doc.getTextWidth(tagText) + 10;
+      const tagH = 6.5;
+      doc.setFillColor(...tRgb);
+      doc.roundedRect(PW - ML - tagW, y - 4.5, tagW, tagH, 1.5, 1.5, 'F');
+      doc.setTextColor(...C_WHITE);
+      doc.text(tagText, PW - ML - 5, y, { align: 'right' });
       y += 5;
+
+      /* Thin colored rule beneath the tag */
+      doc.setDrawColor(...tRgb);
+      doc.setLineWidth(0.5);
+      doc.line(ML, y, PW - MR, y);
+      doc.setDrawColor(...C_LINE);
+      doc.setLineWidth(0.15);
+      doc.line(ML, y + 0.8, PW - MR, y + 0.8);
+      y += 6;
 
       /* ── Data table ── */
       if (type === 'meal_evaluations') {
@@ -1042,8 +1119,17 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
     }
   }
 
-  /* ── Save ── */
-  doc.save(`تقرير-ضيوف-البيت-${Date.now()}.pdf`);
+  /* ── Open as preview in new tab (revoke later) ──
+     Matches the Hajj-Dashboard pattern: view first, save from browser. */
+  const blob = doc.output('blob');
+  const url  = URL.createObjectURL(blob);
+  const win  = window.open(url, '_blank');
+  if (!win) {
+    // Popup blocked — fall back to direct download so user still gets the file.
+    doc.save(`تقرير-ضيوف-البيت-${Date.now()}.pdf`);
+  }
+  // Free memory after the user has had time to view/save.
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 /* ══════════════════════════════════════════════════════
@@ -1064,32 +1150,26 @@ function ReportModal({ onClose }) {
       prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
     );
 
-  const handleGenerate = async (detailed = false) => {
+  /* Open the HTML report view in a new tab.
+     The view fetches its own data based on the URL params, so we don't need
+     to pre-fetch here — keeps the modal snappy. */
+  const handleGenerate = (detailed = false) => {
     if (!types.length) { setError('اختر نوعاً واحداً على الأقل'); return; }
-    setGenerating(true);
     setError('');
-    try {
-      setProgress('جاري جلب البيانات...');
-      const data  = await fetchReportData({ centerFilter, dateFilter, types });
-      const total = types.reduce((s, t) => s + (data[t]?.length ?? 0), 0);
 
-      if (total === 0) {
-        setError('لا توجد سجلات تطابق الفلاتر المحددة');
-        setGenerating(false);
-        setProgress('');
-        return;
-      }
+    const params = new URLSearchParams();
+    if (centerFilter && centerFilter !== 'all') params.set('center', centerFilter);
+    if (dateFilter) params.set('date', dateFilter);
+    params.set('types', types.join(','));
+    if (detailed) params.set('detailed', '1');
 
-      setProgress(`جاري إنشاء PDF ${detailed ? 'المفصّل' : ''} (${total} سجل)...`);
-      await buildPDF({ data, centerFilter, dateFilter, types, detailed });
-      setProgress('');
-      onClose();
-    } catch (e) {
-      console.error('PDF generation error:', e);
-      setError('حدث خطأ أثناء الإنشاء — راجع Console للتفاصيل.');
+    const url = `/admin/report-view?${params.toString()}`;
+    const win = window.open(url, '_blank', 'noopener');
+    if (!win) {
+      setError('المتصفح حجب فتح التبويب — اسمح بالتبويبات المنبثقة من إعدادات الموقع.');
+      return;
     }
-    setGenerating(false);
-    setProgress('');
+    onClose();
   };
 
   return (
@@ -1112,15 +1192,21 @@ function ReportModal({ onClose }) {
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div
-                className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-md"
-                style={{ background: 'linear-gradient(135deg,#C4A46E,#A98159)' }}
-              >
-                <FileText size={18} className="text-white" />
+              <div className="relative">
+                <div
+                  className="absolute inset-0 rounded-2xl blur-lg opacity-50"
+                  style={{ background: 'linear-gradient(135deg,#C4A46E,#A98159)' }}
+                />
+                <div
+                  className="relative w-10 h-10 rounded-2xl flex items-center justify-center shadow-md"
+                  style={{ background: 'linear-gradient(135deg,#C4A46E,#A98159)' }}
+                >
+                  <Eye size={18} className="text-white" strokeWidth={2.25} />
+                </div>
               </div>
               <div>
-                <h2 className="font-bold text-[#2D2926] text-base">إصدار تقرير PDF</h2>
-                <p className="text-[11px] text-[#9D8F85] mt-0.5">حدّد الفلاتر ثم اضغط إنشاء</p>
+                <h2 className="font-bold text-[#2D2926] text-base">عرض تقرير</h2>
+                <p className="text-[11px] text-[#9D8F85] mt-0.5">حدّد الفلاتر ثم اعرض المعاينة</p>
               </div>
             </div>
             <button
@@ -1272,7 +1358,7 @@ function ReportModal({ onClose }) {
           )}
         </div>
 
-        {/* ── Generate button ── */}
+        {/* ── Generate buttons ── */}
         <div className="px-6 py-4 border-t border-[#EDE5DC] bg-[#FDFCFB]">
           {progress && (
             <div className="flex items-center gap-2 mb-3 bg-[#FDF8F0] border border-[#D1C4B9] rounded-xl px-3 py-2">
@@ -1280,6 +1366,16 @@ function ReportModal({ onClose }) {
               <span className="text-[11px] font-bold text-[#A98159]">{progress}</span>
             </div>
           )}
+
+          {/* Info hint: opens preview in a new tab */}
+          <div className="flex items-start gap-2 mb-3 bg-[#FDF8F0] border border-[#E8DDD4] rounded-xl px-3 py-2.5">
+            <Info size={14} className="text-[#A98159] shrink-0 mt-0.5" />
+            <p className="text-[11px] text-[#6D6E71] leading-relaxed">
+              التقرير راح يفتح في <span className="font-bold text-[#A98159]">تبويب جديد</span> للمعاينة.
+              تقدر تحفظه أو تطبعه من زر <span className="font-bold">«حفظ كـ PDF»</span> في المتصفح.
+            </p>
+          </div>
+
           <div className="space-y-2.5">
             <button
               onClick={() => handleGenerate(true)}
@@ -1287,8 +1383,8 @@ function ReportModal({ onClose }) {
               className="w-full flex items-center justify-center gap-2.5 py-3 rounded-2xl text-[#2D2926] font-bold text-sm transition-all disabled:opacity-50 active:scale-[0.98] bg-white border-2 border-[#2D2926] hover:bg-[#FDF8F0]"
             >
               {generating
-                ? <><Loader2 size={16} className="animate-spin" /> جاري الإنشاء...</>
-                : <><ListChecks size={16} /> مع التفاصيل (أسئلة المخالفات لكل سجل)</>}
+                ? <><Loader2 size={16} className="animate-spin" /> جارٍ التحضير...</>
+                : <><ListChecks size={16} /> عرض مفصّل (مع أسئلة المخالفات)</>}
             </button>
             <button
               onClick={() => handleGenerate(false)}
@@ -1297,8 +1393,8 @@ function ReportModal({ onClose }) {
               style={{ background: 'linear-gradient(135deg,#C4A46E 0%,#A98159 50%,#8B6840 100%)' }}
             >
               {generating
-                ? <><Loader2 size={16} className="animate-spin" /> جاري الإنشاء...</>
-                : <><FileText size={16} /> إنشاء وتنزيل تقرير PDF</>}
+                ? <><Loader2 size={16} className="animate-spin" /> جارٍ التحضير...</>
+                : <><Eye size={16} strokeWidth={2.25} /> عرض التقرير</>}
             </button>
           </div>
         </div>
@@ -1323,11 +1419,11 @@ export default function AdminReportGenerator() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-white text-xs font-bold transition-all active:scale-95 shadow-[0_4px_16px_rgba(169,129,89,0.35)] hover:shadow-[0_6px_24px_rgba(169,129,89,0.45)] hover:opacity-90"
+        className="group relative flex items-center gap-2 px-4 py-2.5 rounded-2xl text-white text-xs font-bold transition-all active:scale-95 shadow-[0_4px_16px_rgba(169,129,89,0.35)] hover:shadow-[0_6px_24px_rgba(169,129,89,0.45)] hover:opacity-90"
         style={{ background: 'linear-gradient(135deg,#C4A46E 0%,#A98159 50%,#8B6840 100%)' }}
       >
-        <FileText size={14} />
-        إصدار تقرير
+        <Eye size={14} strokeWidth={2.5} className="group-hover:scale-110 transition-transform duration-300" />
+        عرض تقرير
       </button>
 
       {open && <ReportModal onClose={() => setOpen(false)} />}

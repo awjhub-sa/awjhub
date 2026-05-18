@@ -31,6 +31,9 @@ import AdminUsers          from './pages/admin/AdminUsers';
 import AdminNotifications  from './pages/admin/AdminNotifications';
 import AdminTaskAssign     from './pages/admin/AdminTaskAssign';
 import AdminPhases         from './pages/admin/AdminPhases';
+import AdminReportView     from './pages/admin/AdminReportView';
+import AdminStaff          from './pages/admin/AdminStaff';
+import AdminMenu           from './pages/admin/AdminMenu';
 
 // شاشة تحميل بسيطة مطابقة لهوية التطبيق
 const FullPageLoader = () => (
@@ -45,7 +48,7 @@ function RootRedirect() {
   if (loading) return <FullPageLoader />;
   if (!user) return <Navigate to="/login" replace />;
   
-  if (role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+  if (role === 'admin' || role === 'staff') return <Navigate to="/admin/dashboard" replace />;
   if (role === 'supervisor') return <Navigate to="/supervisor-home" replace />;
   return <Navigate to="/home" replace />;
 }
@@ -80,6 +83,12 @@ export default function App() {
         <Route path="/sup-report"           element={<RequireAuth><SupReport /></RequireAuth>} />
         <Route path="/sup-logistics"        element={<RequireAuth><SupLogisticsRequest /></RequireAuth>} />
         
+        {/* Standalone report view — outside AdminLayout so the page prints cleanly without the sidebar */}
+        <Route
+          path="/admin/report-view"
+          element={<RequireAdmin><AdminReportView /></RequireAdmin>}
+        />
+
         {/* Admin Routes */}
         <Route path="/admin" element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
           <Route index                element={<Navigate to="dashboard" replace />} />
@@ -88,9 +97,11 @@ export default function App() {
           <Route path="logistics"     element={<AdminLogistics />} />
           <Route path="analytics"     element={<AdminAnalytics />} />
           <Route path="users"         element={<AdminUsers />} />
+          <Route path="staff"         element={<AdminStaff />} />
           <Route path="notifications" element={<AdminNotifications />} />
           <Route path="tasks"         element={<AdminTaskAssign />} />
           <Route path="phases"        element={<AdminPhases />} />
+          <Route path="menu"          element={<AdminMenu />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -104,7 +104,7 @@ export default function SupMinaReadiness() {
       <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-28 font-arabic px-4 md:px-8">
         <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 md:px-8 py-3 mb-6 shadow-sm">
           <div className="max-w-5xl mx-auto flex items-center justify-between">
-            <button onClick={() => navigate('/supervisor-home')} className="p-2 hover:bg-gray-100 rounded-xl transition shrink-0">
+            <button onClick={() => navigate('/supervisor-home')} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition shrink-0">
               <ChevronRight className="text-[#A98159]" size={22} strokeWidth={2.5} />
             </button>
             <h1 className="text-base font-bold text-[#2D2926] absolute left-1/2 -translate-x-1/2 whitespace-nowrap">جاهزية مشعر منى</h1>
@@ -138,7 +138,7 @@ export default function SupMinaReadiness() {
                   {pendingTasks.map(task => (
                     <button key={task.id}
                       onClick={() => setSelectedTask({ taskId: task.id, scheduledDate: task.scheduled_date })}
-                      className="w-full bg-white border border-[#D1C4B9] rounded-3xl p-5 text-right flex items-center gap-4 hover:border-[#A98159] hover:shadow-md transition-all active:scale-[0.98]">
+                      className="w-full bg-gradient-to-br from-white to-[#FDF8F0]/60 border border-[#D1C4B9] rounded-3xl p-5 text-right flex items-center gap-4 hover:border-[#A98159] hover:shadow-[0_8px_24px_rgba(169,129,89,0.18)] hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98]">
                       <div className="w-12 h-12 bg-[#FDF8F0] border border-[#A98159]/20 rounded-2xl flex items-center justify-center shrink-0">
                         <Home className="text-[#A98159]" size={22} />
                       </div>
@@ -180,7 +180,7 @@ export default function SupMinaReadiness() {
       <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 md:px-8 py-3 mb-6 shadow-sm">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <button onClick={() => { setSelectedTask(null); setAnswers({}); setDetails({}); }}
-            className="p-2 hover:bg-gray-100 rounded-xl transition shrink-0">
+            className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition shrink-0">
             <ChevronRight className="text-[#A98159]" size={22} strokeWidth={2.5} />
           </button>
           <h1 className="text-base font-bold text-[#2D2926] absolute left-1/2 -translate-x-1/2 whitespace-nowrap">جاهزية مشعر منى</h1>
@@ -221,52 +221,126 @@ export default function SupMinaReadiness() {
         {SECTIONS.map(section => (
           <div key={section.id}>
             <div className="flex items-center gap-3 mb-4">
-              <div className="h-px flex-1 bg-[#D1C4B9]" />
-              <span className="text-xs font-bold text-[#A98159] bg-[#FDF8F0] border border-[#D1C4B9] px-4 py-1.5 rounded-full">{section.title}</span>
-              <div className="h-px flex-1 bg-[#D1C4B9]" />
+              <div className="h-px flex-1 bg-gradient-to-l from-transparent via-[#A98159]/40 to-transparent" />
+              <span className="px-5 py-2 rounded-full text-white text-xs font-black shadow-[0_4px_14px_rgba(169,129,89,0.35)]"
+                style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
+                {section.title}
+              </span>
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#A98159]/40 to-transparent" />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {section.criteria.map(c => (
-                <div key={c.id} className="bg-white rounded-3xl p-6 border border-[#D1C4B9] shadow-sm">
-                  <span className="text-[#A98159] font-bold text-sm block mb-2">#{c.id}</span>
-                  <p className="text-[#2D2926] font-bold text-sm mb-4 leading-relaxed">{c.text}</p>
-                  {c.type === 'choice' && (
-                    <div className="grid grid-cols-2 gap-2">
-                      {c.choices.map(choice => (
-                        <button key={choice} onClick={() => handleAnswer(c.id, choice)}
-                          className={`py-3 rounded-2xl text-xs font-bold transition-all ${answers[c.id] === choice ? 'bg-[#A98159] text-white' : 'bg-gray-50 text-[#6D6E71] border border-gray-100'}`}>
-                          {choice}
-                        </button>
-                      ))}
+              {section.criteria.map(c => {
+                const ans = answers[c.id];
+                const isYes = ans === 'نعم';
+                const isNo  = ans === 'لا';
+                return (
+                  <div key={c.id} className={`group/q relative bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-3xl shadow-[0_2px_12px_rgba(45,41,38,0.05)] overflow-hidden transition-all duration-300 ${
+                    ans
+                      ? 'border-2 border-[#A98159]/40 shadow-[0_6px_24px_rgba(169,129,89,0.18)]'
+                      : 'border border-[#EDE5DC] hover:shadow-[0_4px_18px_rgba(45,41,38,0.08)]'
+                  }`}>
+                    {ans && (
+                      <div className="absolute top-0 right-0 left-0 h-1"
+                        style={{ background: isYes
+                          ? 'linear-gradient(90deg, #16A34A, #22C55E, #16A34A)'
+                          : isNo
+                            ? 'linear-gradient(90deg, #DC2626, #EF4444, #DC2626)'
+                            : 'linear-gradient(90deg, #A98159, #C4A46E, #A98159)' }} />
+                    )}
+                    <div className="p-5">
+                      <div className="flex items-start gap-3 mb-3">
+                        <div className="relative flex-shrink-0">
+                          <div className="absolute inset-0 rounded-2xl blur-md bg-[#A98159] opacity-30 group-hover/q:opacity-50 transition-opacity" />
+                          <div className="relative w-10 h-10 rounded-2xl flex items-center justify-center text-white font-black text-sm shadow-md tabular-nums"
+                            style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
+                            {c.id}
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          {ans && (
+                            <div className="mb-1.5">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-green-50 border border-green-200 text-green-700">
+                                <CheckCircle2 size={9} strokeWidth={2.5} />
+                                مُجاب
+                              </span>
+                            </div>
+                          )}
+                          <p className="text-[#2D2926] font-bold text-[15px] leading-relaxed">{c.text}</p>
+                        </div>
+                      </div>
+
+                      {c.type === 'choice' && (
+                        <div className="grid grid-cols-2 gap-2">
+                          {c.choices.map(choice => {
+                            const sel = answers[c.id] === choice;
+                            return (
+                              <button key={choice} onClick={() => handleAnswer(c.id, choice)}
+                                className={`py-3 rounded-2xl text-xs font-bold transition-all duration-300 ${
+                                  sel ? 'text-white scale-[1.02] shadow-[0_4px_14px_rgba(169,129,89,0.4)]'
+                                      : 'bg-white text-[#6D6E71] border-2 border-[#E8DDD4] hover:border-[#A98159]/40 hover:bg-[#FDF8F0]'
+                                }`}
+                                style={sel ? { background: 'linear-gradient(135deg, #C4A46E, #A98159)' } : undefined}
+                              >
+                                {choice}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {(c.type === 'yesno' || c.type === 'yesno_detail') && (
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            onClick={() => handleAnswer(c.id, 'نعم')}
+                            className={`min-h-[52px] py-3.5 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-2.5 active:scale-[0.98] ${
+                              isYes
+                                ? 'text-white scale-[1.02] shadow-[0_6px_20px_rgba(56,107,65,0.4)]'
+                                : 'bg-white text-[#6D6E71] border-2 border-[#E8DDD4] hover:border-[#A98159]/40 hover:bg-[#FDF8F0]'
+                            }`}
+                            style={isYes ? { background: 'linear-gradient(135deg, #16A34A, #15803D)' } : undefined}
+                          >
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-transform ${isYes ? 'bg-white/25 scale-110' : 'bg-[#386B41]/10'}`}>
+                              <CheckCircle2 size={16} strokeWidth={2.5} className={isYes ? 'text-white' : 'text-[#386B41]'} />
+                            </div>
+                            <span className="text-[15px]">نعم</span>
+                          </button>
+                          <button
+                            onClick={() => handleAnswer(c.id, 'لا')}
+                            className={`min-h-[52px] py-3.5 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-2.5 active:scale-[0.98] ${
+                              isNo
+                                ? 'text-white scale-[1.02] shadow-[0_6px_20px_rgba(186,26,26,0.4)]'
+                                : 'bg-white text-[#6D6E71] border-2 border-[#E8DDD4] hover:border-red-300 hover:bg-red-50/30'
+                            }`}
+                            style={isNo ? { background: 'linear-gradient(135deg, #DC2626, #B91C1C)' } : undefined}
+                          >
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-transform ${isNo ? 'bg-white/25 scale-110' : 'bg-[#BA1A1A]/10'}`}>
+                              <AlertCircle size={16} strokeWidth={2.5} className={isNo ? 'text-white' : 'text-[#BA1A1A]'} />
+                            </div>
+                            <span className="text-[15px]">لا</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {c.type === 'yesno_detail' && answers[c.id] === 'نعم' && (
+                        <input type="text"
+                          className="w-full mt-3 border-2 border-[#E8DDD4] rounded-xl px-4 py-3 text-sm focus:border-[#A98159] focus:ring-2 focus:ring-[#A98159]/15 outline-none transition-all"
+                          value={details[c.id] || ''}
+                          onChange={e => handleDetail(c.id, e.target.value)}
+                          placeholder={c.detailLabel}
+                        />
+                      )}
                     </div>
-                  )}
-                  {(c.type === 'yesno' || c.type === 'yesno_detail') && (
-                    <div className="flex gap-3">
-                      <button onClick={() => handleAnswer(c.id, 'نعم')}
-                        className={`flex-1 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 ${answers[c.id] === 'نعم' ? 'bg-[#386B41] text-white' : 'bg-gray-50 border border-gray-100 text-[#6D6E71]'}`}>
-                        <CheckCircle2 size={18} /> نعم
-                      </button>
-                      <button onClick={() => handleAnswer(c.id, 'لا')}
-                        className={`flex-1 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 ${answers[c.id] === 'لا' ? 'bg-[#BA1A1A] text-white' : 'bg-gray-50 border border-gray-100 text-[#6D6E71]'}`}>
-                        <AlertCircle size={18} /> لا
-                      </button>
-                    </div>
-                  )}
-                  {c.type === 'yesno_detail' && answers[c.id] === 'نعم' && (
-                    <input type="text" className="w-full mt-3 border rounded-xl px-4 py-3 text-sm focus:border-[#A98159] outline-none"
-                      value={details[c.id] || ''} onChange={e => handleDetail(c.id, e.target.value)}
-                      placeholder={c.detailLabel} />
-                  )}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           </div>
         ))}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 border-t border-[#D1C4B9] z-50">
+      <div className="fixed bottom-0 left-0 right-0 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-white/90 border-t border-[#D1C4B9] z-50">
         <button onClick={handleSubmit} disabled={loading}
-          className="w-full max-w-md mx-auto bg-[#A98159] text-white py-4 rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-60">
+          className="w-full max-w-md mx-auto min-h-[56px] bg-gradient-to-br from-[#C4A46E] to-[#A98159] text-white py-4 rounded-2xl font-bold text-lg active:scale-[0.98] shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-60">
           {loading ? 'جاري الإرسال...' : <><Save size={22} /> حفظ وإرسال تقييم الجاهزية</>}
         </button>
       </div>

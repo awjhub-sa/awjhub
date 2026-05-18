@@ -1,17 +1,15 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { User, MapPin, Briefcase, Mail, LogOut, ChevronRight } from 'lucide-react';
-import { signOut } from 'firebase/auth';
-import { auth } from '../config/db.js';
+import { User, MapPin, Briefcase, Mail, LogOut, ChevronRight, Sparkles } from 'lucide-react';
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { profile, role } = useAuth(); // سحب البيانات من الـ Context الذي زودتني به
+  const { profile, role, logout } = useAuth();
 
   const handleSignOut = async () => {
     try {
-      await signOut(auth);
+      await logout();
       navigate('/login', { replace: true });
     } catch (error) {
       console.error('حدث خطأ أثناء تسجيل الخروج:', error);
@@ -39,8 +37,12 @@ export default function Profile() {
           <div className="absolute inset-0 opacity-[0.05]"
             style={{ backgroundImage: 'repeating-linear-gradient(45deg, #A98159 0, #A98159 1px, transparent 0, transparent 50%)', backgroundSize: '15px 15px' }} />
 
-          <div className="relative z-10 w-24 h-24 bg-white/10 rounded-full mx-auto mb-4 border-2 border-[#A98159]/30 flex items-center justify-center">
-            <User size={48} className="text-[#A98159]" strokeWidth={1.5} />
+          <div className="relative z-10 group/avatar mx-auto mb-4 w-fit">
+            <div className="absolute inset-0 rounded-full blur-2xl bg-[#A98159] opacity-50 group-hover/avatar:opacity-90 transition-opacity" />
+            <div className="relative w-24 h-24 bg-white/10 rounded-full border-2 border-[#A98159]/30 flex items-center justify-center group-hover/avatar:scale-105 transition-transform duration-300">
+              <User size={48} className="text-[#A98159]" strokeWidth={1.5} />
+              <Sparkles size={14} className="absolute top-1 right-1 text-yellow-200 drop-shadow animate-pulse" />
+            </div>
           </div>
 
           <h2 className="relative z-10 text-2xl font-bold text-white mb-2">

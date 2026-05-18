@@ -4,6 +4,7 @@ import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { auth } from '../config/db.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import logo from '../assets/logo.png';
+import { Fingerprint } from 'lucide-react';
 
 /* ── الزخرفة الذهبية العلويّة ── */
 const GoldOrnament = () => (
@@ -18,10 +19,9 @@ const GoldOrnament = () => (
 
 export default function Login() {
   const navigate = useNavigate();
-  const { role, loading } = useAuth();
+  const { role, loading, loginAsMonitor } = useAuth();
 
-  const [email,        setEmail]        = useState('');
-  const [password,     setPassword]     = useState('');
+  const [idNumber,     setIdNumber]     = useState('');
   const [selectedType, setSelectedType] = useState('observer');
   const [error,        setError]        = useState('');
   const [busy,         setBusy]         = useState(false);
@@ -33,43 +33,29 @@ export default function Login() {
   const [adminError,    setAdminError]    = useState('');
   const [adminBusy,     setAdminBusy]     = useState(false);
 
-  /* loginFlow tracks which login path triggered auth: 'observer' | 'supervisor' | 'admin' | null */
+  /* loginFlow tracks the admin path — observer/supervisor are resolved synchronously */
   const loginFlow = useRef(null);
 
-  /* ── Role-aware redirect ── */
+  /* ── Auto-redirect once role is resolved ── */
   useEffect(() => {
-    if (!loading && role) {
-      const flow = loginFlow.current;
+    if (loading || !role) return;
+    const flow = loginFlow.current;
 
-      /* Role mismatch — sign out and show error */
-      if (flow === 'observer' && role !== 'observer') {
-        signOut(auth);
-        setBusy(false);
-        setError('هذا الحساب غير مسجّل كمراقب ميداني');
-        loginFlow.current = null;
-        return;
-      }
-      if (flow === 'supervisor' && role !== 'supervisor') {
-        signOut(auth);
-        setBusy(false);
-        setError('هذا الحساب غير مسجّل كمشرف ميداني');
-        loginFlow.current = null;
-        return;
-      }
-      if (flow === 'admin' && role !== 'admin') {
-        signOut(auth);
-        setAdminBusy(false);
-        setAdminError('هذا الحساب غير مسجّل كمسؤول إداري');
-        loginFlow.current = null;
-        return;
-      }
-
+    /* Admin path: role mismatch (e.g. signed in as observer via Firebase Auth somehow) */
+    if (flow === 'admin' && role !== 'admin' && role !== 'staff') {
+      signOut(auth);
+      setAdminBusy(false);
+      setAdminError('هذا الحساب غير مسجّل كمسؤول إداري');
       loginFlow.current = null;
-      if (role === 'admin') navigate('/admin/dashboard', { replace: true });
-      else if (role === 'supervisor') navigate('/supervisor-home', { replace: true });
-      else if (role === 'observer') navigate('/home', { replace: true });
-      setBusy(false);
+      return;
     }
+
+    loginFlow.current = null;
+    if (role === 'admin' || role === 'staff') navigate('/admin/dashboard',  { replace: true });
+    else if (role === 'supervisor')           navigate('/supervisor-home',  { replace: true });
+    else if (role === 'observer')             navigate('/home',             { replace: true });
+    setBusy(false);
+    setAdminBusy(false);
   }, [role, loading, navigate]);
 
   const handleAdminLogin = async (e) => {
@@ -96,25 +82,22 @@ export default function Login() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (!email || !password) { setError('يرجى تعبئة جميع الحقول'); return; }
-    setBusy(true);
     setError('');
-    loginFlow.current = selectedType; // 'observer' or 'supervisor'
+    const id = idNumber.trim();
+    if (!id)             { setError('أدخل رقم الهوية'); return; }
+    if (id.length !== 10){ setError('رقم الهوية يجب أن يكون 10 أرقام'); return; }
+
+    setBusy(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await loginAsMonitor(id, selectedType);
+      /* AuthContext sets role → the useEffect above will redirect */
     } catch (err) {
-      loginFlow.current = null;
       setBusy(false);
-      const map = {
-        'auth/user-not-found':    'البريد الإلكتروني غير مسجّل',
-        'auth/wrong-password':    'كلمة المرور غير صحيحة',
-        'auth/invalid-email':     'صيغة البريد الإلكتروني غير صحيحة',
-        'auth/invalid-credential':'بيانات الدخول غير صحيحة أو نوع الحساب خاطئ',
-        'auth/too-many-requests': 'تم تجاوز عدد المحاولات، حاول لاحقاً بعد دقائق',
-      };
-      setError(map[err.code] || 'حدث خطأ غير متوقع، يرجى المحاولة ثانية');
+      setError(err.message || 'تعذّر التحقق، حاول مرة أخرى');
     }
   };
+
+  const numOnly = (v) => v.replace(/\D/g, '');
 
   return (
     <div
@@ -177,30 +160,31 @@ export default function Login() {
             </button>
           </div>
 
-          {/* حقل البريد الإلكتروني */}
+          {/* حقل رقم الهوية */}
           <div>
-            <label className="block text-sm font-medium text-[#2D2926] mb-1.5">البريد الإلكتروني</label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => { setEmail(e.target.value); setError(''); }}
-              placeholder="example@domain.sa"
-              className="w-full px-4 py-3 border-2 border-[#D1C4B9] rounded-xl text-sm text-[#2D2926] placeholder-[#6D6E71]/30 focus:border-[#A98159] focus:ring-2 focus:ring-[#A98159]/20 outline-none transition-all"
-              dir="ltr"
-            />
-          </div>
-
-          {/* حقل كلمة المرور */}
-          <div>
-            <label className="block text-sm font-medium text-[#2D2926] mb-1.5">كلمة المرور</label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => { setPassword(e.target.value); setError(''); }}
-              placeholder="••••••••"
-              className="w-full px-4 py-3 border-2 border-[#D1C4B9] rounded-xl text-sm text-[#2D2926] placeholder-[#6D6E71]/30 focus:border-[#A98159] focus:ring-2 focus:ring-[#A98159]/20 outline-none transition-all"
-              dir="ltr"
-            />
+            <label className="block text-sm font-medium text-[#2D2926] mb-1.5">رقم الهوية</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                <Fingerprint size={17} className="text-[#A98159]" strokeWidth={2} />
+              </div>
+              <input
+                type="text"
+                value={idNumber}
+                onChange={e => {
+                  const v = numOnly(e.target.value);
+                  if (v.length <= 10) { setIdNumber(v); setError(''); }
+                }}
+                placeholder="1xxxxxxxxx"
+                inputMode="numeric"
+                maxLength={10}
+                autoFocus
+                className="w-full pr-10 pl-4 py-3 border-2 border-[#D1C4B9] rounded-xl text-base text-[#2D2926] placeholder-[#6D6E71]/30 focus:border-[#A98159] focus:ring-2 focus:ring-[#A98159]/20 outline-none transition-all tabular-nums tracking-wider"
+                dir="ltr"
+              />
+            </div>
+            <p className="text-[10px] text-[#9D8F85] mt-1.5 text-center">
+              أدخل رقم هويتك المسجل في النظام (10 أرقام)
+            </p>
           </div>
 
           {error && (

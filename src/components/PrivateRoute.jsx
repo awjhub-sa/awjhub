@@ -16,11 +16,12 @@ export function RequireAuth({ children }) {
   return children;
 }
 
-/* Protects admin routes — must be logged in AND role === 'admin' */
+/* Protects admin routes — must be logged in AND role is admin-tier
+   (admin = full access / "مسؤول",  staff = scoped to assigned_centers / "موظف") */
 export function RequireAdmin({ children }) {
   const { user, role, loading } = useAuth();
-  if (loading)            return <Spinner />;
-  if (!user)              return <Navigate to="/login" replace />;
-  if (role !== 'admin')   return <Navigate to="/home"  replace />;
+  if (loading)                                  return <Spinner />;
+  if (!user)                                    return <Navigate to="/login" replace />;
+  if (role !== 'admin' && role !== 'staff')     return <Navigate to="/home"  replace />;
   return children;
 }

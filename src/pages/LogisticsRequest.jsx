@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, Send, Truck, Package, Utensils, Droplets, User, CheckCircle2 } from 'lucide-react';
+import {
+  ChevronRight, Send, Truck, Package, Utensils, Droplets, User, CheckCircle2, Sparkles,
+  AlertTriangle, ArrowLeft, FileText, Clock,
+} from 'lucide-react';
 import { db } from '../config/db.js';
-import { collection, addDoc, serverTimestamp, runTransaction, doc } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, query, where, serverTimestamp, runTransaction, doc } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getCaterer } from '../config/centers.js';
+import { initialStatusFields } from '../lib/statusTracking.js';
 
 const CATEGORY_TYPES = [
   { id: 'meals', label: 'إسناد وجبات', icon: Utensils },
@@ -17,10 +21,40 @@ const SUPPORT_TYPES = [
   { value: 'both',     label: 'داخلي وخارجي' },
 ];
 
+/* Same report-type map used in AdminReports — keep labels short here */
+const REPORT_TYPE_LABEL = {
+  water:    'تسرب مياه',
+  electric: 'عطل كهربائي',
+  crowd:    'ازدحام حرج',
+  food:     'مشكلة غذائية',
+  medical:  'حالة طبية طارئة',
+  security: 'بلاغ أمني',
+  fire:     'حريق / دخان',
+  other:    'بلاغ آخر',
+  shortage: 'نقص في الكميات',
+  delay:    'تأخر في التوزيع',
+  quality:  'مشكلة في الجودة',
+  hygiene:  'مخالفة صحية',
+};
+
+function fmtTime(ts) {
+  if (!ts) return '—';
+  try {
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleString('ar', { dateStyle: 'short', timeStyle: 'short' });
+  } catch { return '—'; }
+}
+
 export default function LogisticsRequest() {
   const navigate = useNavigate();
   const { profile } = useAuth();
 
+  /* ── Report selection (step 0) ── */
+  const [pendingReports,  setPendingReports]  = useState([]);
+  const [loadingReports,  setLoadingReports]  = useState(true);
+  const [selectedReport,  setSelectedReport]  = useState(null);
+
+  /* ── Form fields (step 1+) ── */
   const [category, setCategory] = useState('');
   const [supportType, setSupportType] = useState('');
   const [qtyInternal, setQtyInternal] = useState('');
@@ -30,6 +64,24 @@ export default function LogisticsRequest() {
   const [isFormValid,  setIsFormValid]  = useState(false);
   const [requestNum,   setRequestNum]   = useState('');
   const [submitted,    setSubmitted]    = useState(false);
+
+  /* Subscribe to pending reports for this observer's center */
+  useEffect(() => {
+    if (!profile?.center) { setLoadingReports(false); return; }
+    const q = query(
+      collection(db, 'reports'),
+      where('center', '==', profile.center),
+      where('status', '==', 'pending')
+    );
+    const unsub = onSnapshot(q, snap => {
+      const list = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (b.timestamp?.toMillis?.() || 0) - (a.timestamp?.toMillis?.() || 0));
+      setPendingReports(list);
+      setLoadingReports(false);
+    }, () => setLoadingReports(false));
+    return unsub;
+  }, [profile?.center]);
 
   const showInternal = supportType === 'internal' || supportType === 'both';
   const showExternal = supportType === 'external' || supportType === 'both';
@@ -79,8 +131,12 @@ export default function LogisticsRequest() {
         qtyExternal: showExternal ? parseInt(qtyExternal) : null,
         notes,
         requestNumber,
+        /* Link to the report this request is for */
+        reportId:     selectedReport?.id           || null,
+        reportNumber: selectedReport?.reportNumber || null,
+        reportType:   selectedReport?.reportType   || selectedReport?.type || null,
         timestamp: serverTimestamp(),
-        status: 'pending'
+        ...initialStatusFields('pending'),
       });
       setRequestNum(requestNumber);
       setSubmitted(true);
@@ -115,11 +171,137 @@ export default function LogisticsRequest() {
     );
   }
 
+  /* ════════════════════════════════════════════════════════════
+     STEP 0 — Pick a pending report this request is for
+  ════════════════════════════════════════════════════════════ */
+  if (!selectedReport) {
+    return (
+      <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-10 font-arabic">
+        <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 md:px-8 py-3 mb-4 shadow-sm">
+          <div className="max-w-3xl mx-auto flex items-center justify-between">
+            <button onClick={() => navigate('/home')} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition shrink-0">
+              <ChevronRight className="text-[#A98159]" size={22} strokeWidth={2.5} />
+            </button>
+            <h1 className="text-base font-bold text-[#2D2926] absolute left-1/2 -translate-x-1/2 whitespace-nowrap">طلب إسناد</h1>
+            <div className="w-10 shrink-0" />
+          </div>
+        </header>
+
+        <div className="max-w-3xl mx-auto px-4 space-y-4">
+          {/* Intro card */}
+          <div className="bg-gradient-to-br from-[#3D3330] via-[#2D2926] to-[#1F1A17] rounded-3xl p-5 sm:p-6 shadow-lg overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10"
+              style={{ background: 'radial-gradient(circle, #A98159 0%, transparent 70%)', transform: 'translate(30%, -40%)' }} />
+            <div className="flex items-start gap-3 relative">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-2xl blur-xl bg-[#A98159] opacity-50" />
+                <div className="relative bg-gradient-to-br from-[#C4A46E] to-[#A98159] p-3 rounded-2xl shadow-md">
+                  <FileText size={22} className="text-white" strokeWidth={2.25} />
+                </div>
+              </div>
+              <div>
+                <p className="text-[#A98159] text-[10px] font-black uppercase tracking-widest mb-1">الخطوة الأولى</p>
+                <h2 className="text-white text-lg font-bold leading-snug">اختر البلاغ الذي تطلب الإسناد له</h2>
+                <p className="text-white/60 text-xs mt-1.5 leading-relaxed">
+                  طلب الإسناد يجب أن يكون مرتبطاً ببلاغ <span className="text-amber-300 font-bold">قيد الانتظار</span> رفعته سابقاً على مركزك.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Reports list */}
+          {loadingReports ? (
+            <div className="bg-white rounded-2xl py-14 text-center border border-[#EDE5DC]">
+              <div className="w-8 h-8 border-2 border-[#EDE5DC] border-t-[#A98159] rounded-full animate-spin mx-auto" />
+              <p className="text-[#9D8F85] text-sm mt-3 font-medium">جارٍ التحميل...</p>
+            </div>
+          ) : pendingReports.length === 0 ? (
+            <div className="bg-gradient-to-br from-white to-amber-50/40 rounded-2xl border-2 border-amber-200 p-7 text-center">
+              <div className="relative w-fit mx-auto mb-3">
+                <div className="absolute inset-0 rounded-2xl blur-xl bg-amber-400 opacity-30" />
+                <div className="relative w-14 h-14 rounded-2xl flex items-center justify-center"
+                  style={{ background: 'linear-gradient(135deg, #FEF3C7, #FDE68A)' }}>
+                  <AlertTriangle size={26} className="text-amber-600" strokeWidth={2} />
+                </div>
+              </div>
+              <p className="text-[#2D2926] font-bold text-base mb-1">لا توجد بلاغات قيد الانتظار</p>
+              <p className="text-[#6D6E71] text-sm mb-5 leading-relaxed">
+                لا يمكنك رفع طلب إسناد بدون بلاغ مرتبط.<br/>
+                ارفع بلاغاً أولاً ثم ارجع لإنشاء طلب الإسناد.
+              </p>
+              <button onClick={() => navigate('/report')}
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-white font-bold text-sm shadow-md active:scale-95 transition-all"
+                style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
+                <AlertTriangle size={15} />
+                رفع بلاغ جديد
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-2 px-1">
+                <span className="w-1.5 h-4 rounded-full bg-[#A98159]" />
+                <p className="text-xs font-black text-[#A98159] uppercase tracking-wider">بلاغاتك قيد الانتظار</p>
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#A98159]/10 text-[#A98159] border border-[#A98159]/20 tabular-nums">
+                  {pendingReports.length}
+                </span>
+              </div>
+              {pendingReports.map(r => {
+                const label = REPORT_TYPE_LABEL[r.reportType] || REPORT_TYPE_LABEL[r.type] || r.reportType || 'بلاغ';
+                return (
+                  <button key={r.id} onClick={() => setSelectedReport(r)}
+                    className="group/rep min-h-[72px] w-full text-right bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 border-2 border-[#EDE5DC] hover:border-[#A98159]/50 active:bg-[#FDF8F0] rounded-2xl p-4 flex items-center gap-3 transition-all duration-300 hover:shadow-[0_6px_20px_rgba(169,129,89,0.15)] hover:-translate-y-0.5 overflow-hidden relative"
+                  >
+                    {/* Severity strip on side */}
+                    <div className="absolute top-0 bottom-0 right-0 w-1 bg-amber-500" />
+
+                    <div className="relative flex-shrink-0">
+                      <div className="absolute inset-0 rounded-xl blur-md bg-amber-400 opacity-0 group-hover/rep:opacity-50 transition-opacity" />
+                      <div className="relative w-11 h-11 rounded-xl flex items-center justify-center border-2 group-hover/rep:scale-110 group-hover/rep:rotate-3 transition-transform duration-300"
+                        style={{ background: 'linear-gradient(135deg, #FEF3C7, #FDE68A)', borderColor: '#FCD34D' }}>
+                        <AlertTriangle size={18} className="text-amber-600" strokeWidth={2} />
+                      </div>
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                        <p className="text-sm font-bold text-[#2D2926] leading-tight">{label}</p>
+                        {r.reportNumber && (
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-md tabular-nums tracking-wide bg-[#FDF8F0] border border-[#A98159]/30 text-[#A98159]">
+                            {r.reportNumber}
+                          </span>
+                        )}
+                        <span className="inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700">
+                          <span className="w-1 h-1 rounded-full bg-amber-500 animate-pulse" />
+                          قيد الانتظار
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[#9D8F85] truncate flex items-center gap-1">
+                        <Clock size={10} />
+                        {fmtTime(r.timestamp)}
+                      </p>
+                    </div>
+
+                    <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-[#FDF8F0] group-hover/rep:bg-[#A98159] flex items-center justify-center group-hover/rep:-translate-x-1 transition-all duration-300">
+                      <ArrowLeft size={16} className="text-[#A98159] group-hover/rep:text-white transition-colors" strokeWidth={2.5} />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     STEP 1+ — Logistics form (only after a report is selected)
+  ════════════════════════════════════════════════════════════ */
   return (
     <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-28 font-arabic px-0">
       <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 md:px-8 py-3 mb-6 shadow-sm">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <button onClick={() => navigate('/home')} className="p-2 hover:bg-gray-100 rounded-xl transition shrink-0 border border-transparent active:border-[#A98159]/20">
+          <button onClick={() => navigate('/home')} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition shrink-0 border border-transparent active:border-[#A98159]/20">
             <ChevronRight className="text-[#A98159]" size={22} strokeWidth={2.5} />
           </button>
           <h1 className="text-base font-bold text-[#2D2926] absolute left-1/2 -translate-x-1/2 whitespace-nowrap">طلب إسناد</h1>
@@ -127,16 +309,47 @@ export default function LogisticsRequest() {
         </div>
       </header>
 
+      {/* Linked report banner */}
+      <div className="max-w-5xl mx-auto px-4 pt-2">
+        <div className="bg-gradient-to-br from-amber-50 to-orange-50/40 border-2 border-amber-200/70 rounded-2xl p-3.5 flex items-center gap-3 shadow-sm">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #FEF3C7, #FDE68A)' }}>
+            <AlertTriangle size={16} className="text-amber-600" strokeWidth={2.5} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-black text-amber-700 uppercase tracking-wider">إسناد لبلاغ</p>
+            <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+              <p className="text-sm font-bold text-[#2D2926] leading-tight">
+                {REPORT_TYPE_LABEL[selectedReport.reportType] || REPORT_TYPE_LABEL[selectedReport.type] || 'بلاغ'}
+              </p>
+              {selectedReport.reportNumber && (
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-md tabular-nums bg-white border border-amber-300 text-amber-700">
+                  {selectedReport.reportNumber}
+                </span>
+              )}
+            </div>
+          </div>
+          <button onClick={() => setSelectedReport(null)}
+            className="flex-shrink-0 text-[11px] font-bold text-amber-700 hover:text-white hover:bg-amber-600 border border-amber-300 hover:border-amber-600 px-3 py-1.5 rounded-lg transition-all active:scale-95">
+            تغيير
+          </button>
+        </div>
+      </div>
+
       <div className="px-4">
         {/* Header Card with Observer Info */}
         <div className="rounded-[2.5rem] p-6 my-6 text-white shadow-lg relative overflow-hidden" 
              style={{ background: '#2D2926' }}>
           <Truck className="absolute -left-4 -bottom-4 text-white/5 w-32 h-32 rotate-12" />
           
-          <div className="flex justify-between items-center mb-8 relative z-10">
+          <div className="flex justify-between items-center mb-8 relative z-10 group">
             <div className="flex items-center gap-4">
-              <div className="bg-[#A98159] p-3 rounded-2xl shadow-lg">
-                <Truck className="text-white" size={24} />
+              <div className="relative">
+                <div className="absolute inset-0 rounded-2xl blur-xl bg-[#A98159] opacity-50 group-hover:opacity-80 transition-opacity" />
+                <div className="relative bg-gradient-to-br from-[#C4A46E] to-[#A98159] p-3 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <Truck className="text-white" size={24} />
+                  <Sparkles size={10} className="absolute -top-0.5 -right-0.5 text-yellow-200 drop-shadow" />
+                </div>
               </div>
               <div>
                 <p className="text-[#A98159] text-[10px] font-black uppercase tracking-widest">منظومة الخدمات اللوجستية</p>

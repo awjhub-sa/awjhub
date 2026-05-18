@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { signOut } from 'firebase/auth';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
-import { auth, db } from '../../config/db.js';
+import { db } from '../../config/db.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   SquaresFour, Warning, Van, ClipboardText, Users, SignOut,
   Bell, List, X, CaretRight, ListChecks, Stack, CaretLeft,
+  UserGear, ShieldCheck, ForkKnife,
 } from '@phosphor-icons/react';
 import logo from '../../assets/logo-light.svg';
 import { getCaterer } from '../../config/centers.js';
@@ -16,10 +16,12 @@ const NAV = [
   { to: '/admin/dashboard',  label: 'نظرة عامة',         icon: SquaresFour  },
   { to: '/admin/reports',    label: 'البلاغات الميدانية', icon: Warning      },
   { to: '/admin/logistics',  label: 'الإسناد اللوجستي',  icon: Van          },
-  { to: '/admin/analytics',  label: 'التقييمات',          icon: ClipboardText },
+  { to: '/admin/analytics',  label: 'الجاهزية',            icon: ShieldCheck   },
   { to: '/admin/phases',     label: 'المراحل',             icon: Stack        },
+  { to: '/admin/menu',       label: 'إدارة المنيو',        icon: ForkKnife    },
   { to: '/admin/tasks',      label: 'إسناد المهام',       icon: ListChecks   },
   { to: '/admin/users',      label: 'إدارة المستخدمين',  icon: Users        },
+  { to: '/admin/staff',      label: 'إدارة الموظفين',    icon: UserGear     },
 ];
 
 const NOTIF_COLS = [
@@ -32,7 +34,7 @@ const spring = { type: 'spring', stiffness: 400, damping: 18 };
 export default function AdminLayout() {
   const navigate              = useNavigate();
   const location              = useLocation();
-  const { profile }           = useAuth();
+  const { profile, logout }   = useAuth();
   const [open, setOpen]       = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
@@ -76,7 +78,7 @@ export default function AdminLayout() {
 
   const handleLogout = async () => {
     setLoggingOut(true);
-    await signOut(auth).catch(() => {});
+    await logout();
     navigate('/login', { replace: true });
   };
 

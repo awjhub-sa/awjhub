@@ -2,19 +2,20 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
-import { signOut } from 'firebase/auth';
 import {
   ForkKnife as Utensils, Warning as AlertTriangle, Van as Truck,
   Bell, User, CaretLeft as ChevronLeft, TrendUp as TrendingUp,
   ClipboardText as ClipboardCheck, MapPin, House as HomeIcon, Mountains as Mountain, Buildings as Building2,
   Package, Clock, SignOut as LogOut,
 } from '@phosphor-icons/react';
+import { Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import logo from '../assets/logo.png';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getCaterer } from '../config/centers.js';
-import { db, auth } from '../config/db.js';
+import { db } from '../config/db.js';
 import { useAssignedTasks } from '../hooks/useAssignedTasks.js';
+import TodayMenuCard from '../components/TodayMenuCard.jsx';
 
 /* ── Decorative Gold Rule ── */
 const GoldRule = () => (
@@ -38,47 +39,67 @@ const MenuCard = ({ icon: Icon, title, subtitle, badge, onClick, variant = 'defa
       whileHover={{ y: -3 }}
       whileTap={{ scale: 0.97 }}
       transition={_cardSpring}
-      className={`
-        w-full text-right rounded-2xl p-5 flex items-center gap-4 border
-        ${isAccent
+      className={`group/menu relative w-full text-right rounded-2xl p-5 flex items-center gap-4 border-2 overflow-hidden transition-all duration-300 ${
+        isAccent
           ? 'border-transparent text-white'
-          : 'bg-white border-[#D1C4B9] text-[#2D2926]'}
-      `}
+          : 'bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 border-[#EDE5DC] text-[#2D2926] hover:border-[#A98159]/40 hover:shadow-[0_8px_28px_rgba(169,129,89,0.18)]'
+      }`}
       style={isAccent
-        ? { background: 'linear-gradient(135deg, #3D3330 0%, #2D2926 100%)', boxShadow: '0 4px 20px rgba(45,41,38,0.25)' }
-        : { boxShadow: '0 2px 8px rgba(45,41,38,0.06)' }}
+        ? { background: 'linear-gradient(135deg, #3D3330 0%, #2D2926 100%)', boxShadow: '0 6px 24px rgba(45,41,38,0.28)' }
+        : { boxShadow: '0 2px 10px rgba(45,41,38,0.06)' }}
     >
-      <motion.div
-        whileHover={{ scale: 1.15, rotate: 5 }}
-        whileTap={{ scale: 0.88 }}
-        transition={_cardSpring}
-        className="flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center backdrop-blur-md border"
-        style={isAccent
-          ? { background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.12)' }
-          : { background: 'rgba(169,129,89,0.06)', borderColor: 'rgba(169,129,89,0.14)' }}
-      >
-        <Icon size={26} weight="duotone" className="text-[#A98159]" />
-      </motion.div>
+      {/* Top accent stripe (accent variant only) */}
+      {isAccent && (
+        <div className="absolute top-0 right-0 left-0 h-0.5 opacity-70"
+          style={{ background: 'linear-gradient(90deg, transparent, #C4A46E, transparent)' }} />
+      )}
+
+      {/* Icon with glow + sparkle */}
+      <div className="relative flex-shrink-0">
+        <div className={`absolute inset-0 rounded-2xl blur-xl opacity-0 group-hover/menu:opacity-60 transition-opacity duration-500 ${isAccent ? 'bg-[#C4A46E]' : 'bg-[#A98159]'}`} />
+        <motion.div
+          whileHover={{ scale: 1.15, rotate: 5 }}
+          whileTap={{ scale: 0.88 }}
+          transition={_cardSpring}
+          className="relative w-14 h-14 rounded-2xl flex items-center justify-center backdrop-blur-md border-2"
+          style={isAccent
+            ? { background: 'linear-gradient(135deg, rgba(196,164,110,0.18), rgba(169,129,89,0.10))', borderColor: 'rgba(196,164,110,0.35)' }
+            : { background: 'linear-gradient(135deg, #FDF8F0, #F3EAE0)', borderColor: 'rgba(169,129,89,0.25)' }}
+        >
+          <Icon size={26} weight="duotone" className="text-[#A98159]" />
+          <Sparkles size={9} className="absolute -top-0.5 -right-0.5 text-yellow-200 drop-shadow" />
+        </motion.div>
+      </div>
+
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="font-bold text-base">{title}</span>
           {badge && (
             <motion.span
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={_cardSpring}
-              className="bg-[#BA1A1A] text-white text-[10px] font-bold px-2 py-0.5 rounded-full"
-              style={{ animation: 'softPulse 2s ease-in-out infinite' }}
+              className="badge-pulse-red inline-flex items-center min-w-[22px] h-[22px] bg-gradient-to-br from-red-500 to-red-600 text-white text-[10px] font-extrabold rounded-full px-1.5 ring-2 ring-white shadow-md tabular-nums"
             >
               {badge}
             </motion.span>
           )}
         </div>
-        <p className={`text-sm mt-0.5 truncate ${isAccent ? 'text-white/50' : 'text-[#6D6E71]'}`}>
-          {subtitle}
-        </p>
+        {subtitle && (
+          <p className={`text-sm mt-1 truncate ${isAccent ? 'text-white/60' : 'text-[#6D6E71]'}`}>
+            {subtitle}
+          </p>
+        )}
       </div>
-      <ChevronLeft size={18} weight="thin" className={`flex-shrink-0 opacity-40 ${isAccent ? 'text-white' : 'text-[#A98159]'}`} />
+
+      <motion.div
+        whileHover={{ x: -4 }}
+        className={`flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
+          isAccent ? 'bg-white/10 group-hover/menu:bg-white/20' : 'bg-[#FDF8F0] group-hover/menu:bg-[#A98159]/15'
+        }`}
+      >
+        <ChevronLeft size={16} weight="bold" className={isAccent ? 'text-white' : 'text-[#A98159]'} />
+      </motion.div>
     </motion.button>
   );
 };
@@ -135,19 +156,21 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (!profile?.uid) return;
+    if (!profile?.uid || !profile?.center) return;
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayMs = todayStart.getTime();
-    
+
+    /* Listen by CENTER (not uid) so the observer sees anything submitted on
+       their center — whether they uploaded it or the supervisor did. */
     const collectionsToTrack = Object.keys(ACTIVITY_CFG);
     const unsubs = collectionsToTrack.map(col => {
-      const q = query(collection(db, col), where('uid', '==', profile.uid));
+      const q = query(collection(db, col), where('center', '==', profile.center));
       return onSnapshot(q, snap => {
         const docs = snap.docs
           .map(d => ({ id: d.id, _col: col, ...d.data() }))
           .filter(d => toMs(d) >= todayMs);
-        
+
         setActivities(prev => {
           const others = prev.filter(a => a._col !== col);
           const combined = [...others, ...docs];
@@ -157,7 +180,7 @@ export default function Home() {
     });
 
     return () => unsubs.forEach(unsub => unsub());
-  }, [profile?.uid]);
+  }, [profile?.uid, profile?.center]);
 
   const { tasks, completions } = useAssignedTasks(profile);
 
@@ -285,6 +308,11 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Today's menu for this observer's center */}
+          {profile?.center && (
+            <TodayMenuCard centerId={profile.center} />
+          )}
+
           <div className="space-y-4">
             <div className="flex items-center justify-between px-2">
               <div className="flex items-center gap-2">
@@ -306,9 +334,24 @@ export default function Home() {
                   const { Icon } = cfg;
                   const ms = toMs(item);
                   const statusInfo = STATUS_DATA[item.status] || { label: item.status, bg: '#F3F4F6', text: '#374151' };
-                  
+
+                  /* Status pill is only meaningful for reports & logistics_requests
+                     (admin workflow). Evaluations/readiness are submissions — once
+                     uploaded they're "done" from the observer's perspective, so
+                     showing "قيد الانتظار" is confusing. */
+                  const showStatus = item.status && (item._col === 'reports' || item._col === 'logistics_requests');
+
+                  /* Title: for evaluations/readiness, prefix with "تم رفع" so the
+                     observer sees a clear "completed" message. */
+                  const isSubmission = item._col === 'meal_evaluations'
+                    || item._col === 'mina_readiness'
+                    || item._col === 'arafat_readiness';
                   let title = item.reportType || item.type || cfg.label;
-                  let sub = item._col === 'reports' && item.severity ? `خطورة: ${SEVERITY_LABEL[item.severity]}` : item.mealType || '';
+                  if (isSubmission) title = `تم رفع ${cfg.label}`;
+                  const MEAL_LBL = { breakfast: 'الإفطار', lunch: 'الغداء', dinner: 'العشاء' };
+                  let sub = item._col === 'reports' && item.severity
+                    ? `خطورة: ${SEVERITY_LABEL[item.severity]}`
+                    : (item.mealType ? (MEAL_LBL[item.mealType] || item.mealType) : '');
 
                   return (
                     <div key={item.id} className="bg-white border border-[#D1C4B9] rounded-2xl px-5 py-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5">
@@ -329,7 +372,7 @@ export default function Home() {
                             </span>
                           )}
                           {sub && <span className="text-xs text-[#6D6E71] font-bold">{sub}</span>}
-                          {item.status && (
+                          {showStatus && (
                             <span className="text-[10px] font-black px-3 py-0.5 rounded-full border border-black/5"
                                   style={{ background: statusInfo.bg, color: statusInfo.text }}>
                               {statusInfo.label}

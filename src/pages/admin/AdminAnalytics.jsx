@@ -1,107 +1,90 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../../config/db.js';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line,
-} from 'recharts';
-import {
-  ClipboardList, Mountain, ChevronDown, ChevronUp,
-  CheckCircle2, XCircle, TrendingUp, Utensils,
+  ShieldCheck, Mountain, ChevronRight, CheckCircle2, XCircle,
+  Sparkles, AlertCircle, User, Calendar, Building2, X, Search, Award,
+  TrendingUp, ClipboardList,
 } from 'lucide-react';
-import { getCaterer } from '../../config/centers.js';
-import { MEAL_QUESTIONS } from '../../config/mealQuestions.js';
+import PageHeader from '../../components/PageHeader.jsx';
+import { CENTERS, getCaterer } from '../../config/centers.js';
 import { MINA_ALL_CRITERIA } from '../../config/minaQuestions.js';
 import { ARAFAT_ALL_CRITERIA } from '../../config/arafatQuestions.js';
 
-/* ── Full question definitions ── */
-const MEAL_Qs   = MEAL_QUESTIONS;
 const MINA_Qs   = MINA_ALL_CRITERIA;
 const ARAFAT_Qs = ARAFAT_ALL_CRITERIA;
 
-/* 5 representative questions plotted on the bar chart for the meal tab */
-const MEAL_CHART_Qs = [
-  { id: 2,  text: 'المستندات الرسمية' },
-  { id: 12, text: 'شهادات صحية' },
-  { id: 16, text: 'الإجراءات الصحية' },
-  { id: 25, text: 'مواعيد التوزيع' },
-  { id: 32, text: 'حافظات النقل' },
-];
-const MINA_CHART_Qs   = [
-  { id: 2, text: 'غسيل المطبخ' }, { id: 6, text: 'قائمة الوجبات' },
-  { id: 8, text: 'ملصقات سلامة' }, { id: 13, text: 'مياه الشرب' },
-  { id: 14, text: 'المواد الغذائية' },
-];
-const ARAFAT_CHART_Qs = [
-  { id: 2, text: 'غسيل المطبخ' }, { id: 5, text: 'قائمة الوجبات' },
-  { id: 7, text: 'ملصقات سلامة' }, { id: 18, text: 'مياه الشرب' },
-  { id: 19, text: 'المواد الغذائية' },
-];
-
-const PIE_COLORS = ['#386B41', '#BA1A1A'];
-
 const TABS = [
-  { key: 'meal',   label: 'تقييم الوجبات', col: 'meal_evaluations',  color: '#A98159', icon: Utensils,     allQs: MEAL_Qs,   chartQs: MEAL_CHART_Qs,   hasScore: true  },
-  { key: 'mina',   label: 'جاهزية منى',    col: 'mina_readiness',   color: '#386B41', icon: Mountain,     allQs: MINA_Qs,   chartQs: MINA_CHART_Qs,   hasScore: true  },
-  { key: 'arafat', label: 'جاهزية عرفة',   col: 'arafat_readiness', color: '#1D6FA4', icon: Mountain,     allQs: ARAFAT_Qs, chartQs: ARAFAT_CHART_Qs, hasScore: true  },
+  {
+    key:  'mina',
+    label: 'مشعر منى',
+    short: 'منى',
+    col:  'mina_readiness',
+    color: '#386B41',
+    bg:    '#F0FDF4',
+    border:'#86EFAC',
+    icon:  Mountain,
+    allQs: MINA_Qs,
+    gradient: 'linear-gradient(135deg, #4F8856, #386B41)',
+  },
+  {
+    key:  'arafat',
+    label: 'مشعر عرفة',
+    short: 'عرفة',
+    col:  'arafat_readiness',
+    color: '#1D6FA4',
+    bg:    '#EFF6FF',
+    border:'#BFDBFE',
+    icon:  Mountain,
+    allQs: ARAFAT_Qs,
+    gradient: 'linear-gradient(135deg, #2D87C2, #1D6FA4)',
+  },
 ];
 
 /* ── Helpers ── */
-function timeAgo(ts) {
-  if (!ts) return '—';
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
-  const s = Math.floor((Date.now() - d) / 1000);
-  if (s < 60)    return 'الآن';
-  if (s < 3600)  return `منذ ${Math.floor(s / 60)} دقيقة`;
-  if (s < 86400) return `منذ ${Math.floor(s / 3600)} ساعة`;
-  return `منذ ${Math.floor(s / 86400)} يوم`;
-}
-
 function fullDate(ts) {
   if (!ts) return '—';
-  return (ts.toDate ? ts.toDate() : new Date(ts))
-    .toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' });
+  try {
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' });
+  } catch { return '—'; }
 }
-
+function timeAgo(ts) {
+  if (!ts) return '—';
+  try {
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    const s = Math.floor((Date.now() - d) / 1000);
+    if (s < 60)    return 'الآن';
+    if (s < 3600)  return `منذ ${Math.floor(s / 60)} دقيقة`;
+    if (s < 86400) return `منذ ${Math.floor(s / 3600)} ساعة`;
+    return `منذ ${Math.floor(s / 86400)} يوم`;
+  } catch { return '—'; }
+}
 function getScore(doc) {
+  if (!doc) return null;
   if (doc.scoreOutOf10 != null) return Number(doc.scoreOutOf10);
   const max = Number(doc.maxScore);
   const tot = Number(doc.totalScore);
   if (max > 0 && !isNaN(tot)) return parseFloat(((tot / max) * 10).toFixed(2));
-  // legacy fallback: docs that only have a percentage string (0-100)
   const pct = parseFloat(doc.percentage);
   if (!isNaN(pct)) return parseFloat((pct / 10).toFixed(2));
   return null;
 }
-
-/* Field-name normalizers — different pages historically saved different keys. */
+function scoreStyle(score) {
+  if (score == null) return { color: '#9D8F85', bg: '#F5F0EB', border: '#E8DDD4' };
+  if (score >= 8)    return { color: '#15803D', bg: '#F0FDF4', border: '#86EFAC' };
+  if (score >= 5)    return { color: '#B45309', bg: '#FFFBEB', border: '#FCD34D' };
+  return                     { color: '#B91C1C', bg: '#FEF2F2', border: '#FCA5A5' };
+}
 const getObserver = d => d.observer || d.observerName || '—';
 const getCenter   = d => d.center   || d.centerId     || '—';
 
-function scoreBadgeStyle(score) {
-  if (score == null) return null;
-  if (score >= 8) return { bg: '#DCFCE7', text: '#166534', border: '#BBF7D0' };
-  if (score >= 5) return { bg: '#FEF3C7', text: '#92400E', border: '#FDE68A' };
-  return              { bg: '#FEE2E2', text: '#991B1B', border: '#FECACA' };
-}
-
-const CustomTooltip = ({ active, payload, label }) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="bg-white border border-[#E8E0D8] rounded-2xl px-3 py-2 shadow-lg text-xs" dir="rtl">
-      <p className="font-bold text-[#2D2926] mb-1">{label}</p>
-      {payload.map(p => (
-        <p key={p.name} style={{ color: p.fill || p.stroke }}>{p.name}: {p.value}</p>
-      ))}
-    </div>
-  );
-};
-
 /* ══════════════════════════════════════════════════════════ */
 export default function AdminAnalytics() {
-  const [activeTab, setActiveTab] = useState('meal');
-  const [data,      setData]      = useState({ meal: null, mina: null, arafat: null });
-  const [expanded,  setExpanded]  = useState(null);
+  const [activeTab, setActiveTab] = useState('mina');
+  const [data,      setData]      = useState({ mina: null, arafat: null });
+  const [selectedCenter, setSelectedCenter] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const unsubs = TABS.map(t =>
@@ -118,96 +101,127 @@ export default function AdminAnalytics() {
   const tab  = TABS.find(t => t.key === activeTab);
   const docs = data[activeTab] ?? [];
 
-  const barData = tab.chartQs.map(q => {
-    const yes = docs.filter(d => d.answers?.[q.id] === 'نعم').length;
-    const no  = docs.filter(d => d.answers?.[q.id] === 'لا').length;
-    return { name: q.text, نعم: yes, لا: no };
-  });
-  const totalYes = barData.reduce((s, d) => s + d['نعم'], 0);
-  const totalNo  = barData.reduce((s, d) => s + d['لا'],  0);
-  const pieData  = [{ name: 'نعم', value: totalYes }, { name: 'لا', value: totalNo }];
+  /* Aggregate per center */
+  const centerSummaries = useMemo(() => {
+    const map = new Map();
+    docs.forEach(d => {
+      const c = getCenter(d);
+      if (!map.has(c)) map.set(c, []);
+      map.get(c).push(d);
+    });
+    /* Build summary for every center (even those without evaluations) */
+    const all = CENTERS.map(c => {
+      const list = map.get(c.id) || [];
+      const scores = list.map(getScore).filter(s => s != null);
+      const avgScore = scores.length
+        ? parseFloat((scores.reduce((s, v) => s + v, 0) / scores.length).toFixed(1))
+        : null;
+      const latestDoc = list[0]; // already sorted desc
+      const latestScore = latestDoc ? getScore(latestDoc) : null;
+      let totalViolations = 0;
+      list.forEach(d => {
+        if (d.answers) totalViolations += Object.values(d.answers).filter(v => v === 'لا').length;
+      });
+      return {
+        center:  c.id,
+        caterer: c.caterer,
+        count:   list.length,
+        avgScore,
+        latestScore,
+        latestDoc,
+        totalViolations,
+        evaluations: list,
+      };
+    });
+    return all;
+  }, [docs]);
 
-  const scoreDocs  = docs.filter(d => getScore(d) != null);
-  const avgScore   = scoreDocs.length
-    ? (scoreDocs.reduce((s, d) => s + getScore(d), 0) / scoreDocs.length).toFixed(1)
+  /* Filtered by search term */
+  const filteredSummaries = useMemo(() => {
+    if (!searchTerm.trim()) return centerSummaries;
+    const q = searchTerm.trim().toLowerCase();
+    return centerSummaries.filter(s =>
+      s.center.toLowerCase().includes(q) ||
+      (s.caterer || '').toLowerCase().includes(q)
+    );
+  }, [centerSummaries, searchTerm]);
+
+  /* Stats */
+  const evaluated   = centerSummaries.filter(s => s.count > 0).length;
+  const scored      = centerSummaries.filter(s => s.avgScore != null);
+  const overallAvg  = scored.length
+    ? (scored.reduce((s, v) => s + v.avgScore, 0) / scored.length).toFixed(1)
     : null;
-  const scoreTrend = scoreDocs.slice(-10).map((d, i) => ({
-    index: i + 1,
-    درجة: parseFloat(getScore(d).toFixed(1)),
-  }));
+  const totalViols  = centerSummaries.reduce((s, v) => s + v.totalViolations, 0);
+  const perfectCnt  = centerSummaries.filter(s => s.avgScore != null && s.avgScore >= 8).length;
+
+  const activeSummary = selectedCenter
+    ? centerSummaries.find(s => s.center === selectedCenter)
+    : null;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-6" dir="rtl">
+      <PageHeader
+        Icon={ShieldCheck}
+        title="الجاهزية"
+        subtitle="جاهزية مشعر منى ومشعر عرفة — موسم الحج ١٤٤٧ هـ"
+      />
 
-      {/* ── Page header ── */}
-      <div className="bg-white rounded-3xl border border-[#E8E0D8] shadow-[0_2px_20px_rgba(45,41,38,0.06)] px-6 py-5">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg,#A9815922,#A9815910)' }}>
-            <ClipboardList size={22} className="text-[#A98159]" strokeWidth={1.5} />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-[#2D2926]">التقييمات</h1>
-            <p className="text-sm text-[#6D6E71]">تقييمات الوجبات والجاهزية الميدانية — موسم الحج ١٤٤٧ هـ</p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Sub-section selectors ── */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* ── Mash'ar tab selector ── */}
+      <div className="grid grid-cols-2 gap-3">
         {TABS.map(t => {
           const Icon  = t.icon;
           const active = activeTab === t.key;
-          const count  = data[t.key]?.length ?? null;
+          const count  = data[t.key]?.length ?? 0;
           return (
             <button key={t.key}
-              onClick={() => { setActiveTab(t.key); setExpanded(null); }}
-              className={`relative flex flex-col items-center gap-2.5 px-4 py-5 rounded-3xl border-2 transition-all duration-200 ${
+              onClick={() => { setActiveTab(t.key); setSelectedCenter(null); setSearchTerm(''); }}
+              className={`group/tab relative overflow-hidden flex items-center gap-3 px-4 py-4 rounded-3xl border-2 transition-all duration-300 ${
                 active
-                  ? 'shadow-[0_6px_28px_rgba(45,41,38,0.14)]'
-                  : 'bg-white border-[#E8E0D8] shadow-[0_2px_12px_rgba(45,41,38,0.04)] hover:shadow-[0_4px_20px_rgba(45,41,38,0.08)]'
+                  ? 'shadow-[0_8px_32px_rgba(45,41,38,0.18)] scale-[1.02]'
+                  : 'bg-white border-[#E8E0D8] shadow-[0_2px_12px_rgba(45,41,38,0.04)] hover:shadow-[0_4px_20px_rgba(45,41,38,0.08)] hover:scale-[1.01]'
               }`}
               style={active
-                ? { background: `linear-gradient(135deg,${t.color}1A,${t.color}07)`, borderColor: t.color }
-                : {}}
+                ? { background: t.gradient, borderColor: t.color }
+                : { borderColor: '#E8E0D8' }}
             >
-              <div className="w-13 h-13 w-12 h-12 rounded-2xl flex items-center justify-center transition-all"
-                style={{ background: active ? `${t.color}25` : `${t.color}13` }}>
-                <Icon size={22} style={{ color: t.color }} strokeWidth={1.5} />
-              </div>
-              <div className="text-center">
-                <p className="text-sm font-bold leading-snug"
-                  style={{ color: active ? t.color : '#2D2926' }}>
-                  {t.label}
-                </p>
-                {count != null && (
-                  <p className="text-[11px] text-[#6D6E71] mt-0.5">{count} تقييم</p>
+              {active && (
+                <>
+                  <Sparkles className="absolute top-2 right-2 text-white/30 animate-pulse" size={12} />
+                  <Sparkles className="absolute bottom-3 left-3 text-white/20" size={9} />
+                </>
+              )}
+              <div className="relative shrink-0">
+                {active && (
+                  <div className="absolute inset-0 rounded-2xl blur-md opacity-50 bg-white" />
                 )}
+                <div className="relative w-12 h-12 rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover/tab:scale-110"
+                  style={active
+                    ? { background: 'rgba(255,255,255,0.22)', border: '1.5px solid rgba(255,255,255,0.4)' }
+                    : { background: `${t.color}13`, border: `1.5px solid ${t.color}25` }}>
+                  <Icon
+                    size={22}
+                    style={{ color: active ? '#fff' : t.color }}
+                    strokeWidth={active ? 2.25 : 1.75}
+                  />
+                </div>
+              </div>
+              <div className="flex-1 text-right">
+                <p className="text-base font-black leading-snug"
+                  style={{ color: active ? '#fff' : '#2D2926' }}>
+                  جاهزية {t.short}
+                </p>
+                <p className="text-[11px] font-bold mt-0.5"
+                  style={{ color: active ? 'rgba(255,255,255,0.85)' : '#6D6E71' }}>
+                  {count} تقييم · {evaluated} مركز مُقيَّم
+                </p>
               </div>
               {active && (
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full"
-                  style={{ backgroundColor: t.color }} />
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-white/40 animate-pulse" />
               )}
             </button>
           );
         })}
-      </div>
-
-      {/* ── Summary stats ── */}
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { label: 'عدد التقييمات', value: docs.length,                                              color: tab.color  },
-          { label: 'إجمالي نعم',    value: totalYes,                                                  color: '#386B41'  },
-          { label: tab.hasScore ? 'متوسط الدرجة' : 'إجمالي لا',
-            value: tab.hasScore ? (avgScore ? `${avgScore}/10` : '—') : totalNo,
-            color: tab.hasScore ? '#A98159' : '#BA1A1A' },
-        ].map(c => (
-          <div key={c.label}
-            className="bg-white rounded-3xl p-4 border border-[#E8E0D8] shadow-[0_2px_20px_rgba(45,41,38,0.06)] text-center">
-            <p className="text-[10px] text-[#6D6E71] mb-1">{c.label}</p>
-            <p className="text-2xl font-bold" style={{ color: c.color }}>{c.value}</p>
-          </div>
-        ))}
       </div>
 
       {data[activeTab] === null ? (
@@ -215,285 +229,445 @@ export default function AdminAnalytics() {
           <div className="w-6 h-6 border-2 border-[#A98159]/30 border-t-[#A98159] rounded-full animate-spin mx-auto mb-3" />
           <p className="text-[#6D6E71] text-sm">جارٍ التحميل...</p>
         </div>
-      ) : docs.length === 0 ? (
-        <div className="bg-white rounded-3xl border border-[#E8E0D8] py-16 text-center shadow-[0_2px_20px_rgba(45,41,38,0.06)]">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
-            style={{ background: `${tab.color}12` }}>
-            <tab.icon size={22} style={{ color: tab.color }} strokeWidth={1.5} />
-          </div>
-          <p className="text-[#6D6E71] font-medium">لا توجد بيانات بعد لهذا القسم</p>
-        </div>
+      ) : selectedCenter && activeSummary ? (
+        /* ─── Center Detail View ─── */
+        <CenterDetail
+          tab={tab}
+          summary={activeSummary}
+          onBack={() => setSelectedCenter(null)}
+        />
       ) : (
         <>
-          {/* ── Charts ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-            {/* Pie chart */}
-            <div className="bg-white rounded-3xl border border-[#E8E0D8] shadow-[0_2px_20px_rgba(45,41,38,0.06)] overflow-hidden">
-              <div className="px-5 py-4 border-b border-[#E8E0D8]"
-                style={{ background: `linear-gradient(135deg,${tab.color}0A,transparent)` }}>
-                <h3 className="font-bold text-[#2D2926] text-sm">نسبة الإجابات الكلية</h3>
-              </div>
-              <div className="p-5">
-                <ResponsiveContainer width="100%" height={200}>
-                  <PieChart>
-                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={80}
-                      paddingAngle={3} dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      labelLine={false}>
-                      {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
-                    </Pie>
-                    <Legend />
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Bar chart */}
-            <div className="bg-white rounded-3xl border border-[#E8E0D8] shadow-[0_2px_20px_rgba(45,41,38,0.06)] overflow-hidden">
-              <div className="px-5 py-4 border-b border-[#E8E0D8]"
-                style={{ background: `linear-gradient(135deg,${tab.color}0A,transparent)` }}>
-                <h3 className="font-bold text-[#2D2926] text-sm">نعم / لا لكل سؤال</h3>
-              </div>
-              <div className="p-5">
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={barData} layout="vertical" barSize={9} margin={{ left: 0, right: 10 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#F0EAE3" />
-                    <XAxis type="number" tick={{ fontSize: 10, fill: '#6D6E71' }} />
-                    <YAxis type="category" dataKey="name" width={90}
-                      tick={{ fontSize: 9, fill: '#6D6E71' }}
-                      tickFormatter={v => v.length > 10 ? v.slice(0, 10) + '…' : v} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend wrapperStyle={{ fontSize: 11 }} />
-                    <Bar dataKey="نعم" fill="#386B41" radius={[0, 4, 4, 0]} />
-                    <Bar dataKey="لا"  fill="#BA1A1A" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Score trend */}
-            {tab.hasScore && scoreTrend.length > 1 && (
-              <div className="bg-white rounded-3xl border border-[#E8E0D8] shadow-[0_2px_20px_rgba(45,41,38,0.06)] overflow-hidden">
-                <div className="px-5 py-4 border-b border-[#E8E0D8]"
-                  style={{ background: `linear-gradient(135deg,${tab.color}0A,transparent)` }}>
-                  <h3 className="font-bold text-[#2D2926] text-sm">
-                    اتجاه الدرجات (آخر {scoreTrend.length} تقييمات)
-                  </h3>
+          {/* ── Stats row ── */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: 'مراكز مُقيَّمة',  value: `${evaluated}/${CENTERS.length}`, color: tab.color, icon: ClipboardList },
+              { label: 'متوسط الدرجات',  value: overallAvg ? `${overallAvg}/10` : '—', color: '#A98159', icon: TrendingUp },
+              { label: 'تقييمات ممتازة', value: perfectCnt,                      color: '#15803D', icon: Award },
+              { label: 'إجمالي مخالفات', value: totalViols,                      color: totalViols > 0 ? '#B91C1C' : '#15803D', icon: AlertCircle },
+            ].map(c => (
+              <div key={c.label}
+                className="bg-white rounded-2xl p-4 border border-[#EDE5DC] shadow-[0_2px_8px_rgba(45,41,38,0.07)] flex items-center gap-3"
+                style={{ borderRight: `3px solid ${c.color}` }}>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-semibold text-[#9D8F85] mb-0.5">{c.label}</p>
+                  <p className="text-xl font-bold tabular-nums" style={{ color: c.color }}>{c.value}</p>
                 </div>
-                <div className="p-5">
-                  <ResponsiveContainer width="100%" height={180}>
-                    <LineChart data={scoreTrend} margin={{ left: 0, right: 10 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#F0EAE3" />
-                      <XAxis dataKey="index" tick={{ fontSize: 10, fill: '#6D6E71' }} />
-                      <YAxis tick={{ fontSize: 10, fill: '#6D6E71' }} domain={[0, 10]} />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Line type="monotone" dataKey="درجة" stroke={tab.color} strokeWidth={2.5}
-                        dot={{ r: 4, fill: tab.color }} />
-                    </LineChart>
-                  </ResponsiveContainer>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: `${c.color}18` }}>
+                  <c.icon size={18} style={{ color: c.color }} strokeWidth={1.75} />
                 </div>
               </div>
+            ))}
+          </div>
+
+          {/* ── Search bar ── */}
+          <div className="relative">
+            <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9D8F85]" strokeWidth={2} />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="بحث بالمركز أو المتعهد..."
+              className="w-full pr-11 pl-4 py-3 rounded-2xl border-2 border-[#EDE5DC] bg-white text-sm font-medium text-[#2D2926] placeholder:text-[#C9B8A8] focus:border-[#A98159] focus:outline-none transition-colors shadow-[0_2px_8px_rgba(45,41,38,0.05)]"
+            />
+            {searchTerm && (
+              <button onClick={() => setSearchTerm('')}
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center text-[#9D8F85] hover:bg-[#F5F0EB] transition-colors">
+                <X size={14} strokeWidth={2.25} />
+              </button>
             )}
+          </div>
 
-            {/* Compliance bars */}
-            <div className={`bg-white rounded-3xl border border-[#E8E0D8] shadow-[0_2px_20px_rgba(45,41,38,0.06)] overflow-hidden ${
-              tab.hasScore && scoreTrend.length > 1 ? '' : 'lg:col-span-2'
-            }`}>
-              <div className="px-5 py-4 border-b border-[#E8E0D8]"
-                style={{ background: `linear-gradient(135deg,${tab.color}0A,transparent)` }}>
-                <h3 className="font-bold text-[#2D2926] text-sm">نسبة الامتثال لكل سؤال</h3>
+          {/* ── Centers grid ── */}
+          {filteredSummaries.length === 0 ? (
+            <div className="bg-white rounded-3xl border border-[#E8E0D8] py-16 text-center shadow-[0_2px_20px_rgba(45,41,38,0.06)]">
+              <div className="relative w-fit mx-auto mb-3 group">
+                <div className="absolute inset-0 rounded-2xl blur-xl opacity-30 group-hover:opacity-60 transition-opacity"
+                  style={{ background: tab.color }} />
+                <div className="relative w-12 h-12 rounded-2xl flex items-center justify-center"
+                  style={{ background: `${tab.color}1A` }}>
+                  <Search size={22} style={{ color: tab.color }} strokeWidth={1.75} />
+                </div>
               </div>
-              <div className="p-5 space-y-3">
-                {barData.map(d => {
-                  const total = d['نعم'] + d['لا'];
-                  const pct   = total ? Math.round((d['نعم'] / total) * 100) : 0;
-                  return (
-                    <div key={d.name}>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-[#2D2926] font-medium">{d.name}</span>
-                        <span className="font-bold" style={{ color: tab.color }}>{pct}%</span>
-                      </div>
-                      <div className="h-1.5 bg-[#F0EAE3] rounded-full overflow-hidden">
-                        <div className="h-full rounded-full transition-all duration-500"
-                          style={{ width: `${pct}%`, backgroundColor: tab.color }} />
-                      </div>
-                    </div>
-                  );
-                })}
+              <p className="text-[#6D6E71] font-medium">لا توجد مراكز تطابق البحث</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredSummaries.map(s => (
+                <CenterCard key={s.center} summary={s} tab={tab}
+                  onSelect={() => setSelectedCenter(s.center)} />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   Center Card — summarises readiness for one center under one Mash'ar
+══════════════════════════════════════════════════════════════════ */
+function CenterCard({ summary, tab, onSelect }) {
+  const sst = scoreStyle(summary.avgScore);
+  const hasData = summary.count > 0;
+  const centerNum = (summary.center.match(/\d+\S*/) || ['—'])[0];
+
+  return (
+    <button
+      onClick={onSelect}
+      disabled={!hasData}
+      className={`text-right group bg-white rounded-2xl border-2 p-4 transition-all ${
+        hasData
+          ? 'border-[#EDE5DC] shadow-[0_2px_8px_rgba(45,41,38,0.07)] hover:shadow-[0_6px_24px_rgba(169,129,89,0.18)] hover:border-[#D9CEBC] hover:-translate-y-0.5 cursor-pointer'
+          : 'border-dashed border-[#EDE5DC] bg-[#FAFAF8] opacity-70 cursor-not-allowed'
+      }`}
+    >
+      {/* Header */}
+      <div className="flex items-start gap-3 mb-3">
+        <div className="relative shrink-0">
+          {hasData && (
+            <div className="absolute inset-0 rounded-xl blur-md opacity-40 group-hover:opacity-60 transition-opacity"
+              style={{ background: tab.color }} />
+          )}
+          <div className="relative w-11 h-11 rounded-xl flex items-center justify-center shadow-md"
+            style={hasData
+              ? { background: tab.gradient }
+              : { background: '#F5F0EB', border: '1px dashed #D9CEBC' }}>
+            <span className="text-sm font-black tabular-nums"
+              style={{ color: hasData ? '#fff' : '#9D8F85' }}>
+              {centerNum}
+            </span>
+          </div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-black text-[#2D2926] truncate">{summary.center}</p>
+          <p className="text-[10px] text-[#A98159] font-bold truncate mt-0.5">{summary.caterer || '—'}</p>
+          {hasData && summary.latestDoc?.timestamp && (
+            <p className="text-[9px] text-[#9D8F85] font-bold mt-1 flex items-center gap-1">
+              <Calendar size={9} strokeWidth={2.25} />
+              {timeAgo(summary.latestDoc.timestamp)}
+            </p>
+          )}
+        </div>
+        {hasData && (
+          <ChevronRight size={16} className="text-[#C9B8A8] group-hover:text-[#A98159] transition-colors shrink-0 mt-1"
+            strokeWidth={2.25} />
+        )}
+      </div>
+
+      {/* Body */}
+      {hasData ? (
+        <>
+          {/* Score chip */}
+          <div className="rounded-xl p-3 border-2 flex items-center justify-between mb-2.5"
+            style={{ background: sst.bg, borderColor: sst.border }}>
+            <div className="flex items-center gap-2">
+              <Sparkles size={13} style={{ color: sst.color }} strokeWidth={2.25} />
+              <div>
+                <p className="text-[9px] font-bold" style={{ color: sst.color, opacity: 0.85 }}>متوسط الدرجة</p>
+                <p className="text-xl font-black tabular-nums leading-tight" style={{ color: sst.color }}>
+                  {summary.avgScore != null ? summary.avgScore.toFixed(1) : '—'}
+                  <span className="text-[10px] opacity-70">/10</span>
+                </p>
               </div>
+            </div>
+            <div className="text-left">
+              <p className="text-[9px] font-bold" style={{ color: sst.color, opacity: 0.85 }}>تقييمات</p>
+              <p className="text-xl font-black tabular-nums leading-tight" style={{ color: sst.color }}>{summary.count}</p>
             </div>
           </div>
 
-          {/* ── Evaluations divider ── */}
-          <div className="flex items-center gap-3">
-            <div className="h-px flex-1 bg-[#E8E0D8]" />
-            <span className="text-xs font-bold px-3 py-1.5 rounded-full border"
-              style={{ color: tab.color, background: `${tab.color}10`, borderColor: `${tab.color}30` }}>
-              قائمة التقييمات ({docs.length})
-            </span>
-            <div className="h-px flex-1 bg-[#E8E0D8]" />
-          </div>
-
-          {/* ── Evaluations list ── */}
-          <div className="space-y-3">
-            {docs.map(item => {
-              const score     = getScore(item);
-              const badge     = scoreBadgeStyle(score);
-              const noAnswers = tab.allQs.filter(q => item.answers?.[q.id] === 'لا');
-              const isOpen    = expanded === item.id;
-              const Icon      = tab.icon;
-
-              return (
-                <div key={item.id}
-                  className="bg-white rounded-3xl border border-[#E8E0D8] shadow-[0_2px_20px_rgba(45,41,38,0.06)] overflow-hidden hover:shadow-[0_4px_24px_rgba(45,41,38,0.10)] transition-shadow">
-
-                  {/* Colored accent strip */}
-                  <div className="h-0.5" style={{ backgroundColor: tab.color }} />
-
-                  {/* Summary row */}
-                  <div className="px-5 py-4 flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: `linear-gradient(135deg,${tab.color}20,${tab.color}10)` }}>
-                      <Icon size={18} style={{ color: tab.color }} strokeWidth={1.5} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                        <span className="text-sm font-bold text-[#2D2926]">{getObserver(item)}</span>
-                        {badge && score != null && (
-                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full border"
-                            style={{ background: badge.bg, color: badge.text, borderColor: badge.border }}>
-                            {score.toFixed(1)} / 10
-                          </span>
-                        )}
-                        {noAnswers.length > 0 && (
-                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-500 border border-red-100">
-                            {noAnswers.length} ملاحظة
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-[#6D6E71]">{getCenter(item)}</p>
-                      <p className="text-[10px] text-[#A98159] font-medium mt-0.5">
-                        🏭 {item.caterer || getCaterer(getCenter(item)) || '—'}
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                      <p className="text-[10px] text-[#6D6E71]">{timeAgo(item.timestamp)}</p>
-                      <button
-                        onClick={() => setExpanded(isOpen ? null : item.id)}
-                        className="flex items-center gap-1 text-xs font-bold transition-colors"
-                        style={{ color: tab.color }}
-                      >
-                        {isOpen
-                          ? <><ChevronUp size={13} /> إخفاء</>
-                          : <><ChevronDown size={13} /> التفاصيل</>}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Expanded details */}
-                  {isOpen && (
-                    <div className="border-t border-[#E8E0D8]/60 bg-[#FDFCFB] px-5 py-4 space-y-4">
-
-                      {/* Observer / center / caterer / timestamp */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                        {[
-                          { label: 'المراقب',      val: getObserver(item),                                bold: true },
-                          { label: 'المركز',        val: getCenter(item),                                  bold: true },
-                          { label: 'المتعهد',       val: item.caterer || getCaterer(getCenter(item)),      gold: true },
-                          { label: 'وقت الإرسال',  val: fullDate(item.timestamp),                         time: true },
-                        ].map(c => (
-                          <div key={c.label} className="bg-white rounded-2xl border border-[#E8E0D8] p-3"
-                            style={c.time ? { borderColor: `${tab.color}40`, background: `${tab.color}06` } : {}}>
-                            <p className="text-[#6D6E71] text-[10px] mb-0.5">{c.label}</p>
-                            <p className={`font-bold text-[10px] leading-snug ${c.gold ? 'text-[#A98159]' : c.time ? '' : 'text-[#2D2926]'} ${!c.time ? 'truncate' : ''}`}
-                              style={c.time ? { color: tab.color } : {}}>
-                              {c.val || '—'}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Score progress bar */}
-                      {tab.hasScore && score != null && (
-                        <div className="bg-white rounded-2xl border border-[#E8E0D8] p-3.5">
-                          <div className="flex justify-between text-xs mb-2">
-                            <span className="text-[#6D6E71] font-medium">الدرجة الإجمالية</span>
-                            <span className="font-bold" style={{ color: tab.color }}>{score.toFixed(2)} / 10</span>
-                          </div>
-                          <div className="h-2 bg-[#F0EAE3] rounded-full overflow-hidden">
-                            <div className="h-full rounded-full transition-all duration-700"
-                              style={{ width: `${Math.min(score * 10, 100)}%`, backgroundColor: tab.color }} />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Questions answered لا */}
-                      {noAnswers.length > 0 && (
-                        <div>
-                          <p className="text-xs font-bold text-red-600 mb-2 flex items-center gap-1.5">
-                            <XCircle size={13} strokeWidth={1.5} />
-                            الأسئلة المجابة بـ «لا» ({noAnswers.length})
-                          </p>
-                          <div className="space-y-1.5">
-                            {noAnswers.map(q => (
-                              <div key={q.id}
-                                className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-2xl px-3 py-2.5">
-                                <span className="text-[10px] font-bold text-red-400 mt-0.5 flex-shrink-0">#{q.id}</span>
-                                <p className="text-xs text-red-700 leading-relaxed">{q.text}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* All answers */}
-                      <div>
-                        <p className="text-xs font-bold text-[#6D6E71] mb-2 flex items-center gap-1.5">
-                          <TrendingUp size={13} strokeWidth={1.5} />
-                          جميع الإجابات
-                        </p>
-                        <div className="space-y-1.5">
-                          {tab.allQs.map(q => {
-                            const ans   = item.answers?.[q.id];
-                            if (!ans) return null;
-                            const isYes = ans === 'نعم';
-                            const isNo  = ans === 'لا';
-                            return (
-                              <div key={q.id} className={`flex items-center gap-2 rounded-2xl px-3 py-2 border ${
-                                isYes ? 'bg-green-50 border-green-100'
-                                : isNo ? 'bg-red-50 border-red-100'
-                                :        'bg-gray-50 border-gray-100'
-                              }`}>
-                                <span className="text-[10px] font-bold flex-shrink-0"
-                                  style={{ color: isYes ? '#386B41' : isNo ? '#BA1A1A' : '#6D6E71' }}>
-                                  #{q.id}
-                                </span>
-                                <p className="text-xs flex-1 leading-relaxed"
-                                  style={{ color: isYes ? '#166534' : isNo ? '#991B1B' : '#2D2926' }}>
-                                  {q.text}
-                                </p>
-                                <span className={`text-[10px] font-bold flex-shrink-0 flex items-center gap-0.5 ${
-                                  isYes ? 'text-green-600' : isNo ? 'text-red-600' : 'text-gray-500'
-                                }`}>
-                                  {isYes
-                                    ? <CheckCircle2 size={12} strokeWidth={2} />
-                                    : isNo ? <XCircle size={12} strokeWidth={2} /> : null}
-                                  {ans}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+          {/* Sub stats */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-lg border border-[#EDE5DC] bg-[#FAFAF8] p-2">
+              <div className="flex items-center gap-1 text-[#A98159] mb-0.5">
+                <User size={9} strokeWidth={2.5} />
+                <span className="text-[9px] font-bold">المراقب</span>
+              </div>
+              <p className="text-[10px] font-bold text-[#2D2926] truncate">
+                {getObserver(summary.latestDoc)}
+              </p>
+            </div>
+            <div className="rounded-lg border p-2"
+              style={summary.totalViolations > 0
+                ? { background: '#FEF2F2', borderColor: '#FCA5A5' }
+                : { background: '#F0FDF4', borderColor: '#86EFAC' }}>
+              <div className="flex items-center gap-1 mb-0.5"
+                style={{ color: summary.totalViolations > 0 ? '#B91C1C' : '#15803D' }}>
+                <AlertCircle size={9} strokeWidth={2.5} />
+                <span className="text-[9px] font-bold">مخالفات</span>
+              </div>
+              <p className="text-[10px] font-black tabular-nums"
+                style={{ color: summary.totalViolations > 0 ? '#B91C1C' : '#15803D' }}>
+                {summary.totalViolations}
+              </p>
+            </div>
           </div>
         </>
+      ) : (
+        <div className="rounded-xl border border-dashed border-[#E8DDD4] bg-white p-3 text-center">
+          <div className="w-8 h-8 rounded-full bg-[#F5F0EB] flex items-center justify-center mx-auto mb-1.5">
+            <ClipboardList size={14} className="text-[#C9B8A8]" strokeWidth={2} />
+          </div>
+          <p className="text-[10px] font-bold text-[#9D8F85]">لم يُقيَّم بعد</p>
+        </div>
+      )}
+    </button>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   Center Detail — all evaluations for one center under the Mash'ar
+══════════════════════════════════════════════════════════════════ */
+function CenterDetail({ tab, summary, onBack }) {
+  const [openEval, setOpenEval] = useState(summary.evaluations[0]?.id || null);
+  const centerNum = (summary.center.match(/\d+\S*/) || ['—'])[0];
+  const sst = scoreStyle(summary.avgScore);
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="bg-gradient-to-br from-white to-[#FDF8F0] border border-[#E8DDD4] rounded-2xl p-4 flex items-center gap-3 shadow-[0_2px_8px_rgba(45,41,38,0.07)]">
+        <button onClick={onBack}
+          className="min-w-[40px] min-h-[40px] rounded-xl border border-[#D9CEBC] bg-white text-[#A98159] flex items-center justify-center hover:bg-[#FDF8F0] hover:border-[#A98159] transition-all shrink-0"
+          title="رجوع">
+          <X size={16} strokeWidth={2.25} />
+        </button>
+        <div className="relative shrink-0">
+          <div className="absolute inset-0 rounded-2xl blur-md opacity-50" style={{ background: tab.color }} />
+          <div className="relative w-12 h-12 rounded-2xl flex items-center justify-center shadow-md"
+            style={{ background: tab.gradient }}>
+            <span className="text-white text-sm font-black tabular-nums">{centerNum}</span>
+          </div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-base font-black text-[#2D2926] truncate">{summary.center}</p>
+            <span className="inline-flex items-center gap-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border"
+              style={{ background: tab.bg, borderColor: tab.border, color: tab.color }}>
+              <tab.icon size={9} strokeWidth={2.5} />
+              {tab.label}
+            </span>
+          </div>
+          <p className="text-[11px] text-[#A98159] font-bold mt-0.5 truncate">{summary.caterer || '—'}</p>
+        </div>
+        {/* Avg score chip */}
+        <div className="rounded-xl border-2 px-3 py-1.5 text-center shrink-0"
+          style={{ background: sst.bg, borderColor: sst.border }}>
+          <p className="text-[8px] font-bold opacity-80" style={{ color: sst.color }}>متوسط</p>
+          <p className="text-base font-black tabular-nums leading-tight" style={{ color: sst.color }}>
+            {summary.avgScore != null ? summary.avgScore.toFixed(1) : '—'}
+            <span className="text-[9px] opacity-70">/10</span>
+          </p>
+        </div>
+      </div>
+
+      {/* Evaluations list */}
+      <div className="space-y-3">
+        {summary.evaluations.map((ev, idx) => (
+          <EvaluationCard key={ev.id}
+            evalDoc={ev} tab={tab} index={idx + 1}
+            isOpen={openEval === ev.id}
+            onToggle={() => setOpenEval(openEval === ev.id ? null : ev.id)} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   Evaluation Card — single evaluation with expandable details
+══════════════════════════════════════════════════════════════════ */
+function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle }) {
+  const score = getScore(evalDoc);
+  const sst   = scoreStyle(score);
+  const ans   = evalDoc.answers || {};
+  const yes   = Object.values(ans).filter(v => v === 'نعم').length;
+  const no    = Object.values(ans).filter(v => v === 'لا').length;
+  const noQs  = tab.allQs.filter(q => ans[q.id] === 'لا');
+
+  return (
+    <div className="bg-white rounded-2xl border-2 overflow-hidden shadow-[0_2px_12px_rgba(45,41,38,0.07)]"
+      style={{ borderColor: isOpen ? sst.border : '#EDE5DC' }}>
+      {/* Header row — always visible */}
+      <button onClick={onToggle}
+        className="w-full text-right px-4 sm:px-5 py-3.5 flex items-center gap-3 hover:bg-[#FDFAF7] transition-colors">
+        {/* Score badge */}
+        <div className="relative shrink-0">
+          <div className="absolute inset-0 rounded-2xl blur-md opacity-40" style={{ background: sst.color }} />
+          <div className="relative w-14 h-14 rounded-2xl flex flex-col items-center justify-center border-2"
+            style={{ background: sst.bg, borderColor: sst.border }}>
+            <span className="text-base font-black tabular-nums leading-none" style={{ color: sst.color }}>
+              {score != null ? score.toFixed(1) : '—'}
+            </span>
+            <span className="text-[8px] font-bold opacity-70 mt-0.5" style={{ color: sst.color }}>/10</span>
+          </div>
+        </div>
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <span className="text-[10px] font-black px-2 py-0.5 rounded-md tabular-nums"
+              style={{ background: `${tab.color}15`, color: tab.color, border: `1px solid ${tab.color}30` }}>
+              تقييم #{index}
+            </span>
+            {no > 0 && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md bg-red-50 border border-red-200 text-red-700">
+                <AlertCircle size={10} strokeWidth={2.5} />
+                {no} مخالفة
+              </span>
+            )}
+            {no === 0 && score != null && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md bg-green-50 border border-green-200 text-green-700">
+                <CheckCircle2 size={10} strokeWidth={2.5} />
+                بدون مخالفات
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-3 flex-wrap text-[11px] text-[#6D6E71]">
+            <span className="flex items-center gap-1">
+              <User size={11} strokeWidth={2.25} className="text-[#A98159]" />
+              <span className="font-bold text-[#2D2926]">{getObserver(evalDoc)}</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <Calendar size={11} strokeWidth={2.25} className="text-[#A98159]" />
+              <span className="font-bold">{fullDate(evalDoc.timestamp)}</span>
+            </span>
+          </div>
+        </div>
+        {/* Chevron */}
+        <div className="w-8 h-8 rounded-lg border border-[#EDE5DC] flex items-center justify-center shrink-0 transition-transform"
+          style={{ transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+          <ChevronRight size={14} className="text-[#A98159]" strokeWidth={2.25} />
+        </div>
+      </button>
+
+      {/* Expanded details */}
+      {isOpen && (
+        <div className="border-t border-[#EDE5DC] bg-[#FDFCFB] px-4 sm:px-5 py-4 space-y-4">
+          {/* Quick stats */}
+          <div className="grid grid-cols-3 gap-2.5">
+            <div className="rounded-xl border-2 p-3 text-center"
+              style={{ background: sst.bg, borderColor: sst.border }}>
+              <p className="text-[10px] font-bold opacity-80" style={{ color: sst.color }}>الدرجة</p>
+              <p className="text-xl font-black tabular-nums" style={{ color: sst.color }}>
+                {score != null ? score.toFixed(1) : '—'}
+                <span className="text-[10px] opacity-70">/10</span>
+              </p>
+            </div>
+            <div className="rounded-xl border-2 border-green-200 bg-green-50 p-3 text-center">
+              <p className="text-[10px] font-bold text-green-700 opacity-80">إجابة «نعم»</p>
+              <p className="text-xl font-black tabular-nums text-green-700">{yes}</p>
+            </div>
+            <div className="rounded-xl border-2 border-red-200 bg-red-50 p-3 text-center">
+              <p className="text-[10px] font-bold text-red-700 opacity-80">إجابة «لا»</p>
+              <p className="text-xl font-black tabular-nums text-red-700">{no}</p>
+            </div>
+          </div>
+
+          {/* Meta info */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {[
+              { label: 'المراقب',  val: getObserver(evalDoc),                                 Icon: User,     color: '#A98159' },
+              { label: 'المركز',   val: getCenter(evalDoc),                                   Icon: Building2,color: tab.color },
+              { label: 'الوقت',    val: fullDate(evalDoc.timestamp),                          Icon: Calendar, color: '#6D6E71' },
+            ].map(m => (
+              <div key={m.label} className="bg-white rounded-xl border border-[#EDE5DC] p-2.5 flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: `${m.color}15` }}>
+                  <m.Icon size={12} style={{ color: m.color }} strokeWidth={2.25} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[9px] text-[#9D8F85] font-bold">{m.label}</p>
+                  <p className="text-[11px] font-bold text-[#2D2926] truncate">{m.val || '—'}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Score progress bar */}
+          {score != null && (
+            <div className="bg-white rounded-xl border border-[#EDE5DC] p-3">
+              <div className="flex justify-between text-xs mb-1.5">
+                <span className="text-[#6D6E71] font-bold">الدرجة الإجمالية</span>
+                <span className="font-black tabular-nums" style={{ color: sst.color }}>{score.toFixed(2)} / 10</span>
+              </div>
+              <div className="h-2 bg-[#F5F0EB] rounded-full overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-700"
+                  style={{ width: `${Math.min(score * 10, 100)}%`, background: sst.color }} />
+              </div>
+            </div>
+          )}
+
+          {/* Violations */}
+          {noQs.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-2.5">
+                <div className="w-1.5 h-5 rounded-full bg-red-500" />
+                <p className="text-sm font-black text-red-700">المخالفات</p>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-red-50 border border-red-200 text-red-700 tabular-nums">
+                  {noQs.length}
+                </span>
+              </div>
+              <ul className="space-y-1.5">
+                {noQs.map(q => (
+                  <li key={q.id} className="bg-red-50/60 border border-red-200/70 rounded-xl p-3 flex items-start gap-2.5">
+                    <span className="w-6 h-6 rounded-md bg-red-500 text-white text-[10px] font-black flex items-center justify-center shrink-0 mt-0.5 tabular-nums">
+                      {q.id}
+                    </span>
+                    <p className="text-sm text-[#2D2926] font-medium leading-relaxed flex-1">{q.text}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* All answers */}
+          <div>
+            <div className="flex items-center gap-2 mb-2.5">
+              <div className="w-1.5 h-5 rounded-full" style={{ background: tab.color }} />
+              <p className="text-sm font-black text-[#2D2926]">جميع الإجابات</p>
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-full tabular-nums"
+                style={{ background: tab.bg, color: tab.color, border: `1px solid ${tab.border}` }}>
+                {tab.allQs.filter(q => ans[q.id]).length} سؤال
+              </span>
+            </div>
+            <div className="space-y-1.5">
+              {tab.allQs.map(q => {
+                const a = ans[q.id];
+                if (!a) return null;
+                const isYes = a === 'نعم';
+                const isNo  = a === 'لا';
+                return (
+                  <div key={q.id}
+                    className={`flex items-center gap-2 rounded-xl px-3 py-2 border ${
+                      isYes ? 'bg-green-50/60 border-green-200/70'
+                      : isNo ? 'bg-red-50/60 border-red-200/70'
+                      :        'bg-white border-[#EDE5DC]'
+                    }`}>
+                    <span className="text-[10px] font-black flex-shrink-0 tabular-nums"
+                      style={{ color: isYes ? '#15803D' : isNo ? '#B91C1C' : '#6D6E71' }}>
+                      #{q.id}
+                    </span>
+                    <p className="text-xs flex-1 leading-relaxed"
+                      style={{ color: isYes ? '#166534' : isNo ? '#991B1B' : '#2D2926' }}>
+                      {q.text}
+                    </p>
+                    <span className={`text-[10px] font-black flex-shrink-0 flex items-center gap-0.5 ${
+                      isYes ? 'text-green-700' : isNo ? 'text-red-700' : 'text-[#6D6E71]'
+                    }`}>
+                      {isYes
+                        ? <CheckCircle2 size={12} strokeWidth={2.25} />
+                        : isNo ? <XCircle size={12} strokeWidth={2.25} /> : null}
+                      {a}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -19,8 +19,9 @@ export function useAssignedTasks(profile) {
   const [completions, setCompletions] = useState([]);
   const [loading,     setLoading]     = useState(true);
 
-  const uid = profile?.uid;
-  const cn  = extractCenterNum(profile?.center);
+  const uid     = profile?.uid;
+  const center  = profile?.center || '';
+  const cn      = extractCenterNum(center);
 
   useEffect(() => {
     if (!uid) return;
@@ -33,13 +34,19 @@ export function useAssignedTasks(profile) {
       t1 = true; done();
     });
 
+    /* Filter by CENTER not uid — so observer's task badge clears when
+       the supervisor uploads on their behalf, and vice-versa. */
     const u2 = onSnapshot(collection(db, 'task_completions'), snap => {
-      setCompletions(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(c => c.uid === uid));
+      setCompletions(
+        snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(c => c.center === center)
+      );
       t2 = true; done();
     });
 
     return () => { u1(); u2(); };
-  }, [uid, cn]);
+  }, [uid, cn, center]);
 
   return { tasks, completions, loading };
 }

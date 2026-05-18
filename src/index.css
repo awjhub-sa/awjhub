@@ -75,3 +75,66 @@
     font-family: 'IBM Plex Sans Arabic', Tahoma, sans-serif;
   }
 }
+
+/* ── Notification badge ripple pulse ── */
+@keyframes badgePulseRed {
+  0%, 100% { transform: scale(1);    box-shadow: 0 0 0 0   rgba(239, 68, 68, 0.55); }
+  50%      { transform: scale(1.08); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);     }
+}
+@keyframes badgePulseBlue {
+  0%, 100% { transform: scale(1);    box-shadow: 0 0 0 0   rgba(59, 130, 246, 0.55); }
+  50%      { transform: scale(1.08); box-shadow: 0 0 0 6px rgba(59, 130, 246, 0);     }
+}
+@keyframes badgePulseGold {
+  0%, 100% { transform: scale(1);    box-shadow: 0 0 0 0   rgba(169, 129, 89, 0.55); }
+  50%      { transform: scale(1.08); box-shadow: 0 0 0 6px rgba(169, 129, 89, 0);     }
+}
+.badge-pulse-red   { animation: badgePulseRed   2s ease-in-out infinite; }
+.badge-pulse-blue  { animation: badgePulseBlue  2s ease-in-out infinite; }
+.badge-pulse-gold  { animation: badgePulseGold  2s ease-in-out infinite; }
+
+/* ── Full-row glow pulse (highlights brand-new reports/logistics) ── */
+@keyframes rowPulseRed {
+  0%, 100% {
+    background-color: rgba(254, 242, 242, 0.45);
+    box-shadow: inset 0 0 0 1.5px rgba(239, 68, 68, 0.30), 0 0 0 0 rgba(239, 68, 68, 0.25);
+  }
+  50% {
+    background-color: rgba(254, 226, 226, 0.85);
+    box-shadow: inset 0 0 0 1.5px rgba(239, 68, 68, 0.65), 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+}
+@keyframes rowPulseBlue {
+  0%, 100% {
+    background-color: rgba(239, 246, 255, 0.45);
+    box-shadow: inset 0 0 0 1.5px rgba(59, 130, 246, 0.30), 0 0 0 0 rgba(59, 130, 246, 0.25);
+  }
+  50% {
+    background-color: rgba(219, 234, 254, 0.85);
+    box-shadow: inset 0 0 0 1.5px rgba(59, 130, 246, 0.65), 0 0 0 6px rgba(59, 130, 246, 0);
+  }
+}
+@keyframes cardPulseRed {
+  0%, 100% {
+    border-color: rgba(239, 68, 68, 0.45);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.35), 0 2px 12px rgba(239, 68, 68, 0.10);
+  }
+  50% {
+    border-color: rgba(239, 68, 68, 0.85);
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0), 0 6px 24px rgba(239, 68, 68, 0.25);
+  }
+}
+@keyframes cardPulseBlue {
+  0%, 100% {
+    border-color: rgba(59, 130, 246, 0.45);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.35), 0 2px 12px rgba(59, 130, 246, 0.10);
+  }
+  50% {
+    border-color: rgba(59, 130, 246, 0.85);
+    box-shadow: 0 0 0 6px rgba(59, 130, 246, 0), 0 6px 24px rgba(59, 130, 246, 0.25);
+  }
+}
+.row-pulse-red   { animation: rowPulseRed   2.2s ease-in-out infinite; }
+.row-pulse-blue  { animation: rowPulseBlue  2.2s ease-in-out infinite; }
+.card-pulse-red  { animation: cardPulseRed  2.2s ease-in-out infinite; }
+.card-pulse-blue { animation: cardPulseBlue 2.2s ease-in-out infinite; }

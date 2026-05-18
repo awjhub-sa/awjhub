@@ -1,0 +1,79 @@
+/* Print-specific layout for /admin/report-view */
+
+@page {
+  size: A4;
+  margin: 1.2cm;
+}
+
+.report-view {
+  background: #F5EFE3;
+  min-height: 100vh;
+  padding: 2rem 0;
+  font-family: 'IBM Plex Sans Arabic', 'Cairo', Tahoma, sans-serif;
+  direction: rtl;
+}
+
+.report-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: #fff;
+  border-bottom: 1px solid #EDE5DC;
+  padding: 0.85rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: 0 2px 12px rgba(45, 41, 38, 0.06);
+  flex-wrap: wrap;
+}
+
+.report-page-card {
+  background: #fff;
+  width: 21cm;
+  min-height: 29.7cm;
+  margin: 1.5rem auto;
+  padding: 1.5cm;
+  box-shadow: 0 6px 28px rgba(45, 41, 38, 0.08);
+  page-break-after: always;
+  break-after: page;
+  display: flex;
+  flex-direction: column;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.report-page-card:last-child {
+  page-break-after: auto;
+  break-after: auto;
+}
+
+/* Force-print backgrounds so the colored chips/badges survive Save-as-PDF */
+.report-page-card,
+.report-page-card * {
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+/* ── Print rules ── */
+@media print {
+  body {
+    background: #fff !important;
+  }
+  .report-toolbar,
+  .no-print {
+    display: none !important;
+  }
+  .report-view {
+    background: #fff !important;
+    padding: 0 !important;
+  }
+  .report-page-card {
+    width: auto;
+    min-height: auto;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+    border-radius: 0;
+  }
+}

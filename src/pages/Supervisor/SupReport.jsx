@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronRight, AlertTriangle, Zap, Image as ImageIcon, Video, Upload, X, CheckCircle2 } from 'lucide-react';
+import { ChevronRight, AlertTriangle, Zap, Image as ImageIcon, Video, Upload, X, CheckCircle2, Sparkles } from 'lucide-react';
 import { db } from '../../config/db.js';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from "../../context/AuthContext.jsx";
 import { getCaterer } from '../../config/centers.js';
+import { initialStatusFields } from '../../lib/statusTracking.js';
 
 const REPORT_TYPES = [
   { id: 1, title: 'عدم توفر مصدر للمياه (انقطاع مياه المطبخ)', severity: 'high' },
@@ -79,9 +80,9 @@ export default function SupReport() {
         reportType: selectedReport,
         severity,
         description,
-        status: 'pending',
         role: 'supervisor', // تحديد الرتبة
         timestamp: serverTimestamp(),
+        ...initialStatusFields('pending'),
       });
       alert('تم إرسال البلاغ لغرفة العمليات');
       navigate('/supervisor-home'); // الرجوع لهوم المشرف
@@ -93,7 +94,7 @@ export default function SupReport() {
     <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-32 font-arabic">
       <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 md:px-8 py-3 mb-6 shadow-sm">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <button onClick={() => navigate('/supervisor-home')} className="p-2 hover:bg-gray-100 rounded-xl transition shrink-0 border border-transparent active:border-[#A98159]/20">
+          <button onClick={() => navigate('/supervisor-home')} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition shrink-0 border border-transparent active:border-[#A98159]/20">
             <ChevronRight className="text-[#A98159]" size={22} strokeWidth={2.5} />
           </button>
           <h1 className="text-base font-bold text-[#2D2926] absolute left-1/2 -translate-x-1/2 whitespace-nowrap">بلاغ طارئ عاجل (إشراف)</h1>
@@ -103,10 +104,17 @@ export default function SupReport() {
 
       <div className="max-w-4xl mx-auto px-4">
           <div className="rounded-[2.5rem] p-6 my-6 text-white shadow-lg relative overflow-hidden bg-[#2D2926]">
-            <div className="flex justify-between items-center mb-6 relative z-10">
+            <div className="flex justify-between items-center mb-6 relative z-10 group">
               <div className="flex items-center gap-3">
-                <div className="bg-white/10 p-3 rounded-2xl">
-                  <AlertTriangle className={severity === 'high' ? "text-[#BA1A1A] animate-pulse" : "text-[#A98159]"} size={28} />
+                <div className="relative">
+                  <div
+                    className="absolute inset-0 rounded-2xl blur-xl opacity-50 group-hover:opacity-80 transition-opacity"
+                    style={{ background: severity === 'high' ? '#BA1A1A' : '#A98159' }}
+                  />
+                  <div className="relative bg-white/10 p-3 rounded-2xl group-hover:scale-110 transition-transform duration-300">
+                    <AlertTriangle className={severity === 'high' ? "text-[#BA1A1A] animate-pulse" : "text-[#A98159]"} size={28} />
+                    <Sparkles size={10} className="absolute -top-0.5 -right-0.5 text-yellow-200 drop-shadow" />
+                  </div>
                 </div>
                 <div>
                   <p className="text-[#A98159] text-[10px] font-black uppercase tracking-wider">نظام الرصد الميداني</p>
@@ -195,7 +203,7 @@ export default function SupReport() {
           </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 border-t border-[#D1C4B9] z-50">
+      <div className="fixed bottom-0 left-0 right-0 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-white/90 border-t border-[#D1C4B9] z-50">
         <button onClick={handleSubmit} disabled={loading}
           className={`w-full max-w-md mx-auto py-4 rounded-2xl font-black text-lg shadow-xl flex items-center justify-center gap-3 transition-all active:scale-95
             ${loading ? 'bg-gray-400' : 'bg-[#BA1A1A] text-white hover:bg-[#961515]'}`}>

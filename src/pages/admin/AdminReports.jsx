@@ -1,12 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { collection, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../config/db.js';
 import {
-  AlertTriangle, ChevronDown, ChevronUp,
-  Pencil, Trash2, X, Save, ImageIcon, Video,
-  User, Building2, Clock, ShieldAlert, Play, ExternalLink,
+  AlertTriangle, ChevronRight, Pencil, Trash2, X, Save, ImageIcon, Video,
+  User, Building2, Clock, ShieldAlert, Play, ExternalLink, Search,
+  Filter, CheckCircle2, Activity, Sparkles, MapPin, Hash, Factory,
+  Droplets, Zap, Users as UsersIcon, Utensils, HeartPulse,
+  Shield, Flame, FileText, Package, Star, Thermometer, Hourglass,
+  Calendar,
 } from 'lucide-react';
+import PageHeader from '../../components/PageHeader.jsx';
+import NotificationBadge from '../../components/NotificationBadge.jsx';
 import { getCaterer, getShakhis, getLocation } from '../../config/centers.js';
+import {
+  computeStatusUpdate, TERMINAL_REPORT_STATUSES,
+} from '../../lib/statusTracking.js';
+import { StatusTimerChip, StatusTimeline } from '../../components/StatusTimeline.jsx';
 
 /* ── Media Lightbox ── */
 function MediaLightbox({ src, type, onClose }) {
@@ -29,25 +38,30 @@ function MediaLightbox({ src, type, onClose }) {
 
 function timeAgo(ts) {
   if (!ts) return '—';
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
-  const s = Math.floor((Date.now() - d) / 1000);
-  if (s < 60)    return 'الآن';
-  if (s < 3600)  return `منذ ${Math.floor(s / 60)} دقيقة`;
-  if (s < 86400) return `منذ ${Math.floor(s / 3600)} ساعة`;
-  return `منذ ${Math.floor(s / 86400)} يوم`;
+  try {
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    const s = Math.floor((Date.now() - d) / 1000);
+    if (s < 60)    return 'الآن';
+    if (s < 3600)  return `منذ ${Math.floor(s / 60)} دقيقة`;
+    if (s < 86400) return `منذ ${Math.floor(s / 3600)} ساعة`;
+    return `منذ ${Math.floor(s / 86400)} يوم`;
+  } catch { return '—'; }
 }
 function fullDate(ts) {
   if (!ts) return '—';
-  return (ts.toDate ? ts.toDate() : new Date(ts))
-    .toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' });
+  try {
+    return (ts.toDate ? ts.toDate() : new Date(ts))
+      .toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' });
+  } catch { return '—'; }
 }
 
 /* ── constants ── */
 const STATUS_OPTIONS = [
-  { value: 'pending',     label: 'قيد الانتظار', cls: 'bg-amber-50   text-amber-700   border-amber-200'  },
-  { value: 'in_progress', label: 'جارٍ التنفيذ',  cls: 'bg-blue-50    text-blue-700    border-blue-200'   },
-  { value: 'resolved',    label: 'تم الحل',       cls: 'bg-emerald-50 text-emerald-700 border-emerald-200'},
+  { value: 'pending',     label: 'قيد الانتظار', color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A', Icon: Clock        },
+  { value: 'in_progress', label: 'جارٍ التنفيذ',  color: '#3B82F6', bg: '#EFF6FF', border: '#BFDBFE', Icon: Activity     },
+  { value: 'resolved',    label: 'تم الحل',       color: '#10B981', bg: '#F0FDF4', border: '#86EFAC', Icon: CheckCircle2 },
 ];
+const STATUS_LOOKUP = Object.fromEntries(STATUS_OPTIONS.map(s => [s.value, s]));
 
 const SEVERITY_MAP = {
   high:   { label: 'عالية',   bg: '#FEF2F2', border: '#FECACA', text: '#991B1B', bar: '#EF4444' },
@@ -57,148 +71,38 @@ const SEVERITY_MAP = {
 };
 
 const REPORT_TYPE_MAP = {
-  water:    { label: 'تسرب مياه',        icon: '💧' },
-  electric: { label: 'عطل كهربائي',       icon: '⚡' },
-  crowd:    { label: 'ازدحام حرج',        icon: '👥' },
-  food:     { label: 'مشكلة غذائية',      icon: '🍽️' },
-  medical:  { label: 'حالة طبية طارئة',   icon: '🚑' },
-  security: { label: 'بلاغ أمني',         icon: '🛡️' },
-  fire:     { label: 'حريق / دخان',       icon: '🔥' },
-  other:    { label: 'بلاغ آخر',          icon: '📋' },
-  shortage: { label: 'نقص في الكميات',    icon: '📦' },
-  delay:    { label: 'تأخر في التوزيع',   icon: '⏱️' },
-  quality:  { label: 'مشكلة في الجودة',   icon: '⭐' },
-  hygiene:  { label: 'مخالفة صحية',       icon: '🌡️' },
+  water:    { label: 'تسرب مياه',        Icon: Droplets,    color: '#3B82F6' },
+  electric: { label: 'عطل كهربائي',       Icon: Zap,         color: '#F59E0B' },
+  crowd:    { label: 'ازدحام حرج',        Icon: UsersIcon,   color: '#8B5CF6' },
+  food:     { label: 'مشكلة غذائية',      Icon: Utensils,    color: '#A98159' },
+  medical:  { label: 'حالة طبية طارئة',   Icon: HeartPulse,  color: '#EF4444' },
+  security: { label: 'بلاغ أمني',         Icon: Shield,      color: '#1F2937' },
+  fire:     { label: 'حريق / دخان',       Icon: Flame,       color: '#DC2626' },
+  other:    { label: 'بلاغ آخر',          Icon: FileText,    color: '#6D6E71' },
+  shortage: { label: 'نقص في الكميات',    Icon: Package,     color: '#EA580C' },
+  delay:    { label: 'تأخر في التوزيع',   Icon: Hourglass,   color: '#0891B2' },
+  quality:  { label: 'مشكلة في الجودة',   Icon: Star,        color: '#EAB308' },
+  hygiene:  { label: 'مخالفة صحية',       Icon: Thermometer, color: '#10B981' },
 };
+const getRT = r => REPORT_TYPE_MAP[r.reportType] || REPORT_TYPE_MAP[r.type] || { label: r.reportType || 'بلاغ', Icon: FileText, color: '#6D6E71' };
+const getSV = r => SEVERITY_MAP[r.severity] || null;
+const getSB = r => STATUS_LOOKUP[r.status] || STATUS_OPTIONS[0];
 
-const getRT  = r => REPORT_TYPE_MAP[r.reportType] || REPORT_TYPE_MAP[r.type] || { label: r.reportType || 'بلاغ', icon: '📋' };
-const getSV  = r => SEVERITY_MAP[r.severity] || null;
-const getSB  = r => STATUS_OPTIONS.find(s => s.value === r.status) || STATUS_OPTIONS[0];
-
-/* ── Edit Modal ── */
-function EditModal({ report, onClose, onSave }) {
-  const [form, setForm] = useState({
-    status:      report.status      || 'pending',
-    severity:    report.severity    || '',
-    description: report.description || '',
-  });
-  const [saving, setSaving] = useState(false);
-
-  const handleSave = async () => {
-    setSaving(true);
-    await onSave(report.id, form);
-    setSaving(false);
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" dir="rtl">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#EDE8E3]"
-          style={{ background: 'linear-gradient(135deg,#FDFCFB,#FDF8F0)' }}>
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#A98159]/10 flex items-center justify-center">
-              <Pencil size={15} className="text-[#A98159]" strokeWidth={1.75} />
-            </div>
-            <div>
-              <p className="font-bold text-[#2D2926] text-sm">تعديل البلاغ</p>
-              <p className="text-[10px] text-[#6D6E71]">{getRT(report).icon} {getRT(report).label}</p>
-            </div>
-          </div>
-          <button onClick={onClose}
-            className="w-8 h-8 rounded-xl border border-[#E8DDD4] flex items-center justify-center hover:bg-[#F5F0EB] transition-colors">
-            <X size={15} className="text-[#6D6E71]" strokeWidth={1.75} />
-          </button>
-        </div>
-
-        <div className="px-6 py-5 space-y-4">
-          {/* Observer info (read-only) */}
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: 'المراقب', val: report.observer, icon: User },
-              { label: 'المركز',  val: report.center,   icon: Building2 },
-            ].map(c => (
-              <div key={c.label} className="bg-[#FDFCFB] rounded-2xl border border-[#EDE8E3] px-3 py-2.5">
-                <p className="text-[10px] text-[#6D6E71] mb-0.5">{c.label}</p>
-                <p className="text-xs font-bold text-[#2D2926] truncate">{c.val || '—'}</p>
-              </div>
-            ))}
-          </div>
-          <div className="bg-[#FDF8F0] rounded-2xl border border-[#E8DDD4] px-3 py-2.5">
-            <p className="text-[10px] text-[#6D6E71] mb-0.5">المتعهد</p>
-            <p className="text-xs font-bold text-[#A98159]">{report.caterer || getCaterer(report.center) || '—'}</p>
-          </div>
-
-          {/* Status */}
-          <div>
-            <label className="text-xs font-bold text-[#2D2926] mb-2 block">حالة البلاغ</label>
-            <div className="grid grid-cols-3 gap-2">
-              {STATUS_OPTIONS.map(s => (
-                <button key={s.value} onClick={() => setForm(f => ({ ...f, status: s.value }))}
-                  className={`py-2.5 rounded-2xl text-xs font-bold border transition-all ${
-                    form.status === s.value ? s.cls + ' shadow-sm' : 'bg-white text-[#6D6E71] border-[#E8DDD4]'
-                  }`}>
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Severity */}
-          <div>
-            <label className="text-xs font-bold text-[#2D2926] mb-2 block">مستوى الخطورة</label>
-            <div className="grid grid-cols-2 gap-2">
-              {Object.entries(SEVERITY_MAP).map(([key, sv]) => (
-                <button key={key} onClick={() => setForm(f => ({ ...f, severity: key }))}
-                  className={`py-2.5 rounded-2xl text-xs font-bold border transition-all ${
-                    form.severity === key ? '' : 'bg-white text-[#6D6E71] border-[#E8DDD4]'
-                  }`}
-                  style={form.severity === key ? { background: sv.bg, borderColor: sv.border, color: sv.text } : {}}>
-                  {sv.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="text-xs font-bold text-[#2D2926] mb-2 block">وصف المشكلة</label>
-            <textarea rows={3} value={form.description}
-              onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              className="w-full px-4 py-3 border border-[#E8DDD4] rounded-2xl text-sm text-[#2D2926] outline-none focus:border-[#A98159] transition-colors resize-none bg-[#FDFCFB]"
-              placeholder="وصف المشكلة أو الملاحظات..." />
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="px-6 pb-5 flex gap-3">
-          <button onClick={onClose}
-            className="flex-1 py-3 rounded-2xl text-sm font-bold border border-[#E8DDD4] text-[#6D6E71] hover:bg-[#F5F0EB] transition-colors">
-            إلغاء
-          </button>
-          <button onClick={handleSave} disabled={saving}
-            className="flex-1 py-3 rounded-2xl text-sm font-bold bg-[#A98159] text-white flex items-center justify-center gap-2 hover:bg-[#8E6B48] transition-colors disabled:opacity-60">
-            {saving
-              ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              : <Save size={15} strokeWidth={1.75} />}
-            {saving ? 'جارٍ الحفظ...' : 'حفظ التعديلات'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+const NEW_THRESHOLD_MS = 10 * 60 * 1000;
+const isNewReport = r => {
+  if (r.status && r.status !== 'pending') return false;
+  const ts = r.timestamp?.toMillis?.() ?? 0;
+  return ts > 0 && (Date.now() - ts) < NEW_THRESHOLD_MS;
+};
 
 /* ══════════════════════════════════════════════════════════ */
 export default function AdminReports() {
   const [reports,       setReports]       = useState([]);
   const [filter,        setFilter]        = useState('all');
+  const [searchTerm,    setSearchTerm]    = useState('');
   const [expanded,      setExpanded]      = useState(null);
   const [editingReport, setEditingReport] = useState(null);
-  const [lightbox,      setLightbox]      = useState(null); // { src, type: 'image'|'video' }
+  const [lightbox,      setLightbox]      = useState(null);
 
   useEffect(() => {
     return onSnapshot(collection(db, 'reports'), snap => {
@@ -211,341 +115,167 @@ export default function AdminReports() {
     });
   }, []);
 
-  const handleStatus = async (id, status) =>
-    updateDoc(doc(db, 'reports', id), { status });
-
-  const handleSaveEdit = async (id, form) =>
-    updateDoc(doc(db, 'reports', id), {
-      status:      form.status,
+  const handleStatus = (id, newStatus) => {
+    const current = reports.find(r => r.id === id);
+    if (!current) return updateDoc(doc(db, 'reports', id), { status: newStatus });
+    const update = computeStatusUpdate(current, newStatus, TERMINAL_REPORT_STATUSES);
+    return updateDoc(doc(db, 'reports', id), update || { status: newStatus });
+  };
+  const handleSaveEdit = (id, form) => {
+    const current = reports.find(r => r.id === id) || {};
+    const statusUpdate = computeStatusUpdate(current, form.status, TERMINAL_REPORT_STATUSES);
+    return updateDoc(doc(db, 'reports', id), {
+      ...(statusUpdate || { status: form.status }),
       ...(form.severity    && { severity:    form.severity    }),
       ...(form.description && { description: form.description }),
     });
-
+  };
   const handleDelete = async (id) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا البلاغ؟ لا يمكن التراجع عن هذا الإجراء.')) return;
     await deleteDoc(doc(db, 'reports', id));
     if (expanded === id) setExpanded(null);
   };
 
-  const filtered = filter === 'all' ? reports
-    : reports.filter(r => r.status === filter || (!r.status && filter === 'pending'));
-
   const countOf = v => reports.filter(r => r.status === v || (!r.status && v === 'pending')).length;
 
+  const filtered = useMemo(() => {
+    let list = filter === 'all' ? reports
+      : reports.filter(r => r.status === filter || (!r.status && filter === 'pending'));
+    if (searchTerm.trim()) {
+      const q = searchTerm.trim().toLowerCase();
+      list = list.filter(r =>
+        (r.center      || '').toLowerCase().includes(q) ||
+        (r.observer    || '').toLowerCase().includes(q) ||
+        (r.description || '').toLowerCase().includes(q) ||
+        (r.reportNumber || '').toString().includes(q) ||
+        (getCaterer(r.center) || '').toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [reports, filter, searchTerm]);
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-6" dir="rtl">
 
       {/* Page header */}
-      <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
-        <div className="flex items-center gap-3 px-6 py-4"
-          style={{ background: 'linear-gradient(135deg, #FEF2F2 0%, #fff 55%)' }}>
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg, #FCA5A5, #EF4444)' }}>
-            <AlertTriangle size={20} className="text-white" strokeWidth={2} />
-          </div>
-          <div className="flex-1">
-            <h1 className="text-base font-bold text-[#2D2926]">البلاغات الميدانية</h1>
-            <p className="text-xs text-[#9D8F85] mt-0.5">{reports.length} بلاغ إجمالاً · تحديث فوري</p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        Icon={AlertTriangle}
+        title="البلاغات الميدانية"
+        subtitle={`${reports.length} بلاغ إجمالاً · تحديث فوري`}
+        gradient={{ from: '#FCA5A5', to: '#EF4444' }}
+        glowColor="rgba(239,68,68,0.4)"
+        right={
+          countOf('pending') > 0 ? (
+            <div className="flex items-center gap-2 bg-red-50 border border-red-200/60 rounded-2xl px-4 py-2 shadow-[0_2px_10px_rgba(239,68,68,0.12)]">
+              <NotificationBadge count={countOf('pending')} variant="red" />
+              <div className="text-right">
+                <p className="text-[10px] font-bold text-red-700 leading-none">قيد الانتظار</p>
+                <p className="text-[9px] text-red-500 mt-1 font-medium">يحتاج متابعة</p>
+              </div>
+            </div>
+          ) : null
+        }
+      />
 
       {/* Stat cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'قيد الانتظار', value: countOf('pending'),     color: '#E53E3E' },
-          { label: 'جارٍ التنفيذ', value: countOf('in_progress'), color: '#3182CE' },
-          { label: 'تم الحل',      value: countOf('resolved'),    color: '#2F855A' },
+          { label: 'إجمالي البلاغات', value: reports.length,         color: '#A98159', Icon: AlertTriangle },
+          { label: 'قيد الانتظار',     value: countOf('pending'),     color: '#F59E0B', Icon: Clock         },
+          { label: 'جارٍ التنفيذ',      value: countOf('in_progress'), color: '#3B82F6', Icon: Activity      },
+          { label: 'تم الحل',           value: countOf('resolved'),    color: '#10B981', Icon: CheckCircle2  },
         ].map(c => (
           <div key={c.label}
-            className="rounded-2xl p-4 border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] text-center"
-            style={{ borderRight: `3px solid ${c.color}`, background: `linear-gradient(145deg, #fff, ${c.color}0A)` }}>
-            <p className="text-2xl font-bold tabular-nums" style={{ color: c.color }}>{c.value}</p>
-            <p className="text-[#9D8F85] text-xs mt-0.5 font-semibold">{c.label}</p>
+            className="bg-white rounded-2xl p-4 border border-[#EDE5DC] shadow-[0_2px_8px_rgba(45,41,38,0.07)] flex items-center gap-3"
+            style={{ borderRight: `3px solid ${c.color}` }}>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-semibold text-[#9D8F85] mb-0.5">{c.label}</p>
+              <p className="text-2xl font-bold tabular-nums" style={{ color: c.color }}>{c.value}</p>
+            </div>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: `${c.color}18` }}>
+              <c.Icon size={18} style={{ color: c.color }} strokeWidth={1.75} />
+            </div>
           </div>
         ))}
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-2 flex-wrap">
-        {[{ value: 'all', label: 'الكل', count: reports.length }, ...STATUS_OPTIONS.map(s => ({ ...s, count: countOf(s.value) }))].map(opt => (
-          <button key={opt.value} onClick={() => setFilter(opt.value)}
-            className={`px-4 py-2 rounded-2xl text-xs font-bold border transition-all ${
-              filter === opt.value
-                ? 'text-white border-transparent shadow-sm'
-                : 'bg-white text-[#6D6E71] border-[#EDE5DC] hover:border-[#E53E3E]/40 hover:text-[#E53E3E]'
-            }`}
-            style={filter === opt.value ? { background: 'linear-gradient(135deg, #E53E3E, #C53030)' } : {}}>
-            {opt.label}
-            <span className={`mr-1.5 ${filter === opt.value ? 'opacity-70' : 'opacity-50'}`}>({opt.count})</span>
+      <div className="bg-white border border-[#EDE5DC] rounded-2xl p-1.5 flex overflow-x-auto no-scrollbar shadow-[0_2px_8px_rgba(45,41,38,0.05)]">
+        {[
+          { value: 'all',         label: 'الكل',         count: reports.length,         Icon: Filter,        color: '#6D6E71' },
+          { value: 'pending',     label: 'قيد الانتظار', count: countOf('pending'),     Icon: Clock,         color: '#F59E0B' },
+          { value: 'in_progress', label: 'جارٍ التنفيذ',  count: countOf('in_progress'), Icon: Activity,      color: '#3B82F6' },
+          { value: 'resolved',    label: 'تم الحل',       count: countOf('resolved'),    Icon: CheckCircle2,  color: '#10B981' },
+        ].map(opt => {
+          const active = filter === opt.value;
+          const OIcon = opt.Icon;
+          return (
+            <button key={opt.value}
+              onClick={() => setFilter(opt.value)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${
+                active ? 'text-white shadow-md' : 'text-[#6D6E71] hover:text-[#2D2926] hover:bg-[#FDF8F0]'
+              }`}
+              style={active
+                ? { background: `linear-gradient(135deg, ${opt.color}, ${opt.color}DD)` }
+                : undefined}>
+              <OIcon size={14} strokeWidth={2.25} />
+              {opt.label}
+              <span className={`tabular-nums text-[10px] px-1.5 py-0.5 rounded-md ${
+                active ? 'bg-white/25' : ''
+              }`}
+                style={!active ? { background: `${opt.color}15`, color: opt.color } : undefined}>
+                {opt.count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Search bar */}
+      <div className="relative">
+        <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9D8F85]" strokeWidth={2} />
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="بحث برقم البلاغ، المركز، المراقب، أو الوصف..."
+          className="w-full pr-11 pl-4 py-3 rounded-2xl border-2 border-[#EDE5DC] bg-white text-sm font-medium text-[#2D2926] placeholder:text-[#C9B8A8] focus:border-[#A98159] focus:outline-none transition-colors shadow-[0_2px_8px_rgba(45,41,38,0.05)]"
+        />
+        {searchTerm && (
+          <button onClick={() => setSearchTerm('')}
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center text-[#9D8F85] hover:bg-[#F5F0EB] transition-colors">
+            <X size={14} strokeWidth={2.25} />
           </button>
-        ))}
+        )}
       </div>
 
       {/* Reports list */}
       <div className="space-y-3">
         {filtered.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-[#EDE5DC] py-20 text-center shadow-[0_2px_12px_rgba(45,41,38,0.06)]">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3"
-              style={{ background: 'linear-gradient(135deg, #FEE2E2, #FECACA)' }}>
-              <AlertTriangle size={24} className="text-red-300" strokeWidth={1.5} />
-            </div>
-            <p className="text-[#6D6E71] text-sm font-medium">لا توجد بلاغات في هذه الفئة</p>
-          </div>
-        ) : filtered.map(r => {
-          const rt     = getRT(r);
-          const sv     = getSV(r);
-          const b      = getSB(r);
-          const isOpen = expanded === r.id;
-          const allImages = r.images?.length ? r.images : (r.photos?.length ? r.photos : []);
-
-          return (
-            <div key={r.id}
-              className="bg-white rounded-3xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden transition-all hover:shadow-[0_6px_24px_rgba(45,41,38,0.12)] hover:border-[#C9B8A8]">
-
-              {/* Severity color strip */}
-              {sv && <div className="h-1 w-full" style={{ background: sv.bar }} />}
-
-              {/* Card header */}
-              <div className="px-5 py-4 flex items-start gap-3">
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 text-xl"
-                  style={{ background: sv ? sv.bg : '#F5F0EB' }}>
-                  {rt.icon}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                    <span className="font-bold text-[#2D2926] text-sm">{rt.label}</span>
-                    {sv && (
-                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border"
-                        style={{ background: sv.bg, borderColor: sv.border, color: sv.text }}>
-                        {sv.label}
-                      </span>
-                    )}
-                    <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${b.cls}`}>
-                      {b.label}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-3 text-xs text-[#6D6E71] flex-wrap">
-                    <span className="flex items-center gap-1">
-                      <User size={11} strokeWidth={1.5} /> {r.observer || '—'}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Building2 size={11} strokeWidth={1.5} /> {r.center || '—'}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock size={11} strokeWidth={1.5} /> {timeAgo(r.timestamp)}
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-[#A98159] font-semibold mt-0.5">
-                    🏭 {r.caterer || getCaterer(r.center) || '—'}
-                  </p>
-
-                  {!isOpen && r.description && (
-                    <p className="text-xs text-[#6D6E71] mt-1.5 line-clamp-1">{r.description}</p>
-                  )}
-
-                  {!isOpen && (allImages.length > 0 || r.videoUrl) && (
-                    <div className="flex gap-1.5 mt-1.5">
-                      {allImages.length > 0 && (
-                        <span className="flex items-center gap-1 text-[10px] bg-[#F5F0EB] text-[#A98159] font-bold px-2 py-0.5 rounded-full">
-                          <ImageIcon size={9} strokeWidth={2} /> {allImages.length} صورة
-                        </span>
-                      )}
-                      {r.videoUrl && (
-                        <span className="flex items-center gap-1 text-[10px] bg-[#F5F0EB] text-[#A98159] font-bold px-2 py-0.5 rounded-full">
-                          <Video size={9} strokeWidth={2} /> فيديو
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                  <select value={r.status || 'pending'}
-                    onChange={e => handleStatus(r.id, e.target.value)}
-                    className={`text-[10px] font-bold border rounded-xl px-2 py-1 outline-none cursor-pointer ${b.cls}`}>
-                    {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                  {/* Media quick-open icons */}
-                  <div className="flex items-center gap-1.5">
-                    {allImages[0] && (
-                      <button
-                        onClick={() => window.open(allImages[0], '_blank')}
-                        title="فتح الصورة في تبويب جديد"
-                        className="w-7 h-7 rounded-lg border border-[#EDE5DC] bg-white flex items-center justify-center hover:border-[#A98159] hover:bg-[#FDF8F0] transition-colors"
-                      >
-                        <ImageIcon size={13} strokeWidth={1.75} className="text-[#A98159]" />
-                      </button>
-                    )}
-                    {r.videoUrl && (
-                      <button
-                        onClick={() => window.open(r.videoUrl, '_blank')}
-                        title="فتح الفيديو في تبويب جديد"
-                        className="w-7 h-7 rounded-lg border border-[#EDE5DC] bg-white flex items-center justify-center hover:border-[#6366F1] hover:bg-[#EEF2FF] transition-colors"
-                      >
-                        <Video size={13} strokeWidth={1.75} className="text-[#6366F1]" />
-                      </button>
-                    )}
-                  </div>
-                  <button onClick={() => setExpanded(isOpen ? null : r.id)}
-                    className="flex items-center gap-1 text-[#A98159] text-xs font-bold">
-                    {isOpen
-                      ? <><ChevronUp size={13} strokeWidth={1.75} /> إخفاء</>
-                      : <><ChevronDown size={13} strokeWidth={1.75} /> التفاصيل</>}
-                  </button>
-                </div>
+          <div className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-3xl border border-[#EDE5DC] py-20 text-center shadow-[0_2px_12px_rgba(45,41,38,0.06)]">
+            <div className="relative w-fit mx-auto mb-3 group">
+              <div className="absolute inset-0 rounded-2xl blur-xl bg-red-400 opacity-30 group-hover:opacity-60 transition-opacity" />
+              <div className="relative w-14 h-14 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300"
+                style={{ background: 'linear-gradient(135deg, #FEE2E2, #FECACA)' }}>
+                <AlertTriangle size={24} className="text-red-400" strokeWidth={1.75} />
+                <Sparkles size={9} className="absolute -top-0.5 -right-0.5 text-red-300 drop-shadow animate-pulse" />
               </div>
-
-              {/* Expanded section */}
-              {isOpen && (
-                <div className="border-t border-[#EDE8E3] bg-[#FDFCFB] px-5 py-4 space-y-4">
-
-                  {/* Info grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
-                    {[
-                      { label: 'اسم المراقب',    val: r.observer },
-                      { label: 'المركز / المسكن', val: r.center   },
-                      { label: 'نوع البلاغ',      val: `${rt.icon} ${rt.label}` },
-                      { label: 'وقت الإرسال',     val: fullDate(r.timestamp), time: true },
-                    ].map(c => (
-                      <div key={c.label}
-                        className="rounded-2xl border px-3 py-2.5"
-                        style={c.time
-                          ? { background: '#FEF2F280', borderColor: '#E5383840' }
-                          : { background: '#fff', borderColor: '#EDE8E3' }}>
-                        <p className="text-[#6D6E71] text-[10px] mb-0.5">{c.label}</p>
-                        <p className={`font-bold text-[10px] leading-snug ${c.time ? '' : 'text-[#2D2926]'}`}
-                          style={c.time ? { color: '#E53E3E' } : {}}>
-                          {c.val || '—'}
-                        </p>
-                      </div>
-                    ))}
-                    <div className="bg-[#FDF8F0] rounded-2xl border border-[#E8DDD4] px-3 py-2.5 col-span-2 sm:col-span-1">
-                      <p className="text-[#6D6E71] text-[10px] mb-0.5">المتعهد</p>
-                      <p className="font-bold text-[#A98159] text-[10px] leading-snug">
-                        {r.caterer || getCaterer(r.center) || '—'}
-                      </p>
-                    </div>
-                    {getShakhis(r.center) && (
-                      <div className="rounded-2xl border px-3 py-2.5"
-                        style={{ background: '#F5F3FF', borderColor: '#7C3AED40' }}>
-                        <p className="text-[#6D6E71] text-[10px] mb-0.5">رقم الشاخص</p>
-                        <p className="font-black text-sm tracking-widest" style={{ color: '#7C3AED' }}>
-                          {getShakhis(r.center)}
-                        </p>
-                      </div>
-                    )}
-                    {getLocation(r.center) && (
-                      <a href={getLocation(r.center)} target="_blank" rel="noopener noreferrer"
-                        className="rounded-2xl border px-3 py-2.5 flex items-center gap-2 group hover:shadow-md transition-all col-span-2 sm:col-span-1"
-                        style={{ background: '#F0FDF4', borderColor: '#22C55E40', textDecoration: 'none' }}>
-                        <span className="text-base flex-shrink-0">📍</span>
-                        <div className="min-w-0">
-                          <p className="text-[#6D6E71] text-[10px] mb-0.5">الموقع على الخريطة</p>
-                          <p className="font-bold text-[11px] group-hover:underline" style={{ color: '#16A34A' }}>
-                            فتح في خرائط Google ↗
-                          </p>
-                        </div>
-                      </a>
-                    )}
-                    {sv && (
-                      <div className="bg-white rounded-2xl border border-[#EDE8E3] px-3 py-2.5">
-                        <p className="text-[#6D6E71] text-[10px] mb-0.5">مستوى الخطورة</p>
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border"
-                          style={{ background: sv.bg, borderColor: sv.border, color: sv.text }}>
-                          <span className="w-1.5 h-1.5 rounded-full" style={{ background: sv.bar }} />
-                          {sv.label}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Description */}
-                  {r.description && (
-                    <div className="bg-white rounded-2xl border border-[#EDE8E3] px-4 py-3">
-                      <p className="text-[10px] text-[#6D6E71] font-semibold mb-1.5 flex items-center gap-1">
-                        <ShieldAlert size={11} strokeWidth={1.75} /> وصف المشكلة
-                      </p>
-                      <p className="text-sm text-[#2D2926] leading-relaxed">{r.description}</p>
-                    </div>
-                  )}
-
-                  {/* Images */}
-                  {allImages.length > 0 && (
-                    <div>
-                      <p className="text-[10px] text-[#6D6E71] font-semibold mb-2 flex items-center gap-1">
-                        <ImageIcon size={11} strokeWidth={1.75} /> الصور المرفقة ({allImages.length})
-                      </p>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {allImages.map((src, i) =>
-                          src.startsWith('http') || src.startsWith('data:') ? (
-                            <button key={i} onClick={() => setLightbox({ src, type: 'image' })} className="group relative block">
-                              <img src={src} alt="" className="w-full h-28 object-cover rounded-2xl border border-[#EDE8E3]" />
-                              <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition bg-black/50 rounded-2xl">
-                                <div className="bg-white/90 rounded-xl px-3 py-1.5 flex items-center gap-1.5 text-xs font-bold text-[#2D2926]">
-                                  <ImageIcon size={12} strokeWidth={2} /> عرض
-                                </div>
-                              </span>
-                            </button>
-                          ) : (
-                            <span key={i} className="bg-[#F5F0EB] border border-[#EDE8E3] rounded-2xl px-3 py-2 text-xs text-[#2D2926]">
-                              📎 {src}
-                            </span>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Video */}
-                  {r.videoUrl && (
-                    <div>
-                      <p className="text-[10px] text-[#6D6E71] font-semibold mb-2 flex items-center gap-1">
-                        <Video size={11} strokeWidth={1.75} /> الفيديو المرفق
-                      </p>
-                      <button
-                        onClick={() => setLightbox({ src: r.videoUrl, type: 'video' })}
-                        className="group flex items-center gap-3 w-full bg-[#1A1A2E] hover:bg-[#16213E] text-white rounded-2xl px-4 py-3 transition-colors">
-                        <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0 group-hover:bg-white/20 transition-colors">
-                          <Play size={18} strokeWidth={2} className="text-white ml-0.5" />
-                        </div>
-                        <div className="flex-1 text-right">
-                          <p className="text-sm font-bold">تشغيل الفيديو</p>
-                          <p className="text-[10px] text-white/50">اضغط للمشاهدة</p>
-                        </div>
-                        <ExternalLink size={14} strokeWidth={1.75} className="text-white/40 flex-shrink-0" />
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Action buttons */}
-                  <div className="flex items-center justify-between pt-1 border-t border-[#EDE8E3]">
-                    <div className="flex gap-2">
-                      <button onClick={() => setEditingReport(r)}
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold bg-[#FDF8F0] text-[#A98159] border border-[#E8DDD4] hover:bg-[#A98159] hover:text-white transition-all">
-                        <Pencil size={13} strokeWidth={1.75} /> تعديل
-                      </button>
-                      <button onClick={() => handleDelete(r.id)}
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold bg-red-50 text-red-500 border border-red-200 hover:bg-red-500 hover:text-white transition-all">
-                        <Trash2 size={13} strokeWidth={1.75} /> حذف
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-[#6D6E71]">الحالة:</span>
-                      <select value={r.status || 'pending'}
-                        onChange={e => handleStatus(r.id, e.target.value)}
-                        className={`text-xs font-bold border rounded-xl px-3 py-1.5 outline-none cursor-pointer ${b.cls}`}>
-                        {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
-          );
-        })}
+            <p className="text-[#6D6E71] text-sm font-medium">لا توجد بلاغات تطابق البحث</p>
+          </div>
+        ) : filtered.map(r => (
+          <ReportCard
+            key={r.id}
+            report={r}
+            isOpen={expanded === r.id}
+            onToggle={() => setExpanded(expanded === r.id ? null : r.id)}
+            onStatus={handleStatus}
+            onEdit={() => setEditingReport(r)}
+            onDelete={() => handleDelete(r.id)}
+            onMedia={(m) => setLightbox(m)}
+          />
+        ))}
       </div>
 
       {/* Edit Modal */}
@@ -565,6 +295,494 @@ export default function AdminReports() {
           onClose={() => setLightbox(null)}
         />
       )}
+
+      <style>{`.no-scrollbar::-webkit-scrollbar { display: none; }`}</style>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   Report Card — modern, clean card layout with hierarchical info
+══════════════════════════════════════════════════════════════════ */
+function ReportCard({ report: r, isOpen, onToggle, onStatus, onEdit, onDelete, onMedia }) {
+  const rt = getRT(r);
+  const sv = getSV(r);
+  const b  = getSB(r);
+  const isNew = isNewReport(r);
+  const allImages = r.images?.length ? r.images : (r.photos?.length ? r.photos : []);
+  const httpImages = allImages.filter(s => typeof s === 'string' && (s.startsWith('http') || s.startsWith('data:')));
+
+  const StatusIcon = b.Icon;
+
+  return (
+    <div
+      className={`group/row relative bg-white rounded-2xl border-2 overflow-hidden transition-all duration-300 hover:shadow-[0_8px_28px_rgba(45,41,38,0.10)] ${
+        isNew && !isOpen ? 'card-pulse-red' : ''
+      }`}
+      style={!isNew || isOpen ? {
+        borderColor: isOpen ? `${rt.color}40` : '#EDE5DC',
+        boxShadow: isOpen ? `0 8px 28px ${rt.color}1F` : '0 2px 10px rgba(45,41,38,0.06)',
+      } : undefined}
+    >
+      {/* "جديد" floating pill */}
+      {isNew && !isOpen && (
+        <span className="absolute top-2 left-2 z-10 inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md text-white shadow-md tabular-nums tracking-wide"
+          style={{ background: 'linear-gradient(135deg, #EF4444, #DC2626)' }}>
+          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+          جديد
+        </span>
+      )}
+      {/* Top severity strip */}
+      {sv && (
+        <div className="h-1 w-full"
+          style={{ background: `linear-gradient(90deg, ${sv.bar}, ${sv.bar}66, transparent)` }} />
+      )}
+
+      {/* Card body */}
+      <button onClick={onToggle}
+        className="w-full text-right p-4 sm:p-5 flex items-start gap-3 sm:gap-4 hover:bg-[#FDFAF7] transition-colors">
+        {/* Type icon */}
+        <div className="relative shrink-0">
+          <div className="absolute inset-0 rounded-2xl blur-md opacity-50 group-hover/row:opacity-80 transition-opacity"
+            style={{ background: rt.color }} />
+          <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center shadow-md"
+            style={{
+              background: `linear-gradient(135deg, ${rt.color}, ${rt.color}CC)`,
+              border: '2px solid rgba(255,255,255,0.7)',
+            }}>
+            <rt.Icon size={26} className="text-white" strokeWidth={2} />
+          </div>
+          {isNew && (
+            <div className="absolute -top-1.5 -right-1.5 badge-pulse-red w-5 h-5 rounded-full bg-red-500 border-2 border-white flex items-center justify-center">
+              <Sparkles size={9} className="text-white" strokeWidth={2.5} />
+            </div>
+          )}
+        </div>
+
+        {/* Main info */}
+        <div className="flex-1 min-w-0">
+          {/* Title row */}
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <p className="text-base sm:text-lg font-black text-[#2D2926] leading-tight">{rt.label}</p>
+            {r.reportNumber && (
+              <span className={`inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md tabular-nums tracking-wide ${
+                isNew ? 'badge-pulse-red text-white' : 'text-[#2D2926] border'
+              }`}
+                style={isNew
+                  ? { background: 'linear-gradient(135deg, #EF4444, #DC2626)' }
+                  : { background: '#FDF8F0', borderColor: '#E8DDD4' }}>
+                #{r.reportNumber}
+              </span>
+            )}
+            {sv && (
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-md border inline-flex items-center gap-1"
+                style={{ background: sv.bg, borderColor: sv.border, color: sv.text }}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: sv.bar }} />
+                {sv.label}
+              </span>
+            )}
+          </div>
+
+          {/* Meta row */}
+          <div className="flex items-center gap-3 text-[11px] text-[#6D6E71] flex-wrap mb-1.5">
+            <span className="flex items-center gap-1">
+              <User size={11} strokeWidth={2.25} className="text-[#A98159]" />
+              <span className="font-bold text-[#2D2926]">{r.observer || '—'}</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <Building2 size={11} strokeWidth={2.25} className="text-[#A98159]" />
+              <span className="font-bold text-[#2D2926]">{r.center || '—'}</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock size={11} strokeWidth={2.25} className="text-[#A98159]" />
+              <span className="font-bold">{timeAgo(r.timestamp)}</span>
+            </span>
+          </div>
+
+          {/* Caterer accent + timer chip */}
+          <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+            <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-[#A98159] bg-[#FDF8F0] border border-[#E8DDD4] rounded-md px-2 py-0.5">
+              <Factory size={10} strokeWidth={2.25} />
+              <span className="truncate max-w-[200px]">{r.caterer || getCaterer(r.center) || '—'}</span>
+            </div>
+            <StatusTimerChip doc={r} terminalStatuses={TERMINAL_REPORT_STATUSES} statusMeta={STATUS_LOOKUP} />
+          </div>
+
+          {/* Description preview */}
+          {r.description && !isOpen && (
+            <p className="text-xs text-[#6D6E71] line-clamp-1 leading-relaxed">{r.description}</p>
+          )}
+
+          {/* Thumbnails preview */}
+          {!isOpen && (httpImages.length > 0 || r.videoUrl) && (
+            <div className="flex items-center gap-1.5 mt-2">
+              {httpImages.slice(0, 3).map((src, i) => (
+                <div key={i}
+                  className="w-10 h-10 rounded-lg border-2 border-white shadow-sm overflow-hidden shrink-0"
+                  style={{ marginLeft: i > 0 ? '-12px' : 0, zIndex: 3 - i }}>
+                  <img src={src} alt="" className="w-full h-full object-cover" />
+                </div>
+              ))}
+              {httpImages.length > 3 && (
+                <span className="inline-flex items-center justify-center text-[10px] font-black h-10 px-2 rounded-lg bg-[#FDF8F0] border-2 border-white text-[#A98159] shadow-sm"
+                  style={{ marginLeft: '-12px', zIndex: 0 }}>
+                  +{httpImages.length - 3}
+                </span>
+              )}
+              {r.videoUrl && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold h-10 px-2 rounded-lg bg-[#1A1A2E] text-white shadow-sm ms-1">
+                  <Play size={10} strokeWidth={2.5} fill="white" />
+                  فيديو
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Status pill + chevron */}
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          <span className="inline-flex items-center gap-1.5 text-[10px] font-black px-2.5 py-1.5 rounded-xl border-2"
+            style={{ background: b.bg, borderColor: b.border, color: b.color }}>
+            <StatusIcon size={11} strokeWidth={2.5} />
+            {b.label}
+          </span>
+          <div className="w-8 h-8 rounded-lg border border-[#EDE5DC] bg-white flex items-center justify-center transition-transform"
+            style={{ transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+            <ChevronRight size={14} className="text-[#A98159]" strokeWidth={2.25} />
+          </div>
+        </div>
+      </button>
+
+      {/* Expanded panel */}
+      {isOpen && (
+        <div className="border-t-2 border-[#EDE5DC]/60 bg-[#FDFCFB] px-4 sm:px-5 py-5 space-y-4">
+
+          {/* Status timeline */}
+          <StatusTimeline
+            doc={r}
+            terminalStatuses={TERMINAL_REPORT_STATUSES}
+            statusOrder={['pending', 'in_progress', 'resolved']}
+            statusMeta={STATUS_LOOKUP}
+            accentColor={rt.color}
+          />
+
+          {/* Quick status changer */}
+          <div className="bg-white rounded-2xl border border-[#EDE5DC] p-3">
+            <p className="text-[10px] font-bold text-[#9D8F85] mb-2 flex items-center gap-1">
+              <Activity size={11} strokeWidth={2.25} className="text-[#A98159]" />
+              تغيير الحالة
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {STATUS_OPTIONS.map(s => {
+                const SIcon = s.Icon;
+                const active = (r.status || 'pending') === s.value;
+                return (
+                  <button key={s.value}
+                    onClick={(e) => { e.stopPropagation(); onStatus(r.id, s.value); }}
+                    className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-bold border-2 transition-all ${
+                      active ? 'shadow-md scale-[1.02]' : 'bg-white border-[#EDE5DC] text-[#6D6E71] hover:border-[#D9CEBC]'
+                    }`}
+                    style={active
+                      ? { background: s.bg, borderColor: s.color, color: s.color }
+                      : undefined}>
+                    <SIcon size={12} strokeWidth={2.5} />
+                    {s.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Info grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            {[
+              { label: 'المراقب', val: r.observer, Icon: User,     color: '#A98159' },
+              { label: 'المركز',  val: r.center,   Icon: Building2,color: rt.color   },
+              { label: 'الوقت',   val: fullDate(r.timestamp), Icon: Calendar, color: '#6D6E71' },
+            ].map(c => (
+              <div key={c.label} className="bg-white rounded-xl border border-[#EDE5DC] p-2.5 flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: `${c.color}15` }}>
+                  <c.Icon size={13} style={{ color: c.color }} strokeWidth={2.25} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[9px] text-[#9D8F85] font-bold">{c.label}</p>
+                  <p className="text-[11px] font-bold text-[#2D2926] truncate">{c.val || '—'}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Caterer + Shakhis + Location */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div className="bg-gradient-to-br from-[#FDF8F0] to-white rounded-xl border border-[#E8DDD4] p-3 flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
+                style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
+                <Factory size={15} className="text-white" strokeWidth={2.25} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[9px] text-[#9D8F85] font-bold">المتعهد</p>
+                <p className="text-xs font-black text-[#A98159] truncate leading-tight">
+                  {r.caterer || getCaterer(r.center) || '—'}
+                </p>
+              </div>
+            </div>
+            {getShakhis(r.center) && (
+              <div className="rounded-xl border p-3 flex items-center gap-2.5"
+                style={{ background: 'linear-gradient(135deg, #F5F3FF, #EDE9FE)', borderColor: '#7C3AED40' }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
+                  style={{ background: 'linear-gradient(135deg, #8B5CF6, #7C3AED)' }}>
+                  <Hash size={15} className="text-white" strokeWidth={2.5} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[9px] text-[#9D8F85] font-bold">رقم الشاخص</p>
+                  <p className="text-sm font-black tracking-widest leading-tight" style={{ color: '#7C3AED' }}>
+                    {getShakhis(r.center)}
+                  </p>
+                </div>
+              </div>
+            )}
+            {getLocation(r.center) && (
+              <a href={getLocation(r.center)} target="_blank" rel="noopener noreferrer"
+                onClick={e => e.stopPropagation()}
+                className="rounded-xl border p-3 flex items-center gap-2.5 group/map hover:shadow-[0_4px_16px_rgba(34,197,94,0.18)] hover:-translate-y-0.5 transition-all"
+                style={{ background: 'linear-gradient(135deg, #F0FDF4, #DCFCE7)', borderColor: '#22C55E40', textDecoration: 'none' }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm group-hover/map:scale-110 transition-transform"
+                  style={{ background: 'linear-gradient(135deg, #22C55E, #16A34A)' }}>
+                  <MapPin size={15} className="text-white" strokeWidth={2.25} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[9px] text-[#9D8F85] font-bold">الموقع</p>
+                  <p className="text-xs font-black group-hover/map:underline" style={{ color: '#16A34A' }}>
+                    فتح في خرائط Google ↗
+                  </p>
+                </div>
+              </a>
+            )}
+          </div>
+
+          {/* Description */}
+          {r.description && (
+            <div className="bg-white rounded-2xl border border-[#EDE5DC] p-4">
+              <p className="text-[10px] text-[#9D8F85] font-bold mb-2 flex items-center gap-1.5">
+                <span className="w-1.5 h-4 rounded-full" style={{ background: rt.color }} />
+                <ShieldAlert size={11} className="text-[#A98159]" strokeWidth={2.25} />
+                وصف المشكلة
+              </p>
+              <p className="text-sm text-[#2D2926] leading-relaxed whitespace-pre-wrap">{r.description}</p>
+            </div>
+          )}
+
+          {/* Images */}
+          {httpImages.length > 0 && (
+            <div>
+              <p className="text-[10px] text-[#9D8F85] font-bold mb-2 flex items-center gap-1.5">
+                <span className="w-1.5 h-4 rounded-full bg-[#A98159]" />
+                <ImageIcon size={11} className="text-[#A98159]" strokeWidth={2.25} />
+                الصور المرفقة ({httpImages.length})
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {httpImages.map((src, i) => (
+                  <button key={i}
+                    onClick={(e) => { e.stopPropagation(); onMedia({ src, type: 'image' }); }}
+                    className="group/img relative block rounded-xl overflow-hidden border-2 border-[#EDE5DC] hover:border-[#A98159] transition-colors">
+                    <img src={src} alt="" className="w-full h-32 object-cover transition-transform group-hover/img:scale-105" />
+                    <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition bg-black/30">
+                      <div className="bg-white/95 rounded-lg px-2.5 py-1 flex items-center gap-1 text-[10px] font-black text-[#2D2926] shadow-lg">
+                        <ImageIcon size={11} strokeWidth={2.25} /> عرض
+                      </div>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Video */}
+          {r.videoUrl && (
+            <div>
+              <p className="text-[10px] text-[#9D8F85] font-bold mb-2 flex items-center gap-1.5">
+                <span className="w-1.5 h-4 rounded-full bg-indigo-500" />
+                <Video size={11} className="text-indigo-500" strokeWidth={2.25} />
+                الفيديو المرفق
+              </p>
+              <button
+                onClick={(e) => { e.stopPropagation(); onMedia({ src: r.videoUrl, type: 'video' }); }}
+                className="group/vid flex items-center gap-3 w-full bg-gradient-to-br from-[#1A1A2E] to-[#16213E] text-white rounded-2xl px-4 py-3.5 hover:shadow-lg transition-all">
+                <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center shrink-0 group-hover/vid:bg-white/25 transition-colors">
+                  <Play size={20} strokeWidth={2} className="text-white ml-0.5" fill="white" />
+                </div>
+                <div className="flex-1 text-right">
+                  <p className="text-sm font-black">تشغيل الفيديو</p>
+                  <p className="text-[10px] text-white/60 mt-0.5">اضغط للمشاهدة بالحجم الكامل</p>
+                </div>
+                <ExternalLink size={14} strokeWidth={2} className="text-white/40 shrink-0" />
+              </button>
+            </div>
+          )}
+
+          {/* Action toolbar */}
+          <div className="flex items-center gap-2 pt-2 border-t border-[#EDE5DC]">
+            <button onClick={(e) => { e.stopPropagation(); onEdit(); }}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-black bg-[#FDF8F0] text-[#A98159] border-2 border-[#E8DDD4] hover:bg-[#A98159] hover:text-white hover:border-[#A98159] transition-all">
+              <Pencil size={13} strokeWidth={2.25} /> تعديل البلاغ
+            </button>
+            <button onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-black bg-red-50 text-red-600 border-2 border-red-200 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all">
+              <Trash2 size={13} strokeWidth={2.25} /> حذف
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   Edit Modal
+══════════════════════════════════════════════════════════════════ */
+function EditModal({ report, onClose, onSave }) {
+  const [form, setForm] = useState({
+    status:      report.status      || 'pending',
+    severity:    report.severity    || '',
+    description: report.description || '',
+  });
+  const [saving, setSaving] = useState(false);
+  const rt = getRT(report);
+
+  const handleSave = async () => {
+    setSaving(true);
+    await onSave(report.id, form);
+    setSaving(false);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" dir="rtl">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#EDE5DC] shrink-0"
+          style={{ background: `linear-gradient(135deg, ${rt.color}10, #FDFCFB)` }}>
+          <div className="flex items-center gap-2.5">
+            <div className="relative shrink-0">
+              <div className="absolute inset-0 rounded-xl blur-md opacity-40" style={{ background: rt.color }} />
+              <div className="relative w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
+                style={{ background: `linear-gradient(135deg, ${rt.color}, ${rt.color}CC)` }}>
+                <rt.Icon size={18} className="text-white" strokeWidth={2} />
+              </div>
+            </div>
+            <div>
+              <p className="font-black text-[#2D2926] text-sm">تعديل البلاغ</p>
+              <p className="text-[11px] text-[#A98159] font-bold mt-0.5">{rt.label}</p>
+            </div>
+          </div>
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-xl border border-[#EDE5DC] flex items-center justify-center hover:bg-[#F5F0EB] transition-colors">
+            <X size={15} className="text-[#6D6E71]" strokeWidth={2.25} />
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4 overflow-y-auto">
+          {/* Observer info (read-only) */}
+          <div className="grid grid-cols-2 gap-2.5">
+            {[
+              { label: 'المراقب', val: report.observer, Icon: User,     color: '#A98159' },
+              { label: 'المركز',  val: report.center,   Icon: Building2,color: rt.color  },
+            ].map(c => (
+              <div key={c.label} className="bg-white rounded-xl border border-[#EDE5DC] p-2.5 flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: `${c.color}15` }}>
+                  <c.Icon size={13} style={{ color: c.color }} strokeWidth={2.25} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[9px] text-[#9D8F85] font-bold">{c.label}</p>
+                  <p className="text-[11px] font-bold text-[#2D2926] truncate">{c.val || '—'}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="bg-gradient-to-br from-[#FDF8F0] to-white rounded-xl border border-[#E8DDD4] p-2.5 flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm"
+              style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
+              <Factory size={13} className="text-white" strokeWidth={2.25} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[9px] text-[#9D8F85] font-bold">المتعهد</p>
+              <p className="text-[11px] font-black text-[#A98159] truncate">{report.caterer || getCaterer(report.center) || '—'}</p>
+            </div>
+          </div>
+
+          {/* Status */}
+          <div>
+            <label className="text-xs font-black text-[#2D2926] mb-2 block">حالة البلاغ</label>
+            <div className="grid grid-cols-3 gap-2">
+              {STATUS_OPTIONS.map(s => {
+                const SIcon = s.Icon;
+                const active = form.status === s.value;
+                return (
+                  <button key={s.value} onClick={() => setForm(f => ({ ...f, status: s.value }))}
+                    className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[11px] font-black border-2 transition-all ${
+                      active ? 'shadow-md scale-[1.02]' : 'bg-white border-[#EDE5DC] text-[#6D6E71]'
+                    }`}
+                    style={active
+                      ? { background: s.bg, borderColor: s.color, color: s.color }
+                      : undefined}>
+                    <SIcon size={12} strokeWidth={2.5} />
+                    {s.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Severity */}
+          <div>
+            <label className="text-xs font-black text-[#2D2926] mb-2 block">مستوى الخطورة</label>
+            <div className="grid grid-cols-2 gap-2">
+              {Object.entries(SEVERITY_MAP).map(([key, sv]) => {
+                const active = form.severity === key;
+                return (
+                  <button key={key} onClick={() => setForm(f => ({ ...f, severity: key }))}
+                    className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[11px] font-black border-2 transition-all ${
+                      active ? 'shadow-md scale-[1.02]' : 'bg-white border-[#EDE5DC] text-[#6D6E71]'
+                    }`}
+                    style={active ? { background: sv.bg, borderColor: sv.text, color: sv.text } : undefined}>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: sv.bar }} />
+                    {sv.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="text-xs font-black text-[#2D2926] mb-2 block">وصف المشكلة</label>
+            <textarea rows={4} value={form.description}
+              onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+              className="w-full px-4 py-3 border-2 border-[#EDE5DC] rounded-xl text-sm text-[#2D2926] outline-none focus:border-[#A98159] transition-colors resize-none bg-white"
+              placeholder="وصف المشكلة أو الملاحظات..." />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-[#EDE5DC] flex gap-2.5 shrink-0">
+          <button onClick={onClose}
+            className="flex-1 py-3 rounded-xl text-sm font-black border-2 border-[#EDE5DC] text-[#6D6E71] hover:bg-[#F5F0EB] transition-colors">
+            إلغاء
+          </button>
+          <button onClick={handleSave} disabled={saving}
+            className="flex-1 py-3 rounded-xl text-sm font-black text-white flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-60 shadow-md"
+            style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
+            {saving
+              ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              : <Save size={15} strokeWidth={2.25} />}
+            {saving ? 'جارٍ الحفظ...' : 'حفظ التعديلات'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

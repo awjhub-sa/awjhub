@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, query, where, doc, getDoc } from 'firebase/firestore';
-import { 
+import {
   Utensils, AlertTriangle, Bell, User, ChevronDown, ChevronLeft,
-  TrendingUp, ClipboardCheck, MapPin, Home as HomeIcon, 
-  Mountain, Building2, Package, Clock, LogOut, CheckCircle2, 
-  ArrowLeftRight, Loader2, Mail, Hash
+  TrendingUp, ClipboardCheck, MapPin, Home as HomeIcon,
+  Mountain, Building2, Package, Clock, LogOut, CheckCircle2,
+  ArrowLeftRight, Loader2, Mail, Hash, Sparkles,
 } from 'lucide-react';
 import logo from "../../assets/logo.png";
 import { useAuth } from '../../context/AuthContext.jsx';
 import { getCaterer } from '../../config/centers.js';
 import { extractCenterNum } from '../../hooks/useAssignedTasks.js';
 import { db } from '../../config/db.js';
+import TodayMenuCard from '../../components/TodayMenuCard.jsx';
 
 /* ── المكونات الزخرفية ── */
 const GoldRule = () => (
@@ -30,25 +31,55 @@ const MenuCard = ({ icon: Icon, title, subtitle, badge, doneBadge, onClick, vari
   return (
     <button
       onClick={onClick}
-      className={`group w-full text-right rounded-2xl p-5 flex items-center gap-4 transition-all duration-300 active:scale-[0.97] border ${
-        isAccent ? 'border-transparent text-white' : 'bg-white border-[#D1C4B9] hover:border-[#A98159]/50 hover:shadow-lg text-[#2D2926]'
+      className={`group/menu relative w-full text-right rounded-2xl p-5 flex items-center gap-4 transition-all duration-300 active:scale-[0.97] border-2 overflow-hidden ${
+        isAccent
+          ? 'border-transparent text-white'
+          : 'bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 border-[#EDE5DC] hover:border-[#A98159]/40 hover:shadow-[0_8px_28px_rgba(169,129,89,0.18)] text-[#2D2926]'
       }`}
-      style={isAccent ? { background: 'linear-gradient(135deg, #3D3330 0%, #2D2926 100%)', boxShadow: '0 4px 20px rgba(45,41,38,0.25)' } : {}}
+      style={isAccent
+        ? { background: 'linear-gradient(135deg, #3D3330 0%, #2D2926 100%)', boxShadow: '0 6px 24px rgba(45,41,38,0.28)' }
+        : { boxShadow: '0 2px 10px rgba(45,41,38,0.06)' }}
     >
-      <div className={`flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 ${
-        isAccent ? 'bg-white/10' : 'bg-[#FDF8F0] border border-[#A98159]/20'
-      }`}>
-        <Icon size={26} className="text-[#A98159]" />
+      {isAccent && (
+        <div className="absolute top-0 right-0 left-0 h-0.5 opacity-70"
+          style={{ background: 'linear-gradient(90deg, transparent, #C4A46E, transparent)' }} />
+      )}
+
+      <div className="relative flex-shrink-0">
+        <div className={`absolute inset-0 rounded-2xl blur-xl opacity-0 group-hover/menu:opacity-60 transition-opacity duration-500 ${isAccent ? 'bg-[#C4A46E]' : 'bg-[#A98159]'}`} />
+        <div className="relative w-14 h-14 rounded-2xl flex items-center justify-center backdrop-blur-md border-2 transition-transform duration-300 group-hover/menu:scale-110 group-hover/menu:rotate-3"
+          style={isAccent
+            ? { background: 'linear-gradient(135deg, rgba(196,164,110,0.18), rgba(169,129,89,0.10))', borderColor: 'rgba(196,164,110,0.35)' }
+            : { background: 'linear-gradient(135deg, #FDF8F0, #F3EAE0)', borderColor: 'rgba(169,129,89,0.25)' }}
+        >
+          <Icon size={26} className="text-[#A98159]" />
+          <Sparkles size={9} className="absolute -top-0.5 -right-0.5 text-yellow-200 drop-shadow" />
+        </div>
       </div>
+
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-bold text-base">{title}</span>
-          {badge && <span className="bg-[#BA1A1A] text-white text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">{badge}</span>}
-          {doneBadge && <span className="bg-[#386B41] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{doneBadge}</span>}
+          {badge && (
+            <span className="badge-pulse-red inline-flex items-center min-w-[22px] h-[22px] bg-gradient-to-br from-red-500 to-red-600 text-white text-[10px] font-extrabold rounded-full px-1.5 ring-2 ring-white shadow-md tabular-nums">
+              {badge}
+            </span>
+          )}
+          {doneBadge && (
+            <span className="inline-flex items-center gap-1 min-w-[22px] h-[22px] bg-gradient-to-br from-green-500 to-green-600 text-white text-[10px] font-extrabold rounded-full px-2 ring-2 ring-white shadow-sm tabular-nums">
+              <CheckCircle2 size={10} strokeWidth={2.5} />
+              {doneBadge}
+            </span>
+          )}
         </div>
-        <p className={`text-sm mt-0.5 truncate ${isAccent ? 'text-white/50' : 'text-[#6D6E71]'}`}>{subtitle}</p>
+        <p className={`text-sm mt-1 truncate ${isAccent ? 'text-white/60' : 'text-[#6D6E71]'}`}>{subtitle}</p>
       </div>
-      <ChevronLeft size={18} className={`flex-shrink-0 opacity-50 ${isAccent ? 'text-white' : 'text-[#A98159]'}`} />
+
+      <div className={`flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-300 group-hover/menu:-translate-x-1 ${
+        isAccent ? 'bg-white/10 group-hover/menu:bg-white/20' : 'bg-[#FDF8F0] group-hover/menu:bg-[#A98159]/15'
+      }`}>
+        <ChevronLeft size={16} strokeWidth={2.5} className={isAccent ? 'text-white' : 'text-[#A98159]'} />
+      </div>
     </button>
   );
 };
@@ -67,7 +98,127 @@ const TASK_TYPE_LABELS = {
   mina_readiness:   'جاهزية مشعر منى',
   arafat_readiness: 'جاهزية مشعر عرفة',
 };
+const TASK_TYPE_META = {
+  meal_evaluation:  { Icon: Utensils,   color: '#A98159', bg: '#FDF8F0', border: '#E8DDD4' },
+  mina_readiness:   { Icon: HomeIcon,   color: '#0369A1', bg: '#F0F9FF', border: '#BAE6FD' },
+  arafat_readiness: { Icon: Mountain,   color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE' },
+};
 const MEAL_LABELS = { breakfast: 'الإفطار', lunch: 'الغداء', dinner: 'العشاء' };
+
+/* ── Helper sub-components for the unified dashboard ───────────── */
+function StatMini({ label, value, accent, Icon }) {
+  return (
+    <div className="group/stat relative bg-gradient-to-br from-white to-[#FDF8F0]/40 rounded-2xl p-3 sm:p-3.5 border border-[#EDE5DC] shadow-[0_2px_8px_rgba(45,41,38,0.05)] hover:shadow-[0_6px_18px_rgba(169,129,89,0.15)] transition-all duration-300 overflow-hidden"
+      style={{ borderRight: `3px solid ${accent}` }}>
+      <div className="absolute top-0 right-0 left-0 h-0.5 opacity-60"
+        style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }} />
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-[10px] sm:text-[11px] text-[#9D8F85] font-semibold mb-0.5 truncate">{label}</p>
+          <p className="text-xl sm:text-2xl font-extrabold tabular-nums" style={{ color: accent }}>{value}</p>
+        </div>
+        <div className="relative shrink-0">
+          <div className="absolute inset-0 rounded-xl blur-md opacity-0 group-hover/stat:opacity-50 transition-opacity"
+            style={{ background: accent }} />
+          <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center group-hover/stat:scale-110 transition-transform duration-300"
+            style={{ background: `${accent}15` }}>
+            <Icon size={16} style={{ color: accent }} strokeWidth={2} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PendingTaskRow({ task, onClick }) {
+  const meta = TASK_TYPE_META[task.taskType] || TASK_TYPE_META.meal_evaluation;
+  const TIcon = meta.Icon;
+  const label = TASK_TYPE_LABELS[task.taskType] || task.taskType;
+  const mealLabel = task.mealType ? MEAL_LABELS[task.mealType] || task.mealType : null;
+  return (
+    <button onClick={onClick}
+      className="group/row min-h-[64px] w-full flex items-center gap-3 px-4 sm:px-5 py-3 sm:py-3.5 text-right hover:bg-gradient-to-l hover:from-[#FDFAF7] hover:to-transparent active:bg-[#FDF8F0] transition-all duration-300"
+    >
+      <div className="relative flex-shrink-0">
+        <div className="absolute inset-0 rounded-xl blur-md opacity-0 group-hover/row:opacity-50 transition-opacity"
+          style={{ background: meta.color }} />
+        <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center border-2 group-hover/row:scale-110 group-hover/row:rotate-3 transition-transform duration-300"
+          style={{ background: meta.bg, borderColor: meta.border }}>
+          <TIcon size={18} style={{ color: meta.color }} strokeWidth={2} />
+        </div>
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <p className="text-sm font-bold text-[#2D2926] leading-tight">{label}</p>
+          {mealLabel && (
+            <span className="text-[9px] sm:text-[10px] font-black px-2 py-0.5 rounded-full text-white shrink-0"
+              style={{ background: meta.color }}>
+              {mealLabel}
+            </span>
+          )}
+        </div>
+        <p className="text-[11px] text-[#9D8F85] mt-0.5 truncate">
+          <span className="font-bold text-[#A98159]">{task.center}</span>
+          {task.scheduledDate && <> · <span className="text-[10px]">{task.scheduledDate}</span></>}
+        </p>
+      </div>
+      <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-[#FDF8F0] group-hover/row:bg-[#A98159] flex items-center justify-center group-hover/row:-translate-x-1 transition-all duration-300">
+        <ChevronLeft size={16} className="text-[#A98159] group-hover/row:text-white transition-colors" strokeWidth={2.5} />
+      </div>
+    </button>
+  );
+}
+
+function CenterCard({ centerId, stats, onClick }) {
+  const pending   = stats?.pending   ?? 0;
+  const completed = stats?.completed ?? 0;
+  const total     = stats?.total     ?? 0;
+  const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+  return (
+    <button onClick={onClick}
+      className="group/center relative bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-2xl p-4 border-2 border-[#EDE5DC] hover:border-[#A98159]/40 hover:shadow-[0_6px_20px_rgba(169,129,89,0.15)] hover:-translate-y-0.5 transition-all duration-300 text-right overflow-hidden"
+    >
+      <div className="absolute top-0 right-0 left-0 h-1 opacity-70"
+        style={{ background: 'linear-gradient(90deg, transparent, #A98159, transparent)' }} />
+      <div className="flex items-center justify-between mb-2.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 group-hover/center:scale-110 transition-transform"
+            style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
+            <Building2 size={14} className="text-white" strokeWidth={2.25} />
+          </div>
+          <p className="text-sm font-bold text-[#2D2926] truncate">{centerId}</p>
+        </div>
+      </div>
+      {total === 0 ? (
+        <p className="text-[10px] text-[#9D8F85] font-medium">لا توجد مهام مُسندة</p>
+      ) : (
+        <>
+          <div className="flex items-center justify-between text-[10px] font-bold mb-1.5">
+            <span className="text-[#9D8F85]">التقدم</span>
+            <span className="text-[#A98159] tabular-nums">{pct}%</span>
+          </div>
+          <div className="h-1.5 bg-[#F5F0EB] rounded-full overflow-hidden">
+            <div className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${pct}%`,
+                background: pct === 100 ? '#10B981' : pct > 0 ? '#F59E0B' : '#A98159',
+              }} />
+          </div>
+          <div className="flex items-center justify-between mt-2 text-[10px]">
+            <span className="inline-flex items-center gap-1 font-bold text-amber-700">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              {pending} معلّقة
+            </span>
+            <span className="inline-flex items-center gap-1 font-bold text-green-700">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+              {completed} مكتملة
+            </span>
+          </div>
+        </>
+      )}
+    </button>
+  );
+}
 
 const STATUS_DATA = {
   pending: { label: 'قيد الانتظار', bg: '#FEF9C3', text: '#854D0E' },
@@ -89,9 +240,12 @@ export default function SupervisorHome() {
   const [assignedForCenter,    setAssignedForCenter]    = useState([]);
   const [completionsForCenter, setCompletionsForCenter] = useState([]);
   const [notifOpen,      setNotifOpen]      = useState(false);
-  
-  // الإصلاح: إضافة الـ State الخاص بالتنبيهات
-  const [observerNotifs, setObserverNotifs] = useState([]);
+  const [globalNotifs,   setGlobalNotifs]   = useState([]);  // cross-center observer notifs
+  const [observerNotifs, setObserverNotifs] = useState([]);  // per-center activity feed
+
+  /* ── Cross-center aggregates (for unified dashboard view) ── */
+  const [allAssignedTasks, setAllAssignedTasks] = useState([]);
+  const [allCompletions,   setAllCompletions]   = useState([]);
 
   useEffect(() => {
     const fetchCenters = async () => {
@@ -106,8 +260,10 @@ export default function SupervisorHome() {
             return numA - numB;
           });
           setAssignedCenters(sorted);
+          /* Default to the unified dashboard (null). Center context only
+             activates when supervisor explicitly drills into a center. */
           const saved = sessionStorage.getItem('sup_selected_center');
-          setSelectedCenter(saved && sorted.includes(saved) ? saved : sorted[0]);
+          setSelectedCenter(saved && sorted.includes(saved) ? saved : null);
         }
       } catch (e) { console.error(e); }
       finally { setLoadingData(false); }
@@ -128,11 +284,21 @@ export default function SupervisorHome() {
 
   useEffect(() => {
     if (!selectedCenter || !user?.uid) return;
+    /* Clear stale per-center state immediately on switch so we never flash
+       the previous center's completed badges before new data arrives. */
+    setActivities([]);
+    setCompletionsForCenter([]);
+    setObserverNotifs([]);
+    setAssignedForCenter([]);
+
     const todayMs = new Date().setHours(0, 0, 0, 0);
     const cn = extractCenterNum(selectedCenter);
 
-    /* Regular activity collections */
-    const regularCols = ['reports', 'meal_evaluations', 'mina_readiness', 'arafat_readiness', 'logistics_requests'];
+    /* Regular activity collections — meals/mina/arafat are excluded because
+       they each create a corresponding task_completions row, which already
+       produces a "تم الرفع" notification. Listening to both was causing the
+       supervisor's feed to show every evaluation twice. */
+    const regularCols = ['reports', 'logistics_requests'];
     const unsubs = regularCols.map(col => {
       const q = query(collection(db, col), where('center', '==', selectedCenter));
       return onSnapshot(q, snap => {
@@ -158,8 +324,9 @@ export default function SupervisorHome() {
       snap => {
         const allDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-        /* Bell: all observer completions */
-        setCompletionsForCenter(allDocs.filter(d => d.uid !== user.uid));
+        /* Task badges should reflect "done on this center" — regardless of who.
+           Either observer OR supervisor uploaded counts as completed. */
+        setCompletionsForCenter(allDocs);
 
         /* Activity feed & Notifications: observer completions today only */
         const todayCompletions = allDocs
@@ -180,6 +347,49 @@ export default function SupervisorHome() {
     return () => { unsubs.forEach(u => u()); unsubAssigned(); unsubTc(); };
   }, [selectedCenter, user?.uid]);
 
+  /* ── Cross-center listeners (used by the unified dashboard view) ────
+     Tracks every assigned task and every completion across ALL of the
+     supervisor's assigned centers so we can build:
+       • global notifications  (today's completions)
+       • cross-center pending  (what still needs upload)
+       • per-center stat cards */
+  useEffect(() => {
+    if (!user?.uid || !assignedCenters.length) {
+      setGlobalNotifs([]);
+      setAllAssignedTasks([]);
+      setAllCompletions([]);
+      return;
+    }
+    const todayMs = new Date().setHours(0, 0, 0, 0);
+    const allowed = new Set(assignedCenters);
+
+    /* Assigned tasks where any target center belongs to this supervisor */
+    const unsubAssigned = onSnapshot(collection(db, 'assigned_tasks'), snap => {
+      const tasks = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(t =>
+          (t.target_centers || []).some(cn => allowed.has(`مركز ${cn}`))
+        );
+      setAllAssignedTasks(tasks);
+    });
+
+    /* All completions for any assigned center */
+    const unsubCompletions = onSnapshot(collection(db, 'task_completions'), snap => {
+      const all = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(c => allowed.has(c.center));
+      setAllCompletions(all);
+
+      /* Today-only notifications for the bell (other users' uploads) */
+      const notifs = all
+        .filter(c => c.uid !== user.uid && (c.completedAt?.toMillis?.() || 0) >= todayMs)
+        .sort((a, b) => (b.completedAt?.toMillis?.() || 0) - (a.completedAt?.toMillis?.() || 0));
+      setGlobalNotifs(notifs);
+    });
+
+    return () => { unsubAssigned(); unsubCompletions(); };
+  }, [user?.uid, assignedCenters]);
+
   const handleLogout = async () => {
     try {
       setIsProfileOpen(false);
@@ -199,11 +409,110 @@ export default function SupervisorHome() {
     </div>
   );
 
-  /* ── Derive task badges ── */
+  /* ── Derive task badges ──
+     Count completions only for task types that ARE currently assigned to
+     this center. Otherwise a completed task from a previous day (still in
+     Firestore) would falsely mark a center with no tasks as "مكتملة". */
+  const activeTaskTypes = new Set(
+    assignedForCenter.flatMap(t => t.task_types || [])
+  );
   const taskBadges = {};
   completionsForCenter.forEach(c => {
-    taskBadges[c.taskType] = (taskBadges[c.taskType] || 0) + 1;
+    if (activeTaskTypes.has(c.taskType)) {
+      taskBadges[c.taskType] = (taskBadges[c.taskType] || 0) + 1;
+    }
   });
+  const hasAnyTask = activeTaskTypes.size > 0;
+
+  /* ── Cross-center pending tasks ─────────────────────────────────
+     Expand each assigned task into per-center instances (and per-meal
+     for meal_evaluation). A task is "pending" when no matching
+     completion exists for (taskId, center, taskType, mealType). */
+  const pendingTasks = (() => {
+    const list = [];
+    const allowedCenters = new Set(assignedCenters);
+    allAssignedTasks.forEach(task => {
+      const centers = (task.target_centers || [])
+        .map(cn => `مركز ${cn}`)
+        .filter(c => allowedCenters.has(c));
+      const types = task.task_types || [];
+      centers.forEach(center => {
+        types.forEach(type => {
+          if (type === 'meal_evaluation') {
+            (task.meal_types || []).forEach(mealType => {
+              const done = allCompletions.some(c =>
+                c.taskId === task.id &&
+                c.center  === center &&
+                c.taskType === type &&
+                c.mealType === mealType
+              );
+              if (!done) {
+                list.push({
+                  key: `${task.id}__${center}__${type}__${mealType}`,
+                  taskId: task.id, center, taskType: type, mealType,
+                  scheduledDate: task.scheduled_date,
+                  createdAt: task.created_at?.toMillis?.() || 0,
+                });
+              }
+            });
+          } else {
+            const done = allCompletions.some(c =>
+              c.taskId === task.id &&
+              c.center  === center &&
+              c.taskType === type
+            );
+            if (!done) {
+              list.push({
+                key: `${task.id}__${center}__${type}`,
+                taskId: task.id, center, taskType: type, mealType: null,
+                scheduledDate: task.scheduled_date,
+                createdAt: task.created_at?.toMillis?.() || 0,
+              });
+            }
+          }
+        });
+      });
+    });
+    /* Newest tasks first */
+    return list.sort((a, b) => b.createdAt - a.createdAt);
+  })();
+
+  /* ── Per-center stats for the centers grid ────────────────────── */
+  const centerStats = (() => {
+    const map = {};
+    assignedCenters.forEach(c => { map[c] = { pending: 0, completed: 0, total: 0 }; });
+    pendingTasks.forEach(p => {
+      if (map[p.center]) {
+        map[p.center].pending += 1;
+        map[p.center].total += 1;
+      }
+    });
+    /* Count completions matching active tasks only */
+    const activeTaskIds = new Set(allAssignedTasks.map(t => t.id));
+    allCompletions.forEach(c => {
+      if (map[c.center] && activeTaskIds.has(c.taskId)) {
+        map[c.center].completed += 1;
+        map[c.center].total += 1;
+      }
+    });
+    return map;
+  })();
+
+  const todayMs = new Date().setHours(0, 0, 0, 0);
+  const completedToday = allCompletions.filter(c =>
+    (c.completedAt?.toMillis?.() || 0) >= todayMs
+  ).length;
+
+  /* Navigate to the correct upload page for a pending task */
+  const goToTaskUpload = (task) => {
+    const stateObj = { centerId: task.center };
+    const map = {
+      meal_evaluation:  '/sup-mealcheck',
+      mina_readiness:   '/sup-mina-readiness',
+      arafat_readiness: '/sup-arafat-readiness',
+    };
+    navigate(map[task.taskType] || '/sup-mealcheck', { state: stateObj });
+  };
 
   const caterer = getCaterer(selectedCenter) || '—';
   const displayed = showAll ? activities : activities.slice(0, 4);
@@ -241,9 +550,9 @@ export default function SupervisorHome() {
                 className="w-10 h-10 rounded-xl border border-[#D1C4B9] flex items-center justify-center hover:bg-[#FDF8F0] transition-colors relative"
               >
                 <Bell size={18} className="text-[#6D6E71]" />
-                {observerNotifs.length > 0 && (
-                  <span className="absolute -top-1 -left-1 min-w-[18px] h-[18px] px-1 bg-[#BA1A1A] text-white text-[9px] font-black rounded-full flex items-center justify-center">
-                    {observerNotifs.length}
+                {globalNotifs.length > 0 && (
+                  <span className="badge-pulse-red absolute -top-1 -left-1 min-w-[20px] h-[20px] px-1.5 bg-gradient-to-br from-red-500 to-red-600 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center ring-2 ring-white shadow-md tabular-nums">
+                    {globalNotifs.length > 99 ? '99+' : globalNotifs.length}
                   </span>
                 )}
               </button>
@@ -252,35 +561,32 @@ export default function SupervisorHome() {
                 <div className="absolute top-12 left-0 w-80 max-w-[90vw] bg-white border border-[#D1C4B9] rounded-2xl shadow-2xl z-[102] overflow-hidden">
                   <div className="px-4 py-3 bg-[#FDF8F0] border-b border-[#D1C4B9] flex items-center justify-between">
                     <span className="text-sm font-black text-[#2D2926]">إشعارات اليوم</span>
-                    <span className="text-[10px] font-bold text-[#A98159]">{observerNotifs.length} جديد</span>
+                    <span className="text-[10px] font-bold text-[#A98159]">{globalNotifs.length} جديد</span>
                   </div>
                   <div className="max-h-80 overflow-y-auto">
-                    {observerNotifs.length === 0 ? (
+                    {globalNotifs.length === 0 ? (
                       <div className="py-8 text-center">
                         <Bell size={28} className="mx-auto text-[#D1C4B9] mb-2 opacity-40" />
                         <p className="text-xs text-[#6D6E71] font-bold">لا توجد إشعارات اليوم</p>
                       </div>
                     ) : (
-                      observerNotifs
-                        .slice()
-                        .sort((a, b) => (b._sortTs || 0) - (a._sortTs || 0))
-                        .map(n => (
-                          <div key={n.id} className="px-4 py-3 border-b border-[#D1C4B9]/40 last:border-b-0 hover:bg-[#FDF8F0]/40 transition-colors">
-                            <div className="flex items-start gap-2">
-                              <CheckCircle2 size={14} className="text-[#386B41] mt-0.5 shrink-0" />
-                              <div className="flex-1 min-w-0 text-right">
-                                <p className="text-xs font-bold text-[#2D2926] leading-snug">
-                                  {TASK_TYPE_LABELS[n.taskType] || n.taskType}
-                                  {n.mealType ? ` — ${MEAL_LABELS[n.mealType] || ''}` : ''}
-                                </p>
-                                <p className="text-[10px] text-[#A98159] font-bold mt-0.5">
-                                  بواسطة: {n.observerName || 'مراقب'}
-                                </p>
-                                <p className="text-[9px] text-[#6D6E71] mt-0.5">
-                                  {new Date(n._sortTs || 0).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}
-                                </p>
-                              </div>
+                      globalNotifs.map(n => (
+                        <div key={n.id} className="px-4 py-3 border-b border-[#D1C4B9]/40 last:border-b-0 hover:bg-[#FDF8F0]/40 transition-colors">
+                          <div className="flex items-start gap-2">
+                            <CheckCircle2 size={14} className="text-[#386B41] mt-0.5 shrink-0" />
+                            <div className="flex-1 min-w-0 text-right">
+                              <p className="text-xs font-bold text-[#2D2926] leading-snug">
+                                تم رفع {TASK_TYPE_LABELS[n.taskType] || n.taskType}
+                                {n.mealType ? ` — ${MEAL_LABELS[n.mealType] || ''}` : ''}
+                              </p>
+                              <p className="text-[10px] text-[#A98159] font-bold mt-0.5">
+                                {n.center} · بواسطة: {n.observerName || 'مراقب'}
+                              </p>
+                              <p className="text-[9px] text-[#6D6E71] mt-0.5">
+                                {new Date(n.completedAt?.toMillis?.() || 0).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}
+                              </p>
                             </div>
+                          </div>
                           </div>
                         ))
                     )}
@@ -299,8 +605,215 @@ export default function SupervisorHome() {
         </div>
       </header>
 
+      {/* ════════════════════════════════════════════════════════════
+         UNIFIED DASHBOARD — shown when no center is drilled into
+      ════════════════════════════════════════════════════════════ */}
+      {!selectedCenter && (
+        <main className="max-w-5xl mx-auto px-4 md:px-8 py-6 space-y-6">
+
+          {/* Welcome strip */}
+          <div className="animate-fade-slide-up rounded-[2rem] overflow-hidden shadow-xl">
+            <div className="p-5 sm:p-7 relative overflow-hidden bg-gradient-to-br from-[#3D3330] via-[#2D2926] to-[#1F1A17]">
+              <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'repeating-linear-gradient(45deg, #A98159 0, #A98159 1px, transparent 0, transparent 50%)', backgroundSize: '12px 12px' }} />
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 relative">
+                <div className="flex-1 min-w-0">
+                  <p className="text-white/50 text-xs sm:text-sm mb-1">مرحباً (مشرف ميداني)،</p>
+                  <h2 className="text-white font-bold text-xl sm:text-2xl truncate">{profile?.nameAr || profile?.name || 'المشرف الميداني'}</h2>
+                  <div className="flex items-center gap-2 mt-2">
+                    <MapPin size={13} className="text-[#A98159]" />
+                    <span className="text-[#A98159] text-xs sm:text-sm font-bold">
+                      {assignedCenters.length} {assignedCenters.length === 1 ? 'مركز' : 'مراكز'} ضمن نطاقك
+                    </span>
+                  </div>
+                </div>
+                <div className="bg-white/10 rounded-2xl px-4 py-2.5 sm:py-3 border border-white/10 backdrop-blur-sm shrink-0 self-start flex sm:flex-col items-center sm:text-center gap-2 sm:gap-0">
+                  <Clock size={14} className="text-white/40 sm:hidden" />
+                  <p className="text-white/50 text-[10px] font-bold sm:mb-0.5">{clock.hijri}</p>
+                  <span className="hidden sm:block" />
+                  <p className="text-white text-xs sm:text-sm font-bold tabular-nums">{clock.time}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick stats row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <StatMini
+              label="مهام معلّقة"
+              value={pendingTasks.length}
+              accent="#DC2626"
+              Icon={Clock}
+            />
+            <StatMini
+              label="مكتملة اليوم"
+              value={completedToday}
+              accent="#16A34A"
+              Icon={CheckCircle2}
+            />
+            <StatMini
+              label="مراكز مُسندة"
+              value={assignedCenters.length}
+              accent="#3182CE"
+              Icon={Building2}
+            />
+            <StatMini
+              label="مهام مُسندة"
+              value={allAssignedTasks.length}
+              accent="#A98159"
+              Icon={ClipboardCheck}
+            />
+          </div>
+
+          {/* Pending tasks (cross-center) */}
+          <section className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-3xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#EDE5DC] flex items-center justify-between"
+              style={{ background: 'linear-gradient(135deg, #FEF2F2 0%, #fff 55%)' }}>
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+                  style={{ background: 'linear-gradient(135deg, #FCA5A5, #EF4444)' }}>
+                  <Clock size={16} className="text-white" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-[#2D2926]">مهام تحتاج إجراء</h2>
+                  <p className="text-[11px] text-[#9D8F85] mt-0.5">
+                    {pendingTasks.length === 0 ? 'كل المهام مكتملة 🎉' : `${pendingTasks.length} مهمة عبر مراكزك`}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="divide-y divide-[#EDE5DC]">
+              {pendingTasks.length === 0 ? (
+                <div className="py-12 text-center">
+                  <div className="relative w-fit mx-auto mb-3">
+                    <div className="absolute inset-0 rounded-2xl blur-xl bg-green-400 opacity-30" />
+                    <div className="relative w-14 h-14 rounded-2xl flex items-center justify-center"
+                      style={{ background: 'linear-gradient(135deg, #DCFCE7, #BBF7D0)' }}>
+                      <CheckCircle2 size={26} className="text-green-600" strokeWidth={2} />
+                    </div>
+                  </div>
+                  <p className="text-[#16A34A] font-bold text-sm">جميع مهامك مكتملة!</p>
+                  <p className="text-[#6D6E71] text-xs mt-1">لا توجد مهام معلّقة في أي من مراكزك</p>
+                </div>
+              ) : (
+                pendingTasks.slice(0, 10).map(task => (
+                  <PendingTaskRow key={task.key} task={task} onClick={() => goToTaskUpload(task)} />
+                ))
+              )}
+            </div>
+            {pendingTasks.length > 10 && (
+              <div className="px-5 py-3 bg-[#FDFAF7] border-t border-[#EDE5DC] text-center">
+                <p className="text-xs text-[#6D6E71] font-medium">
+                  معروض ١٠ من أصل {pendingTasks.length} مهمة — افتح مركزاً معيناً لرؤية مهامه
+                </p>
+              </div>
+            )}
+          </section>
+
+          {/* Today's activity feed (cross-center) */}
+          <section className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-3xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#EDE5DC] flex items-center gap-2.5"
+              style={{ background: 'linear-gradient(135deg, #F0FDF4 0%, #fff 55%)' }}>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+                style={{ background: 'linear-gradient(135deg, #86EFAC, #16A34A)' }}>
+                <ClipboardCheck size={16} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-[#2D2926]">نشاط اليوم</h2>
+                <p className="text-[11px] text-[#9D8F85] mt-0.5">
+                  {globalNotifs.length === 0 ? 'لا يوجد رفع اليوم بعد' : `${globalNotifs.length} رفع من مراقبيك`}
+                </p>
+              </div>
+            </div>
+            <div className="divide-y divide-[#EDE5DC]">
+              {globalNotifs.length === 0 ? (
+                <div className="py-10 text-center">
+                  <Clock size={32} className="mx-auto text-[#D1C4B9] mb-2 opacity-50" />
+                  <p className="text-[#6D6E71] text-sm font-bold">لا يوجد نشاط من المراقبين اليوم</p>
+                </div>
+              ) : (
+                globalNotifs.slice(0, 8).map(n => (
+                  <div key={n.id} className="group/row flex items-center gap-3 px-5 py-3 hover:bg-gradient-to-l hover:from-green-50/30 hover:to-transparent transition-colors">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border-2 border-green-200"
+                      style={{ background: 'linear-gradient(135deg, #DCFCE7, #BBF7D0)' }}>
+                      <CheckCircle2 size={18} className="text-green-600" strokeWidth={2.5} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-[#2D2926] truncate">
+                        تم رفع {TASK_TYPE_LABELS[n.taskType] || n.taskType}
+                        {n.mealType ? ` — ${MEAL_LABELS[n.mealType] || ''}` : ''}
+                      </p>
+                      <p className="text-[11px] text-[#9D8F85] mt-0.5 truncate">
+                        <span className="font-bold text-[#A98159]">{n.center}</span> · بواسطة: {n.observerName || 'مراقب'}
+                      </p>
+                    </div>
+                    <span className="text-[11px] text-[#9D8F85] font-bold tabular-nums shrink-0">
+                      {new Date(n.completedAt?.toMillis?.() || 0).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+
+          {/* Centers grid */}
+          <section className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-3xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#EDE5DC] flex items-center gap-2.5"
+              style={{ background: 'linear-gradient(135deg, #FDF8F0 0%, #fff 55%)' }}>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+                style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
+                <Building2 size={16} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-[#2D2926]">مراكزي</h2>
+                <p className="text-[11px] text-[#9D8F85] mt-0.5">ادخل على مركز للاطلاع التفصيلي</p>
+              </div>
+            </div>
+            <div className="p-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {assignedCenters.map(c => (
+                <CenterCard
+                  key={c}
+                  centerId={c}
+                  stats={centerStats[c]}
+                  onClick={() => {
+                    setSelectedCenter(c);
+                    sessionStorage.setItem('sup_selected_center', c);
+                  }}
+                />
+              ))}
+            </div>
+          </section>
+
+          {/* Today's menu — supervisor sees menu per assigned center */}
+          {assignedCenters.length > 0 && (
+            <TodayMenuCard centerIds={assignedCenters} />
+          )}
+
+          {/* Quick logout */}
+          <div className="pt-2 pb-8 text-center">
+            <button onClick={handleLogout}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-red-500 hover:text-white text-sm font-bold border border-red-200 hover:bg-red-500 hover:border-red-500 transition-all">
+              <LogOut size={14} />
+              تسجيل الخروج
+            </button>
+          </div>
+        </main>
+      )}
+
+      {/* ════════════════════════════════════════════════════════════
+         PER-CENTER DETAIL VIEW — existing flow, shown only after drill-in
+      ════════════════════════════════════════════════════════════ */}
+      {selectedCenter && (
       <main className="max-w-5xl mx-auto px-4 md:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         <div className="lg:col-span-7 space-y-6">
+          {/* Back to dashboard */}
+          <button
+            onClick={() => { setSelectedCenter(null); sessionStorage.removeItem('sup_selected_center'); }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[#EDE5DC] bg-white text-[#6D6E71] hover:text-[#A98159] hover:border-[#A98159]/40 text-xs font-bold transition-all"
+          >
+            <ChevronLeft size={14} strokeWidth={2.5} />
+            العودة للوحة الرئيسية
+          </button>
+
           <div className="animate-fade-slide-up shadow-xl rounded-[2.5rem] overflow-hidden">
             <div className="p-8 relative overflow-hidden bg-[#2D2926]">
               <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'repeating-linear-gradient(45deg, #A98159 0, #A98159 1px, transparent 0, transparent 50%)', backgroundSize: '12px 12px' }} />
@@ -329,6 +842,11 @@ export default function SupervisorHome() {
               <div className="flex items-center gap-2"><Clock size={12} className="text-[#6D6E71]" /><span className="text-xs text-[#6D6E71] font-bold">{clock.time}</span></div>
             </div>
           </div>
+
+          {/* Today's menu for the selected center */}
+          {selectedCenter && (
+            <TodayMenuCard centerId={selectedCenter} />
+          )}
 
           <div className="space-y-4">
             <div className="flex items-center gap-2 px-2">
@@ -401,6 +919,7 @@ export default function SupervisorHome() {
           </div>
         </div>
       </main>
+      )}
 
       {/* Side Profile Menu */}
       <div className={`fixed inset-y-0 left-0 z-[101] w-full max-w-sm bg-white shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] transform border-r border-[#D1C4B9] ${isProfileOpen ? 'translate-x-0' : '-translate-x-full'}`}>

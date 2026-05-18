@@ -3,84 +3,87 @@ import { collection, onSnapshot, deleteDoc, updateDoc, doc } from 'firebase/fire
 import { db } from '../../config/db.js';
 import AdminReportGenerator from './AdminReportGenerator.jsx';
 import {
-  Warning as AlertTriangle,
-  Van as Truck,
-  ClipboardText as ClipboardList,
-  Mountains as Mountain,
-  Clock,
-  Trash as Trash2,
-  X,
-  ArrowLeft,
-  CheckCircle as CheckCircle2,
-  ForkKnife as Utensils,
-  Drop as Droplets,
-  CaretDown as ChevronDown,
-  Funnel as Filter,
-  MagnifyingGlass as Search,
-  Warning, Van, ClipboardText, Mountains,
-} from '@phosphor-icons/react';
-import { motion } from 'framer-motion';
+  AlertTriangle, Truck, ClipboardList, Mountain, Clock, Trash2, X, ArrowLeft,
+  CheckCircle2, ChevronDown, Filter, Search, LayoutDashboard, Sparkles,
+  User, Building2, Calendar, ChevronRight, Activity, ThumbsUp, XCircle,
+  ShieldCheck, Utensils, Droplets, Factory, ArrowRight, Layers, Package,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import PageHeader from '../../components/PageHeader.jsx';
+import NotificationBadge from '../../components/NotificationBadge.jsx';
 import { getCaterer } from '../../config/centers.js';
+import {
+  computeStatusUpdate, TERMINAL_REPORT_STATUSES, TERMINAL_LOGISTICS_STATUSES,
+} from '../../lib/statusTracking.js';
+import { StatusTimerChip, StatusTimeline } from '../../components/StatusTimeline.jsx';
+import { NATIONALITIES } from '../../config/nationalities.js';
+import { HAJJ_DAYS, hasMealContent } from '../../config/menus.js';
 
 /* ─── Lookup tables ─── */
 const REPORT_TYPE = {
-  water:    'تسرب مياه',
-  electric: 'عطل كهربائي',
-  crowd:    'ازدحام حرج',
-  food:     'مشكلة غذائية',
-  medical:  'حالة طبية طارئة',
-  security: 'بلاغ أمني',
-  fire:     'حريق / دخان',
-  other:    'بلاغ آخر',
-  shortage: 'نقص كميات',
-  delay:    'تأخر توزيع',
-  quality:  'مشكلة جودة',
-  hygiene:  'مخالفة صحية',
+  water: 'تسرب مياه', electric: 'عطل كهربائي', crowd: 'ازدحام حرج', food: 'مشكلة غذائية',
+  medical: 'حالة طبية طارئة', security: 'بلاغ أمني', fire: 'حريق / دخان', other: 'بلاغ آخر',
+  shortage: 'نقص كميات', delay: 'تأخر توزيع', quality: 'مشكلة جودة', hygiene: 'مخالفة صحية',
 };
 
-const CATEGORY_LABEL = { meals: 'وجبات', water: 'مياه' };
-const CATEGORY_ICON  = { meals: Utensils, water: Droplets };
-
 const SEV = {
-  high:   { label: 'عالية',   bg: '#FEF2F2', text: '#DC2626', border: '#FCA5A5' },
-  urgent: { label: 'عاجل',    bg: '#FEF2F2', text: '#DC2626', border: '#FCA5A5' },
-  medium: { label: 'متوسطة',  bg: '#FFFBEB', text: '#B45309', border: '#FCD34D' },
-  low:    { label: 'منخفضة',  bg: '#EFF6FF', text: '#1D4ED8', border: '#93C5FD' },
+  high:   { label: 'عالية',   bg: '#FEF2F2', text: '#DC2626', border: '#FCA5A5', bar: '#EF4444' },
+  urgent: { label: 'عاجل',    bg: '#FEF2F2', text: '#DC2626', border: '#FCA5A5', bar: '#DC2626' },
+  medium: { label: 'متوسطة',  bg: '#FFFBEB', text: '#B45309', border: '#FCD34D', bar: '#F59E0B' },
+  low:    { label: 'منخفضة',  bg: '#EFF6FF', text: '#1D4ED8', border: '#93C5FD', bar: '#3B82F6' },
 };
 
 const STATUS = {
-  pending:     { label: 'قيد الانتظار', bg: '#FEFCE8', text: '#854D0E', border: '#FDE047' },
-  in_progress: { label: 'جارٍ التنفيذ', bg: '#EFF6FF', text: '#1D4ED8', border: '#93C5FD' },
-  resolved:    { label: 'تم الحل',      bg: '#F0FDF4', text: '#15803D', border: '#86EFAC' },
+  pending:     { label: 'قيد الانتظار', bg: '#FFFBEB', text: '#B45309', color: '#B45309', border: '#FDE68A', Icon: Clock        },
+  in_progress: { label: 'جارٍ التنفيذ', bg: '#EFF6FF', text: '#1D4ED8', color: '#1D4ED8', border: '#BFDBFE', Icon: Activity     },
+  resolved:    { label: 'تم الحل',      bg: '#F0FDF4', text: '#15803D', color: '#15803D', border: '#86EFAC', Icon: CheckCircle2 },
 };
 
-const SUPPORT = { internal: 'داخلي', external: 'خارجي', both: 'داخلي وخارجي' };
+const SUPPORT = {
+  internal: { label: 'داخلي',            short: 'داخلي',        Icon: ArrowRight, color: '#3B82F6' },
+  external: { label: 'خارجي',            short: 'خارجي',        Icon: ArrowLeft,  color: '#8B5CF6' },
+  both:     { label: 'داخلي وخارجي',     short: 'مشترك',         Icon: Layers,     color: '#1D6FA4' },
+};
 
 const LOGISTICS_STATUS = {
-  pending:   { label: 'قيد الانتظار', bg: '#FFFBEB', text: '#B45309', border: '#FDE68A' },
-  approved:  { label: 'موافق عليه',   bg: '#EFF6FF', text: '#1D4ED8', border: '#BFDBFE' },
-  delivered: { label: 'تم التسليم',   bg: '#F0FDF4', text: '#15803D', border: '#86EFAC' },
-  rejected:  { label: 'مرفوض',        bg: '#FEF2F2', text: '#DC2626', border: '#FECACA' },
+  pending:   { label: 'قيد الانتظار', bg: '#FFFBEB', text: '#B45309', color: '#B45309', border: '#FDE68A', Icon: Clock        },
+  approved:  { label: 'موافق عليه',   bg: '#EFF6FF', text: '#1D4ED8', color: '#1D4ED8', border: '#BFDBFE', Icon: ThumbsUp     },
+  delivered: { label: 'تم التسليم',   bg: '#F0FDF4', text: '#15803D', color: '#15803D', border: '#86EFAC', Icon: CheckCircle2 },
+  rejected:  { label: 'مرفوض',        bg: '#FEF2F2', text: '#DC2626', color: '#DC2626', border: '#FECACA', Icon: XCircle      },
+};
+
+/* Newly-arrived helpers */
+const NEW_THRESHOLD_MS = 10 * 60 * 1000;
+const isNewReport = r => {
+  if (r.status && r.status !== 'pending') return false;
+  const ts = r.timestamp?.toMillis?.() ?? 0;
+  return ts > 0 && (Date.now() - ts) < NEW_THRESHOLD_MS;
+};
+const isNewLogistics = r => {
+  if (r.status && r.status !== 'pending') return false;
+  const ts = r.timestamp?.toMillis?.() ?? r.createdAt?.toMillis?.() ?? 0;
+  return ts > 0 && (Date.now() - ts) < NEW_THRESHOLD_MS;
 };
 
 /* ─── Helpers ─── */
 function timeAgo(ts) {
   if (!ts) return '—';
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
-  const s = Math.floor((Date.now() - d) / 1000);
-  if (s < 60)    return 'الآن';
-  if (s < 3600)  return `${Math.floor(s / 60)}د`;
-  if (s < 86400) return `${Math.floor(s / 3600)}س`;
-  return `${Math.floor(s / 86400)} يوم`;
+  try {
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    const s = Math.floor((Date.now() - d) / 1000);
+    if (s < 60)    return 'الآن';
+    if (s < 3600)  return `${Math.floor(s / 60)}د`;
+    if (s < 86400) return `${Math.floor(s / 3600)}س`;
+    return `${Math.floor(s / 86400)} يوم`;
+  } catch { return '—'; }
 }
-
 function clockTime(ts) {
   if (!ts) return '';
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
-  return d.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+  try {
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+  } catch { return ''; }
 }
-
 function openImageTab(src) {
   const win = window.open('', '_blank');
   win.document.write(`<!DOCTYPE html><html><head><title>صورة البلاغ</title>
@@ -90,51 +93,39 @@ function openImageTab(src) {
   win.document.close();
 }
 
-function getActivityCenter(item) {
-  return item.center || item.centerId || '—';
-}
-function getActivityObserver(item) {
-  return item.observer || item.observerName || '—';
-}
+const getActivityCenter   = i => i.center || i.centerId || '—';
+const getActivityObserver = i => i.observer || i.observerName || '—';
 function getActivityScore(item) {
   if (item._col === 'meal') {
     const pct = parseFloat(item.percentage);
     return isNaN(pct) ? null : parseFloat((pct / 10).toFixed(1));
   }
+  if (item.scoreOutOf10 != null) return Number(item.scoreOutOf10);
   return null;
 }
 
-const _spring = { type: 'spring', stiffness: 380, damping: 18 };
-
 /* ─── Stat Card ─── */
-function StatCard({ label, value, icon: Icon, color, sub, onClick }) {
+function StatCard({ label, value, Icon, color, sub, onClick }) {
   return (
-    <motion.button
+    <button
       onClick={onClick}
-      whileHover={{ y: -3, boxShadow: `0 12px 32px ${color}22` }}
-      whileTap={{ scale: 0.96 }}
-      transition={_spring}
-      className="rounded-2xl p-5 border border-[#EDE5DC] shadow-[0_2px_8px_rgba(45,41,38,0.07)] flex items-center gap-4 w-full text-right"
-      style={{
-        borderRight: `3px solid ${color}`,
-        background: `linear-gradient(145deg, #ffffff 45%, ${color}09 100%)`,
-      }}
+      className="group bg-white rounded-2xl p-4 border border-[#EDE5DC] shadow-[0_2px_8px_rgba(45,41,38,0.07)] flex items-center gap-3 w-full text-right transition-all hover:shadow-[0_8px_24px_rgba(45,41,38,0.10)] hover:-translate-y-0.5"
+      style={{ borderRight: `3px solid ${color}` }}
     >
       <div className="flex-1 min-w-0">
-        <p className="text-[11px] font-semibold text-[#9D8F85] mb-1">{label}</p>
-        <p className="text-[2rem] font-bold leading-none tabular-nums" style={{ color }}>{value ?? '—'}</p>
-        {sub && <p className="text-[11px] text-[#B5A99E] mt-1.5 font-medium">{sub}</p>}
+        <p className="text-[10px] font-semibold text-[#9D8F85] mb-0.5">{label}</p>
+        <p className="text-2xl font-black tabular-nums leading-none" style={{ color }}>{value ?? '—'}</p>
+        {sub && <p className="text-[10px] text-[#B5A99E] mt-1 font-bold">{sub}</p>}
       </div>
-      <motion.div
-        whileHover={{ scale: 1.18, rotate: 5 }}
-        whileTap={{ scale: 0.88 }}
-        transition={_spring}
-        className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 backdrop-blur-md border"
-        style={{ background: `${color}0D`, borderColor: `${color}22` }}
-      >
-        <Icon size={24} weight="duotone" style={{ color }} />
-      </motion.div>
-    </motion.button>
+      <div className="relative shrink-0">
+        <div className="absolute inset-0 rounded-xl blur-md opacity-0 group-hover:opacity-50 transition-opacity"
+          style={{ background: color }} />
+        <div className="relative w-11 h-11 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110"
+          style={{ background: `linear-gradient(135deg, ${color}, ${color}CC)` }}>
+          <Icon size={20} className="text-white" strokeWidth={2} />
+        </div>
+      </div>
+    </button>
   );
 }
 
@@ -146,57 +137,83 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" dir="rtl">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-3xl w-full max-w-lg max-h-[88vh] overflow-y-auto shadow-2xl ring-1 ring-black/5">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
 
-        <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-[#EDE5DC] px-6 py-4 flex items-center justify-between rounded-t-3xl z-10">
-          <div>
-            <div className="flex items-center gap-2">
-              <p className="font-bold text-[#2D2926] text-base">{label}</p>
-              {report.reportNumber && (
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-md"
-                  style={{ background: '#2D292612', color: '#2D2926' }}>
-                  {report.reportNumber}
-                </span>
-              )}
+        <div className="sticky top-0 bg-white border-b border-[#EDE5DC] px-5 py-4 flex items-center justify-between rounded-t-3xl z-10">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="relative shrink-0">
+              <div className="absolute inset-0 rounded-xl blur-md bg-red-500 opacity-40" />
+              <div className="relative w-11 h-11 rounded-xl flex items-center justify-center shadow-sm"
+                style={{ background: 'linear-gradient(135deg, #F87171, #DC2626)' }}>
+                <AlertTriangle size={18} className="text-white" strokeWidth={2.25} />
+              </div>
             </div>
-            <p className="text-[11px] text-[#9D8F85] mt-0.5">{timeAgo(report.timestamp)} · {clockTime(report.timestamp)}</p>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <p className="font-black text-[#2D2926] text-sm truncate">{label}</p>
+                {report.reportNumber && (
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-md tabular-nums"
+                    style={{ background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA' }}>
+                    #{report.reportNumber}
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-[#A98159] font-bold mt-0.5">{timeAgo(report.timestamp)} · {clockTime(report.timestamp)}</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 shrink-0">
             <button onClick={() => onDelete(report.id)}
-              className="h-9 px-3.5 rounded-xl border border-red-200 flex items-center gap-1.5 hover:bg-red-50 transition-colors text-red-500 text-xs font-semibold">
-              <Trash2 size={13} weight="thin" /> حذف
+              className="w-9 h-9 rounded-xl border-2 border-red-200 flex items-center justify-center hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors text-red-500">
+              <Trash2 size={14} strokeWidth={2.25} />
             </button>
             <button onClick={onClose}
               className="w-9 h-9 rounded-xl border border-[#EDE5DC] flex items-center justify-center hover:bg-[#F5F0EB] transition-colors">
-              <X size={16} className="text-[#6D6E71]" weight="thin" />
+              <X size={15} className="text-[#6D6E71]" strokeWidth={2.25} />
             </button>
           </div>
         </div>
 
-        <div className="p-6 space-y-4">
+        <div className="p-5 space-y-4">
           {sv && (
             <div className="flex gap-2 flex-wrap">
-              <span className="px-3 py-1 rounded-lg text-xs font-semibold border"
+              <span className="inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-lg border"
                 style={{ background: sv.bg, borderColor: sv.border, color: sv.text }}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: sv.bar }} />
                 خطورة {sv.label}
               </span>
             </div>
           )}
 
-          <div>
-            <p className="text-[11px] font-semibold text-[#9D8F85] mb-2">حالة البلاغ</p>
+          {/* Status timeline */}
+          <StatusTimeline
+            doc={report}
+            terminalStatuses={TERMINAL_REPORT_STATUSES}
+            statusOrder={['pending', 'in_progress', 'resolved']}
+            statusMeta={STATUS}
+            accentColor="#DC2626"
+          />
+
+          {/* Status changer */}
+          <div className="bg-white rounded-2xl border border-[#EDE5DC] p-3">
+            <p className="text-[10px] font-bold text-[#9D8F85] mb-2 flex items-center gap-1">
+              <Activity size={11} strokeWidth={2.25} className="text-red-500" />
+              تغيير الحالة
+            </p>
             <div className="grid grid-cols-3 gap-2">
               {Object.entries(STATUS).map(([key, s]) => {
+                const SIcon = s.Icon;
                 const active = (report.status || 'pending') === key;
                 return (
                   <button key={key}
                     onClick={() => onStatusChange(report.id, key)}
-                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold border transition-all"
+                    className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-black border-2 transition-all ${
+                      active ? 'shadow-md scale-[1.02]' : 'bg-white border-[#EDE5DC] text-[#6D6E71]'
+                    }`}
                     style={active
-                      ? { background: s.bg, borderColor: s.border, color: s.text, boxShadow: `0 2px 8px ${s.border}` }
-                      : { background: '#fff', borderColor: '#EDE5DC', color: '#9D8F85' }}>
-                    {active && <CheckCircle2 size={12} weight="thin" />}
+                      ? { background: s.bg, borderColor: s.text, color: s.text }
+                      : undefined}>
+                    <SIcon size={12} strokeWidth={2.5} />
                     {s.label}
                   </button>
                 );
@@ -204,58 +221,62 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5">
+          {/* Info grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             {[
-              { lbl: 'المراقب',     val: report.observer },
-              { lbl: 'المركز',      val: report.center   },
-              { lbl: 'نوع البلاغ',  val: label           },
-              { lbl: 'وقت الإرسال', val: clockTime(report.timestamp) },
+              { lbl: 'المراقب', val: report.observer, Icon: User,     color: '#A98159' },
+              { lbl: 'المركز',  val: report.center,   Icon: Building2,color: '#DC2626' },
+              { lbl: 'الوقت',   val: clockTime(report.timestamp), Icon: Calendar, color: '#6D6E71' },
             ].map(c => (
-              <div key={c.lbl} className="bg-[#FAFAF8] rounded-xl border border-[#EDE5DC] p-3.5">
-                <p className="text-[10px] font-semibold text-[#9D8F85] mb-1">{c.lbl}</p>
-                <p className="font-bold text-[#2D2926] text-sm">{c.val || '—'}</p>
+              <div key={c.lbl} className="bg-white rounded-xl border border-[#EDE5DC] p-2.5 flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: `${c.color}15` }}>
+                  <c.Icon size={13} style={{ color: c.color }} strokeWidth={2.25} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[9px] text-[#9D8F85] font-bold">{c.lbl}</p>
+                  <p className="text-[11px] font-bold text-[#2D2926] truncate">{c.val || '—'}</p>
+                </div>
               </div>
             ))}
-            <div className="col-span-2 bg-[#FDF8F0] rounded-xl border border-[#EDE5DC] p-3.5">
-              <p className="text-[10px] font-semibold text-[#9D8F85] mb-1">المتعهد</p>
-              <p className="font-bold text-[#A98159] text-sm">
-                {report.caterer || getCaterer(report.center) || '—'}
-              </p>
+          </div>
+          <div className="bg-gradient-to-br from-[#FDF8F0] to-white rounded-xl border border-[#E8DDD4] p-2.5 flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm"
+              style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
+              <Factory size={13} className="text-white" strokeWidth={2.25} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[9px] text-[#9D8F85] font-bold">المتعهد</p>
+              <p className="text-[11px] font-black text-[#A98159] truncate">{report.caterer || getCaterer(report.center) || '—'}</p>
             </div>
           </div>
 
           {report.description && (
-            <div className="bg-[#FAFAF8] rounded-xl border border-[#EDE5DC] p-4">
-              <p className="text-[10px] font-semibold text-[#9D8F85] mb-2">وصف المشكلة</p>
-              <p className="text-sm text-[#2D2926] leading-relaxed">{report.description}</p>
+            <div className="bg-white rounded-2xl border border-[#EDE5DC] p-4">
+              <p className="text-[10px] text-[#9D8F85] font-bold mb-2 flex items-center gap-1.5">
+                <span className="w-1.5 h-4 rounded-full bg-red-500" />
+                وصف المشكلة
+              </p>
+              <p className="text-sm text-[#2D2926] leading-relaxed whitespace-pre-wrap">{report.description}</p>
             </div>
           )}
 
           {report.images?.length > 0 && (
             <div>
-              <p className="text-[10px] font-semibold text-[#9D8F85] mb-2">الصور المرفقة ({report.images.length})</p>
+              <p className="text-[10px] text-[#9D8F85] font-bold mb-2 flex items-center gap-1.5">
+                <span className="w-1.5 h-4 rounded-full bg-[#A98159]" />
+                الصور المرفقة ({report.images.length})
+              </p>
               <div className="grid grid-cols-2 gap-2">
                 {report.images.map((src, i) => (
-                  <button key={i} onClick={() => openImageTab(src)} className="group relative block w-full">
-                    <img src={src} alt="" className="w-full h-32 object-cover rounded-xl border border-[#EDE5DC]" />
-                    <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 rounded-xl text-white text-xs font-semibold">
+                  <button key={i} onClick={() => openImageTab(src)} className="group relative block rounded-xl overflow-hidden border-2 border-[#EDE5DC] hover:border-[#A98159] transition-colors">
+                    <img src={src} alt="" className="w-full h-32 object-cover transition-transform group-hover:scale-105" />
+                    <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition bg-black/30 text-white text-xs font-black">
                       فتح الصورة
                     </span>
                   </button>
                 ))}
               </div>
-            </div>
-          )}
-
-          {report.videos?.length > 0 && (
-            <div className="bg-[#FAFAF8] rounded-xl border border-[#EDE5DC] p-3.5">
-              <p className="text-[10px] font-semibold text-[#9D8F85] mb-2">مقاطع الفيديو ({report.videos.length})</p>
-              {report.videos.map((name, i) => (
-                <p key={i} className="text-sm text-[#2D2926] flex items-center gap-2">
-                  <span className="w-5 h-5 rounded bg-red-100 text-red-500 text-[10px] flex items-center justify-center flex-shrink-0">▶</span>
-                  {name}
-                </p>
-              ))}
             </div>
           )}
         </div>
@@ -267,60 +288,105 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange }) {
 /* ─── Logistics Detail Modal ─── */
 function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange }) {
   if (!item) return null;
-  const CatIcon = CATEGORY_ICON[item.category] || Truck;
-  const title   = `إسناد ${CATEGORY_LABEL[item.category] || ''}`.trim();
+  const st = SUPPORT[item.supportType] || SUPPORT.internal;
+  const SupportIcon = st.Icon;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" dir="rtl">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-3xl w-full max-w-lg max-h-[88vh] overflow-y-auto shadow-2xl ring-1 ring-black/5">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
 
-        {/* Header */}
-        <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-[#EDE5DC] px-6 py-4 flex items-center justify-between rounded-t-3xl z-10">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-              <CatIcon size={16} className="text-blue-500" weight="thin" />
+        <div className="sticky top-0 bg-white border-b border-[#EDE5DC] px-5 py-4 flex items-center justify-between rounded-t-3xl z-10">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="relative shrink-0">
+              <div className="absolute inset-0 rounded-xl blur-md opacity-40" style={{ background: st.color }} />
+              <div className="relative w-11 h-11 rounded-xl flex items-center justify-center shadow-sm"
+                style={{ background: `linear-gradient(135deg, ${st.color}, ${st.color}CC)` }}>
+                <Package size={18} className="text-white" strokeWidth={2.25} />
+              </div>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="font-bold text-[#2D2926] text-base">{title}</p>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <p className="font-black text-[#2D2926] text-sm">طلب إسناد</p>
+                <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md border"
+                  style={{ background: `${st.color}15`, borderColor: `${st.color}40`, color: st.color }}>
+                  <SupportIcon size={10} strokeWidth={2.5} />
+                  {st.short}
+                </span>
                 {item.requestNumber && (
-                  <span className="text-[10px] font-black px-2 py-0.5 rounded-md"
-                    style={{ background: '#3182CE15', color: '#3182CE' }}>
-                    {item.requestNumber}
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-md tabular-nums"
+                    style={{ background: '#EFF6FF', color: '#3B82F6', border: '1px solid #BFDBFE' }}>
+                    #{item.requestNumber}
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-[#9D8F85] mt-0.5">{timeAgo(item.timestamp)} · {clockTime(item.timestamp)}</p>
+              <p className="text-[11px] text-[#A98159] font-bold mt-0.5">{timeAgo(item.timestamp)} · {clockTime(item.timestamp)}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 shrink-0">
             <button onClick={() => onDelete(item.id)}
-              className="h-9 px-3.5 rounded-xl border border-red-200 flex items-center gap-1.5 hover:bg-red-50 transition-colors text-red-500 text-xs font-semibold">
-              <Trash2 size={13} weight="thin" /> حذف
+              className="w-9 h-9 rounded-xl border-2 border-red-200 flex items-center justify-center hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors text-red-500">
+              <Trash2 size={14} strokeWidth={2.25} />
             </button>
             <button onClick={onClose}
               className="w-9 h-9 rounded-xl border border-[#EDE5DC] flex items-center justify-center hover:bg-[#F5F0EB] transition-colors">
-              <X size={16} className="text-[#6D6E71]" weight="thin" />
+              <X size={15} className="text-[#6D6E71]" strokeWidth={2.25} />
             </button>
           </div>
         </div>
 
-        <div className="p-6 space-y-4">
-          {/* Status selector */}
-          <div>
-            <p className="text-[11px] font-semibold text-[#9D8F85] mb-2">حالة الطلب</p>
-            <div className="grid grid-cols-2 gap-2">
+        <div className="p-5 space-y-4">
+          {/* Linked report banner */}
+          {item.reportNumber && (
+            <div className="bg-gradient-to-br from-amber-50 via-white to-orange-50/40 rounded-2xl border-2 border-amber-200 p-3.5 flex items-center gap-3">
+              <div className="relative shrink-0">
+                <div className="absolute inset-0 rounded-xl blur-md bg-amber-400 opacity-40" />
+                <div className="relative w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
+                  style={{ background: 'linear-gradient(135deg, #F59E0B, #D97706)' }}>
+                  <AlertTriangle size={16} className="text-white" strokeWidth={2.25} />
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-black text-amber-700 uppercase tracking-wider mb-0.5">مرتبط ببلاغ</p>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <p className="text-xs font-black text-[#2D2926]">{REPORT_TYPE[item.reportType] || item.reportType || 'بلاغ ميداني'}</p>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-md tabular-nums bg-white border border-amber-300 text-amber-700">
+                    #{item.reportNumber}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Status timeline */}
+          <StatusTimeline
+            doc={item}
+            terminalStatuses={TERMINAL_LOGISTICS_STATUSES}
+            statusOrder={['pending', 'approved', 'delivered', 'rejected']}
+            statusMeta={LOGISTICS_STATUS}
+            accentColor="#2563EB"
+          />
+
+          {/* Status changer */}
+          <div className="bg-white rounded-2xl border border-[#EDE5DC] p-3">
+            <p className="text-[10px] font-bold text-[#9D8F85] mb-2 flex items-center gap-1">
+              <Activity size={11} strokeWidth={2.25} className="text-blue-500" />
+              تغيير الحالة
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {Object.entries(LOGISTICS_STATUS).map(([key, s]) => {
+                const SIcon = s.Icon;
                 const active = (item.status || 'pending') === key;
                 return (
                   <button key={key}
                     onClick={() => onStatusChange(item.id, key)}
-                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold border transition-all"
+                    className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-black border-2 transition-all ${
+                      active ? 'shadow-md scale-[1.02]' : 'bg-white border-[#EDE5DC] text-[#6D6E71]'
+                    }`}
                     style={active
-                      ? { background: s.bg, borderColor: s.border, color: s.text, boxShadow: `0 2px 8px ${s.border}` }
-                      : { background: '#fff', borderColor: '#EDE5DC', color: '#9D8F85' }}>
-                    {active && <CheckCircle2 size={12} weight="thin" />}
+                      ? { background: s.bg, borderColor: s.text, color: s.text }
+                      : undefined}>
+                    <SIcon size={12} strokeWidth={2.5} />
                     {s.label}
                   </button>
                 );
@@ -328,54 +394,73 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange }) {
             </div>
           </div>
 
-          {/* Info grid */}
-          <div className="grid grid-cols-2 gap-2.5">
-            {[
-              { lbl: 'المراقب',      val: item.observer   },
-              { lbl: 'المركز',       val: item.center     },
-              { lbl: 'تصنيف الإسناد', val: CATEGORY_LABEL[item.category] || '—' },
-              { lbl: 'نطاق الإسناد', val: SUPPORT[item.supportType] || '—' },
-            ].map(c => (
-              <div key={c.lbl} className="bg-[#FAFAF8] rounded-xl border border-[#EDE5DC] p-3.5">
-                <p className="text-[10px] font-semibold text-[#9D8F85] mb-1">{c.lbl}</p>
-                <p className="font-bold text-[#2D2926] text-sm">{c.val || '—'}</p>
-              </div>
-            ))}
-            <div className="col-span-2 bg-[#EFF6FF] rounded-xl border border-[#BFDBFE] p-3.5">
-              <p className="text-[10px] font-semibold text-[#9D8F85] mb-1">المتعهد</p>
-              <p className="font-bold text-[#3182CE] text-sm">
-                {item.caterer || getCaterer(item.center) || '—'}
-              </p>
-            </div>
-          </div>
-
           {/* Quantities */}
           {(item.qtyInternal || item.qtyExternal) && (
             <div className="grid grid-cols-2 gap-2.5">
               {item.qtyInternal != null && (
-                <div className="bg-[#FAFAF8] rounded-xl border border-[#EDE5DC] p-3.5">
-                  <p className="text-[10px] font-semibold text-[#9D8F85] mb-1">
-                    {item.category === 'water' ? 'عدد العبوات (داخلي)' : 'عدد الوجبات (داخلي)'}
-                  </p>
-                  <p className="font-bold text-[#2D2926] text-lg tabular-nums">{item.qtyInternal}</p>
+                <div className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-3.5 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
+                    style={{ background: 'linear-gradient(135deg, #60A5FA, #3B82F6)' }}>
+                    <ArrowRight size={16} className="text-white" strokeWidth={2.5} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-blue-700">داخلي</p>
+                    <p className="text-xl font-black tabular-nums text-blue-700 leading-tight">{item.qtyInternal}</p>
+                  </div>
                 </div>
               )}
               {item.qtyExternal != null && (
-                <div className="bg-[#FAFAF8] rounded-xl border border-[#EDE5DC] p-3.5">
-                  <p className="text-[10px] font-semibold text-[#9D8F85] mb-1">
-                    {item.category === 'water' ? 'عدد العبوات (خارجي)' : 'عدد الوجبات (خارجي)'}
-                  </p>
-                  <p className="font-bold text-[#2D2926] text-lg tabular-nums">{item.qtyExternal}</p>
+                <div className="rounded-2xl border-2 border-violet-200 bg-gradient-to-br from-violet-50 to-white p-3.5 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
+                    style={{ background: 'linear-gradient(135deg, #A78BFA, #8B5CF6)' }}>
+                    <ArrowLeft size={16} className="text-white" strokeWidth={2.5} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-violet-700">خارجي</p>
+                    <p className="text-xl font-black tabular-nums text-violet-700 leading-tight">{item.qtyExternal}</p>
+                  </div>
                 </div>
               )}
             </div>
           )}
 
-          {/* Notes */}
+          {/* Info grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            {[
+              { lbl: 'المراقب', val: item.observer, Icon: User,     color: '#A98159' },
+              { lbl: 'المركز',  val: item.center,   Icon: Building2,color: st.color  },
+              { lbl: 'الوقت',   val: clockTime(item.timestamp), Icon: Calendar, color: '#6D6E71' },
+            ].map(c => (
+              <div key={c.lbl} className="bg-white rounded-xl border border-[#EDE5DC] p-2.5 flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: `${c.color}15` }}>
+                  <c.Icon size={13} style={{ color: c.color }} strokeWidth={2.25} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[9px] text-[#9D8F85] font-bold">{c.lbl}</p>
+                  <p className="text-[11px] font-bold text-[#2D2926] truncate">{c.val || '—'}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="bg-gradient-to-br from-[#FDF8F0] to-white rounded-xl border border-[#E8DDD4] p-2.5 flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm"
+              style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
+              <Factory size={13} className="text-white" strokeWidth={2.25} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[9px] text-[#9D8F85] font-bold">المتعهد</p>
+              <p className="text-[11px] font-black text-[#A98159] truncate">{item.caterer || getCaterer(item.center) || '—'}</p>
+            </div>
+          </div>
+
           {item.notes && (
-            <div className="bg-[#FAFAF8] rounded-xl border border-[#EDE5DC] p-4">
-              <p className="text-[10px] font-semibold text-[#9D8F85] mb-2">ملاحظات</p>
-              <p className="text-sm text-[#2D2926] leading-relaxed">{item.notes}</p>
+            <div className="bg-white rounded-2xl border border-[#EDE5DC] p-4">
+              <p className="text-[10px] text-[#9D8F85] font-bold mb-2 flex items-center gap-1.5">
+                <span className="w-1.5 h-4 rounded-full bg-blue-500" />
+                ملاحظات
+              </p>
+              <p className="text-sm text-[#2D2926] leading-relaxed whitespace-pre-wrap">{item.notes}</p>
             </div>
           )}
         </div>
@@ -384,20 +469,50 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange }) {
   );
 }
 
+/* ─── Section panel header ─── */
+function PanelHeader({ title, subtitle, count, gradient, Icon, onViewAll, viewAllColor, badge, badgeVariant }) {
+  return (
+    <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#EDE5DC]">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="relative shrink-0">
+          <div className="absolute inset-0 rounded-xl blur-md opacity-50" style={{ background: gradient.from }} />
+          <div className="relative w-10 h-10 rounded-xl flex items-center justify-center shadow-md"
+            style={{ background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})` }}>
+            <Icon size={17} className="text-white" strokeWidth={2.25} />
+          </div>
+          {badge != null && badge > 0 && (
+            <NotificationBadge count={badge} variant={badgeVariant} floating />
+          )}
+        </div>
+        <div className="min-w-0">
+          <p className="font-black text-[#2D2926] text-sm truncate">{title}</p>
+          <p className="text-[11px] text-[#9D8F85] mt-0.5 font-bold truncate">{subtitle}</p>
+        </div>
+      </div>
+      <button onClick={onViewAll}
+        className="flex items-center gap-1.5 text-[11px] font-black transition-all px-3 py-1.5 rounded-xl shrink-0"
+        style={{ color: viewAllColor, background: `${viewAllColor}10`, border: `1px solid ${viewAllColor}30` }}>
+        عرض الكل
+        <ArrowLeft size={11} strokeWidth={2.25} />
+      </button>
+    </div>
+  );
+}
+
 /* ══════════════════════════════════════════════════════════ */
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [counts,           setCounts]           = useState({ reports: 0, evals: 0, logistics: 0, mina: 0, arafat: 0 });
-  const [reports,          setReports]          = useState([]);
-  const [pendingReports,   setPendingReports]   = useState(0);
-  const [logisticsFeed,    setLogisticsFeed]    = useState([]);
-  const [pendingLogistics, setPendingLogistics] = useState(0);
-  const [activityFeed,     setActivityFeed]     = useState([]);
+  const [counts,            setCounts]            = useState({ reports: 0, evals: 0, logistics: 0, mina: 0, arafat: 0 });
+  const [reports,           setReports]           = useState([]);
+  const [pendingReports,    setPendingReports]    = useState(0);
+  const [logisticsFeed,     setLogisticsFeed]     = useState([]);
+  const [pendingLogistics,  setPendingLogistics]  = useState(0);
+  const [activityFeed,      setActivityFeed]      = useState([]);
   const [selectedReport,    setSelectedReport]    = useState(null);
   const [selectedLogistics, setSelectedLogistics] = useState(null);
   const [centerFilter,      setCenterFilter]      = useState('');
   const [searchQuery,       setSearchQuery]       = useState('');
-  const [clock,           setClock]           = useState({ hijri: '', time: '' });
+  const [clock,             setClock]             = useState({ hijri: '', time: '' });
 
   /* Live clock */
   useEffect(() => {
@@ -413,27 +528,24 @@ export default function AdminDashboard() {
     return () => clearInterval(id);
   }, []);
 
-  /* Delete report */
   const handleDeleteReport = async (id) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا البلاغ؟')) return;
     await deleteDoc(doc(db, 'reports', id));
     setSelectedReport(null);
   };
-
-  /* Change report status */
   const handleStatusChange = async (id, status) => {
-    await updateDoc(doc(db, 'reports', id), { status });
-    setSelectedReport(prev => prev?.id === id ? { ...prev, status } : prev);
+    const current = reports.find(r => r.id === id) || selectedReport || {};
+    const update  = computeStatusUpdate(current, status, TERMINAL_REPORT_STATUSES) || { status };
+    await updateDoc(doc(db, 'reports', id), update);
+    setSelectedReport(prev => prev?.id === id ? { ...prev, ...update, status } : prev);
   };
-
-  /* Change logistics status */
   const handleLogisticsStatusChange = async (id, status) => {
-    await updateDoc(doc(db, 'logistics_requests', id), { status });
-    setLogisticsFeed(prev => prev.map(i => i.id === id ? { ...i, status } : i));
-    setSelectedLogistics(prev => prev?.id === id ? { ...prev, status } : prev);
+    const current = logisticsFeed.find(i => i.id === id) || selectedLogistics || {};
+    const update  = computeStatusUpdate(current, status, TERMINAL_LOGISTICS_STATUSES) || { status };
+    await updateDoc(doc(db, 'logistics_requests', id), update);
+    setLogisticsFeed(prev => prev.map(i => i.id === id ? { ...i, ...update, status } : i));
+    setSelectedLogistics(prev => prev?.id === id ? { ...prev, ...update, status } : prev);
   };
-
-  /* Delete logistics */
   const handleDeleteLogistics = async (id) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا الطلب؟')) return;
     await deleteDoc(doc(db, 'logistics_requests', id));
@@ -479,7 +591,6 @@ export default function AdminDashboard() {
     return () => unsubs.forEach(u => u());
   }, []);
 
-  /* Center list for filter — derived from activityFeed */
   const centerOptions = useMemo(() => {
     const set = new Set();
     activityFeed.forEach(i => {
@@ -493,7 +604,6 @@ export default function AdminDashboard() {
     });
   }, [activityFeed]);
 
-  /* Filtered activity feed */
   const filteredActivity = useMemo(() =>
     centerFilter
       ? activityFeed.filter(i => getActivityCenter(i) === centerFilter)
@@ -502,379 +612,423 @@ export default function AdminDashboard() {
   );
 
   const STATS = [
-    { label: 'البلاغات الميدانية', value: counts.reports,   icon: Warning,       color: '#E53E3E', sub: 'بلاغات نشطة',   nav: '/admin/reports'   },
-    { label: 'التقييمات',           value: counts.evals,     icon: ClipboardText, color: '#A98159', sub: 'جودة الوجبات',  nav: '/admin/analytics' },
-    { label: 'طلبات الإسناد',       value: counts.logistics, icon: Van,           color: '#3182CE', sub: 'طلبات لوجستية', nav: '/admin/logistics' },
-    { label: 'جاهزية منى',         value: counts.mina,      icon: Mountains,     color: '#2F855A', sub: 'تقييمات منى',   nav: '/admin/analytics' },
-    { label: 'جاهزية عرفة',        value: counts.arafat,    icon: Mountains,     color: '#0987A0', sub: 'تقييمات عرفة',  nav: '/admin/analytics' },
+    { label: 'البلاغات الميدانية', value: counts.reports,   Icon: AlertTriangle,  color: '#EF4444', sub: 'بلاغات نشطة',    nav: '/admin/reports'   },
+    { label: 'تقييم الوجبات',       value: counts.evals,     Icon: Utensils,       color: '#A98159', sub: 'جودة الوجبات',   nav: '/admin/phases'    },
+    { label: 'طلبات الإسناد',       value: counts.logistics, Icon: Truck,          color: '#3B82F6', sub: 'طلبات لوجستية',  nav: '/admin/logistics' },
+    { label: 'جاهزية منى',          value: counts.mina,      Icon: ShieldCheck,    color: '#10B981', sub: 'تقييمات منى',    nav: '/admin/analytics' },
+    { label: 'جاهزية عرفة',         value: counts.arafat,    Icon: ShieldCheck,    color: '#1D6FA4', sub: 'تقييمات عرفة',   nav: '/admin/analytics' },
   ];
 
   return (
-    <div className="space-y-6 pb-4">
+    <div className="space-y-5 pb-6" dir="rtl">
 
-      {/* ── Page header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-[#2D2926] leading-tight">نظرة عامة</h1>
-          <p className="text-sm text-[#9D8F85] mt-1 font-medium">مؤشرات الأداء الميداني — موسم الحج ١٤٤٧ هـ</p>
-        </div>
-
-        <div className="flex items-center gap-3 flex-shrink-0 flex-wrap sm:flex-nowrap">
-          {/* Report generator button */}
-          <AdminReportGenerator />
-
-          {/* Hijri clock */}
-          <div className="flex items-stretch rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(169,129,89,0.35)]"
-          style={{ background: 'linear-gradient(135deg, #C4A46E 0%, #A98159 50%, #8B6840 100%)' }}>
-            <div className="flex items-center gap-3 px-5 py-3.5">
-              <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-                <Clock size={15} className="text-white" weight="thin" />
+      {/* Page header */}
+      <PageHeader
+        Icon={LayoutDashboard}
+        title="نظرة عامة"
+        subtitle="مؤشرات الأداء الميداني — موسم الحج ١٤٤٧ هـ"
+        right={
+          <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
+            <AdminReportGenerator />
+            <div className="flex items-stretch rounded-2xl overflow-hidden shadow-[0_4px_16px_rgba(169,129,89,0.25)]"
+              style={{ background: 'linear-gradient(135deg, #C4A46E 0%, #A98159 50%, #8B6840 100%)' }}>
+              <div className="flex items-center gap-2.5 px-4 py-3">
+                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                  <Calendar size={14} className="text-white" strokeWidth={2.25} />
+                </div>
+                <div>
+                  <p className="text-white/70 text-[9px] font-bold leading-none">التاريخ الهجري</p>
+                  <p className="text-white text-[11px] font-black mt-1 leading-tight">{clock.hijri || '...'}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-white/60 text-[10px] font-semibold leading-none">التاريخ الهجري</p>
-                <p className="text-white text-xs font-bold mt-1 leading-tight drop-shadow">{clock.hijri || '...'}</p>
+              <div className="w-px bg-white/20 my-3" />
+              <div className="px-4 py-3 flex flex-col justify-center">
+                <p className="text-white/70 text-[9px] font-bold leading-none">الوقت الآن</p>
+                <p className="text-white text-sm font-black mt-1 tabular-nums leading-tight">{clock.time || '...'}</p>
               </div>
-            </div>
-            <div className="w-px bg-white/20 my-3" />
-            <div className="px-5 py-3.5 flex flex-col justify-center">
-              <p className="text-white/60 text-[10px] font-semibold leading-none">الوقت الآن</p>
-              <p className="text-white text-sm font-extrabold mt-1 tabular-nums leading-tight drop-shadow">{clock.time || '...'}</p>
             </div>
           </div>
-        </div>
-      </div>
+        }
+      />
 
-      {/* ── Stat cards ── */}
+      {/* Stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
         {STATS.map(c => (
           <StatCard key={c.label} {...c} onClick={() => navigate(c.nav)} />
         ))}
       </div>
 
-      {/* ── Search bar ── */}
+      {/* Search bar */}
       <div className="relative">
-        <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-          <Search size={16} className="text-[#9D8F85]" />
-        </div>
+        <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9D8F85]" strokeWidth={2} />
         <input
           type="text"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          placeholder="ابحث برقم البلاغ... (مثال: BLG-0001)"
-          className="w-full bg-white border border-[#EDE5DC] rounded-2xl pr-11 pl-4 py-3.5 text-sm text-[#2D2926] placeholder-[#B5A99E] outline-none focus:border-[#A98159] focus:shadow-[0_0_0_3px_rgba(169,129,89,0.1)] transition-all shadow-[0_2px_8px_rgba(45,41,38,0.06)]"
-          dir="rtl"
+          placeholder="بحث برقم البلاغ، طلب الإسناد، المركز، أو المراقب..."
+          className="w-full pr-11 pl-4 py-3 rounded-2xl border-2 border-[#EDE5DC] bg-white text-sm font-medium text-[#2D2926] placeholder:text-[#C9B8A8] focus:border-[#A98159] focus:outline-none transition-colors shadow-[0_2px_8px_rgba(45,41,38,0.05)]"
         />
         {searchQuery && (
           <button onClick={() => setSearchQuery('')}
-            className="absolute inset-y-0 left-0 flex items-center pl-4 text-[#9D8F85] hover:text-[#2D2926] transition-colors">
-            <X size={14} />
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center text-[#9D8F85] hover:bg-[#F5F0EB] transition-colors">
+            <X size={14} strokeWidth={2.25} />
           </button>
         )}
       </div>
 
-      {/* ── Field reports ── */}
-      <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#EDE5DC]"
-          style={{ background: 'linear-gradient(135deg, #FEF2F2 0%, #fff 55%)' }}>
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg, #FCA5A5, #F87171)' }}>
-                <AlertTriangle size={16} className="text-white" weight="thin" />
-              </div>
-              {pendingReports > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-red-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-md animate-pulse">
-                  {pendingReports}
-                </span>
-              )}
-            </div>
-            <div>
-              <h2 className="font-bold text-[#2D2926] text-sm">البلاغات الميدانية</h2>
-              <p className="text-[11px] text-[#9D8F85] mt-0.5 font-medium">
-                {counts.reports} بلاغ إجمالاً
-                {pendingReports > 0 && (
-                  <span className="text-red-500 font-bold"> · {pendingReports} قيد الانتظار</span>
-                )}
-              </p>
-            </div>
-          </div>
-          <button onClick={() => navigate('/admin/reports')}
-            className="flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-700 transition-colors bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg">
-            عرض الكل
-            <ArrowLeft size={12} weight="thin" />
-          </button>
-        </div>
+      {/* Reports + Logistics: 2-column on desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-        {(() => {
-          const q = searchQuery.trim().toLowerCase();
-          const displayed = q
-            ? reports.filter(r => r.reportNumber?.toLowerCase().includes(q))
-            : reports.slice(0, 6);
-          if (displayed.length === 0) return (
-            <div className="py-14 text-center">
-              <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                <Search size={18} className="text-gray-200" weight="thin" />
+        {/* Field reports */}
+        <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_10px_rgba(45,41,38,0.06)] overflow-hidden">
+          <PanelHeader
+            title="البلاغات الميدانية"
+            subtitle={`${counts.reports} بلاغ ${pendingReports > 0 ? `· ${pendingReports} قيد الانتظار` : ''}`}
+            gradient={{ from: '#F87171', to: '#DC2626' }}
+            Icon={AlertTriangle}
+            onViewAll={() => navigate('/admin/reports')}
+            viewAllColor="#DC2626"
+            badge={pendingReports}
+            badgeVariant="red"
+          />
+
+          {(() => {
+            const q = searchQuery.trim().toLowerCase();
+            const displayed = q
+              ? reports.filter(r =>
+                  (r.reportNumber || '').toString().toLowerCase().includes(q) ||
+                  (r.center        || '').toLowerCase().includes(q) ||
+                  (r.observer      || '').toLowerCase().includes(q))
+              : reports.slice(0, 6);
+            if (displayed.length === 0) return (
+              <div className="py-12 text-center px-5">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
+                  style={{ background: 'linear-gradient(135deg, #FEE2E2, #FECACA)' }}>
+                  <Search size={20} className="text-red-400" strokeWidth={2} />
+                </div>
+                <p className="text-[#9D8F85] text-sm font-bold">
+                  {q ? 'لا توجد نتائج' : 'لا توجد بلاغات بعد'}
+                </p>
               </div>
-              <p className="text-[#9D8F85] text-sm font-medium">
-                {q ? `لم يتم العثور على بلاغ بالرقم "${searchQuery}"` : 'لا توجد بلاغات بعد'}
-              </p>
-            </div>
-          );
-          return displayed.map((r, idx) => {
-            const label  = REPORT_TYPE[r.reportType || r.type] || r.reportType || r.type || 'بلاغ';
-            const sv     = SEV[r.severity];
-            const sb     = STATUS[r.status] || STATUS.pending;
-            const isLast = idx === displayed.length - 1;
-            return (
-              <div key={r.id}
-                className={`group flex items-center gap-4 px-6 py-4 hover:bg-[#FDFAF7] transition-colors ${!isLast ? 'border-b border-[#EDE5DC]' : ''}`}>
-                <button onClick={() => setSelectedReport(r)}
-                  className="flex items-center gap-4 flex-1 text-right min-w-0">
-                  <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
-                    <AlertTriangle size={14} className="text-red-400" weight="thin" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <p className="text-sm font-semibold text-[#2D2926] truncate">{label}</p>
-                      {r.reportNumber && (
-                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md flex-shrink-0"
-                          style={{ background: '#2D292610', color: '#2D2926' }}>
-                          {r.reportNumber}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-[#9D8F85] truncate mt-0.5 font-medium">
-                      {r.observer || '—'} · {r.center || '—'}
-                    </p>
-                  </div>
-                  {sv && (
-                    <span className="hidden sm:inline-flex px-2 py-0.5 rounded-lg text-[11px] font-semibold border flex-shrink-0"
-                      style={{ background: sv.bg, borderColor: sv.border, color: sv.text }}>
-                      {sv.label}
+            );
+            return displayed.map((r, idx) => {
+              const label  = REPORT_TYPE[r.reportType || r.type] || r.reportType || r.type || 'بلاغ';
+              const sv     = SEV[r.severity];
+              const sb     = STATUS[r.status] || STATUS.pending;
+              const SIcon  = sb.Icon;
+              const isLast = idx === displayed.length - 1;
+              const isNew  = isNewReport(r);
+              return (
+                <button key={r.id}
+                  onClick={() => setSelectedReport(r)}
+                  className={`group relative w-full text-right flex items-center gap-3 px-5 py-3.5 transition-colors ${!isLast ? 'border-b border-[#EDE5DC]' : ''} ${isNew ? 'row-pulse-red' : 'hover:bg-red-50/30'}`}>
+                  {/* "جديد" pill on new rows */}
+                  {isNew && (
+                    <span className="absolute top-2 left-2 inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-md text-white shadow-md tabular-nums tracking-wide"
+                      style={{ background: 'linear-gradient(135deg, #EF4444, #DC2626)' }}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                      جديد
                     </span>
                   )}
-                  <div className="flex-shrink-0 text-left space-y-0.5">
-                    <p className="text-[11px] text-[#9D8F85] font-medium">{timeAgo(r.timestamp)}</p>
-                    <p className="text-[11px] font-bold text-[#A98159]">{clockTime(r.timestamp)}</p>
+                  {/* Icon */}
+                  <div className="relative shrink-0">
+                    <div className="absolute inset-0 rounded-xl blur-md bg-red-400 opacity-0 group-hover:opacity-50 transition-opacity" />
+                    <div className="relative w-11 h-11 rounded-xl flex items-center justify-center shadow-sm"
+                      style={{ background: 'linear-gradient(135deg, #F87171, #DC2626)' }}>
+                      <AlertTriangle size={18} className="text-white" strokeWidth={2.25} />
+                    </div>
+                    {isNew && (
+                      <div className="absolute -top-1 -right-1 badge-pulse-red w-4 h-4 rounded-full bg-red-500 border-2 border-white" />
+                    )}
                   </div>
-                </button>
-                <select
-                  value={r.status || 'pending'}
-                  onChange={e => { e.stopPropagation(); handleStatusChange(r.id, e.target.value); }}
-                  onClick={e => e.stopPropagation()}
-                  className="text-[11px] font-bold border rounded-xl px-2 py-1.5 outline-none cursor-pointer flex-shrink-0 transition-all"
-                  style={{ background: sb.bg, borderColor: sb.border, color: sb.text }}>
-                  {Object.entries(STATUS).map(([k, s]) =>
-                    <option key={k} value={k}>{s.label}</option>
-                  )}
-                </select>
-                <button onClick={() => handleDeleteReport(r.id)}
-                  className="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-xl hover:bg-red-50 flex items-center justify-center text-[#C9B8A8] hover:text-red-500 transition-all flex-shrink-0">
-                  <Trash2 size={13} weight="thin" />
-                </button>
-              </div>
-            );
-          });
-        })()}
-      </div>
-
-      {/* ── Logistics requests ── */}
-      <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#EDE5DC]"
-          style={{ background: 'linear-gradient(135deg, #EFF6FF 0%, #fff 55%)' }}>
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg, #60A5FA, #3B82F6)' }}>
-                <Truck size={16} className="text-white" weight="thin" />
-              </div>
-              {pendingLogistics > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-md animate-pulse">
-                  {pendingLogistics}
-                </span>
-              )}
-            </div>
-            <div>
-              <h2 className="font-bold text-[#2D2926] text-sm">طلبات الإسناد</h2>
-              <p className="text-[11px] text-[#9D8F85] mt-0.5 font-medium">
-                {counts.logistics} طلب إجمالاً
-                {pendingLogistics > 0 && (
-                  <span className="text-red-500 font-bold"> · {pendingLogistics} قيد الانتظار</span>
-                )}
-              </p>
-            </div>
-          </div>
-          <button onClick={() => navigate('/admin/logistics')}
-            className="flex items-center gap-1.5 text-xs font-bold text-blue-500 hover:text-blue-700 transition-colors bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg">
-            عرض الكل
-            <ArrowLeft size={12} weight="thin" />
-          </button>
-        </div>
-
-        {logisticsFeed.length === 0 ? (
-          <div className="py-14 text-center">
-            <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <Truck size={18} className="text-gray-200" weight="thin" />
-            </div>
-            <p className="text-[#9D8F85] text-sm font-medium">لا توجد طلبات إسناد بعد</p>
-          </div>
-        ) : (
-          logisticsFeed.slice(0, 6).map((item, idx) => {
-            const sb       = LOGISTICS_STATUS[item.status] || LOGISTICS_STATUS.pending;
-            const CatIcon  = CATEGORY_ICON[item.category] || Truck;
-            const isLast   = idx === Math.min(logisticsFeed.length, 6) - 1;
-            const qtyParts = [
-              item.qtyInternal ? `${item.qtyInternal} داخلي` : null,
-              item.qtyExternal ? `${item.qtyExternal} خارجي` : null,
-            ].filter(Boolean).join(' · ');
-            return (
-              <div key={item.id}
-                className={`group flex items-center gap-4 px-6 py-4 hover:bg-[#F8FBFF] transition-colors ${!isLast ? 'border-b border-[#EDE5DC]' : ''}`}>
-                <button onClick={() => setSelectedLogistics(item)}
-                  className="flex items-center gap-4 flex-1 text-right min-w-0">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-                    <CatIcon size={14} className="text-blue-400" weight="thin" />
-                  </div>
+                  {/* Body */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <p className="text-sm font-semibold text-[#2D2926] truncate">
-                        إسناد {CATEGORY_LABEL[item.category] || ''} · {SUPPORT[item.supportType] || ''}
-                      </p>
-                      {item.requestNumber && (
-                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md flex-shrink-0"
-                          style={{ background: '#3182CE12', color: '#3182CE' }}>
-                          {item.requestNumber}
+                    <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                      <p className="text-sm font-black text-[#2D2926] truncate">{label}</p>
+                      {r.reportNumber && (
+                        <span className={`inline-flex items-center text-[10px] font-black px-1.5 py-0.5 rounded-md tabular-nums tracking-wide ${
+                          isNew ? 'badge-pulse-red text-white' : 'text-red-700 border'
+                        }`}
+                          style={isNew
+                            ? { background: 'linear-gradient(135deg, #EF4444, #DC2626)' }
+                            : { background: '#FEF2F2', borderColor: '#FECACA' }}>
+                          #{r.reportNumber}
+                        </span>
+                      )}
+                      {sv && (
+                        <span className="hidden sm:inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-md border"
+                          style={{ background: sv.bg, borderColor: sv.border, color: sv.text }}>
+                          <span className="w-1 h-1 rounded-full" style={{ background: sv.bar }} />
+                          {sv.label}
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-[#9D8F85] truncate mt-0.5 font-medium">
-                      {item.observer || '—'} · {item.center || '—'}
-                      {qtyParts ? ` · ${qtyParts}` : ''}
-                    </p>
+                    <div className="flex items-center gap-2 text-[11px] text-[#6D6E71] flex-wrap">
+                      <span className="flex items-center gap-1">
+                        <User size={10} strokeWidth={2.25} className="text-[#A98159]" />
+                        <span className="font-bold text-[#2D2926] truncate max-w-[80px]">{r.observer || '—'}</span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Building2 size={10} strokeWidth={2.25} className="text-[#A98159]" />
+                        <span className="font-bold text-[#2D2926] truncate max-w-[80px]">{r.center || '—'}</span>
+                      </span>
+                    </div>
+                    <div className="mt-1">
+                      <StatusTimerChip doc={r} terminalStatuses={TERMINAL_REPORT_STATUSES} statusMeta={STATUS} compact />
+                    </div>
                   </div>
-                  <div className="flex-shrink-0 text-left space-y-0.5">
-                    <p className="text-[11px] text-[#9D8F85] font-medium">{timeAgo(item.timestamp)}</p>
-                    <p className="text-[11px] font-bold text-[#3182CE]">{clockTime(item.timestamp)}</p>
+                  {/* Status pill */}
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-1 rounded-lg border-2"
+                      style={{ background: sb.bg, borderColor: sb.border, color: sb.text }}>
+                      <SIcon size={10} strokeWidth={2.5} />
+                      {sb.label}
+                    </span>
+                    <ChevronRight size={12} className="text-[#C9B8A8] group-hover:text-red-500 transition-colors" strokeWidth={2.25} />
                   </div>
                 </button>
-                <select
-                  value={item.status || 'pending'}
-                  onChange={e => { e.stopPropagation(); handleLogisticsStatusChange(item.id, e.target.value); }}
-                  onClick={e => e.stopPropagation()}
-                  className="text-[11px] font-bold border rounded-xl px-2 py-1.5 outline-none cursor-pointer flex-shrink-0 transition-all"
-                  style={{ background: sb.bg, borderColor: sb.border, color: sb.text }}>
-                  {Object.entries(LOGISTICS_STATUS).map(([k, s]) =>
-                    <option key={k} value={k}>{s.label}</option>
-                  )}
-                </select>
-                <button onClick={() => handleDeleteLogistics(item.id)}
-                  className="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-xl hover:bg-red-50 flex items-center justify-center text-[#C9B8A8] hover:text-red-500 transition-all flex-shrink-0">
-                  <Trash2 size={13} weight="thin" />
-                </button>
+              );
+            });
+          })()}
+        </div>
+
+        {/* Logistics requests */}
+        <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_10px_rgba(45,41,38,0.06)] overflow-hidden">
+          <PanelHeader
+            title="طلبات الإسناد"
+            subtitle={`${counts.logistics} طلب ${pendingLogistics > 0 ? `· ${pendingLogistics} قيد الانتظار` : ''}`}
+            gradient={{ from: '#60A5FA', to: '#2563EB' }}
+            Icon={Truck}
+            onViewAll={() => navigate('/admin/logistics')}
+            viewAllColor="#2563EB"
+            badge={pendingLogistics}
+            badgeVariant="blue"
+          />
+
+          {(() => {
+            const q = searchQuery.trim().toLowerCase();
+            const displayed = q
+              ? logisticsFeed.filter(r =>
+                  (r.requestNumber || '').toString().toLowerCase().includes(q) ||
+                  (r.reportNumber  || '').toString().toLowerCase().includes(q) ||
+                  (r.center        || '').toLowerCase().includes(q) ||
+                  (r.observer      || '').toLowerCase().includes(q))
+              : logisticsFeed.slice(0, 6);
+            if (displayed.length === 0) return (
+              <div className="py-12 text-center px-5">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
+                  style={{ background: 'linear-gradient(135deg, #DBEAFE, #BFDBFE)' }}>
+                  <Search size={20} className="text-blue-400" strokeWidth={2} />
+                </div>
+                <p className="text-[#9D8F85] text-sm font-bold">
+                  {q ? 'لا توجد نتائج' : 'لا توجد طلبات إسناد بعد'}
+                </p>
               </div>
             );
-          })
-        )}
+            return displayed.map((item, idx) => {
+              const sb = LOGISTICS_STATUS[item.status] || LOGISTICS_STATUS.pending;
+              const SIcon = sb.Icon;
+              const st = SUPPORT[item.supportType] || SUPPORT.internal;
+              const SupportIcon = st.Icon;
+              const isLast = idx === displayed.length - 1;
+              const isNew  = isNewLogistics(item);
+              return (
+                <button key={item.id}
+                  onClick={() => setSelectedLogistics(item)}
+                  className={`group relative w-full text-right flex items-center gap-3 px-5 py-3.5 transition-colors ${!isLast ? 'border-b border-[#EDE5DC]' : ''} ${isNew ? 'row-pulse-blue' : 'hover:bg-blue-50/30'}`}>
+                  {/* "جديد" pill on new rows */}
+                  {isNew && (
+                    <span className="absolute top-2 left-2 inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-md text-white shadow-md tabular-nums tracking-wide"
+                      style={{ background: 'linear-gradient(135deg, #3B82F6, #2563EB)' }}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                      جديد
+                    </span>
+                  )}
+                  {/* Icon */}
+                  <div className="relative shrink-0">
+                    <div className="absolute inset-0 rounded-xl blur-md opacity-0 group-hover:opacity-50 transition-opacity"
+                      style={{ background: st.color }} />
+                    <div className="relative w-11 h-11 rounded-xl flex items-center justify-center shadow-sm"
+                      style={{ background: `linear-gradient(135deg, ${st.color}, ${st.color}CC)` }}>
+                      <Package size={18} className="text-white" strokeWidth={2.25} />
+                    </div>
+                    {isNew && (
+                      <div className="absolute -top-1 -right-1 badge-pulse-blue w-4 h-4 rounded-full bg-blue-500 border-2 border-white" />
+                    )}
+                  </div>
+                  {/* Body */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                      <p className="text-sm font-black text-[#2D2926]">طلب إسناد</p>
+                      <span className="inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-md border"
+                        style={{ background: `${st.color}15`, borderColor: `${st.color}40`, color: st.color }}>
+                        <SupportIcon size={9} strokeWidth={2.5} />
+                        {st.short}
+                      </span>
+                      {item.requestNumber && (
+                        <span className={`inline-flex items-center text-[10px] font-black px-1.5 py-0.5 rounded-md tabular-nums tracking-wide ${
+                          isNew ? 'badge-pulse-blue text-white' : 'text-blue-700 border'
+                        }`}
+                          style={isNew
+                            ? { background: 'linear-gradient(135deg, #3B82F6, #2563EB)' }
+                            : { background: '#EFF6FF', borderColor: '#BFDBFE' }}>
+                          #{item.requestNumber}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] text-[#6D6E71] flex-wrap">
+                      <span className="flex items-center gap-1">
+                        <User size={10} strokeWidth={2.25} className="text-[#A98159]" />
+                        <span className="font-bold text-[#2D2926] truncate max-w-[80px]">{item.observer || '—'}</span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Building2 size={10} strokeWidth={2.25} className="text-[#A98159]" />
+                        <span className="font-bold text-[#2D2926] truncate max-w-[80px]">{item.center || '—'}</span>
+                      </span>
+                    </div>
+                    <div className="mt-1">
+                      <StatusTimerChip doc={item} terminalStatuses={TERMINAL_LOGISTICS_STATUSES} statusMeta={LOGISTICS_STATUS} compact />
+                    </div>
+                    {item.reportNumber && (
+                      <div className="mt-1.5 inline-flex items-center gap-1 text-[9px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-1.5 py-0.5">
+                        <AlertTriangle size={9} strokeWidth={2.5} className="text-amber-600" />
+                        بلاغ
+                        <span className="tabular-nums bg-white border border-amber-300 rounded px-1 text-amber-700">#{item.reportNumber}</span>
+                      </div>
+                    )}
+                  </div>
+                  {/* Status pill */}
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-1 rounded-lg border-2"
+                      style={{ background: sb.bg, borderColor: sb.border, color: sb.text }}>
+                      <SIcon size={10} strokeWidth={2.5} />
+                      {sb.label}
+                    </span>
+                    <ChevronRight size={12} className="text-[#C9B8A8] group-hover:text-blue-500 transition-colors" strokeWidth={2.25} />
+                  </div>
+                </button>
+              );
+            });
+          })()}
+        </div>
       </div>
 
-      {/* ── Field activities (evals + readiness) ── */}
-      <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#EDE5DC]"
-          style={{ background: 'linear-gradient(135deg, #FDF8F0 0%, #fff 55%)' }}>
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
-              <ClipboardList size={16} className="text-white" weight="thin" />
+      {/* Today's menu — coverage strip per nationality */}
+      <MenuOverview navigate={navigate} />
+
+      {/* Field activities */}
+      <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_10px_rgba(45,41,38,0.06)] overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#EDE5DC] gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="relative shrink-0">
+              <div className="absolute inset-0 rounded-xl blur-md opacity-50 bg-[#A98159]" />
+              <div className="relative w-10 h-10 rounded-xl flex items-center justify-center shadow-md"
+                style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
+                <ClipboardList size={17} className="text-white" strokeWidth={2.25} />
+              </div>
             </div>
-            <div>
-              <h2 className="font-bold text-[#2D2926] text-sm">النشاطات الميدانية</h2>
-              <p className="text-[11px] text-[#9D8F85] mt-0.5 font-medium">
+            <div className="min-w-0">
+              <p className="font-black text-[#2D2926] text-sm truncate">النشاطات الميدانية</p>
+              <p className="text-[11px] text-[#9D8F85] mt-0.5 font-bold truncate">
                 تقييمات الوجبات وجاهزية المشاعر
               </p>
             </div>
           </div>
 
-          {/* Center filter */}
           {centerOptions.length > 0 && (
-            <div className="relative flex-shrink-0">
-              <div className="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none">
-                <Filter size={11} className="text-[#A98159]" />
-              </div>
+            <div className="relative shrink-0">
+              <Filter size={11} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#A98159] pointer-events-none" strokeWidth={2.25} />
               <select
                 value={centerFilter}
                 onChange={e => setCenterFilter(e.target.value)}
-                className="appearance-none text-[11px] font-bold border border-[#D9CEBC] rounded-xl pl-6 pr-7 py-1.5 outline-none cursor-pointer transition-all bg-[#FDF8F0] text-[#2D2926] hover:border-[#A98159] focus:border-[#A98159]"
+                className="appearance-none text-[11px] font-black border-2 border-[#E8DDD4] rounded-xl pl-7 pr-7 py-1.5 outline-none cursor-pointer transition-all bg-[#FDF8F0] text-[#2D2926] hover:border-[#A98159] focus:border-[#A98159]"
               >
                 <option value="">جميع المراكز</option>
                 {centerOptions.map(c => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
-              <div className="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
-                <ChevronDown size={11} className="text-[#9D8F85]" />
-              </div>
+              <ChevronDown size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-[#9D8F85] pointer-events-none" strokeWidth={2.25} />
             </div>
           )}
         </div>
 
-        {/* Rows */}
         {filteredActivity.length === 0 ? (
-          <div className="py-14 text-center">
-            <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <ClipboardList size={18} className="text-gray-200" weight="thin" />
+          <div className="py-12 text-center px-5">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
+              style={{ background: 'linear-gradient(135deg, #FDF8F0, #F3EAE0)' }}>
+              <ClipboardList size={20} className="text-[#C4A46E]" strokeWidth={2} />
             </div>
-            <p className="text-[#9D8F85] text-sm font-medium">
+            <p className="text-[#9D8F85] text-sm font-bold">
               {centerFilter ? `لا توجد نشاطات لـ ${centerFilter}` : 'لا توجد نشاطات بعد'}
             </p>
           </div>
         ) : (
           filteredActivity.slice(0, 8).map((item, i) => {
-            const isMina  = item._col === 'mina';
-            const isMeal  = item._col === 'meal';
-            const center  = getActivityCenter(item);
+            const isMina = item._col === 'mina';
+            const isMeal = item._col === 'meal';
+            const center   = getActivityCenter(item);
             const observer = getActivityObserver(item);
-            const score   = getActivityScore(item);
+            const score    = getActivityScore(item);
             const scoreSt = score == null ? null
               : score >= 8 ? { bg: '#F0FDF4', text: '#15803D', border: '#86EFAC' }
               : score >= 5 ? { bg: '#FFFBEB', text: '#B45309', border: '#FCD34D' }
               :              { bg: '#FEF2F2', text: '#DC2626', border: '#FCA5A5' };
-            const isLast  = i === Math.min(filteredActivity.length, 8) - 1;
+            const isLast = i === Math.min(filteredActivity.length, 8) - 1;
+
+            const meta = isMeal
+              ? { Icon: Utensils,    color: '#F59E0B', label: 'تقييم جودة الوجبات', nav: '/admin/phases'    }
+              : isMina
+              ? { Icon: ShieldCheck, color: '#10B981', label: 'جاهزية مشعر منى',    nav: '/admin/analytics' }
+              : { Icon: ShieldCheck, color: '#1D6FA4', label: 'جاهزية مشعر عرفة',   nav: '/admin/analytics' };
 
             return (
               <button key={`${item._col}-${item.id}`}
-                onClick={() => navigate('/admin/analytics')}
-                className={`w-full flex items-center gap-4 px-6 py-4 hover:bg-[#FDFAF7] transition-colors text-right ${!isLast ? 'border-b border-[#EDE5DC]' : ''}`}>
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                  isMeal ? 'bg-amber-50' : isMina ? 'bg-green-50' : 'bg-cyan-50'
-                }`}>
-                  {isMeal
-                    ? <Utensils size={14} className="text-amber-500" weight="thin" />
-                    : <Mountain size={14} className={isMina ? 'text-green-500' : 'text-cyan-500'} weight="thin" />
-                  }
+                onClick={() => navigate(meta.nav)}
+                className={`group w-full flex items-center gap-3 px-5 py-3.5 hover:bg-[#FDFAF7] transition-colors text-right ${!isLast ? 'border-b border-[#EDE5DC]' : ''}`}>
+                {/* Icon */}
+                <div className="relative shrink-0">
+                  <div className="absolute inset-0 rounded-xl blur-md opacity-0 group-hover:opacity-50 transition-opacity"
+                    style={{ background: meta.color }} />
+                  <div className="relative w-11 h-11 rounded-xl flex items-center justify-center shadow-sm"
+                    style={{ background: `linear-gradient(135deg, ${meta.color}, ${meta.color}CC)` }}>
+                    <meta.Icon size={18} className="text-white" strokeWidth={2.25} />
+                  </div>
                 </div>
+                {/* Body */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-[#2D2926] truncate">
-                    {isMeal ? 'تقييم جودة الوجبات' : isMina ? 'جاهزية مشعر منى' : 'جاهزية مشعر عرفة'}
-                  </p>
-                  <p className="text-[11px] text-[#9D8F85] truncate mt-0.5 font-medium">
-                    {observer} · {center}
-                  </p>
+                  <p className="text-sm font-black text-[#2D2926] truncate mb-1">{meta.label}</p>
+                  <div className="flex items-center gap-2 text-[11px] text-[#6D6E71] flex-wrap">
+                    <span className="flex items-center gap-1">
+                      <User size={10} strokeWidth={2.25} className="text-[#A98159]" />
+                      <span className="font-bold text-[#2D2926] truncate max-w-[120px]">{observer}</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Building2 size={10} strokeWidth={2.25} className="text-[#A98159]" />
+                      <span className="font-bold text-[#2D2926] truncate max-w-[120px]">{center}</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock size={10} strokeWidth={2.25} className="text-[#A98159]" />
+                      <span className="font-bold">{timeAgo(item.timestamp)}</span>
+                    </span>
+                  </div>
                 </div>
                 {scoreSt && score != null && (
-                  <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold border flex-shrink-0"
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-black border-2 tabular-nums shrink-0"
                     style={{ background: scoreSt.bg, color: scoreSt.text, borderColor: scoreSt.border }}>
-                    {score.toFixed(1)} / 10
+                    <Sparkles size={10} strokeWidth={2.5} />
+                    {score.toFixed(1)}
+                    <span className="text-[9px] opacity-70">/10</span>
                   </span>
                 )}
-                <p className="text-[11px] text-[#9D8F85] flex-shrink-0 font-medium">{timeAgo(item.timestamp)}</p>
+                <ChevronRight size={12} className="text-[#C9B8A8] group-hover:text-[#A98159] transition-colors shrink-0" strokeWidth={2.25} />
               </button>
             );
           })
         )}
       </div>
 
-      {/* Report detail modal */}
+      {/* Modals */}
       {selectedReport && (
         <ReportDetailModal
           report={selectedReport}
@@ -883,8 +1037,6 @@ export default function AdminDashboard() {
           onStatusChange={handleStatusChange}
         />
       )}
-
-      {/* Logistics detail modal */}
       {selectedLogistics && (
         <LogisticsDetailModal
           item={selectedLogistics}
@@ -893,6 +1045,88 @@ export default function AdminDashboard() {
           onStatusChange={handleLogisticsStatusChange}
         />
       )}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   MenuOverview — strip showing menu coverage per nationality
+══════════════════════════════════════════════════════════════════ */
+function MenuOverview({ navigate }) {
+  /* For each nationality, count filled meals out of 21 (7 days × 3 meals) */
+  const summaries = NATIONALITIES.map(n => {
+    let filled = 0;
+    const total = HAJJ_DAYS.length * 3;
+    HAJJ_DAYS.forEach(d => ['breakfast', 'lunch', 'dinner'].forEach(m => {
+      if (hasMealContent(n.key, d.value, m)) filled++;
+    }));
+    return { ...n, filled, total, pct: Math.round((filled / total) * 100) };
+  });
+
+  return (
+    <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_10px_rgba(45,41,38,0.06)] overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#EDE5DC]">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="relative shrink-0">
+            <div className="absolute inset-0 rounded-xl blur-md opacity-50 bg-amber-500" />
+            <div className="relative w-10 h-10 rounded-xl flex items-center justify-center shadow-md"
+              style={{ background: 'linear-gradient(135deg, #F59E0B, #D97706)' }}>
+              <Utensils size={17} className="text-white" strokeWidth={2.25} />
+            </div>
+          </div>
+          <div className="min-w-0">
+            <p className="font-black text-[#2D2926] text-sm truncate">منيو الجنسيات</p>
+            <p className="text-[11px] text-[#9D8F85] mt-0.5 font-bold truncate">
+              تغطية المنيو حسب الجنسية ليوم ذو الحجة والوجبة
+            </p>
+          </div>
+        </div>
+        <button onClick={() => navigate('/admin/menu')}
+          className="flex items-center gap-1.5 text-[11px] font-black transition-all px-3 py-1.5 rounded-xl shrink-0"
+          style={{ color: '#D97706', background: '#FFFBEB', border: '1px solid #FDE68A' }}>
+          إدارة المنيو
+          <ArrowLeft size={11} strokeWidth={2.25} />
+        </button>
+      </div>
+
+      <div className="p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
+        {summaries.map(s => (
+          <button key={s.key}
+            onClick={() => navigate('/admin/menu')}
+            className="group text-right bg-white rounded-xl border-2 border-[#EDE5DC] p-3 hover:shadow-md hover:border-[#D9CEBC] hover:-translate-y-0.5 transition-all">
+            <div className="flex items-center gap-2.5 mb-2">
+              <div className="relative shrink-0">
+                <div className="absolute inset-0 rounded-lg blur-sm opacity-40"
+                  style={{ background: s.color }} />
+                <div className="relative w-9 h-9 rounded-lg flex items-center justify-center text-base shadow-sm"
+                  style={{ background: `linear-gradient(135deg, ${s.color}, ${s.color}CC)` }}>
+                  <span className="drop-shadow">{s.flag}</span>
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-black text-[#2D2926] truncate">{s.label}</p>
+                <p className="text-[9px] text-[#9D8F85] font-bold mt-0.5">{s.centers.length} مركز</p>
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[9px] font-bold text-[#9D8F85]">المنيو</span>
+                <span className="text-[10px] font-black tabular-nums"
+                  style={{ color: s.pct === 100 ? '#10B981' : s.pct > 0 ? s.color : '#9D8F85' }}>
+                  {s.filled}/{s.total}
+                </span>
+              </div>
+              <div className="h-1.5 bg-[#F5F0EB] rounded-full overflow-hidden">
+                <div className="h-full rounded-full transition-all"
+                  style={{
+                    width: `${s.pct}%`,
+                    background: s.pct === 100 ? '#10B981' : s.color,
+                  }} />
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

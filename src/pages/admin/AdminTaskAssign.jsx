@@ -8,13 +8,12 @@ import {
   Flame, Package, ShieldCheck,
 } from 'lucide-react';
 import { Coffee, ForkKnife, Moon } from '@phosphor-icons/react';
+import PageHeader from '../../components/PageHeader.jsx';
 import { CENTERS } from '../../config/centers.js';
+import { NATIONALITIES, NAT_LABEL as NAT_LABEL_SHARED } from '../../config/nationalities.js';
 import { extractCenterNum, extractDay } from '../../hooks/useAssignedTasks.js';
 
 /* ── Helpers ── */
-function range(s, e) {
-  return Array.from({ length: e - s + 1 }, (_, i) => s + i);
-}
 function centerNum(id) {
   return parseInt((id || '').replace(/[^0-9]/g, '')) || 0;
 }
@@ -23,17 +22,6 @@ function fullDate(ts) {
   return (ts.toDate ? ts.toDate() : new Date(ts))
     .toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' });
 }
-
-/* ── Nationality → Centers map ── */
-const NATIONALITIES = [
-  { key: 'indonesia',   label: 'إندونيسيا', flag: '🇮🇩', centers: range(60, 90),             color: '#E53E3E' },
-  { key: 'iraq',        label: 'العراق',     flag: '🇮🇶', centers: range(40, 51),             color: '#D97706' },
-  { key: 'yemen',       label: 'اليمن',      flag: '🇾🇪', centers: range(20, 25),             color: '#2F855A' },
-  { key: 'bangladesh',  label: 'بنغلاديش',   flag: '🇧🇩', centers: [7, 8, 101, 102],          color: '#3182CE' },
-  { key: 'afghanistan', label: 'أفغانستان',  flag: '🇦🇫', centers: [26, ...range(30, 35)],    color: '#7C3AED' },
-  { key: 'bahrain',     label: 'البحرين',    flag: '🇧🇭', centers: [99],                      color: '#0987A0' },
-  { key: 'bohra',       label: 'البهرة',     flag: '🕌',  centers: [5],                       color: '#A98159' },
-];
 
 /* ── Task types ── */
 const TASKS = [
@@ -73,7 +61,7 @@ const TASK_LABEL = {
 };
 const MEAL_LABEL = { breakfast: 'الإفطار', lunch: 'الغداء', dinner: 'العشاء' };
 const MEAL_CATEGORY_LABEL = Object.fromEntries(MEAL_CATEGORIES.map(c => [c.key, c.label]));
-const NAT_LABEL  = Object.fromEntries(NATIONALITIES.map(n => [n.key, n.label]));
+const NAT_LABEL  = NAT_LABEL_SHARED;
 
 function toggle(arr, val) {
   return arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val];
@@ -332,19 +320,11 @@ export default function AdminTaskAssign() {
     <div className="space-y-5">
 
       {/* ── Page header ── */}
-      <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
-        <div className="flex items-center gap-3 px-6 py-4"
-          style={{ background: 'linear-gradient(135deg, #FDF8F0 0%, #fff 55%)' }}>
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
-            <Target size={20} className="text-white" strokeWidth={2} />
-          </div>
-          <div>
-            <h1 className="text-base font-bold text-[#2D2926]">إسناد المهام</h1>
-            <p className="text-xs text-[#9D8F85] mt-0.5">توزيع المهام الميدانية على المراقبين حسب الجنسية والمركز</p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        Icon={Target}
+        title="إسناد المهام"
+        subtitle="توزيع المهام الميدانية على المراقبين حسب الجنسية والمركز"
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
 
@@ -352,7 +332,7 @@ export default function AdminTaskAssign() {
         <div className="lg:col-span-3 space-y-4">
 
           {/* 1. Task selection */}
-          <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
+          <div className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgba(169,129,89,0.14)] overflow-hidden">
             <div className="flex items-center gap-3 px-5 py-3.5 border-b border-[#EDE5DC]"
               style={{ background: 'linear-gradient(135deg, #FDF8F0, #fff 60%)' }}>
               <div className="w-8 h-8 rounded-xl flex items-center justify-center"
@@ -459,7 +439,7 @@ export default function AdminTaskAssign() {
           </div>
 
           {/* 2. Target selection (Nationality or Center) */}
-          <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
+          <div className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgba(169,129,89,0.14)] overflow-hidden">
             {/* Header */}
             <div className="flex items-center gap-3 px-5 py-3.5 border-b border-[#EDE5DC]"
               style={{ background: 'linear-gradient(135deg, #EFF6FF, #fff 60%)' }}>
@@ -600,7 +580,7 @@ export default function AdminTaskAssign() {
           </div>
 
           {/* 3. Date */}
-          <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
+          <div className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgba(169,129,89,0.14)] overflow-hidden">
             <div className="flex items-center gap-3 px-5 py-3.5 border-b border-[#EDE5DC]"
               style={{ background: 'linear-gradient(135deg, #F0FDF4, #fff 60%)' }}>
               <div className="w-8 h-8 rounded-xl flex items-center justify-center"
@@ -666,7 +646,7 @@ export default function AdminTaskAssign() {
 
         {/* ══ PREVIEW ══ */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden sticky top-4">
+          <div className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgba(169,129,89,0.14)] overflow-hidden sticky top-4">
             <div className="px-5 py-3.5 border-b border-[#EDE5DC]"
               style={{ background: 'linear-gradient(135deg, #FDF8F0, #fff 60%)' }}>
               <p className="font-bold text-[#2D2926] text-sm">ملخص الإسناد</p>
