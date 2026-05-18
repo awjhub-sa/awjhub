@@ -471,10 +471,12 @@ function CenterDetail({ tab, summary, onBack }) {
 function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle }) {
   const score = getScore(evalDoc);
   const sst   = scoreStyle(score);
-  const ans   = evalDoc.answers || {};
-  const yes   = Object.values(ans).filter(v => v === 'نعم').length;
-  const no    = Object.values(ans).filter(v => v === 'لا').length;
-  const noQs  = tab.allQs.filter(q => ans[q.id] === 'لا');
+  const ans     = evalDoc.answers || {};
+  const photos  = ans.__photos || {};
+  const detailsMap = ans.__details || {};
+  const yes     = tab.allQs.filter(q => ans[q.id] === 'نعم').length;
+  const no      = tab.allQs.filter(q => ans[q.id] === 'لا').length;
+  const noQs    = tab.allQs.filter(q => ans[q.id] === 'لا');
 
   return (
     <div className="bg-white rounded-2xl border-2 overflow-hidden shadow-[0_2px_12px_rgba(45,41,38,0.07)]"
@@ -627,29 +629,44 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle }) {
                 if (!a) return null;
                 const isYes = a === 'نعم';
                 const isNo  = a === 'لا';
+                const photoUrl = photos[q.id];
+                const detail   = detailsMap[q.id];
                 return (
                   <div key={q.id}
-                    className={`flex items-center gap-2 rounded-xl px-3 py-2 border ${
+                    className={`rounded-xl px-3 py-2 border ${
                       isYes ? 'bg-green-50/60 border-green-200/70'
                       : isNo ? 'bg-red-50/60 border-red-200/70'
                       :        'bg-white border-[#EDE5DC]'
                     }`}>
-                    <span className="text-[10px] font-black flex-shrink-0 tabular-nums"
-                      style={{ color: isYes ? '#15803D' : isNo ? '#B91C1C' : '#6D6E71' }}>
-                      #{q.id}
-                    </span>
-                    <p className="text-xs flex-1 leading-relaxed"
-                      style={{ color: isYes ? '#166534' : isNo ? '#991B1B' : '#2D2926' }}>
-                      {q.text}
-                    </p>
-                    <span className={`text-[10px] font-black flex-shrink-0 flex items-center gap-0.5 ${
-                      isYes ? 'text-green-700' : isNo ? 'text-red-700' : 'text-[#6D6E71]'
-                    }`}>
-                      {isYes
-                        ? <CheckCircle2 size={12} strokeWidth={2.25} />
-                        : isNo ? <XCircle size={12} strokeWidth={2.25} /> : null}
-                      {a}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black flex-shrink-0 tabular-nums"
+                        style={{ color: isYes ? '#15803D' : isNo ? '#B91C1C' : '#6D6E71' }}>
+                        #{q.id}
+                      </span>
+                      <p className="text-xs flex-1 leading-relaxed"
+                        style={{ color: isYes ? '#166534' : isNo ? '#991B1B' : '#2D2926' }}>
+                        {q.text}
+                      </p>
+                      <span className={`text-[10px] font-black flex-shrink-0 flex items-center gap-0.5 ${
+                        isYes ? 'text-green-700' : isNo ? 'text-red-700' : 'text-[#6D6E71]'
+                      }`}>
+                        {isYes
+                          ? <CheckCircle2 size={12} strokeWidth={2.25} />
+                          : isNo ? <XCircle size={12} strokeWidth={2.25} /> : null}
+                        {a}
+                      </span>
+                    </div>
+                    {detail && (
+                      <p className="mt-1.5 text-[11px] text-[#6D6E71] bg-white border border-[#EDE5DC] rounded px-2 py-1 leading-snug">
+                        {detail}
+                      </p>
+                    )}
+                    {photoUrl && (
+                      <a href={photoUrl} target="_blank" rel="noreferrer" className="mt-2 block">
+                        <img src={photoUrl} alt={`q${q.id}`}
+                          className="rounded-lg border border-[#EDE5DC] max-h-44 object-cover hover:opacity-90 transition-opacity" />
+                      </a>
+                    )}
                   </div>
                 );
               })}

@@ -738,19 +738,19 @@ function DetailCard({ record, type, accent }) {
   const allQs = QUESTION_BANK[type] || [];
   const qsById = new Map(allQs.map(q => [String(q.id), q]));
   const ans = record.answers ?? {};
-  const noQs = [];
-  for (const [k, v] of Object.entries(ans)) {
-    if (v !== 'لا') continue;
-    const q = qsById.get(String(k));
-    if (q) noQs.push(q);
-  }
+  const photos = ans.__photos ?? {};
+  const detailsMap = ans.__details ?? {};
   const score = getRecordScore(record);
   const observer = record.observer ?? record.observerName ?? '—';
   const dateStr = record.scheduled_date ?? record.scheduledDate ?? '—';
   const mealLbl = record.mealType ? (MEAL_LABELS[record.mealType] ?? record.mealType) : '';
 
+  const yesCount = allQs.filter(q => ans[q.id] === 'نعم').length;
+  const noCount  = allQs.filter(q => ans[q.id] === 'لا').length;
+
   return (
-    <div className="rounded-2xl border border-[#EDE5DC] overflow-hidden bg-white">
+    <div className="rounded-2xl border border-[#EDE5DC] overflow-hidden bg-white"
+      style={{ breakInside: 'avoid' }}>
       {/* Card head */}
       <div className="px-4 py-3 flex items-center justify-between gap-3 border-b border-[#EDE5DC]"
         style={{ background: '#FDF8F0' }}>
@@ -766,39 +766,72 @@ function DetailCard({ record, type, accent }) {
             </p>
           </div>
         </div>
-        {score != null && (
-          <div className="px-3 py-1 rounded-full text-xs font-bold tabular-nums text-white"
-            style={{ background: accent }}>
-            {score.toFixed(1)}/10
-          </div>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200 tabular-nums">
+            ✓ {yesCount}
+          </span>
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 tabular-nums">
+            ✗ {noCount}
+          </span>
+          {score != null && (
+            <div className="px-3 py-1 rounded-full text-xs font-bold tabular-nums text-white"
+              style={{ background: accent }}>
+              {score.toFixed(1)}/10
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* "No" answers */}
-      <div className="p-4">
-        {noQs.length > 0 ? (
-          <>
-            <div className="flex items-center gap-1.5 mb-2.5">
-              <div className="w-1 h-4 rounded-full bg-red-500" />
-              <p className="text-xs font-bold text-red-700">
-                الأسئلة المُجابة بـ «لا» ({noQs.length})
-              </p>
+      {/* All questions with answers + photos */}
+      <div className="p-4 space-y-2">
+        {allQs.map(q => {
+          const a = ans[q.id];
+          const photoUrl = photos[q.id];
+          const detail = detailsMap[q.id];
+          const isYes = a === 'نعم';
+          const isNo  = a === 'لا';
+          return (
+            <div key={q.id}
+              className={`rounded-lg px-3 py-2.5 border ${
+                isYes ? 'bg-green-50/40 border-green-200/60'
+              : isNo  ? 'bg-red-50/40 border-red-200/60'
+              :         'bg-[#FAFAF8] border-[#EDE5DC]'
+              }`}
+              style={{ breakInside: 'avoid' }}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-2 min-w-0 flex-1">
+                  <span className="inline-block text-[10px] font-black px-1.5 py-0.5 rounded-md text-white tabular-nums shrink-0 mt-0.5"
+                    style={{ background: accent }}>
+                    {q.id}
+                  </span>
+                  <p className="text-[12px] text-[#2D2926] leading-relaxed">{q.text}</p>
+                </div>
+                {a && (
+                  <span className={`inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-1 rounded-full shrink-0 ${
+                    isYes ? 'bg-green-500 text-white'
+                  : isNo  ? 'bg-red-500 text-white'
+                  :         'bg-gray-200 text-gray-700'
+                  }`}>
+                    {isYes && <CheckCircle2 size={11} strokeWidth={2.5} />}
+                    {a}
+                  </span>
+                )}
+              </div>
+              {detail && (
+                <p className="mt-2 text-[11px] text-[#6D6E71] bg-white border border-[#EDE5DC] rounded px-2 py-1 leading-snug">
+                  {detail}
+                </p>
+              )}
+              {photoUrl && (
+                <a href={photoUrl} target="_blank" rel="noreferrer"
+                  className="mt-2 block">
+                  <img src={photoUrl} alt={`q${q.id}`}
+                    className="rounded-lg border border-[#EDE5DC] max-h-48 object-cover" />
+                </a>
+              )}
             </div>
-            <ul className="space-y-2">
-              {noQs.map(q => (
-                <li key={q.id}
-                  className="text-sm text-[#2D2926] bg-red-50 border border-red-200/60 rounded-lg px-3 py-2 leading-relaxed">
-                  {q.text}
-                </li>
-              ))}
-            </ul>
-          </>
-        ) : (
-          <div className="flex items-center gap-2 text-sm font-bold text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-            <CheckCircle2 size={14} strokeWidth={2.25} />
-            لا توجد أسئلة مُجابة بـ «لا» في هذا السجل
-          </div>
-        )}
+          );
+        })}
       </div>
     </div>
   );
