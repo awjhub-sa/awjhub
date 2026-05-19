@@ -83,6 +83,9 @@ const REPORT_TYPE_MAP = {
   quality:  { label: 'مشكلة في الجودة',   Icon: Star,        color: '#EAB308' },
   hygiene:  { label: 'مخالفة صحية',       Icon: Thermometer, color: '#10B981' },
 };
+const MEAL_LABEL = { breakfast: 'الإفطار', lunch: 'الغداء', dinner: 'العشاء' };
+const MEAL_COLOR = { breakfast: '#F59E0B', lunch: '#EF4444', dinner: '#6366F1' };
+
 const getRT = r => REPORT_TYPE_MAP[r.reportType] || REPORT_TYPE_MAP[r.type] || { label: r.reportType || 'بلاغ', Icon: FileText, color: '#6D6E71' };
 const getSV = r => SEVERITY_MAP[r.severity] || null;
 const getSB = r => STATUS_LOOKUP[r.status] || STATUS_OPTIONS[0];
@@ -373,6 +376,12 @@ function ReportCard({ report: r, isOpen, onToggle, onStatus, onEdit, onDelete, o
                 style={{ background: sv.bg, borderColor: sv.border, color: sv.text }}>
                 <span className="w-1.5 h-1.5 rounded-full" style={{ background: sv.bar }} />
                 {sv.label}
+              </span>
+            )}
+            {r.mealType && MEAL_LABEL[r.mealType] && (
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-md text-white inline-flex items-center"
+                style={{ background: MEAL_COLOR[r.mealType] }}>
+                {MEAL_LABEL[r.mealType]}
               </span>
             )}
           </div>

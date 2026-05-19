@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronRight, AlertTriangle, Zap, Image as ImageIcon, Video, Upload, X, CheckCircle2, Sparkles } from 'lucide-react';
+import { ChevronRight, AlertTriangle, Zap, Image as ImageIcon, Video, Upload, X, CheckCircle2, Sparkles, Coffee, Sun, Moon } from 'lucide-react';
 import { db, serverTimestamp, uploadFile, STORAGE_BUCKETS } from '../../lib/db.js';
 import { compressImage } from '../../lib/imageCompression.js';
 import { useAuth } from "../../context/AuthContext.jsx";
@@ -36,6 +36,12 @@ const REPORT_TYPES = [
   { id: 26, title: 'أخرى', severity: 'low' },
 ];
 
+const MEAL_OPTIONS = [
+  { key: 'breakfast', label: 'الإفطار', Icon: Coffee, color: '#F59E0B' },
+  { key: 'lunch',     label: 'الغداء',  Icon: Sun,    color: '#EF4444' },
+  { key: 'dinner',    label: 'العشاء',  Icon: Moon,   color: '#6366F1' },
+];
+
 const SEVERITY_MAP = {
   high: { label: 'عالي الخطورة', color: 'bg-[#BA1A1A]', text: 'text-[#BA1A1A]', border: 'border-[#BA1A1A]', light: 'bg-red-50' },
   medium: { label: 'متوسط الخطورة', color: 'bg-orange-500', text: 'text-orange-500', border: 'border-orange-500', light: 'bg-orange-50' },
@@ -50,6 +56,7 @@ export default function SupReport() {
   const videoInputRef = useRef(null);
 
   const selectedCenter = state?.centerId || '—'; // تحديد المركز المختار للمشرف
+  const [mealType, setMealType] = useState('');
   const [selectedReport, setSelectedReport] = useState('');
   const [description, setDescription] = useState('');
   const [severity, setSeverity] = useState('medium');
@@ -65,11 +72,15 @@ export default function SupReport() {
   };
 
   const handleSubmit = async () => {
+    if (!mealType) {
+        alert('اختر الوجبة أولاً (فطور / غداء / عشاء)');
+        return;
+    }
     if (!selectedReport || !description || !imageFile || !videoFile) {
         alert('الرجاء إكمال كافة المتطلبات (النوع، الوصف، الصورة، والفيديو)');
         return;
     }
-    
+
     setLoading(true);
     try {
       const ts = Date.now();
@@ -84,6 +95,7 @@ export default function SupReport() {
         observer: profile?.nameAr || profile?.name || 'مشرف',
         center: selectedCenter,
         caterer: getCaterer(selectedCenter) || '—',
+        mealType,
         reportType: selectedReport,
         severity,
         description,
@@ -151,6 +163,28 @@ export default function SupReport() {
           </div>
 
           <div className="bg-white rounded-3xl p-6 border border-[#D1C4B9] shadow-sm space-y-6">
+            <div>
+              <label className="text-xs font-bold text-[#A98159] mb-3 block tracking-wide">الوجبة *</label>
+              <div className="grid grid-cols-3 gap-2.5">
+                {MEAL_OPTIONS.map(m => {
+                  const active = mealType === m.key;
+                  const MIcon = m.Icon;
+                  return (
+                    <button key={m.key} type="button"
+                      onClick={() => setMealType(m.key)}
+                      className={`relative flex flex-col items-center gap-1.5 py-3 rounded-2xl border-2 transition-all ${
+                        active ? 'text-white scale-[1.02] shadow-md' : 'bg-white text-[#6D6E71] border-[#E8DDD4] hover:border-[#A98159]/40'
+                      }`}
+                      style={active ? { background: `linear-gradient(135deg, ${m.color}, ${m.color}CC)`, borderColor: m.color } : undefined}
+                    >
+                      <MIcon size={20} strokeWidth={2.25} />
+                      <span className="text-xs font-bold">{m.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div>
               <label className="text-xs font-bold text-[#A98159] mb-3 block tracking-wide">نوع المخالفة/البلاغ</label>
               <select value={selectedReport} onChange={handleReportChange}

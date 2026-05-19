@@ -39,6 +39,7 @@ CREATE TABLE public.reports (
   observer           text,
   center             text,
   caterer            text,
+  meal_type          text,
   report_type        text,
   severity           text,
   description        text,

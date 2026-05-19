@@ -25,6 +25,9 @@ const REPORT_TYPE = {
   shortage: 'نقص كميات', delay: 'تأخر توزيع', quality: 'مشكلة جودة', hygiene: 'مخالفة صحية',
 };
 
+const MEAL_LABEL = { breakfast: 'الإفطار', lunch: 'الغداء', dinner: 'العشاء' };
+const MEAL_COLOR = { breakfast: '#F59E0B', lunch: '#EF4444', dinner: '#6366F1' };
+
 const SEV = {
   high:   { label: 'عالية',   bg: '#FEF2F2', text: '#DC2626', border: '#FCA5A5', bar: '#EF4444' },
   urgent: { label: 'عاجل',    bg: '#FEF2F2', text: '#DC2626', border: '#FCA5A5', bar: '#DC2626' },
@@ -225,6 +228,7 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange }) {
             {[
               { lbl: 'المراقب', val: report.observer, Icon: User,     color: '#A98159' },
               { lbl: 'المركز',  val: report.center,   Icon: Building2,color: '#DC2626' },
+              { lbl: 'الوجبة',  val: MEAL_LABEL[report.mealType] || '—', Icon: Utensils, color: MEAL_COLOR[report.mealType] || '#A98159' },
               { lbl: 'الوقت',   val: clockTime(report.timestamp), Icon: Calendar, color: '#6D6E71' },
             ].map(c => (
               <div key={c.lbl} className="bg-white rounded-xl border border-[#EDE5DC] p-2.5 flex items-center gap-2">
@@ -768,6 +772,12 @@ export default function AdminDashboard() {
                           style={{ background: sv.bg, borderColor: sv.border, color: sv.text }}>
                           <span className="w-1 h-1 rounded-full" style={{ background: sv.bar }} />
                           {sv.label}
+                        </span>
+                      )}
+                      {r.mealType && MEAL_LABEL[r.mealType] && (
+                        <span className="inline-flex items-center text-[9px] font-black px-1.5 py-0.5 rounded-md text-white"
+                          style={{ background: MEAL_COLOR[r.mealType] || '#A98159' }}>
+                          {MEAL_LABEL[r.mealType]}
                         </span>
                       )}
                     </div>
