@@ -92,11 +92,11 @@ export default function Login() {
 
   const idProgress = Math.min(idNumber.length / 10, 1);
   const ISLAMIC_PATTERN = `url("data:image/svg+xml;utf8,${encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'>
-       <g fill='none' stroke='%23A98159' stroke-width='0.6' opacity='0.18'>
-         <path d='M32 4 L44 20 L60 32 L44 44 L32 60 L20 44 L4 32 L20 20 Z'/>
-         <path d='M32 14 L40 24 L50 32 L40 40 L32 50 L24 40 L14 32 L24 24 Z'/>
-         <circle cx='32' cy='32' r='3'/>
+    `<svg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72'>
+       <g fill='none' stroke='#A98159' stroke-width='1' opacity='0.35'>
+         <path d='M36 6 L46 22 L62 32 L52 48 L36 66 L20 48 L10 32 L26 22 Z'/>
+         <path d='M36 16 L42 26 L52 32 L46 42 L36 56 L26 42 L20 32 L30 26 Z'/>
+         <circle cx='36' cy='36' r='3'/>
        </g>
      </svg>`,
   )}")`;
@@ -115,9 +115,9 @@ export default function Login() {
         className="absolute inset-0 pointer-events-none"
         style={{
           backgroundImage: ISLAMIC_PATTERN,
-          backgroundSize: '64px 64px',
-          maskImage: 'radial-gradient(ellipse at center, rgba(0,0,0,0.55) 0%, transparent 75%)',
-          WebkitMaskImage: 'radial-gradient(ellipse at center, rgba(0,0,0,0.55) 0%, transparent 75%)',
+          backgroundSize: '72px 72px',
+          maskImage: 'radial-gradient(ellipse at center, black 0%, black 35%, transparent 80%)',
+          WebkitMaskImage: 'radial-gradient(ellipse at center, black 0%, black 35%, transparent 80%)',
         }}
       />
       {/* Warm corner glows */}
