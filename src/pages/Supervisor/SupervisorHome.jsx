@@ -897,13 +897,6 @@ export default function SupervisorHome() {
           </div>
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             <div className="space-y-3">
-              <p className="text-[10px] font-black text-[#A98159] uppercase tracking-[0.2em] px-2 text-right">معلومات الحساب</p>
-              <div className="bg-white border border-[#D1C4B9] rounded-2xl p-4 flex items-center gap-4 shadow-sm">
-                <div className="w-10 h-10 rounded-xl bg-[#FDF8F0] flex items-center justify-center text-[#A98159]"><Mail size={18} /></div>
-                <div className="min-w-0 text-right"><p className="text-[10px] text-[#6D6E71] font-bold">البريد الإلكتروني</p><p className="text-sm font-bold text-[#2D2926] truncate">{user?.email}</p></div>
-              </div>
-            </div>
-            <div className="space-y-3">
               <div className="flex items-center justify-between px-2">
                  <span className="bg-[#A98159]/10 text-[#A98159] text-[10px] font-bold px-2 py-0.5 rounded-full">{assignedCenters.length} مراكز</span>
                  <p className="text-[10px] font-black text-[#A98159] uppercase tracking-[0.2em]">نطاق الإشراف</p>
