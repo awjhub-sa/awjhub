@@ -90,18 +90,39 @@ export default function Login() {
 
   const numOnly = (v) => v.replace(/\D/g, '');
 
+  const idProgress = Math.min(idNumber.length / 10, 1);
+  const ISLAMIC_PATTERN = `url("data:image/svg+xml;utf8,${encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'>
+       <g fill='none' stroke='%23A98159' stroke-width='0.6' opacity='0.18'>
+         <path d='M32 4 L44 20 L60 32 L44 44 L32 60 L20 44 L4 32 L20 20 Z'/>
+         <path d='M32 14 L40 24 L50 32 L40 40 L32 50 L24 40 L14 32 L24 24 Z'/>
+         <circle cx='32' cy='32' r='3'/>
+       </g>
+     </svg>`,
+  )}")`;
+
   return (
     <div
       dir="rtl"
       className="min-h-screen flex flex-col items-center justify-center px-4 py-10 font-arabic relative overflow-hidden"
-      style={{ 
-        background: 'radial-gradient(ellipse at 30% 20%, #F5EDE0 0%, #FDFCFB 65%)', 
-        fontFamily: "'IBM Plex Sans Arabic', Tahoma, sans-serif" 
+      style={{
+        background: 'radial-gradient(ellipse at 30% 20%, #F5EDE0 0%, #FDFCFB 65%)',
+        fontFamily: "'IBM Plex Sans Arabic', Tahoma, sans-serif",
       }}
     >
-      {/* عناصر زخرفية في الخلفية */}
-      <div className="absolute top-[-80px] right-[-80px] w-72 h-72 rounded-full bg-[#A98159]/5 pointer-events-none" />
-      <div className="absolute bottom-[-60px] left-[-60px] w-56 h-56 rounded-full bg-[#A98159]/5 pointer-events-none" />
+      {/* Islamic geometric pattern overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: ISLAMIC_PATTERN,
+          backgroundSize: '64px 64px',
+          maskImage: 'radial-gradient(ellipse at center, rgba(0,0,0,0.55) 0%, transparent 75%)',
+          WebkitMaskImage: 'radial-gradient(ellipse at center, rgba(0,0,0,0.55) 0%, transparent 75%)',
+        }}
+      />
+      {/* Warm corner glows */}
+      <div className="absolute top-[-100px] right-[-100px] w-80 h-80 rounded-full bg-[#A98159]/10 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-[-80px] left-[-80px] w-72 h-72 rounded-full bg-[#C4A46E]/10 blur-3xl pointer-events-none" />
 
       {/* الشعار والهوية */}
       <div className="mb-8 text-center" style={{ animation: 'fadeUp 0.5s ease forwards' }}>
@@ -114,8 +135,13 @@ export default function Login() {
       {/* بطاقة تسجيل الدخول */}
       <form
         onSubmit={handleLogin}
-        className="w-full max-w-sm bg-white rounded-2xl shadow-[0_8px_32px_rgba(45,41,38,0.12)] border border-[#D1C4B9] overflow-hidden"
-        style={{ animation: 'fadeUp 0.6s ease 0.1s both' }}
+        className="relative w-full max-w-sm rounded-3xl overflow-hidden backdrop-blur-xl"
+        style={{
+          background: 'linear-gradient(160deg, rgba(255,255,255,0.85), rgba(253,248,240,0.75))',
+          border: '1px solid rgba(209,196,185,0.6)',
+          boxShadow: '0 20px 50px -12px rgba(169,129,89,0.25), 0 8px 24px -6px rgba(45,41,38,0.08)',
+          animation: 'fadeUp 0.6s ease 0.1s both',
+        }}
       >
         <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg,#C4A46E,#A98159,#8B6840)' }} />
 
@@ -153,10 +179,15 @@ export default function Login() {
 
           {/* حقل رقم الهوية */}
           <div>
-            <label className="block text-sm font-medium text-[#2D2926] mb-1.5">رقم الهوية</label>
+            <label className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-[#2D2926]">رقم الهوية</span>
+              <span className="text-[11px] font-bold tabular-nums text-[#A98159]">
+                {idNumber.length} / 10
+              </span>
+            </label>
             <div className="relative">
-              <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                <Fingerprint size={17} className="text-[#A98159]" strokeWidth={2} />
+              <div className="absolute inset-y-0 right-3.5 flex items-center pointer-events-none">
+                <Fingerprint size={19} className="text-[#A98159]" strokeWidth={2} />
               </div>
               <input
                 type="text"
@@ -169,11 +200,23 @@ export default function Login() {
                 inputMode="numeric"
                 maxLength={10}
                 autoFocus
-                className="w-full pr-10 pl-4 py-3 border-2 border-[#D1C4B9] rounded-xl text-base text-[#2D2926] placeholder-[#6D6E71]/30 focus:border-[#A98159] focus:ring-2 focus:ring-[#A98159]/20 outline-none transition-all tabular-nums tracking-wider"
+                className="w-full pr-11 pl-4 py-4 border-2 border-[#D1C4B9] rounded-2xl text-xl text-[#2D2926] placeholder-[#6D6E71]/30 focus:border-[#A98159] focus:ring-4 focus:ring-[#A98159]/15 outline-none transition-all tabular-nums tracking-[0.2em] text-center font-bold bg-white/70"
                 dir="ltr"
               />
             </div>
-            <p className="text-[10px] text-[#9D8F85] mt-1.5 text-center">
+            {/* Progress bar */}
+            <div className="mt-2 h-1.5 bg-[#F5EDE0] rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-300"
+                style={{
+                  width: `${idProgress * 100}%`,
+                  background: idProgress === 1
+                    ? 'linear-gradient(90deg, #16A34A, #15803D)'
+                    : 'linear-gradient(90deg, #C4A46E, #A98159)',
+                }}
+              />
+            </div>
+            <p className="text-[10px] text-[#9D8F85] mt-2 text-center">
               أدخل رقم هويتك المسجل في النظام (10 أرقام)
             </p>
           </div>
