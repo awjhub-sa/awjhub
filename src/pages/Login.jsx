@@ -91,38 +91,20 @@ export default function Login() {
   const numOnly = (v) => v.replace(/\D/g, '');
 
   const idProgress = Math.min(idNumber.length / 10, 1);
-  const ISLAMIC_PATTERN = `url("data:image/svg+xml;utf8,${encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72'>
-       <g fill='none' stroke='#A98159' stroke-width='1' opacity='0.35'>
-         <path d='M36 6 L46 22 L62 32 L52 48 L36 66 L20 48 L10 32 L26 22 Z'/>
-         <path d='M36 16 L42 26 L52 32 L46 42 L36 56 L26 42 L20 32 L30 26 Z'/>
-         <circle cx='36' cy='36' r='3'/>
-       </g>
-     </svg>`,
-  )}")`;
 
   return (
     <div
       dir="rtl"
-      className="min-h-screen flex flex-col items-center justify-center px-4 py-10 font-arabic relative overflow-hidden"
-      style={{
-        background: 'radial-gradient(ellipse at 30% 20%, #F5EDE0 0%, #FDFCFB 65%)',
-        fontFamily: "'IBM Plex Sans Arabic', Tahoma, sans-serif",
-      }}
+      className="min-h-screen flex flex-col items-center justify-center px-4 py-10 font-arabic relative overflow-hidden bg-[#FDFCFB]"
+      style={{ fontFamily: "'IBM Plex Sans Arabic', Tahoma, sans-serif" }}
     >
-      {/* Islamic geometric pattern overlay */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage: ISLAMIC_PATTERN,
-          backgroundSize: '72px 72px',
-          maskImage: 'radial-gradient(ellipse at center, black 0%, black 35%, transparent 80%)',
-          WebkitMaskImage: 'radial-gradient(ellipse at center, black 0%, black 35%, transparent 80%)',
-        }}
-      />
-      {/* Warm corner glows */}
-      <div className="absolute top-[-100px] right-[-100px] w-80 h-80 rounded-full bg-[#A98159]/10 blur-3xl pointer-events-none" />
-      <div className="absolute bottom-[-80px] left-[-80px] w-72 h-72 rounded-full bg-[#C4A46E]/10 blur-3xl pointer-events-none" />
+      {/* Mesh gradient — drifting warm blobs */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="mesh-blob mesh-blob-1" />
+        <div className="mesh-blob mesh-blob-2" />
+        <div className="mesh-blob mesh-blob-3" />
+        <div className="mesh-blob mesh-blob-4" />
+      </div>
 
       {/* الشعار والهوية */}
       <div className="mb-8 text-center" style={{ animation: 'fadeUp 0.5s ease forwards' }}>
@@ -354,6 +336,58 @@ export default function Login() {
           40%, 80% { transform: translateX(3px); }
         }
         .animate-shake { animation: shake 0.3s ease-in-out; }
+
+        .mesh-blob {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(80px);
+          opacity: 0.7;
+          will-change: transform;
+        }
+        .mesh-blob-1 {
+          width: 520px; height: 520px;
+          top: -150px; right: -120px;
+          background: radial-gradient(circle, #E8C99B 0%, transparent 70%);
+          animation: drift1 22s ease-in-out infinite;
+        }
+        .mesh-blob-2 {
+          width: 460px; height: 460px;
+          top: 30%; left: -140px;
+          background: radial-gradient(circle, #D4A574 0%, transparent 70%);
+          animation: drift2 28s ease-in-out infinite;
+        }
+        .mesh-blob-3 {
+          width: 580px; height: 580px;
+          bottom: -180px; right: 10%;
+          background: radial-gradient(circle, #F2D9B5 0%, transparent 70%);
+          animation: drift3 26s ease-in-out infinite;
+        }
+        .mesh-blob-4 {
+          width: 380px; height: 380px;
+          bottom: 20%; left: 30%;
+          background: radial-gradient(circle, #C4A46E 0%, transparent 70%);
+          opacity: 0.45;
+          animation: drift4 32s ease-in-out infinite;
+        }
+        @keyframes drift1 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50%      { transform: translate(-40px, 60px) scale(1.1); }
+        }
+        @keyframes drift2 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50%      { transform: translate(50px, -40px) scale(0.95); }
+        }
+        @keyframes drift3 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50%      { transform: translate(-30px, -50px) scale(1.05); }
+        }
+        @keyframes drift4 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50%      { transform: translate(40px, 40px) scale(1.1); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .mesh-blob { animation: none; }
+        }
       `}</style>
     </div>
   );
