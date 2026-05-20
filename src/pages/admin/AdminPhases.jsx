@@ -640,13 +640,29 @@ export default function AdminPhases() {
       )}
 
       {lightboxSrc && <PhotoLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
-      {evalDetail && <EvalDetailModal record={evalDetail} onClose={() => setEvalDetail(null)} />}
+      {evalDetail && (
+        <EvalDetailModal
+          record={evalDetail}
+          onClose={() => setEvalDetail(null)}
+          onDelete={async (id) => {
+            const ok = window.confirm('هل أنت متأكد من حذف هذا التقييم نهائياً؟ لا يمكن التراجع عن هذا الإجراء.');
+            if (!ok) return;
+            try {
+              await db.meal_evaluations.delete(id);
+              setEvalDetail(null);
+            } catch (e) {
+              console.error('[AdminPhases delete eval]', e);
+              alert(`فشل الحذف: ${e?.message || e}`);
+            }
+          }}
+        />
+      )}
       <style>{`.no-scrollbar::-webkit-scrollbar { display: none; }`}</style>
     </div>
   );
 }
 
-function EvalDetailModal({ record, onClose }) {
+function EvalDetailModal({ record, onClose, onDelete }) {
   if (!record) return null;
   const score = (() => {
     if (record.scoreOutOf10 != null) return Number(record.scoreOutOf10);
@@ -699,10 +715,17 @@ function EvalDetailModal({ record, onClose }) {
               </p>
             </div>
           </div>
-          <button onClick={onClose}
-            className="w-9 h-9 rounded-xl border border-[#EDE5DC] flex items-center justify-center hover:bg-[#F5F0EB] transition-colors shrink-0">
-            <X size={15} className="text-[#6D6E71]" />
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button onClick={() => onDelete?.(record.id)}
+              title="حذف التقييم"
+              className="w-9 h-9 rounded-xl border border-red-200 bg-red-50 flex items-center justify-center hover:bg-red-500 hover:border-red-500 group/del transition-colors">
+              <Trash2 size={14} className="text-red-500 group-hover/del:text-white" strokeWidth={2.25} />
+            </button>
+            <button onClick={onClose}
+              className="w-9 h-9 rounded-xl border border-[#EDE5DC] flex items-center justify-center hover:bg-[#F5F0EB] transition-colors">
+              <X size={15} className="text-[#6D6E71]" />
+            </button>
+          </div>
         </div>
 
         <div className="p-6 space-y-4">
