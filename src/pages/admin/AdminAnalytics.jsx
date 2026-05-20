@@ -245,6 +245,7 @@ export default function AdminAnalytics() {
           tab={tab}
           summary={activeSummary}
           onBack={() => setSelectedCenter(null)}
+          onDelete={handleDeleteEval}
         />
       ) : (
         <>
@@ -425,7 +426,7 @@ function CenterCard({ summary, tab, onSelect }) {
   );
 }
 
-function CenterDetail({ tab, summary, onBack }) {
+function CenterDetail({ tab, summary, onBack, onDelete }) {
   const [openEval, setOpenEval] = useState(summary.evaluations[0]?.id || null);
   const centerNum = (summary.center.match(/\d+\S*/) || ['—'])[0];
   const sst = scoreStyle(summary.avgScore);
@@ -475,7 +476,7 @@ function CenterDetail({ tab, summary, onBack }) {
             evalDoc={ev} tab={tab} index={idx + 1}
             isOpen={openEval === ev.id}
             onToggle={() => setOpenEval(openEval === ev.id ? null : ev.id)}
-            onDelete={() => handleDeleteEval(ev.id)} />
+            onDelete={() => onDelete?.(ev.id)} />
         ))}
       </div>
     </div>
