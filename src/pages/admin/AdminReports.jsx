@@ -130,6 +130,7 @@ export default function AdminReports() {
       ...(form.description && { description: form.description }),
     });
   };
+  const handleSaveNotes = (id, adminNotes) => db.reports.update(id, { adminNotes });
   const handleDelete = async (id) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا البلاغ؟ لا يمكن التراجع عن هذا الإجراء.')) return;
     await db.reports.delete(id);
@@ -274,6 +275,7 @@ export default function AdminReports() {
             onEdit={() => setEditingReport(r)}
             onDelete={() => handleDelete(r.id)}
             onMedia={(m) => setLightbox(m)}
+            onSaveNotes={handleSaveNotes}
           />
         ))}
       </div>
@@ -301,7 +303,22 @@ export default function AdminReports() {
   );
 }
 
-function ReportCard({ report: r, isOpen, onToggle, onStatus, onEdit, onDelete, onMedia }) {
+function ReportCard({ report: r, isOpen, onToggle, onStatus, onEdit, onDelete, onMedia, onSaveNotes }) {
+  const [notes, setNotes]             = useState(r.adminNotes || '');
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [savedNotes,  setSavedNotes]  = useState(false);
+  useEffect(() => { setNotes(r.adminNotes || ''); setSavedNotes(false); }, [r.id]);
+  const handleSaveNotes = async (e) => {
+    e.stopPropagation();
+    if (savingNotes) return;
+    setSavingNotes(true);
+    try {
+      await onSaveNotes?.(r.id, notes);
+      setSavedNotes(true);
+      setTimeout(() => setSavedNotes(false), 4000);
+    } catch (err) { alert(`فشل حفظ الملاحظات: ${err?.message || err}`); }
+    setSavingNotes(false);
+  };
   const rt = getRT(r);
   const sv = getSV(r);
   const b  = getSB(r);
@@ -623,6 +640,33 @@ function ReportCard({ report: r, isOpen, onToggle, onStatus, onEdit, onDelete, o
               </button>
             </div>
           )}
+
+          {/* Operations room notes */}
+          <div className="bg-gradient-to-br from-[#FDF8F0] to-white border border-[#E8DDD4] rounded-2xl p-4"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[11px] text-[#9D8F85] font-bold flex items-center gap-1.5">
+                <span className="w-1.5 h-4 rounded-full bg-[#A98159]" />
+                ملاحظات غرفة العمليات
+              </p>
+              {savedNotes && (
+                <span className="text-[10px] font-black text-green-700 bg-green-50 border border-green-200 rounded-md px-2 py-0.5">
+                  ✓ تم الحفظ
+                </span>
+              )}
+            </div>
+            <textarea
+              value={notes}
+              onChange={e => { setNotes(e.target.value); setSavedNotes(false); }}
+              rows={3}
+              placeholder="اكتب ملاحظات تظهر للمراقب/المشرف الذي رفع البلاغ..."
+              className="w-full px-3 py-2.5 border border-[#E8DDD4] rounded-xl text-sm text-[#2D2926] placeholder-[#C9B8A8] focus:border-[#A98159] focus:ring-2 focus:ring-[#A98159]/15 outline-none transition-all bg-white resize-none"
+            />
+            <button onClick={handleSaveNotes} disabled={savingNotes || notes === (r.adminNotes || '')}
+              className="mt-2 w-full py-2.5 rounded-xl bg-gradient-to-br from-[#C4A46E] to-[#A98159] text-white text-sm font-black shadow-sm active:scale-[0.98] transition-all disabled:opacity-50">
+              {savingNotes ? 'جارٍ الحفظ...' : 'حفظ الملاحظات'}
+            </button>
+          </div>
 
           {/* Action toolbar */}
           <div className="flex items-center gap-2 pt-2 border-t border-[#EDE5DC]">

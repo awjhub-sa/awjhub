@@ -108,6 +108,8 @@ export default function AdminLogistics() {
     if (expanded === id) setExpanded(null);
   };
 
+  const handleSaveNotes = (id, adminNotes) => db.logistics_requests.update(id, { adminNotes });
+
   const countOf = v => requests.filter(r => r.status === v || (!r.status && v === 'pending')).length;
 
   const filtered = useMemo(() => {
@@ -247,6 +249,7 @@ export default function AdminLogistics() {
             onStatus={handleStatus}
             onEdit={() => setEditingReq(r)}
             onDelete={() => handleDelete(r.id)}
+            onSaveNotes={handleSaveNotes}
           />
         ))}
       </div>
@@ -265,7 +268,22 @@ export default function AdminLogistics() {
   );
 }
 
-function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete }) {
+function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete, onSaveNotes }) {
+  const [notes, setNotes]             = useState(r.adminNotes || '');
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [savedNotes,  setSavedNotes]  = useState(false);
+  useEffect(() => { setNotes(r.adminNotes || ''); setSavedNotes(false); }, [r.id]);
+  const handleSaveNotes = async (e) => {
+    e.stopPropagation();
+    if (savingNotes) return;
+    setSavingNotes(true);
+    try {
+      await onSaveNotes?.(r.id, notes);
+      setSavedNotes(true);
+      setTimeout(() => setSavedNotes(false), 4000);
+    } catch (err) { alert(`فشل حفظ الملاحظات: ${err?.message || err}`); }
+    setSavingNotes(false);
+  };
   const b  = getSB(r);
   const st = SUPPORT_LOOKUP[r.supportType] || SUPPORT_TYPES[0];
   const isNew = isNewLogistics(r);
@@ -591,6 +609,33 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete 
               <p className="text-sm text-[#2D2926] leading-relaxed whitespace-pre-wrap">{r.notes}</p>
             </div>
           )}
+
+          {/* Operations room notes */}
+          <div className="bg-gradient-to-br from-[#FDF8F0] to-white border border-[#E8DDD4] rounded-2xl p-4"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[11px] text-[#9D8F85] font-bold flex items-center gap-1.5">
+                <span className="w-1.5 h-4 rounded-full bg-[#A98159]" />
+                ملاحظات غرفة العمليات
+              </p>
+              {savedNotes && (
+                <span className="text-[10px] font-black text-green-700 bg-green-50 border border-green-200 rounded-md px-2 py-0.5">
+                  ✓ تم الحفظ
+                </span>
+              )}
+            </div>
+            <textarea
+              value={notes}
+              onChange={e => { setNotes(e.target.value); setSavedNotes(false); }}
+              rows={3}
+              placeholder="اكتب ملاحظات تظهر للمراقب/المشرف الذي رفع الطلب..."
+              className="w-full px-3 py-2.5 border border-[#E8DDD4] rounded-xl text-sm text-[#2D2926] placeholder-[#C9B8A8] focus:border-[#A98159] focus:ring-2 focus:ring-[#A98159]/15 outline-none transition-all bg-white resize-none"
+            />
+            <button onClick={handleSaveNotes} disabled={savingNotes || notes === (r.adminNotes || '')}
+              className="mt-2 w-full py-2.5 rounded-xl bg-gradient-to-br from-[#C4A46E] to-[#A98159] text-white text-sm font-black shadow-sm active:scale-[0.98] transition-all disabled:opacity-50">
+              {savingNotes ? 'جارٍ الحفظ...' : 'حفظ الملاحظات'}
+            </button>
+          </div>
 
           {/* Action toolbar */}
           <div className="flex items-center gap-2 pt-2 border-t border-[#EDE5DC]">
