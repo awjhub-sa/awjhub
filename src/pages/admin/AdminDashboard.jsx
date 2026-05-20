@@ -6,7 +6,7 @@ import {
   AlertTriangle, Truck, ClipboardList, Mountain, Clock, Trash2, X, ArrowLeft,
   CheckCircle2, ChevronDown, Filter, Search, LayoutDashboard, Sparkles,
   User, Building2, Calendar, ChevronRight, Activity, ThumbsUp, XCircle,
-  ShieldCheck, Utensils, Droplets, Factory, ArrowRight, Layers, Package,
+  ShieldCheck, Utensils, Droplets, Factory, ArrowRight, Layers, Package, MapPin,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/PageHeader.jsx';
@@ -27,6 +27,9 @@ const REPORT_TYPE = {
 
 const MEAL_LABEL = { breakfast: 'الإفطار', lunch: 'الغداء', dinner: 'العشاء' };
 const MEAL_COLOR = { breakfast: '#F59E0B', lunch: '#EF4444', dinner: '#6366F1' };
+const HOLY_SITE_LABEL = { mina: 'منى', arafat: 'عرفات' };
+const HOLY_SITE_COLOR = { mina: '#A98159', arafat: '#0E7C66' };
+const HOLY_SITE_ICON  = { mina: MapPin,   arafat: Mountain };
 
 const SEV = {
   high:   { label: 'عالية',   bg: '#FEF2F2', text: '#DC2626', border: '#FCA5A5', bar: '#EF4444' },
@@ -252,6 +255,7 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange, onSaveNo
             {[
               { lbl: 'المراقب', val: report.observer, Icon: User,     color: '#A98159' },
               { lbl: 'المركز',  val: report.center,   Icon: Building2,color: '#DC2626' },
+              { lbl: 'المشعر',  val: HOLY_SITE_LABEL[report.holySite] || '—', Icon: HOLY_SITE_ICON[report.holySite] || MapPin, color: HOLY_SITE_COLOR[report.holySite] || '#9D8F85' },
               { lbl: 'الوجبة',  val: MEAL_LABEL[report.mealType] || '—', Icon: Utensils, color: MEAL_COLOR[report.mealType] || '#A98159' },
               { lbl: 'الوقت',   val: clockTime(report.timestamp), Icon: Calendar, color: '#6D6E71' },
             ].map(c => (
@@ -404,6 +408,16 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange, onSaveN
                     #{item.requestNumber}
                   </span>
                 )}
+                {item.holySite && HOLY_SITE_LABEL[item.holySite] && (() => {
+                  const HSIcon = HOLY_SITE_ICON[item.holySite];
+                  return (
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-md text-white inline-flex items-center gap-1"
+                      style={{ background: HOLY_SITE_COLOR[item.holySite] }}>
+                      <HSIcon size={10} strokeWidth={2.5} />
+                      {HOLY_SITE_LABEL[item.holySite]}
+                    </span>
+                  );
+                })()}
               </div>
               <p className="text-[11px] text-[#A98159] font-bold mt-0.5">{timeAgo(item.timestamp)} · {clockTime(item.timestamp)}</p>
             </div>
@@ -885,6 +899,16 @@ export default function AdminDashboard() {
                           {MEAL_LABEL[r.mealType]}
                         </span>
                       )}
+                      {r.holySite && HOLY_SITE_LABEL[r.holySite] && (() => {
+                        const HSIcon = HOLY_SITE_ICON[r.holySite];
+                        return (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-md text-white"
+                            style={{ background: HOLY_SITE_COLOR[r.holySite] }}>
+                            <HSIcon size={9} strokeWidth={2.5} />
+                            {HOLY_SITE_LABEL[r.holySite]}
+                          </span>
+                        );
+                      })()}
                     </div>
                     <div className="flex items-center gap-2 text-[11px] text-[#6D6E71] flex-wrap">
                       <span className="flex items-center gap-1">
@@ -998,6 +1022,16 @@ export default function AdminDashboard() {
                           #{item.requestNumber}
                         </span>
                       )}
+                      {item.holySite && HOLY_SITE_LABEL[item.holySite] && (() => {
+                        const HSIcon = HOLY_SITE_ICON[item.holySite];
+                        return (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-md text-white"
+                            style={{ background: HOLY_SITE_COLOR[item.holySite] }}>
+                            <HSIcon size={9} strokeWidth={2.5} />
+                            {HOLY_SITE_LABEL[item.holySite]}
+                          </span>
+                        );
+                      })()}
                     </div>
                     <div className="flex items-center gap-2 text-[11px] text-[#6D6E71] flex-wrap">
                       <span className="flex items-center gap-1">

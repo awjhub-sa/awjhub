@@ -6,7 +6,7 @@ import {
   Filter, CheckCircle2, Activity, Sparkles, MapPin, Hash, Factory,
   Droplets, Zap, Users as UsersIcon, Utensils, HeartPulse,
   Shield, Flame, FileText, Package, Star, Thermometer, Hourglass,
-  Calendar,
+  Calendar, Mountain,
 } from 'lucide-react';
 import PageHeader from '../../components/PageHeader.jsx';
 import NotificationBadge from '../../components/NotificationBadge.jsx';
@@ -85,6 +85,9 @@ const REPORT_TYPE_MAP = {
 };
 const MEAL_LABEL = { breakfast: 'الإفطار', lunch: 'الغداء', dinner: 'العشاء' };
 const MEAL_COLOR = { breakfast: '#F59E0B', lunch: '#EF4444', dinner: '#6366F1' };
+const HOLY_SITE_LABEL = { mina: 'منى', arafat: 'عرفات' };
+const HOLY_SITE_COLOR = { mina: '#A98159', arafat: '#0E7C66' };
+const HOLY_SITE_ICON  = { mina: MapPin,  arafat: Mountain };
 
 const getRT = r => REPORT_TYPE_MAP[r.reportType] || REPORT_TYPE_MAP[r.type] || { label: r.reportType || 'بلاغ', Icon: FileText, color: '#6D6E71' };
 const getSV = r => SEVERITY_MAP[r.severity] || null;
@@ -401,6 +404,16 @@ function ReportCard({ report: r, isOpen, onToggle, onStatus, onEdit, onDelete, o
                 {MEAL_LABEL[r.mealType]}
               </span>
             )}
+            {r.holySite && HOLY_SITE_LABEL[r.holySite] && (() => {
+              const HSIcon = HOLY_SITE_ICON[r.holySite];
+              return (
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-md text-white inline-flex items-center gap-1"
+                  style={{ background: HOLY_SITE_COLOR[r.holySite] }}>
+                  <HSIcon size={10} strokeWidth={2.5} />
+                  {HOLY_SITE_LABEL[r.holySite]}
+                </span>
+              );
+            })()}
           </div>
 
           {/* Meta row */}

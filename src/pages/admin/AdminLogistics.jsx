@@ -3,7 +3,7 @@ import { db } from '../../lib/db.js';
 import {
   Truck, Package, ChevronRight, Pencil, Trash2, X, Save, User, Building2, Clock,
   Filter, CheckCircle2, XCircle, ThumbsUp, Sparkles, AlertTriangle, Search,
-  MapPin, Hash, Factory, Calendar, Activity, ArrowRight, ArrowLeft, Layers,
+  MapPin, Hash, Factory, Calendar, Activity, ArrowRight, ArrowLeft, Layers, Mountain,
 } from 'lucide-react';
 import PageHeader from '../../components/PageHeader.jsx';
 import NotificationBadge from '../../components/NotificationBadge.jsx';
@@ -12,6 +12,10 @@ import {
   computeStatusUpdate, TERMINAL_LOGISTICS_STATUSES,
 } from '../../lib/statusTracking.js';
 import { StatusTimerChip, StatusTimeline } from '../../components/StatusTimeline.jsx';
+
+const HOLY_SITE_LABEL = { mina: 'منى', arafat: 'عرفات' };
+const HOLY_SITE_COLOR = { mina: '#A98159', arafat: '#0E7C66' };
+const HOLY_SITE_ICON  = { mina: MapPin,   arafat: Mountain };
 
 /* A request is "new" when pending AND submitted within the last 10 minutes */
 const NEW_THRESHOLD_MS = 10 * 60 * 1000;
@@ -357,6 +361,16 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
                 #{r.requestNumber}
               </span>
             )}
+            {r.holySite && HOLY_SITE_LABEL[r.holySite] && (() => {
+              const HSIcon = HOLY_SITE_ICON[r.holySite];
+              return (
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-md text-white inline-flex items-center gap-1"
+                  style={{ background: HOLY_SITE_COLOR[r.holySite] }}>
+                  <HSIcon size={10} strokeWidth={2.5} />
+                  {HOLY_SITE_LABEL[r.holySite]}
+                </span>
+              );
+            })()}
           </div>
 
           {/* Meta row */}
