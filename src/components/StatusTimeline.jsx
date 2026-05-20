@@ -61,7 +61,7 @@ export function StatusTimeline({ doc, terminalStatuses, statusOrder, statusMeta,
         <p className="text-[11px] font-black text-[#9D8F85] flex items-center gap-1.5">
           <span className="w-1.5 h-4 rounded-full" style={{ background: accentColor }} />
           <Timer size={12} strokeWidth={2.25} style={{ color: accentColor }} />
-          سجل المدد
+          سجل المدة
         </p>
         <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-1 rounded-lg border tabular-nums"
           style={closed
