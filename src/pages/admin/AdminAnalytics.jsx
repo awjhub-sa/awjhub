@@ -496,8 +496,9 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete }) {
     <div className="bg-white rounded-2xl border-2 overflow-hidden shadow-[0_2px_12px_rgba(45,41,38,0.07)]"
       style={{ borderColor: isOpen ? sst.border : '#EDE5DC' }}>
       {/* Header row — always visible */}
+      <div className="relative flex items-center hover:bg-[#FDFAF7] transition-colors">
       <button onClick={onToggle}
-        className="w-full text-right px-4 sm:px-5 py-3.5 flex items-center gap-3 hover:bg-[#FDFAF7] transition-colors">
+        className="flex-1 min-w-0 text-right px-4 sm:px-5 py-3.5 flex items-center gap-3">
         {/* Score badge */}
         <div className="relative shrink-0">
           <div className="absolute inset-0 rounded-2xl blur-md opacity-40" style={{ background: sst.color }} />
@@ -540,24 +541,20 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete }) {
             </span>
           </div>
         </div>
-        {/* Delete + Chevron */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span
-            role="button"
-            tabIndex={0}
-            onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onDelete?.(); } }}
-            title="حذف التقييم"
-            className="w-8 h-8 rounded-lg border border-red-200 bg-red-50 flex items-center justify-center cursor-pointer hover:bg-red-500 hover:border-red-500 group/del transition-colors"
-          >
-            <Trash2 size={13} className="text-red-500 group-hover/del:text-white" strokeWidth={2.25} />
-          </span>
-          <div className="w-8 h-8 rounded-lg border border-[#EDE5DC] flex items-center justify-center transition-transform"
-            style={{ transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>
-            <ChevronRight size={14} className="text-[#A98159]" strokeWidth={2.25} />
-          </div>
+        {/* Chevron stays inside the toggle button */}
+        <div className="w-8 h-8 rounded-lg border border-[#EDE5DC] flex items-center justify-center transition-transform shrink-0"
+          style={{ transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+          <ChevronRight size={14} className="text-[#A98159]" strokeWidth={2.25} />
         </div>
       </button>
+
+      {/* Delete — sibling of toggle so its click never collides */}
+      <button onClick={onDelete}
+        title="حذف التقييم"
+        className="ml-3 sm:ml-4 mr-1 w-9 h-9 rounded-lg border border-red-200 bg-red-50 flex items-center justify-center hover:bg-red-500 hover:border-red-500 group/del transition-colors shrink-0">
+        <Trash2 size={14} className="text-red-500 group-hover/del:text-white" strokeWidth={2.25} />
+      </button>
+      </div>
 
       {/* Expanded details */}
       {isOpen && (
