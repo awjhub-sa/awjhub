@@ -140,10 +140,13 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange, onSaveNo
   const [savingNotes, setSavingNotes] = useState(false);
   const [savedNotes,  setSavedNotes]  = useState(false);
 
+  /* Only re-sync from props when we open a different report — depending
+     on report.adminNotes too would clobber the saved-notes badge the
+     moment the parent's optimistic update echoes back. */
   useEffect(() => {
     setNotes(report.adminNotes || '');
     setSavedNotes(false);
-  }, [report.id, report.adminNotes]);
+  }, [report.id]);
 
   const handleSaveNotes = async () => {
     if (savingNotes) return;
@@ -151,7 +154,7 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange, onSaveNo
     try {
       await onSaveNotes?.(report.id, notes);
       setSavedNotes(true);
-      setTimeout(() => setSavedNotes(false), 2000);
+      setTimeout(() => setSavedNotes(false), 4000);
     } catch (e) {
       alert(`فشل حفظ الملاحظات: ${e?.message || e}`);
     }
@@ -357,7 +360,7 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange, onSaveN
   useEffect(() => {
     setNotes(item.adminNotes || '');
     setSavedNotes(false);
-  }, [item.id, item.adminNotes]);
+  }, [item.id]);
 
   const handleSaveNotes = async () => {
     if (savingNotes) return;
@@ -365,7 +368,7 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange, onSaveN
     try {
       await onSaveNotes?.(item.id, notes);
       setSavedNotes(true);
-      setTimeout(() => setSavedNotes(false), 2000);
+      setTimeout(() => setSavedNotes(false), 4000);
     } catch (e) {
       alert(`فشل حفظ الملاحظات: ${e?.message || e}`);
     }
