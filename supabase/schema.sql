@@ -54,6 +54,7 @@ CREATE TABLE public.reports (
   video_url          text,
   admin_notes        text,
   role               text,
+  holy_site          text CHECK (holy_site IN ('mina','arafat')),
   timestamp          timestamptz  NOT NULL DEFAULT now()
 );
 CREATE INDEX reports_status_idx      ON public.reports (status);
@@ -84,6 +85,7 @@ CREATE TABLE public.logistics_requests (
   closed_at          timestamptz,
   admin_notes        text,
   role               text,
+  holy_site          text CHECK (holy_site IN ('mina','arafat')),
   timestamp          timestamptz  NOT NULL DEFAULT now()
 );
 CREATE INDEX logistics_status_idx     ON public.logistics_requests (status);

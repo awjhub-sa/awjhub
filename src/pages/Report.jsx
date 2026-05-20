@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, AlertTriangle, Zap, Image as ImageIcon, Video, Upload, X, CheckCircle2, Sparkles, Coffee, Sun, Moon } from 'lucide-react';
+import { ChevronRight, AlertTriangle, Zap, Image as ImageIcon, Video, Upload, X, CheckCircle2, Sparkles, Coffee, Sun, Moon, MapPin, Mountain } from 'lucide-react';
 import { db, serverTimestamp, uploadFile, STORAGE_BUCKETS } from '../lib/db.js';
 import { compressImage } from '../lib/imageCompression.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -42,6 +42,11 @@ const MEAL_OPTIONS = [
   { key: 'dinner',    label: 'العشاء',  Icon: Moon,   color: '#6366F1' },
 ];
 
+const HOLY_SITES = [
+  { key: 'mina',   label: 'منى',   Icon: MapPin,   color: '#A98159' },
+  { key: 'arafat', label: 'عرفات', Icon: Mountain, color: '#0E7C66' },
+];
+
 const SEVERITY_MAP = {
   high: { label: 'عالي الخطورة', color: 'bg-[#BA1A1A]', text: 'text-[#BA1A1A]', border: 'border-[#BA1A1A]', light: 'bg-red-50' },
   medium: { label: 'متوسط الخطورة', color: 'bg-orange-500', text: 'text-orange-500', border: 'border-orange-500', light: 'bg-orange-50' },
@@ -54,6 +59,7 @@ export default function Report() {
   const imageInputRef = useRef(null);
   const videoInputRef = useRef(null);
 
+  const [holySite, setHolySite] = useState('');
   const [mealType, setMealType] = useState('');
   const [selectedReport, setSelectedReport] = useState('');
   const [description, setDescription] = useState('');
@@ -72,6 +78,10 @@ export default function Report() {
   };
 
   const handleSubmit = async () => {
+    if (!holySite) {
+      alert('اختر المشعر أولاً (منى / عرفات)');
+      return;
+    }
     if (!mealType) {
       alert('اختر الوجبة أولاً (فطور / غداء / عشاء)');
       return;
@@ -96,6 +106,7 @@ export default function Report() {
         observer:   profile?.nameAr || profile?.name || 'مراقب',
         center:     profile?.center || '—',
         caterer:    profile?.caterer || getCaterer(profile?.center) || '—',
+        holySite,
         mealType,
         reportType: selectedReport,
         severity,
@@ -188,6 +199,28 @@ export default function Report() {
           </div>
 
           <div className="bg-white rounded-3xl p-6 border border-[#D1C4B9] shadow-sm space-y-6">
+            <div>
+              <label className="text-xs font-bold text-[#A98159] mb-3 block tracking-wide">المشعر *</label>
+              <div className="grid grid-cols-2 gap-2.5">
+                {HOLY_SITES.map(s => {
+                  const active = holySite === s.key;
+                  const SIcon = s.Icon;
+                  return (
+                    <button key={s.key} type="button"
+                      onClick={() => setHolySite(s.key)}
+                      className={`relative flex flex-col items-center gap-1.5 py-4 rounded-2xl border-2 transition-all ${
+                        active ? 'text-white scale-[1.02] shadow-md' : 'bg-white text-[#6D6E71] border-[#E8DDD4] hover:border-[#A98159]/40'
+                      }`}
+                      style={active ? { background: `linear-gradient(135deg, ${s.color}, ${s.color}CC)`, borderColor: s.color } : undefined}
+                    >
+                      <SIcon size={22} strokeWidth={2.25} />
+                      <span className="text-sm font-bold">{s.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div>
               <label className="text-xs font-bold text-[#A98159] mb-3 block tracking-wide">الوجبة *</label>
               <div className="grid grid-cols-3 gap-2.5">

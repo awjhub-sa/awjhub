@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ChevronRight, Send, Truck, Package, Utensils, Droplets, User, CheckCircle2, Sparkles,
-  AlertTriangle, ArrowLeft, FileText, Clock,
+  AlertTriangle, ArrowLeft, FileText, Clock, MapPin, Mountain,
 } from 'lucide-react';
 import { supabase } from '../config/supabase.js';
 import { db, serverTimestamp, rowFromDb } from '../lib/db.js';
@@ -19,6 +19,11 @@ const SUPPORT_TYPES = [
   { value: 'internal', label: 'داخلي' },
   { value: 'external', label: 'خارجي' },
   { value: 'both',     label: 'داخلي وخارجي' },
+];
+
+const HOLY_SITES = [
+  { key: 'mina',   label: 'منى',   Icon: MapPin,   color: '#A98159' },
+  { key: 'arafat', label: 'عرفات', Icon: Mountain, color: '#0E7C66' },
 ];
 
 /* Same report-type map used in AdminReports — keep labels short here */
@@ -55,6 +60,7 @@ export default function LogisticsRequest() {
   const [selectedReport,  setSelectedReport]  = useState(null);
 
   
+  const [holySite, setHolySite] = useState('');
   const [category, setCategory] = useState('');
   const [supportType, setSupportType] = useState('');
   const [qtyInternal, setQtyInternal] = useState('');
@@ -98,9 +104,14 @@ export default function LogisticsRequest() {
     return sanitized.replace(/[^\d]/g, '');
   };
 
+  /* Inherit holy_site from linked report when available */
+  useEffect(() => {
+    if (selectedReport?.holySite) setHolySite(selectedReport.holySite);
+  }, [selectedReport]);
+
   useEffect(() => {
     const checkValidity = () => {
-      if (!category || !supportType) return false;
+      if (!holySite || !category || !supportType) return false;
       const intQty = parseInt(qtyInternal) || 0;
       const extQty = parseInt(qtyExternal) || 0;
       if (supportType === 'internal') return intQty >= 1;
@@ -109,7 +120,7 @@ export default function LogisticsRequest() {
       return false;
     };
     setIsFormValid(checkValidity());
-  }, [category, supportType, qtyInternal, qtyExternal]);
+  }, [holySite, category, supportType, qtyInternal, qtyExternal]);
 
   const handleSubmit = async () => {
     if (!isFormValid || loading) return;
@@ -120,6 +131,7 @@ export default function LogisticsRequest() {
         observer: profile?.nameAr || profile?.name || '—',
         center: profile?.center || '—',
         caterer: profile?.caterer || getCaterer(profile?.center) || '—',
+        holySite,
         category,
         supportType,
         qtyInternal: showInternal ? parseInt(qtyInternal) : null,
@@ -375,7 +387,30 @@ export default function LogisticsRequest() {
         </div>
 
         <div className="bg-white rounded-[2rem] p-6 border border-[#D1C4B9] shadow-sm space-y-8">
-          {/* ... باقي الكود كما هو دون تغيير ... */}
+          <div>
+            <label className="text-xs font-bold text-[#A98159] mb-4 block text-center uppercase tracking-wide">المشعر *</label>
+            <div className="grid grid-cols-2 gap-3">
+              {HOLY_SITES.map(s => {
+                const active = holySite === s.key;
+                const SIcon = s.Icon;
+                return (
+                  <button key={s.key} type="button"
+                    onClick={() => setHolySite(s.key)}
+                    className={`relative flex flex-col items-center gap-1.5 py-4 rounded-2xl border-2 transition-all ${
+                      active ? 'text-white scale-[1.02] shadow-md' : 'bg-[#F9F7F5] text-[#6D6E71] border-[#E5DDD5] hover:border-[#A98159]/40'
+                    }`}
+                    style={active ? { background: `linear-gradient(135deg, ${s.color}, ${s.color}CC)`, borderColor: s.color } : undefined}
+                  >
+                    <SIcon size={22} strokeWidth={2.25} />
+                    <span className="text-sm font-bold">{s.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="h-px bg-[#E5DDD5] w-full" />
+
           <div>
             <label className="text-xs font-bold text-[#A98159] mb-4 block text-center uppercase tracking-wide">تصنيف الإسناد</label>
             <div className="grid grid-cols-2 gap-4">
