@@ -15,6 +15,7 @@ import {
   computeStatusUpdate, TERMINAL_REPORT_STATUSES,
 } from '../../lib/statusTracking.js';
 import { StatusTimerChip, StatusTimeline } from '../../components/StatusTimeline.jsx';
+import CenterNotesPanel from '../../components/CenterNotesPanel.jsx';
 
 /* ── Media Lightbox ── */
 function MediaLightbox({ src, type, onClose }) {
@@ -441,6 +442,9 @@ function ReportCard({ report: r, isOpen, onToggle, onStatus, onEdit, onDelete, o
             <StatusTimerChip doc={r} terminalStatuses={TERMINAL_REPORT_STATUSES} statusMeta={STATUS_LOOKUP} />
           </div>
 
+          {/* Center-specific operations notes (collapsed: compact, expanded: full panel below) */}
+          {!isOpen && <CenterNotesPanel centerId={r.center} variant="compact" />}
+
           {/* Description preview */}
           {r.description && !isOpen && (
             <p className="text-xs text-[#6D6E71] line-clamp-1 leading-relaxed">{r.description}</p>
@@ -489,6 +493,9 @@ function ReportCard({ report: r, isOpen, onToggle, onStatus, onEdit, onDelete, o
       {/* Expanded panel */}
       {isOpen && (
         <div className="border-t-2 border-[#EDE5DC]/60 bg-[#FDFCFB] px-4 sm:px-5 py-5 space-y-4">
+
+          {/* Center-specific operations notes */}
+          <CenterNotesPanel centerId={r.center} variant="card" />
 
           {/* Status timeline */}
           <StatusTimeline

@@ -17,6 +17,7 @@ import {
 } from '../../lib/statusTracking.js';
 import { StatusTimerChip, StatusTimeline } from '../../components/StatusTimeline.jsx';
 import { NATIONALITIES } from '../../config/nationalities.js';
+import CenterNotesPanel from '../../components/CenterNotesPanel.jsx';
 
 /* ─── Lookup tables ─── */
 const REPORT_TYPE = {
@@ -213,6 +214,9 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange, onSaveNo
               </span>
             </div>
           )}
+
+          {/* Center-specific operations-room notes */}
+          <CenterNotesPanel centerId={report.center} variant="modal" />
 
           {/* Status timeline */}
           <StatusTimeline
@@ -456,6 +460,9 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange, onSaveN
               </div>
             </div>
           )}
+
+          {/* Center-specific operations-room notes */}
+          <CenterNotesPanel centerId={item.center} variant="modal" />
 
           {/* Status timeline */}
           <StatusTimeline
@@ -923,6 +930,7 @@ export default function AdminDashboard() {
                     <div className="mt-1">
                       <StatusTimerChip doc={r} terminalStatuses={TERMINAL_REPORT_STATUSES} statusMeta={STATUS} compact />
                     </div>
+                    <CenterNotesPanel centerId={r.center} variant="compact" />
                   </div>
                   {/* Status pill */}
                   <div className="flex flex-col items-end gap-1 shrink-0">
@@ -1053,6 +1061,7 @@ export default function AdminDashboard() {
                         <span className="tabular-nums bg-white border border-amber-300 rounded px-1 text-amber-700">#{item.reportNumber}</span>
                       </div>
                     )}
+                    <CenterNotesPanel centerId={item.center} variant="compact" />
                   </div>
                   {/* Status pill */}
                   <div className="flex flex-col items-end gap-1 shrink-0">

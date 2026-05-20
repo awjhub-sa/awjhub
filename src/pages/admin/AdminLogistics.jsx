@@ -12,6 +12,7 @@ import {
   computeStatusUpdate, TERMINAL_LOGISTICS_STATUSES,
 } from '../../lib/statusTracking.js';
 import { StatusTimerChip, StatusTimeline } from '../../components/StatusTimeline.jsx';
+import CenterNotesPanel from '../../components/CenterNotesPanel.jsx';
 
 const HOLY_SITE_LABEL = { mina: 'منى', arafat: 'عرفات' };
 const HOLY_SITE_COLOR = { mina: '#A98159', arafat: '#0E7C66' };
@@ -432,6 +433,9 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
               )}
             </div>
           )}
+
+          {/* Center-specific operations notes (collapsed only — full panel shown when expanded) */}
+          {!isOpen && <CenterNotesPanel centerId={r.center} variant="compact" />}
         </div>
 
         {/* Status pill + chevron */}
@@ -451,6 +455,9 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
       {/* Expanded panel */}
       {isOpen && (
         <div className="border-t-2 border-[#EDE5DC]/60 bg-[#FDFCFB] px-4 sm:px-5 py-5 space-y-4">
+
+          {/* Center-specific operations notes */}
+          <CenterNotesPanel centerId={r.center} variant="card" />
 
           {/* Linked report banner — prominent */}
           {r.reportNumber && (
