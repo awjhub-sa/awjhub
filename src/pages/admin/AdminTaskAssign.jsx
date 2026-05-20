@@ -95,8 +95,13 @@ function AssignmentCard({ item }) {
             : String(item.scheduledDate)
         );
         const phaseIds = [];
-        item.targetCenters.forEach(num => {
-          const centerStr = CENTERS.find(c => extractCenterNum(c.id) === num)?.id;
+        item.targetCenters.forEach(entry => {
+          /* `entry` is normally the full center ID (text[]); fall back to
+             the legacy numeric-only format for tasks created before the
+             schema migration. */
+          const centerStr = typeof entry === 'string'
+            ? entry
+            : CENTERS.find(c => centerNum(c.id) === Number(entry))?.id;
           if (!centerStr) return;
           item.mealTypes.forEach(mealType => {
             phaseIds.push(`${centerStr}_d${day}_${mealType}`);
@@ -221,11 +226,14 @@ function AssignmentCard({ item }) {
               المراكز المستهدفة ({centerCount})
             </p>
             <div className="flex flex-wrap gap-1">
-              {item.targetCenters?.map(c => (
-                <span key={c} className="bg-white border border-[#EDE5DC] text-[#2D2926] text-[10px] font-bold px-2 py-0.5 rounded-lg">
-                  {c}
-                </span>
-              ))}
+              {item.targetCenters?.map(c => {
+                const label = typeof c === 'string' ? c : `مركز ${c}`;
+                return (
+                  <span key={label} className="bg-white border border-[#EDE5DC] text-[#2D2926] text-[10px] font-bold px-2 py-0.5 rounded-lg">
+                    {label}
+                  </span>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -252,9 +260,21 @@ export default function AdminTaskAssign() {
   const mealMissing     = hasMeal && selMeals.length === 0;
   const categoryMissing = hasMeal && selCategories.length === 0;
 
+  /* All nationality.centers entries are numeric (e.g. 25) but the actual
+     center IDs are strings like 'مركز 25-أ'. When selecting by nationality
+     we expand each number to every CENTERS row whose ID parses to that
+     number — so a nationality covering "25" assigns to both 25-أ and 25-ب. */
   const targetCenters = selMode === 'nationality'
-    ? [...new Set(NATIONALITIES.filter(n => selNats.includes(n.key)).flatMap(n => n.centers))].sort((a, b) => a - b)
-    : selCenters.map(centerNum).filter(Boolean).sort((a, b) => a - b);
+    ? (() => {
+        const nums = new Set(
+          NATIONALITIES.filter(n => selNats.includes(n.key)).flatMap(n => n.centers)
+        );
+        return CENTERS
+          .filter(c => nums.has(centerNum(c.id)))
+          .map(c => c.id)
+          .sort((a, b) => centerNum(a) - centerNum(b));
+      })()
+    : [...selCenters].sort((a, b) => centerNum(a) - centerNum(b));
 
   const filteredCenters = CENTERS.filter(c =>
     c.id.includes(centerSearch) || c.caterer.includes(centerSearch)

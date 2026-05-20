@@ -8,7 +8,7 @@ import { db, serverTimestamp, uploadFile, STORAGE_BUCKETS } from '../../lib/db.j
 import { compressImage } from '../../lib/imageCompression.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { getCaterer } from '../../config/centers.js';
-import { extractDay, extractCenterNum, MEAL_META } from '../../hooks/useAssignedTasks.js';
+import { extractDay, MEAL_META } from '../../hooks/useAssignedTasks.js';
 import { MEAL_QUESTIONS, MEAL_MAX_SCORE, computeMealScore } from '../../config/mealQuestions.js';
 
 /* Phase 2 (cooking) is skipped for the «وجبة جافة» (dry) category since
@@ -173,14 +173,13 @@ export default function SupMealcheck() {
   const [tasksLoading, setTasksLoading] = useState(true);
 
   useEffect(() => {
-    const cn  = extractCenterNum(centerId);
     const uid = profile?.uid;
-    if (!uid || !cn) { setTasksLoading(false); return; }
+    if (!uid || !centerId || centerId === '—') { setTasksLoading(false); return; }
     let t1 = false, t2 = false;
     const done = () => { if (t1 && t2) setTasksLoading(false); };
 
     const u1 = db.assigned_tasks.subscribe(all => {
-      setTasks(all.filter(t => t.targetCenters?.includes(cn)));
+      setTasks(all.filter(t => t.targetCenters?.includes(centerId)));
       t1 = true; done();
     });
     const u2 = db.task_completions.subscribe(all => {

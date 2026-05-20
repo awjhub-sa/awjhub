@@ -197,8 +197,9 @@ export default function AdminPhases() {
       if (!types.includes('meal_evaluation')) return;
       if (extractDay(t.scheduledDate) !== String(selectedDay)) return;
       const cats = t.mealCategories || [];
-      (t.targetCenters || []).forEach(cn => {
-        const key = Number(cn);
+      (t.targetCenters || []).forEach(entry => {
+        const key = typeof entry === 'string' ? extractCenterNum(entry) : Number(entry);
+        if (!key) return;
         if (!map.has(key)) map.set(key, new Set());
         cats.forEach(c => map.get(key).add(c));
       });

@@ -11,7 +11,6 @@ import {
 import logo from "../../assets/logo.png";
 import { useAuth } from '../../context/AuthContext.jsx';
 import { getCaterer } from '../../config/centers.js';
-import { extractCenterNum } from '../../hooks/useAssignedTasks.js';
 import TodayMenuCard from '../../components/TodayMenuCard.jsx';
 import { formatHijri } from '../../lib/hijri.js';
 
@@ -290,7 +289,6 @@ export default function SupervisorHome() {
     setAssignedForCenter([]);
 
     const todayMs = new Date().setHours(0, 0, 0, 0);
-    const cn = extractCenterNum(selectedCenter);
 
     /* Regular activity collections — meals/mina/arafat are excluded because
        they each create a corresponding task_completions row, which already
@@ -318,7 +316,7 @@ export default function SupervisorHome() {
 
     /* assigned_tasks for this center */
     const unsubAssigned = supaDb.assigned_tasks.subscribe(rows =>
-      setAssignedForCenter(rows.filter(t => (t.targetCenters || []).includes(cn)))
+      setAssignedForCenter(rows.filter(t => (t.targetCenters || []).includes(selectedCenter)))
     );
 
     /* task_completions */
@@ -358,7 +356,7 @@ export default function SupervisorHome() {
 
     const unsubAssigned = supaDb.assigned_tasks.subscribe(rows => {
       setAllAssignedTasks(
-        rows.filter(t => (t.targetCenters || []).some(cn => allowed.has(`مركز ${cn}`)))
+        rows.filter(t => (t.targetCenters || []).some(c => allowed.has(c)))
       );
     });
 
@@ -414,7 +412,6 @@ export default function SupervisorHome() {
     const allowedCenters = new Set(assignedCenters);
     allAssignedTasks.forEach(task => {
       const centers = (task.targetCenters || [])
-        .map(cn => `مركز ${cn}`)
         .filter(c => allowedCenters.has(c));
       const types = task.taskTypes || [];
       centers.forEach(center => {

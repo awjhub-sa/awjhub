@@ -5,7 +5,6 @@ import { db, serverTimestamp, uploadFile, STORAGE_BUCKETS } from '../../lib/db.j
 import { compressImage } from '../../lib/imageCompression.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { getCaterer } from '../../config/centers.js';
-import { extractCenterNum } from '../../hooks/useAssignedTasks.js';
 import { computeReadinessTotals } from '../../config/readinessScore.js';
 import { MINA_SECTIONS, MINA_ALL_CRITERIA } from '../../config/minaQuestions.js';
 
@@ -35,14 +34,13 @@ export default function SupMinaReadiness() {
   const [tasksLoading, setTasksLoading] = useState(true);
 
   useEffect(() => {
-    const cn  = extractCenterNum(centerId);
     const uid = profile?.uid;
-    if (!uid || !cn) { setTasksLoading(false); return; }
+    if (!uid || !centerId || centerId === '—') { setTasksLoading(false); return; }
     let t1 = false, t2 = false;
     const done = () => { if (t1 && t2) setTasksLoading(false); };
 
     const u1 = db.assigned_tasks.subscribe(rows => {
-      setTasks(rows.filter(t => t.targetCenters?.includes(cn)));
+      setTasks(rows.filter(t => t.targetCenters?.includes(centerId)));
       t1 = true; done();
     });
     const u2 = db.task_completions.subscribe(rows => {

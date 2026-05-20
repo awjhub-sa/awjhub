@@ -171,7 +171,7 @@ CREATE TABLE public.assigned_tasks (
   meal_types            text[] DEFAULT '{}',
   meal_categories       text[] DEFAULT '{}',
   target_nationalities  text[] DEFAULT '{}',
-  target_centers        int[]  NOT NULL DEFAULT '{}',
+  target_centers        text[] NOT NULL DEFAULT '{}',
   scheduled_date        text   NOT NULL,
   created_at            timestamptz NOT NULL DEFAULT now()
 );

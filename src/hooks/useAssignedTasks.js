@@ -18,9 +18,8 @@ export function useAssignedTasks(profile) {
   const [completions, setCompletions] = useState([]);
   const [loading,     setLoading]     = useState(true);
 
-  const uid     = profile?.uid;
-  const center  = profile?.center || '';
-  const cn      = extractCenterNum(center);
+  const uid    = profile?.uid;
+  const center = profile?.center || '';
 
   useEffect(() => {
     if (!uid) return;
@@ -28,7 +27,7 @@ export function useAssignedTasks(profile) {
     const done = () => { if (t1 && t2) setLoading(false); };
 
     const u1 = db.assigned_tasks.subscribe(rows => {
-      setTasks(rows.filter(t => t.targetCenters?.includes(cn)));
+      setTasks(rows.filter(t => t.targetCenters?.includes(center)));
       t1 = true; done();
     });
 
@@ -40,7 +39,7 @@ export function useAssignedTasks(profile) {
     });
 
     return () => { u1(); u2(); };
-  }, [uid, cn, center]);
+  }, [uid, center]);
 
   return { tasks, completions, loading };
 }
