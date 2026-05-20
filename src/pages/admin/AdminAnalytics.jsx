@@ -3,7 +3,7 @@ import { db } from '../../lib/db.js';
 import {
   ShieldCheck, Mountain, ChevronRight, CheckCircle2, XCircle,
   Sparkles, AlertCircle, User, Calendar, Building2, X, Search, Award,
-  TrendingUp, ClipboardList,
+  TrendingUp, ClipboardList, Trash2,
 } from 'lucide-react';
 import PageHeader from '../../components/PageHeader.jsx';
 import { CENTERS, getCaterer } from '../../config/centers.js';
@@ -97,6 +97,19 @@ export default function AdminAnalytics() {
 
   const tab  = TABS.find(t => t.key === activeTab);
   const docs = data[activeTab] ?? [];
+
+  const handleDeleteEval = async (id) => {
+    if (!id || !tab) return;
+    const ok = window.confirm('هل أنت متأكد من حذف هذا التقييم نهائياً؟ لا يمكن التراجع عن هذا الإجراء.');
+    if (!ok) return;
+    try {
+      await db[tab.col].delete(id);
+      /* Realtime subscribe will update the list automatically */
+    } catch (e) {
+      console.error('[AdminAnalytics delete]', e);
+      alert(`فشل الحذف: ${e?.message || e}`);
+    }
+  };
 
   /* Aggregate per center */
   const centerSummaries = useMemo(() => {
@@ -461,14 +474,15 @@ function CenterDetail({ tab, summary, onBack }) {
           <EvaluationCard key={ev.id}
             evalDoc={ev} tab={tab} index={idx + 1}
             isOpen={openEval === ev.id}
-            onToggle={() => setOpenEval(openEval === ev.id ? null : ev.id)} />
+            onToggle={() => setOpenEval(openEval === ev.id ? null : ev.id)}
+            onDelete={() => handleDeleteEval(ev.id)} />
         ))}
       </div>
     </div>
   );
 }
 
-function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle }) {
+function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete }) {
   const score = getScore(evalDoc);
   const sst   = scoreStyle(score);
   const ans     = evalDoc.answers || {};
@@ -526,10 +540,22 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle }) {
             </span>
           </div>
         </div>
-        {/* Chevron */}
-        <div className="w-8 h-8 rounded-lg border border-[#EDE5DC] flex items-center justify-center shrink-0 transition-transform"
-          style={{ transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>
-          <ChevronRight size={14} className="text-[#A98159]" strokeWidth={2.25} />
+        {/* Delete + Chevron */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onDelete?.(); } }}
+            title="حذف التقييم"
+            className="w-8 h-8 rounded-lg border border-red-200 bg-red-50 flex items-center justify-center cursor-pointer hover:bg-red-500 hover:border-red-500 group/del transition-colors"
+          >
+            <Trash2 size={13} className="text-red-500 group-hover/del:text-white" strokeWidth={2.25} />
+          </span>
+          <div className="w-8 h-8 rounded-lg border border-[#EDE5DC] flex items-center justify-center transition-transform"
+            style={{ transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+            <ChevronRight size={14} className="text-[#A98159]" strokeWidth={2.25} />
+          </div>
         </div>
       </button>
 
