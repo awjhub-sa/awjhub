@@ -166,6 +166,89 @@ function PendingTaskRow({ task, onClick }) {
   );
 }
 
+const REPORT_STATUS_LBL = {
+  pending:     { label: 'قيد الانتظار', bg: '#FEF9C3', text: '#854D0E' },
+  in_progress: { label: 'جارٍ التنفيذ', bg: '#DBEAFE', text: '#1E40AF' },
+};
+const LOGISTICS_STATUS_LBL = {
+  pending:  { label: 'قيد الانتظار', bg: '#FEF9C3', text: '#854D0E' },
+  approved: { label: 'معتمد',        bg: '#DBEAFE', text: '#1E40AF' },
+};
+
+function ReportRow({ report, onClick }) {
+  const status = REPORT_STATUS_LBL[report.status] || REPORT_STATUS_LBL.pending;
+  return (
+    <button onClick={onClick}
+      className="group/row min-h-[64px] w-full flex items-center gap-3 px-4 sm:px-5 py-3 sm:py-3.5 text-right hover:bg-gradient-to-l hover:from-red-50/40 hover:to-transparent active:bg-red-50 transition-all duration-300"
+    >
+      <div className="relative flex-shrink-0">
+        <div className="absolute inset-0 rounded-xl blur-md bg-red-400 opacity-0 group-hover/row:opacity-40 transition-opacity" />
+        <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center border-2 group-hover/row:scale-110 group-hover/row:rotate-3 transition-transform duration-300"
+          style={{ background: '#FEF2F2', borderColor: '#FECACA' }}>
+          <AlertTriangle size={18} className="text-red-600" strokeWidth={2} />
+        </div>
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <p className="text-sm font-bold text-[#2D2926] leading-tight truncate">بلاغ ميداني</p>
+          {report.reportNumber && (
+            <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md tabular-nums bg-red-50 border border-red-200 text-red-700">
+              #{report.reportNumber}
+            </span>
+          )}
+          <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md" style={{ background: status.bg, color: status.text }}>
+            {status.label}
+          </span>
+        </div>
+        <p className="text-[11px] text-[#9D8F85] mt-0.5 truncate">
+          <span className="font-bold text-[#A98159]">{report.center}</span>
+          {report.observer && <> · بواسطة: <span className="font-bold text-[#2D2926]">{report.observer}</span></>}
+        </p>
+      </div>
+      <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-red-50 group-hover/row:bg-red-500 flex items-center justify-center group-hover/row:-translate-x-1 transition-all duration-300">
+        <ChevronLeft size={16} className="text-red-600 group-hover/row:text-white transition-colors" strokeWidth={2.5} />
+      </div>
+    </button>
+  );
+}
+
+function LogisticsRow({ item, onClick }) {
+  const status = LOGISTICS_STATUS_LBL[item.status] || LOGISTICS_STATUS_LBL.pending;
+  return (
+    <button onClick={onClick}
+      className="group/row min-h-[64px] w-full flex items-center gap-3 px-4 sm:px-5 py-3 sm:py-3.5 text-right hover:bg-gradient-to-l hover:from-blue-50/40 hover:to-transparent active:bg-blue-50 transition-all duration-300"
+    >
+      <div className="relative flex-shrink-0">
+        <div className="absolute inset-0 rounded-xl blur-md bg-blue-400 opacity-0 group-hover/row:opacity-40 transition-opacity" />
+        <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center border-2 group-hover/row:scale-110 group-hover/row:rotate-3 transition-transform duration-300"
+          style={{ background: '#EFF6FF', borderColor: '#BFDBFE' }}>
+          <Package size={18} className="text-blue-600" strokeWidth={2} />
+        </div>
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <p className="text-sm font-bold text-[#2D2926] leading-tight truncate">طلب إسناد</p>
+          {item.requestNumber && (
+            <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md tabular-nums bg-blue-50 border border-blue-200 text-blue-700">
+              #{item.requestNumber}
+            </span>
+          )}
+          <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md" style={{ background: status.bg, color: status.text }}>
+            {status.label}
+          </span>
+        </div>
+        <p className="text-[11px] text-[#9D8F85] mt-0.5 truncate">
+          <span className="font-bold text-[#A98159]">{item.center}</span>
+          {item.observer && <> · بواسطة: <span className="font-bold text-[#2D2926]">{item.observer}</span></>}
+        </p>
+      </div>
+      <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-blue-50 group-hover/row:bg-blue-500 flex items-center justify-center group-hover/row:-translate-x-1 transition-all duration-300">
+        <ChevronLeft size={16} className="text-blue-600 group-hover/row:text-white transition-colors" strokeWidth={2.5} />
+      </div>
+    </button>
+  );
+}
+
 function CenterCard({ centerId, stats, onClick }) {
   const pending   = stats?.pending   ?? 0;
   const completed = stats?.completed ?? 0;
@@ -243,6 +326,8 @@ export default function SupervisorHome() {
 
   const [allAssignedTasks, setAllAssignedTasks] = useState([]);
   const [allCompletions,   setAllCompletions]   = useState([]);
+  const [openReports,      setOpenReports]      = useState([]);
+  const [openLogistics,    setOpenLogistics]    = useState([]);
 
   useEffect(() => {
     const fetchCenters = async () => {
@@ -349,6 +434,8 @@ export default function SupervisorHome() {
       setGlobalNotifs([]);
       setAllAssignedTasks([]);
       setAllCompletions([]);
+      setOpenReports([]);
+      setOpenLogistics([]);
       return;
     }
     const todayMs = new Date().setHours(0, 0, 0, 0);
@@ -370,7 +457,24 @@ export default function SupervisorHome() {
       setGlobalNotifs(notifs);
     });
 
-    return () => { unsubAssigned(); unsubCompletions(); };
+    /* Open field reports across all of the supervisor's centers — anything
+       still pending or in-progress is actionable. Resolved are hidden. */
+    const unsubReports = supaDb.reports.subscribe(rows => {
+      const open = rows
+        .filter(r => allowed.has(r.center) && r.status !== 'resolved')
+        .sort((a, b) => (b.timestamp?.toMillis?.() || 0) - (a.timestamp?.toMillis?.() || 0));
+      setOpenReports(open);
+    });
+
+    /* Same for logistics — delivered + rejected are terminal, hide them. */
+    const unsubLogistics = supaDb.logistics_requests.subscribe(rows => {
+      const open = rows
+        .filter(r => allowed.has(r.center) && r.status !== 'delivered' && r.status !== 'rejected')
+        .sort((a, b) => (b.timestamp?.toMillis?.() || 0) - (a.timestamp?.toMillis?.() || 0));
+      setOpenLogistics(open);
+    });
+
+    return () => { unsubAssigned(); unsubCompletions(); unsubReports(); unsubLogistics(); };
   }, [user?.uid, assignedCenters]);
 
   const handleLogout = async () => {
@@ -631,6 +735,9 @@ export default function SupervisorHome() {
 
           {view === 'actions' && (<>
           {/* Pending tasks (cross-center) */}
+          {(() => {
+            const totalActionable = pendingTasks.length + openReports.length + openLogistics.length;
+            return (
           <section className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-3xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
             <div className="px-5 py-4 border-b border-[#EDE5DC] flex items-center justify-between"
               style={{ background: 'linear-gradient(135deg, #FEF2F2 0%, #fff 55%)' }}>
@@ -642,38 +749,62 @@ export default function SupervisorHome() {
                 <div>
                   <h2 className="text-base font-bold text-[#2D2926]">مهام تحتاج إجراء</h2>
                   <p className="text-[11px] text-[#9D8F85] mt-0.5">
-                    {pendingTasks.length === 0 ? 'كل المهام مكتملة 🎉' : `${pendingTasks.length} مهمة عبر مراكزك`}
+                    {totalActionable === 0
+                      ? 'كل شيء مكتمل 🎉'
+                      : `${totalActionable} ${totalActionable === 1 ? 'بند' : 'بنود'} عبر مراكزك`}
                   </p>
                 </div>
               </div>
             </div>
-            <div className="divide-y divide-[#EDE5DC]">
-              {pendingTasks.length === 0 ? (
-                <div className="py-12 text-center">
-                  <div className="relative w-fit mx-auto mb-3">
-                    <div className="absolute inset-0 rounded-2xl blur-xl bg-green-400 opacity-30" />
-                    <div className="relative w-14 h-14 rounded-2xl flex items-center justify-center"
-                      style={{ background: 'linear-gradient(135deg, #DCFCE7, #BBF7D0)' }}>
-                      <CheckCircle2 size={26} className="text-green-600" strokeWidth={2} />
-                    </div>
+
+            {totalActionable === 0 ? (
+              <div className="py-12 text-center">
+                <div className="relative w-fit mx-auto mb-3">
+                  <div className="absolute inset-0 rounded-2xl blur-xl bg-green-400 opacity-30" />
+                  <div className="relative w-14 h-14 rounded-2xl flex items-center justify-center"
+                    style={{ background: 'linear-gradient(135deg, #DCFCE7, #BBF7D0)' }}>
+                    <CheckCircle2 size={26} className="text-green-600" strokeWidth={2} />
                   </div>
-                  <p className="text-[#16A34A] font-bold text-sm">جميع مهامك مكتملة!</p>
-                  <p className="text-[#6D6E71] text-xs mt-1">لا توجد مهام معلّقة في أي من مراكزك</p>
                 </div>
-              ) : (
-                pendingTasks.slice(0, 10).map(task => (
+                <p className="text-[#16A34A] font-bold text-sm">جميع البنود مكتملة!</p>
+                <p className="text-[#6D6E71] text-xs mt-1">لا توجد مهام أو بلاغات أو طلبات معلّقة</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-[#EDE5DC]">
+                {pendingTasks.slice(0, 10).map(task => (
                   <PendingTaskRow key={task.key} task={task} onClick={() => goToTaskUpload(task)} />
-                ))
-              )}
-            </div>
-            {pendingTasks.length > 10 && (
+                ))}
+
+                {openReports.slice(0, 10).map(r => (
+                  <ReportRow key={`report-${r.id}`} report={r}
+                    onClick={() => {
+                      setSelectedCenter(r.center);
+                      sessionStorage.setItem('sup_selected_center', r.center);
+                      setView('activity');
+                    }} />
+                ))}
+
+                {openLogistics.slice(0, 10).map(l => (
+                  <LogisticsRow key={`log-${l.id}`} item={l}
+                    onClick={() => {
+                      setSelectedCenter(l.center);
+                      sessionStorage.setItem('sup_selected_center', l.center);
+                      setView('activity');
+                    }} />
+                ))}
+              </div>
+            )}
+
+            {(pendingTasks.length > 10 || openReports.length > 10 || openLogistics.length > 10) && (
               <div className="px-5 py-3 bg-[#FDFAF7] border-t border-[#EDE5DC] text-center">
                 <p className="text-xs text-[#6D6E71] font-medium">
-                  معروض ١٠ من أصل {pendingTasks.length} مهمة — افتح مركزاً معيناً لرؤية مهامه
+                  معروض ١٠ من كل فئة — افتح مركزاً معيناً لرؤية الكل
                 </p>
               </div>
             )}
           </section>
+            );
+          })()}
 
           {/* Centers grid — actions tab */}
           <section className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-3xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden">
