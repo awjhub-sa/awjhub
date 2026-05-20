@@ -820,35 +820,43 @@ export default function SupervisorHome() {
                   const cfg = ACTIVITY_CFG[item._col];
                   const statusInfo = STATUS_DATA[item.status] || { label: item.status, bg: '#F3F4F6', text: '#374151' };
                   return (
-                    <div key={item.id} className="bg-white border border-[#D1C4B9] rounded-2xl px-5 py-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-all">
-                      <div className="w-1.5 self-stretch rounded-full shrink-0" style={{ background: cfg.color }} />
-                      <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}><cfg.Icon size={20} style={{ color: cfg.color }} /></div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          {item._col === 'task_completions' ? (
-                            <p className="text-sm font-bold text-[#2D2926] leading-snug">
-                              تم رفع <span className="text-[#386B41]">{TASK_TYPE_LABELS[item.taskType] || item.taskType}</span>
-                              {item.mealType ? ` — ${MEAL_LABELS[item.mealType] || ''}` : ''}
+                    <div key={item.id} className="bg-white border border-[#D1C4B9] rounded-2xl shadow-sm hover:shadow-md transition-all overflow-hidden">
+                      <div className="px-5 py-4 flex items-center gap-4">
+                        <div className="w-1.5 self-stretch rounded-full shrink-0" style={{ background: cfg.color }} />
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}><cfg.Icon size={20} style={{ color: cfg.color }} /></div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            {item._col === 'task_completions' ? (
+                              <p className="text-sm font-bold text-[#2D2926] leading-snug">
+                                تم رفع <span className="text-[#386B41]">{TASK_TYPE_LABELS[item.taskType] || item.taskType}</span>
+                                {item.mealType ? ` — ${MEAL_LABELS[item.mealType] || ''}` : ''}
+                              </p>
+                            ) : (
+                              <p className="text-base font-bold text-[#2D2926] truncate">{item.reportType || item.type || cfg.label}</p>
+                            )}
+                            <span className="text-xs text-[#6D6E71] font-bold shrink-0 mr-2">
+                              {new Date(item._sortTs || item.timestamp?.toMillis?.() || 0).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] text-[#A98159] font-bold flex items-center gap-1">
+                              <User size={10} />
+                              {item._col === 'task_completions'
+                                ? `بواسطة: ${item.observerName || 'مراقب'}`
+                                : `بواسطة: ${item.observer || 'مراقب ميداني'}`}
                             </p>
-                          ) : (
-                            <p className="text-base font-bold text-[#2D2926] truncate">{item.reportType || item.type || cfg.label}</p>
-                          )}
-                          <span className="text-xs text-[#6D6E71] font-bold shrink-0 mr-2">
-                            {new Date(item._sortTs || item.timestamp?.toMillis?.() || 0).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <p className="text-[10px] text-[#A98159] font-bold flex items-center gap-1">
-                            <User size={10} />
-                            {item._col === 'task_completions'
-                              ? `بواسطة: ${item.observerName || 'مراقب'}`
-                              : `بواسطة: ${item.observer || 'مراقب ميداني'}`}
-                          </p>
-                          {item.status && item._col !== 'task_completions' && (
-                            <span className="text-[10px] font-black px-3 py-0.5 rounded-full" style={{ background: statusInfo.bg, color: statusInfo.text }}>{statusInfo.label}</span>
-                          )}
+                            {item.status && item._col !== 'task_completions' && (
+                              <span className="text-[10px] font-black px-3 py-0.5 rounded-full" style={{ background: statusInfo.bg, color: statusInfo.text }}>{statusInfo.label}</span>
+                            )}
+                          </div>
                         </div>
                       </div>
+                      {item.adminNotes && (item._col === 'reports' || item._col === 'logistics_requests') && (
+                        <div className="border-t border-[#E8DDD4] bg-gradient-to-br from-[#FDF8F0] to-white px-5 py-3">
+                          <p className="text-[10px] text-[#A98159] font-black mb-1 tracking-wide">ملاحظات غرفة العمليات</p>
+                          <p className="text-[12px] text-[#2D2926] font-medium leading-relaxed whitespace-pre-wrap">{item.adminNotes}</p>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

@@ -132,10 +132,31 @@ function StatCard({ label, value, Icon, color, sub, onClick }) {
 }
 
 /* ─── Report Detail Modal ─── */
-function ReportDetailModal({ report, onClose, onDelete, onStatusChange }) {
+function ReportDetailModal({ report, onClose, onDelete, onStatusChange, onSaveNotes }) {
   if (!report) return null;
   const label = REPORT_TYPE[report.reportType || report.type] || report.reportType || report.type || 'بلاغ';
   const sv    = SEV[report.severity];
+  const [notes, setNotes]       = useState(report.adminNotes || '');
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [savedNotes,  setSavedNotes]  = useState(false);
+
+  useEffect(() => {
+    setNotes(report.adminNotes || '');
+    setSavedNotes(false);
+  }, [report.id, report.adminNotes]);
+
+  const handleSaveNotes = async () => {
+    if (savingNotes) return;
+    setSavingNotes(true);
+    try {
+      await onSaveNotes?.(report.id, notes);
+      setSavedNotes(true);
+      setTimeout(() => setSavedNotes(false), 2000);
+    } catch (e) {
+      alert(`فشل حفظ الملاحظات: ${e?.message || e}`);
+    }
+    setSavingNotes(false);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" dir="rtl">
@@ -293,6 +314,32 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange }) {
                 className="w-full rounded-xl border border-[#EDE5DC] bg-black max-h-72" />
             </div>
           )}
+
+          {/* Admin notes — operations room */}
+          <div className="bg-gradient-to-br from-[#FDF8F0] to-white border border-[#E8DDD4] rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[11px] text-[#9D8F85] font-bold flex items-center gap-1.5">
+                <span className="w-1.5 h-4 rounded-full bg-[#A98159]" />
+                ملاحظات غرفة العمليات
+              </p>
+              {savedNotes && (
+                <span className="text-[10px] font-black text-green-700 bg-green-50 border border-green-200 rounded-md px-2 py-0.5">
+                  ✓ تم الحفظ
+                </span>
+              )}
+            </div>
+            <textarea
+              value={notes}
+              onChange={e => { setNotes(e.target.value); setSavedNotes(false); }}
+              rows={3}
+              placeholder="اكتب ملاحظات تظهر للمراقب/المشرف الذي رفع البلاغ..."
+              className="w-full px-3 py-2.5 border border-[#E8DDD4] rounded-xl text-sm text-[#2D2926] placeholder-[#C9B8A8] focus:border-[#A98159] focus:ring-2 focus:ring-[#A98159]/15 outline-none transition-all bg-white resize-none"
+            />
+            <button onClick={handleSaveNotes} disabled={savingNotes || notes === (report.adminNotes || '')}
+              className="mt-2 w-full py-2.5 rounded-xl bg-gradient-to-br from-[#C4A46E] to-[#A98159] text-white text-sm font-black shadow-sm active:scale-[0.98] transition-all disabled:opacity-50">
+              {savingNotes ? 'جارٍ الحفظ...' : 'حفظ الملاحظات'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -300,9 +347,30 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange }) {
 }
 
 /* ─── Logistics Detail Modal ─── */
-function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange }) {
+function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange, onSaveNotes }) {
   if (!item) return null;
   const st = SUPPORT[item.supportType] || SUPPORT.internal;
+  const [notes, setNotes]       = useState(item.adminNotes || '');
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [savedNotes,  setSavedNotes]  = useState(false);
+
+  useEffect(() => {
+    setNotes(item.adminNotes || '');
+    setSavedNotes(false);
+  }, [item.id, item.adminNotes]);
+
+  const handleSaveNotes = async () => {
+    if (savingNotes) return;
+    setSavingNotes(true);
+    try {
+      await onSaveNotes?.(item.id, notes);
+      setSavedNotes(true);
+      setTimeout(() => setSavedNotes(false), 2000);
+    } catch (e) {
+      alert(`فشل حفظ الملاحظات: ${e?.message || e}`);
+    }
+    setSavingNotes(false);
+  };
   const SupportIcon = st.Icon;
 
   return (
@@ -477,6 +545,32 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange }) {
               <p className="text-sm text-[#2D2926] leading-relaxed whitespace-pre-wrap">{item.notes}</p>
             </div>
           )}
+
+          {/* Admin notes — operations room */}
+          <div className="bg-gradient-to-br from-[#FDF8F0] to-white border border-[#E8DDD4] rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[11px] text-[#9D8F85] font-bold flex items-center gap-1.5">
+                <span className="w-1.5 h-4 rounded-full bg-[#A98159]" />
+                ملاحظات غرفة العمليات
+              </p>
+              {savedNotes && (
+                <span className="text-[10px] font-black text-green-700 bg-green-50 border border-green-200 rounded-md px-2 py-0.5">
+                  ✓ تم الحفظ
+                </span>
+              )}
+            </div>
+            <textarea
+              value={notes}
+              onChange={e => { setNotes(e.target.value); setSavedNotes(false); }}
+              rows={3}
+              placeholder="اكتب ملاحظات تظهر للمراقب/المشرف الذي رفع الطلب..."
+              className="w-full px-3 py-2.5 border border-[#E8DDD4] rounded-xl text-sm text-[#2D2926] placeholder-[#C9B8A8] focus:border-[#A98159] focus:ring-2 focus:ring-[#A98159]/15 outline-none transition-all bg-white resize-none"
+            />
+            <button onClick={handleSaveNotes} disabled={savingNotes || notes === (item.adminNotes || '')}
+              className="mt-2 w-full py-2.5 rounded-xl bg-gradient-to-br from-[#C4A46E] to-[#A98159] text-white text-sm font-black shadow-sm active:scale-[0.98] transition-all disabled:opacity-50">
+              {savingNotes ? 'جارٍ الحفظ...' : 'حفظ الملاحظات'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -563,6 +657,14 @@ export default function AdminDashboard() {
     if (!window.confirm('هل أنت متأكد من حذف هذا الطلب؟')) return;
     await db.logistics_requests.delete(id);
     setSelectedLogistics(null);
+  };
+  const handleSaveReportNotes = async (id, adminNotes) => {
+    await db.reports.update(id, { adminNotes });
+    setSelectedReport(prev => prev?.id === id ? { ...prev, adminNotes } : prev);
+  };
+  const handleSaveLogisticsNotes = async (id, adminNotes) => {
+    await db.logistics_requests.update(id, { adminNotes });
+    setSelectedLogistics(prev => prev?.id === id ? { ...prev, adminNotes } : prev);
   };
 
   useEffect(() => {
@@ -1053,6 +1155,7 @@ export default function AdminDashboard() {
           onClose={() => setSelectedReport(null)}
           onDelete={handleDeleteReport}
           onStatusChange={handleStatusChange}
+          onSaveNotes={handleSaveReportNotes}
         />
       )}
       {selectedLogistics && (
@@ -1061,6 +1164,7 @@ export default function AdminDashboard() {
           onClose={() => setSelectedLogistics(null)}
           onDelete={handleDeleteLogistics}
           onStatusChange={handleLogisticsStatusChange}
+          onSaveNotes={handleSaveLogisticsNotes}
         />
       )}
     </div>

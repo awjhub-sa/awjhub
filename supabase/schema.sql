@@ -52,6 +52,7 @@ CREATE TABLE public.reports (
   closed_at          timestamptz,
   images             text[]       NOT NULL DEFAULT '{}',
   video_url          text,
+  admin_notes        text,
   role               text,
   timestamp          timestamptz  NOT NULL DEFAULT now()
 );
@@ -81,6 +82,7 @@ CREATE TABLE public.logistics_requests (
   status_since       timestamptz NOT NULL DEFAULT now(),
   durations          jsonb        NOT NULL DEFAULT '{}'::jsonb,
   closed_at          timestamptz,
+  admin_notes        text,
   role               text,
   timestamp          timestamptz  NOT NULL DEFAULT now()
 );

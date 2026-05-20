@@ -312,34 +312,42 @@ export default function Home() {
                     : (item.mealType ? (MEAL_LBL[item.mealType] || item.mealType) : '');
 
                   return (
-                    <div key={item.id} className="bg-white border border-[#D1C4B9] rounded-2xl px-4 py-3 flex items-center gap-3 shadow-sm">
-                      <div className="w-1.5 self-stretch rounded-full shrink-0"
-                        style={{ background: item.severity ? SEVERITY_COLOR[item.severity] : cfg.color }} />
-                      <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-                        style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}>
-                        <Icon size={18} style={{ color: cfg.color }} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-0.5 gap-2">
-                          <p className="text-sm font-bold text-[#2D2926] truncate">{title}</p>
-                          <span className="text-[10px] text-[#6D6E71] font-bold shrink-0 tabular-nums">{fmtTime(ms)}</span>
+                    <div key={item.id} className="bg-white border border-[#D1C4B9] rounded-2xl shadow-sm overflow-hidden">
+                      <div className="px-4 py-3 flex items-center gap-3">
+                        <div className="w-1.5 self-stretch rounded-full shrink-0"
+                          style={{ background: item.severity ? SEVERITY_COLOR[item.severity] : cfg.color }} />
+                        <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                          style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}>
+                          <Icon size={18} style={{ color: cfg.color }} />
                         </div>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {(item.reportNumber || item.requestNumber) && (
-                            <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md tabular-nums"
-                              style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
-                              {item.reportNumber || item.requestNumber}
-                            </span>
-                          )}
-                          {sub && <span className="text-[10px] text-[#6D6E71] font-bold">{sub}</span>}
-                          {showStatus && (
-                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
-                              style={{ background: statusInfo.bg, color: statusInfo.text }}>
-                              {statusInfo.label}
-                            </span>
-                          )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-0.5 gap-2">
+                            <p className="text-sm font-bold text-[#2D2926] truncate">{title}</p>
+                            <span className="text-[10px] text-[#6D6E71] font-bold shrink-0 tabular-nums">{fmtTime(ms)}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {(item.reportNumber || item.requestNumber) && (
+                              <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md tabular-nums"
+                                style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
+                                {item.reportNumber || item.requestNumber}
+                              </span>
+                            )}
+                            {sub && <span className="text-[10px] text-[#6D6E71] font-bold">{sub}</span>}
+                            {showStatus && (
+                              <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
+                                style={{ background: statusInfo.bg, color: statusInfo.text }}>
+                                {statusInfo.label}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
+                      {item.adminNotes && (item._col === 'reports' || item._col === 'logistics_requests') && (
+                        <div className="border-t border-[#E8DDD4] bg-gradient-to-br from-[#FDF8F0] to-white px-4 py-2.5">
+                          <p className="text-[10px] text-[#A98159] font-black mb-1 tracking-wide">ملاحظات غرفة العمليات</p>
+                          <p className="text-[12px] text-[#2D2926] font-medium leading-relaxed whitespace-pre-wrap">{item.adminNotes}</p>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
