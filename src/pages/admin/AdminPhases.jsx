@@ -9,6 +9,17 @@ import { MEAL_QUESTIONS } from '../../config/mealQuestions.js';
 import { Coffee, ForkKnife, Moon } from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
 import { extractCenterNum, extractDay } from '../../hooks/useAssignedTasks.js';
+import { computePhaseAlerts, gregorianForDhulHijjah } from '../../lib/phaseAlerts.js';
+import { hasMealContent } from '../../config/menus.js';
+import { getCenterNationalityKeys } from '../../config/nationalities.js';
+
+/* Returns true if at least one nationality at this center has menu content
+   for the given (day, mealKey). */
+function centerHasMealInMenu(centerId, day, mealKey) {
+  const nats = getCenterNationalityKeys(centerId);
+  if (!nats || nats.length === 0) return false;
+  return nats.some(k => hasMealContent(k, day, mealKey));
+}
 
 /* Meal category metadata — matches what's stored under assigned_tasks.mealCategories */
 const MEAL_CATEGORY_META = {
@@ -84,18 +95,25 @@ function PhotoLightbox({ src, onClose }) {
   );
 }
 
-function PhaseDot({ done, phase, small, photoUrl, onViewPhoto }) {
+function PhaseDot({ done, phase, small, photoUrl, onViewPhoto, late }) {
   const size = small ? 'w-6 h-6 text-[9px]' : 'w-7 h-7 text-[10px]';
+  const lateStyle = late && !done
+    ? { background: '#EF4444', color: '#fff', boxShadow: '0 0 0 0 rgba(239,68,68,0.55)' }
+    : null;
   return (
     <div className="relative group">
       <div
-        className={`${size} rounded-full flex items-center justify-center font-black transition-all cursor-default`}
+        className={`${size} rounded-full flex items-center justify-center font-black transition-all cursor-default ${late && !done ? 'badge-pulse-red' : ''}`}
         style={done
           ? { background: phase.color, color: '#fff', boxShadow: `0 0 8px ${phase.glow}` }
-          : { background: '#F3F4F6', color: '#D1D5DB' }
+          : (lateStyle || { background: '#F3F4F6', color: '#D1D5DB' })
         }
+        title={late && !done ? (phase.id === 1 ? 'متأخر في التجهيز' : phase.id === 3 ? 'متأخر في التوزيع' : '') : undefined}
       >
-        {done ? <CheckCircle2 size={small ? 11 : 13} strokeWidth={2.5} /> : phase.id}
+        {done
+          ? <CheckCircle2 size={small ? 11 : 13} strokeWidth={2.5} />
+          : (late ? <AlertCircle size={small ? 11 : 13} strokeWidth={2.5} /> : phase.id)
+        }
       </div>
       {done && photoUrl && (
         <button
@@ -189,6 +207,13 @@ export default function AdminPhases() {
     return db.meal_evaluations.subscribe(rows => setMealEvals(rows));
   }, []);
 
+  /* Re-tick every 30s so late-alerts come on at the right time without a refresh */
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30 * 1000);
+    return () => clearInterval(id);
+  }, []);
+
   /* Map: centerNum → Set<category> for the selected day's meal-evaluation tasks. */
   const centerCategories = useMemo(() => {
     const map = new Map();
@@ -223,23 +248,39 @@ export default function AdminPhases() {
     return map;
   }, [mealEvals]);
 
+  /* Resolve the Gregorian date for the selected Hijri day once per render */
+  const selectedDateOnly = useMemo(() => gregorianForDhulHijjah(selectedDay), [selectedDay]);
+
   const rows = useMemo(() => {
     /* Each row reflects the SELECTED meal only — focused single-meal view */
     const list = CENTERS.map(c => {
       const data = getCell(c.id, selectedDay, selectedMeal);
       const total = cellDone(data);
       const evalDoc = evalLookup.get(`${c.id}|${selectedDay}|${selectedMeal}`);
-      return { center: c.id, caterer: c.caterer, total, data, evalDoc };
+      const hasMeal = centerHasMealInMenu(c.id, selectedDay, selectedMeal);
+      /* If the menu has no meal for this center, skip alert computation entirely. */
+      const alerts = hasMeal
+        ? computePhaseAlerts({
+            centerId: c.id, day: selectedDay, mealKey: selectedMeal, cell: data,
+            now, dateOnly: selectedDateOnly,
+          })
+        : { phase1Late: false, phase3Late: false, prepStart: null, distStart: null, hasMenuTime: false };
+      return { center: c.id, caterer: c.caterer, total, data, evalDoc, alerts, hasMeal };
     });
     if (sortBy === 'progress') return [...list].sort((a, b) => b.total - a.total);
     return list;
-  }, [phasesData, selectedDay, selectedMeal, sortBy, evalLookup]);
+  }, [phasesData, selectedDay, selectedMeal, sortBy, evalLookup, now, selectedDateOnly]);
 
   const maxDone = PHASES.length; // 3 phases for a single meal
-  const fullyDone  = rows.filter(r => r.total === maxDone).length;
-  const inProgress = rows.filter(r => r.total > 0 && r.total < maxDone).length;
-  const notStarted = rows.filter(r => r.total === 0).length;
-  const overallPct = Math.round((rows.reduce((s, r) => s + r.total, 0) / (rows.length * maxDone)) * 100) || 0;
+  /* Eligible = centers that actually have this meal in their menu. */
+  const eligibleRows = rows.filter(r => r.hasMeal);
+  const totalEligible = eligibleRows.length;
+  const fullyDone  = eligibleRows.filter(r => r.total === maxDone).length;
+  const inProgress = eligibleRows.filter(r => r.total > 0 && r.total < maxDone).length;
+  const notStarted = eligibleRows.filter(r => r.total === 0).length;
+  const overallPct = totalEligible > 0
+    ? Math.round((eligibleRows.reduce((s, r) => s + r.total, 0) / (totalEligible * maxDone)) * 100)
+    : 0;
 
   /* Selected-meal meta (label, icon, color) for the header strip + progress bar */
   const mealMeta = MEALS.find(m => m.id === selectedMeal) || MEALS[0];
@@ -339,8 +380,9 @@ export default function AdminPhases() {
         {MEALS.map(meal => {
           const MIcon = meal.icon;
           const active = selectedMeal === meal.id;
-          /* Compute count of completed meals for this meal type across centers */
-          const doneCount = CENTERS.filter(c =>
+          /* Only count centers that actually have this meal in their menu */
+          const eligibleCenters = CENTERS.filter(c => centerHasMealInMenu(c.id, selectedDay, meal.id));
+          const doneCount = eligibleCenters.filter(c =>
             cellDone(getCell(c.id, selectedDay, meal.id)) === PHASES.length
           ).length;
           return (
@@ -370,7 +412,7 @@ export default function AdminPhases() {
                 active ? 'bg-white/25 text-white' : ''
               }`}
                 style={!active ? { background: `${meal.color}15`, color: meal.color } : undefined}>
-                {doneCount}/{CENTERS.length}
+                {doneCount}/{eligibleCenters.length}
               </span>
             </button>
           );
@@ -380,10 +422,10 @@ export default function AdminPhases() {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'إجمالي المراكز',  value: rows.length, color: '#6366F1', icon: Layers       },
-          { label: 'مكتمل الوجبات',   value: fullyDone,   color: '#10B981', icon: CheckCircle2 },
-          { label: 'قيد التنفيذ',     value: inProgress,  color: '#F59E0B', icon: Activity     },
-          { label: 'لم يبدأ',         value: notStarted,  color: '#9D8F85', icon: Clock        },
+          { label: 'مراكز هذه الوجبة', value: totalEligible, color: '#6366F1', icon: Layers       },
+          { label: 'مكتمل الوجبات',   value: fullyDone,    color: '#10B981', icon: CheckCircle2 },
+          { label: 'قيد التنفيذ',     value: inProgress,   color: '#F59E0B', icon: Activity     },
+          { label: 'لم يبدأ',         value: notStarted,   color: '#9D8F85', icon: Clock        },
         ].map(c => (
           <div key={c.label}
             className="bg-white rounded-2xl p-4 border border-[#EDE5DC] shadow-[0_2px_8px_rgba(45,41,38,0.07)] flex items-center gap-3"
@@ -451,10 +493,12 @@ export default function AdminPhases() {
           const pct = Math.round((row.total / maxDone) * 100);
           const data = row.data;
           const isTarget = mealClearTarget?.center === row.center && mealClearTarget?.mealId === selectedMeal;
+          const isLate = row.alerts?.phase1Late || row.alerts?.phase3Late;
+          const noMeal = row.hasMeal === false;
           return (
             <div
               key={row.center}
-              className={`grid gap-3 px-5 py-3.5 items-center group/row hover:bg-[#FDFAF7] transition-colors ${!isLast ? 'border-b border-[#EDE5DC]' : ''}`}
+              className={`grid gap-3 px-5 py-3.5 items-center group/row transition-colors ${!isLast ? 'border-b border-[#EDE5DC]' : ''} ${isLate ? 'row-pulse-red' : noMeal ? 'bg-[#FAFAF8]/60' : 'hover:bg-[#FDFAF7]'}`}
               style={{ gridTemplateColumns: '1.6fr repeat(3, 1fr) 0.7fr 0.9fr 0.5fr' }}
             >
               {/* Center info */}
@@ -484,6 +528,14 @@ export default function AdminPhases() {
                         </span>
                       );
                     })}
+                    {noMeal && (
+                      <span className="inline-flex items-center gap-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border bg-[#F5F0EB] border-[#E8DDD4] text-[#9D8F85]"
+                        title="لا توجد وجبة لهذا المركز في المنيو لهذا اليوم"
+                      >
+                        <AlertCircle size={9} strokeWidth={2.5} />
+                        لا توجد وجبة {mealMeta.label} في المنيو
+                      </span>
+                    )}
                   </div>
                   <p className="text-[10px] text-[#A98159] font-bold truncate">{row.caterer}</p>
                 </div>
@@ -494,6 +546,8 @@ export default function AdminPhases() {
                 const done = !!data[`phase${phase.id}`];
                 const time = fmtTime(data[`phase${phase.id}`]);
                 const photoUrl = data[`phase${phase.id}Photo`] || null;
+                const phaseLate = (phase.id === 1 && row.alerts?.phase1Late)
+                               || (phase.id === 3 && row.alerts?.phase3Late);
                 return (
                   <div key={phase.id} className="flex flex-col items-center gap-1.5">
                     <PhaseDot
@@ -501,7 +555,11 @@ export default function AdminPhases() {
                       phase={phase}
                       photoUrl={photoUrl}
                       onViewPhoto={setLightboxSrc}
+                      late={phaseLate}
                     />
+                    {phaseLate && !done && (
+                      <span className="text-[9px] font-black text-red-600 leading-none">متأخر</span>
+                    )}
                     {done ? (
                       <span className="text-[10px] font-bold tabular-nums" style={{ color: phase.color }}>
                         {time}
