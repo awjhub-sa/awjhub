@@ -13,7 +13,7 @@
  *   Regenerate:  node scripts/downloadCairoFont.mjs
  */
 
-import { useState }                              from 'react';
+import { useState, useMemo }                     from 'react';
 import { db }                                    from '../../lib/db.js';
 import {
   toMs, getTotalElapsedMs, fmtDuration,
@@ -28,7 +28,7 @@ import { ARAFAT_ALL_CRITERIA }                   from '../../config/arafatQuesti
 import {
   FileText, X, ChevronDown, Loader2,
   CheckCircle2, Building2, Calendar, ClipboardList,
-  ListChecks, Eye, Info,
+  ListChecks, Eye, Info, Search, Check,
 } from 'lucide-react';
 
 /* Map each report-type key to its question list (for detail mode) */
@@ -340,11 +340,18 @@ function getLogoDataUrl() {
 /* Logo aspect ratio for sizing in PDF (landscape SVG) */
 const LOGO_ASPECT = LOGO_FALLBACK_W / LOGO_FALLBACK_H;
 
+/* centerFilter is a (possibly empty) array of exact center IDs.
+   Empty array = no center restriction (all centers). */
 async function fetchReportData({ centerFilter, dateFilter, types }) {
   const result = {};
+  const wantCenters = Array.isArray(centerFilter) && centerFilter.length > 0
+    ? new Set(centerFilter)
+    : null;
   await Promise.all(types.map(async (type) => {
-    const opts = centerFilter !== 'all' ? { filter: { center: centerFilter } } : {};
-    let docs = await db[type].list(opts);
+    let docs = await db[type].list();
+    if (wantCenters) {
+      docs = docs.filter(d => wantCenters.has(d.center));
+    }
     if (dateFilter) {
       docs = docs.filter(d => (d.scheduledDate ?? '') === dateFilter);
     }
@@ -476,9 +483,11 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
     : allObservers.length <= 3  ? allObservers.join(' • ')
     : `${allObservers[0]} و${allObservers.length - 1} آخرون`;
 
+  /* contractorName only shows when exactly one center is selected; for
+     multiple, the per-center sections show each contractor separately. */
   const contractorName =
-    centerFilter !== 'all'
-      ? (CENTERS.find(c => c.id === centerFilter)?.caterer ?? '—')
+    Array.isArray(centerFilter) && centerFilter.length === 1
+      ? (CENTERS.find(c => c.id === centerFilter[0])?.caterer ?? '—')
       : '—';
 
   let pageNum = 0;
@@ -858,8 +867,15 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
   /* ── Metadata card ──
      Each row auto-sizes (1 or 2 lines) using wrapArabicLines.
      Rows: المركز | المتعهد | التاريخ | المراقب | أنواع التقارير | تاريخ الإصدار */
+  const centerLabel = !Array.isArray(centerFilter) || centerFilter.length === 0
+    ? 'جميع المراكز'
+    : centerFilter.length === 1
+      ? centerFilter[0]
+      : centerFilter.length <= 3
+        ? centerFilter.join(' • ')
+        : `${centerFilter.length} مراكز محددة`;
   const metaRows = [
-    ['المركز',         centerFilter === 'all' ? 'جميع المراكز' : centerFilter],
+    ['المركز',         centerLabel],
     ['اسم المتعهد',    contractorName],
     ['التاريخ',        dateFilter || 'جميع الأيام'],
     ['اسم المراقب',    observerDisplay],
@@ -993,20 +1009,23 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
 
   drawPageFooter();
 
+  /* If centerFilter is empty → derive centers from the data;
+     otherwise use the explicit selection. Always sort by numeric prefix. */
+  const sortByNum = (a, b) => {
+    const na = parseInt((a ?? '').replace(/\D/g, '')) || 0;
+    const nb = parseInt((b ?? '').replace(/\D/g, '')) || 0;
+    return na - nb;
+  };
   const centers =
-    centerFilter === 'all'
+    !Array.isArray(centerFilter) || centerFilter.length === 0
       ? [
           ...new Set(
             types.flatMap(t =>
               (data[t] ?? []).map(d => d.center).filter(Boolean)
             )
           ),
-        ].sort((a, b) => {
-          const na = parseInt((a ?? '').replace(/\D/g, '')) || 0;
-          const nb = parseInt((b ?? '').replace(/\D/g, '')) || 0;
-          return na - nb;
-        })
-      : [centerFilter].filter(Boolean);
+        ].sort(sortByNum)
+      : [...centerFilter].sort(sortByNum);
 
   for (const center of centers) {
     for (const type of types) {
@@ -1171,8 +1190,106 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
+function CenterMultiSelect({ value, onChange, onToggle, search, onSearchChange, disabled }) {
+  const filtered = useMemo(() => {
+    const q = (search || '').trim();
+    if (!q) return CENTERS;
+    return CENTERS.filter(c => c.id.includes(q) || (c.caterer || '').includes(q));
+  }, [search]);
+
+  const allSelected = value.length === CENTERS.length;
+  const summary = value.length === 0
+    ? 'جميع المراكز'
+    : value.length === 1
+      ? value[0]
+      : `${value.length} مركز محدد`;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-2 mb-2.5">
+        <div className="flex items-center gap-2">
+          <Building2 size={13} className="text-[#A98159]" />
+          <label className="text-xs font-black text-[#2D2926] uppercase tracking-wide">المركز</label>
+        </div>
+        <span className="text-[10px] font-bold text-[#9D8F85] tabular-nums">{summary}</span>
+      </div>
+
+      {/* Action row: select all / clear */}
+      <div className="flex items-center gap-2 mb-2">
+        <button
+          type="button"
+          onClick={() => onChange(allSelected ? [] : CENTERS.map(c => c.id))}
+          disabled={disabled}
+          className="text-[11px] font-black px-2.5 py-1.5 rounded-lg border border-[#A98159]/30 bg-[#FDF8F0] text-[#A98159] hover:bg-[#A98159] hover:text-white transition-colors disabled:opacity-60"
+        >
+          {allSelected ? 'إلغاء التحديد' : 'تحديد الكل'}
+        </button>
+        {value.length > 0 && !allSelected && (
+          <button
+            type="button"
+            onClick={() => onChange([])}
+            disabled={disabled}
+            className="text-[11px] font-black px-2.5 py-1.5 rounded-lg border border-[#EDE5DC] text-[#6D6E71] hover:bg-[#F5F0EB] transition-colors disabled:opacity-60"
+          >
+            مسح
+          </button>
+        )}
+        <span className="ml-auto text-[10px] font-bold text-[#9D8F85] tabular-nums">
+          {value.length === 0 ? 'لا تحديد = الكل' : `${value.length} / ${CENTERS.length}`}
+        </span>
+      </div>
+
+      {/* Search */}
+      <div className="relative mb-2">
+        <Search size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9D8F85]" strokeWidth={2.25} />
+        <input
+          type="text"
+          value={search}
+          onChange={e => onSearchChange(e.target.value)}
+          disabled={disabled}
+          placeholder="ابحث برقم المركز أو المتعهد..."
+          className="w-full pr-9 pl-3 py-2 rounded-xl border border-[#EDE5DC] bg-[#FAFAF8] text-xs font-bold text-[#2D2926] placeholder:text-[#C9B8A8] focus:border-[#A98159] focus:outline-none transition-colors disabled:opacity-60"
+        />
+      </div>
+
+      {/* Chips grid */}
+      <div className="max-h-[180px] overflow-y-auto bg-[#FAFAF8] border border-[#EDE5DC] rounded-2xl p-2">
+        {filtered.length === 0 ? (
+          <p className="text-[11px] text-center text-[#9D8F85] py-6 font-bold">لا يوجد مركز مطابق</p>
+        ) : (
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
+            {filtered.map(c => {
+              const active = value.includes(c.id);
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => onToggle(c.id)}
+                  disabled={disabled}
+                  title={c.caterer || c.id}
+                  className={`relative flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-black border-2 transition-all disabled:opacity-60 ${
+                    active
+                      ? 'bg-[#A98159] text-white border-[#A98159] shadow-sm'
+                      : 'bg-white text-[#2D2926] border-[#EDE5DC] hover:border-[#A98159]/40'
+                  }`}
+                >
+                  {active && <Check size={10} strokeWidth={3} />}
+                  <span className="truncate">{c.id}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ReportModal({ onClose }) {
-  const [centerFilter, setCenterFilter] = useState('all');
+  /* centerFilter is now an array of center IDs.
+     Empty array = "all centers" (no restriction). */
+  const [centerFilter, setCenterFilter] = useState([]);
+  const [centerSearch, setCenterSearch] = useState('');
   const [dateFilter,   setDateFilter]   = useState('');
   const [types, setTypes] = useState([]);
   const [generating, setGenerating] = useState(false);
@@ -1184,15 +1301,18 @@ function ReportModal({ onClose }) {
       prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
     );
 
-  /* Open the HTML report view in a new tab.
-     The view fetches its own data based on the URL params, so we don't need
-     to pre-fetch here — keeps the modal snappy. */
+  const toggleCenter = (id) =>
+    setCenterFilter(prev =>
+      prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
+    );
+
+  /* Open the HTML report view in a new tab. */
   const handleGenerate = (detailed = false) => {
     if (!types.length) { setError('اختر نوعاً واحداً على الأقل'); return; }
     setError('');
 
     const params = new URLSearchParams();
-    if (centerFilter && centerFilter !== 'all') params.set('center', centerFilter);
+    if (centerFilter.length > 0) params.set('center', centerFilter.join(','));
     if (dateFilter) params.set('date', dateFilter);
     params.set('types', types.join(','));
     if (detailed) params.set('detailed', '1');
@@ -1257,30 +1377,14 @@ function ReportModal({ onClose }) {
         <div className="p-6 space-y-5 max-h-[58vh] overflow-y-auto">
 
           {/* 1. Center */}
-          <div>
-            <div className="flex items-center gap-2 mb-2.5">
-              <Building2 size={13} className="text-[#A98159]" />
-              <label className="text-xs font-black text-[#2D2926] uppercase tracking-wide">
-                المركز
-              </label>
-            </div>
-            <div className="relative">
-              <select
-                value={centerFilter}
-                onChange={e => setCenterFilter(e.target.value)}
-                disabled={generating}
-                className="w-full appearance-none bg-[#FAFAF8] border border-[#EDE5DC] rounded-2xl px-4 py-3 pl-9 text-sm font-bold text-[#2D2926] outline-none focus:border-[#A98159] focus:shadow-[0_0_0_3px_rgba(169,129,89,0.1)] transition-all cursor-pointer disabled:opacity-60"
-              >
-                <option value="all">جميع المراكز</option>
-                {CENTERS.map(c => (
-                  <option key={c.id} value={c.id}>{c.id}</option>
-                ))}
-              </select>
-              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                <ChevronDown size={14} className="text-[#9D8F85]" />
-              </div>
-            </div>
-          </div>
+          <CenterMultiSelect
+            value={centerFilter}
+            onChange={setCenterFilter}
+            onToggle={toggleCenter}
+            search={centerSearch}
+            onSearchChange={setCenterSearch}
+            disabled={generating}
+          />
 
           {/* 2. Day */}
           <div>

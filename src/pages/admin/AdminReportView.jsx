@@ -98,11 +98,17 @@ function formatTime(ts) {
   } catch { return '—'; }
 }
 
+/* centerFilter is an array of exact center IDs (empty = all centers). */
 async function fetchReportData({ centerFilter, dateFilter, types }) {
   const result = {};
+  const wantCenters = Array.isArray(centerFilter) && centerFilter.length > 0
+    ? new Set(centerFilter)
+    : null;
   await Promise.all(types.map(async (type) => {
-    const opts = centerFilter !== 'all' ? { filter: { center: centerFilter } } : {};
-    let docs = await db[type].list(opts);
+    let docs = await db[type].list();
+    if (wantCenters) {
+      docs = docs.filter(d => wantCenters.has(d.center));
+    }
     if (dateFilter) {
       docs = docs.filter(d => (d.scheduledDate ?? '') === dateFilter);
     }
@@ -117,7 +123,10 @@ async function fetchReportData({ centerFilter, dateFilter, types }) {
 export default function AdminReportView() {
   const [params] = useSearchParams();
 
-  const centerFilter = params.get('center') || 'all';
+  /* `center` URL param can be comma-separated for multi-select.
+     Missing/empty = all centers. */
+  const rawCenter    = params.get('center') || '';
+  const centerFilter = rawCenter ? rawCenter.split(',').filter(Boolean) : [];
   const dateFilter   = params.get('date')   || '';
   const types        = (params.get('types') || '').split(',').filter(Boolean);
   const detailed     = params.get('detailed') === '1';
@@ -138,20 +147,21 @@ export default function AdminReportView() {
       .catch(err => setError(err.message || 'حدث خطأ في جلب البيانات'))
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [centerFilter, dateFilter, params.get('types')]);
+  }, [rawCenter, dateFilter, params.get('types')]);
 
   /* ── Derived: centers in scope ── */
   const centers = useMemo(() => {
     if (!data) return [];
-    if (centerFilter !== 'all') return [centerFilter];
-    const set = new Set();
-    types.forEach(t => (data[t] || []).forEach(d => d.center && set.add(d.center)));
-    return [...set].sort((a, b) => {
+    const sortByNum = (a, b) => {
       const na = parseInt((a ?? '').replace(/\D/g, '')) || 0;
       const nb = parseInt((b ?? '').replace(/\D/g, '')) || 0;
       return na - nb;
-    });
-  }, [data, centerFilter, types]);
+    };
+    if (centerFilter.length > 0) return [...centerFilter].sort(sortByNum);
+    const set = new Set();
+    types.forEach(t => (data[t] || []).forEach(d => d.center && set.add(d.center)));
+    return [...set].sort(sortByNum);
+  }, [data, rawCenter, types]);
 
   /* ── Totals for cover page ── */
   const totals = useMemo(() => {
@@ -269,8 +279,16 @@ function CoverPage({ centerFilter, dateFilter, types, totals }) {
     year: 'numeric', month: 'long', day: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
-  const contractor = centerFilter !== 'all'
-    ? (CENTERS.find(c => c.id === centerFilter)?.caterer ?? '—')
+  /* Multi-select friendly labels for the cover page */
+  const centerLabel = centerFilter.length === 0
+    ? 'جميع المراكز'
+    : centerFilter.length === 1
+      ? centerFilter[0]
+      : centerFilter.length <= 4
+        ? centerFilter.join(' • ')
+        : `${centerFilter.length} مراكز محددة`;
+  const contractor = centerFilter.length === 1
+    ? (CENTERS.find(c => c.id === centerFilter[0])?.caterer ?? '—')
     : '—';
 
   return (
@@ -306,7 +324,7 @@ function CoverPage({ centerFilter, dateFilter, types, totals }) {
         {/* Filters summary card */}
         <div className="bg-[#FDF8F0] border-2 border-[#E8DDD4] rounded-2xl p-6 max-w-xl w-full text-right shadow-sm">
           <div className="space-y-3.5">
-            <Row Icon={Building2} label="المركز" value={centerFilter === 'all' ? 'جميع المراكز' : centerFilter} />
+            <Row Icon={Building2} label="المركز" value={centerLabel} />
             <Row Icon={FileText}  label="اسم المتعهد" value={contractor} />
             <Row Icon={Calendar}  label="التاريخ"  value={dateFilter || 'جميع الأيام'} />
             <Row
