@@ -733,6 +733,59 @@ export default function SupervisorHome() {
             />
           </div>
 
+          {/* TEMP: Sweep mode banner — tap to start sweeping any center freely.
+              Remove this block (and the buttons inside it) to restore the
+              assigned-task-only flow. */}
+          <section className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              onClick={() => navigate('/sup-mina-readiness', { state: { sweepMode: true } })}
+              className="group relative overflow-hidden rounded-3xl border-2 border-[#A98159]/30 text-right transition-all hover:border-[#A98159] hover:shadow-[0_10px_28px_rgba(169,129,89,0.25)] active:scale-[0.98]"
+              style={{ background: 'linear-gradient(135deg, #FDF8F0 0%, #fff 60%)' }}
+            >
+              <div className="p-5 flex items-center gap-3">
+                <div className="relative shrink-0">
+                  <div className="absolute inset-0 rounded-2xl blur-md bg-[#A98159] opacity-30 group-hover:opacity-60 transition-opacity" />
+                  <div className="relative w-12 h-12 rounded-2xl flex items-center justify-center shadow-md"
+                    style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
+                    <MapPin size={22} className="text-white" strokeWidth={2.25} />
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md text-white bg-[#A98159]/90 tracking-wider">تمشيط حر</span>
+                  </div>
+                  <p className="text-base font-black text-[#2D2926] leading-tight">تمشيط منى</p>
+                  <p className="text-[11px] text-[#6D6E71] mt-0.5">رفع جاهزية لأي مركز بدون إسناد مسبق</p>
+                </div>
+                <ChevronLeft size={18} className="text-[#A98159] shrink-0 group-hover:-translate-x-1 transition-transform" />
+              </div>
+            </button>
+
+            <button
+              onClick={() => navigate('/sup-arafat-readiness', { state: { sweepMode: true } })}
+              className="group relative overflow-hidden rounded-3xl border-2 border-[#0E7C66]/30 text-right transition-all hover:border-[#0E7C66] hover:shadow-[0_10px_28px_rgba(14,124,102,0.25)] active:scale-[0.98]"
+              style={{ background: 'linear-gradient(135deg, #F0FDF4 0%, #fff 60%)' }}
+            >
+              <div className="p-5 flex items-center gap-3">
+                <div className="relative shrink-0">
+                  <div className="absolute inset-0 rounded-2xl blur-md bg-[#0E7C66] opacity-30 group-hover:opacity-60 transition-opacity" />
+                  <div className="relative w-12 h-12 rounded-2xl flex items-center justify-center shadow-md"
+                    style={{ background: 'linear-gradient(135deg, #0E7C66, #065F4E)' }}>
+                    <Mountain size={22} className="text-white" strokeWidth={2.25} />
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md text-white bg-[#0E7C66]/90 tracking-wider">تمشيط حر</span>
+                  </div>
+                  <p className="text-base font-black text-[#2D2926] leading-tight">تمشيط عرفة</p>
+                  <p className="text-[11px] text-[#6D6E71] mt-0.5">رفع جاهزية لأي مركز بدون إسناد مسبق</p>
+                </div>
+                <ChevronLeft size={18} className="text-[#0E7C66] shrink-0 group-hover:-translate-x-1 transition-transform" />
+              </div>
+            </button>
+          </section>
+
           {view === 'actions' && (<>
           {/* Pending tasks (cross-center) */}
           {(() => {

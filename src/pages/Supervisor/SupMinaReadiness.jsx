@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronRight, Save, CheckCircle2, AlertCircle, Home, ArrowLeft, Ban, Calendar, Camera, Loader2, X } from 'lucide-react';
+import { ChevronRight, Save, CheckCircle2, AlertCircle, Home, ArrowLeft, Ban, Calendar, Camera, Loader2, X, Search, MapPin } from 'lucide-react';
 import { db, serverTimestamp, uploadFile, STORAGE_BUCKETS } from '../../lib/db.js';
 import { compressImage } from '../../lib/imageCompression.js';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { getCaterer } from '../../config/centers.js';
+import { getCaterer, CENTERS } from '../../config/centers.js';
 import { computeReadinessTotals } from '../../config/readinessScore.js';
 import { MINA_SECTIONS, MINA_ALL_CRITERIA } from '../../config/minaQuestions.js';
 
@@ -17,8 +17,15 @@ export default function SupMinaReadiness() {
   const { state } = useLocation();
   const { profile } = useAuth();
 
-  const centerId    = state?.centerId || '—';
-  const catererName = getCaterer(centerId) || '—';
+  /* TEMP: sweep mode — when supervisor sweeps all of Mina without prior assignment.
+     Triggered by navigating with state.sweepMode = true. Remove the entry point
+     in SupervisorHome to disable. */
+  const sweepMode = state?.sweepMode === true;
+  const [sweepCenter, setSweepCenter] = useState(null);
+  const [centerSearch, setCenterSearch] = useState('');
+
+  const centerId    = sweepMode ? (sweepCenter || '—') : (state?.centerId || '—');
+  const catererName = centerId && centerId !== '—' ? (getCaterer(centerId) || '—') : '—';
 
   const [answers,     setAnswers]     = useState({});
   const [details,     setDetails]     = useState({});
@@ -34,6 +41,8 @@ export default function SupMinaReadiness() {
   const [tasksLoading, setTasksLoading] = useState(true);
 
   useEffect(() => {
+    /* In sweep mode we skip the assigned-task pipeline entirely */
+    if (sweepMode) { setTasksLoading(false); return; }
     const uid = profile?.uid;
     if (!uid || !centerId || centerId === '—') { setTasksLoading(false); return; }
     let t1 = false, t2 = false;
@@ -48,7 +57,7 @@ export default function SupMinaReadiness() {
       t2 = true; done();
     });
     return () => { u1(); u2(); };
-  }, [profile?.uid, centerId]);
+  }, [profile?.uid, centerId, sweepMode]);
 
   const minaTasks   = tasks.filter(t => t.taskTypes?.includes('mina_readiness'));
   const isDone      = (task) => completions.some(c => c.taskId === task.id && c.taskType === 'mina_readiness');
@@ -123,6 +132,8 @@ export default function SupMinaReadiness() {
       setAnswers({});
       setDetails({});
       setPhotos({});
+      /* In sweep mode, reset center pick so supervisor can go to next center */
+      if (sweepMode) setSweepCenter(null);
     } catch (e) {
       console.error('[SupMinaReadiness submit]', e);
       alert(`خطأ في الإرسال: ${e?.message || e}`);
@@ -130,7 +141,89 @@ export default function SupMinaReadiness() {
     setLoading(false);
   };
 
-  
+  /* All centers, filtered by search box (only used in sweep mode) */
+  const filteredCenters = useMemo(() => {
+    if (!sweepMode) return [];
+    const q = centerSearch.trim();
+    if (!q) return CENTERS;
+    return CENTERS.filter(c =>
+      c.id.includes(q) ||
+      (c.caterer && c.caterer.includes(q))
+    );
+  }, [sweepMode, centerSearch]);
+
+  /* Sweep mode — center picker (shown before the form when no center is picked) */
+  if (sweepMode && !sweepCenter) {
+    return (
+      <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-28 font-arabic px-4 md:px-8">
+        <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 md:px-8 py-3 mb-6 shadow-sm">
+          <div className="max-w-5xl mx-auto flex items-center justify-between">
+            <button onClick={() => navigate('/supervisor-home')} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition shrink-0">
+              <ChevronRight className="text-[#A98159]" size={22} strokeWidth={2.5} />
+            </button>
+            <h1 className="text-base font-bold text-[#2D2926] absolute left-1/2 -translate-x-1/2 whitespace-nowrap">تمشيط منى — اختر المركز</h1>
+            <div className="w-10 shrink-0" />
+          </div>
+        </header>
+
+        <div className="max-w-3xl mx-auto space-y-4">
+          <div className="bg-gradient-to-br from-[#3D3330] via-[#2D2926] to-[#1F1A17] rounded-3xl p-5 shadow-lg flex items-center gap-3">
+            <div className="bg-gradient-to-br from-[#C4A46E] to-[#A98159] p-3 rounded-2xl shadow-md">
+              <MapPin size={22} className="text-white" strokeWidth={2.25} />
+            </div>
+            <div>
+              <p className="text-[#A98159] text-[10px] font-black uppercase tracking-widest mb-0.5">تمشيط منى</p>
+              <h2 className="text-white text-lg font-bold leading-snug">اختر المركز لرفع تقييم الجاهزية</h2>
+              <p className="text-white/60 text-xs mt-1">تقدر تختار أي مركز بدون الحاجة لإسناد مسبق.</p>
+            </div>
+          </div>
+
+          <div className="relative">
+            <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A98159]" strokeWidth={2.25} />
+            <input
+              type="text"
+              value={centerSearch}
+              onChange={e => setCenterSearch(e.target.value)}
+              placeholder="ابحث برقم المركز أو المتعهد..."
+              className="w-full pr-10 pl-4 py-3 bg-white border border-[#D1C4B9] rounded-2xl text-sm font-bold outline-none focus:border-[#A98159] focus:ring-2 focus:ring-[#A98159]/20 transition-all"
+            />
+          </div>
+
+          {filteredCenters.length === 0 ? (
+            <div className="bg-white rounded-2xl py-14 text-center border border-[#EDE5DC]">
+              <Ban size={32} className="mx-auto text-[#D1C4B9] mb-2" strokeWidth={1.5} />
+              <p className="text-[#9D8F85] text-sm font-bold">لا توجد مراكز مطابقة للبحث</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              {filteredCenters.map(c => (
+                <button key={c.id}
+                  onClick={() => {
+                    setSweepCenter(c.id);
+                    setSelectedTask({ taskId: null, scheduledDate: null });
+                  }}
+                  className="group/ctr bg-gradient-to-br from-white to-[#FDF8F0]/60 border-2 border-[#EDE5DC] hover:border-[#A98159] hover:shadow-[0_6px_18px_rgba(169,129,89,0.18)] active:scale-[0.98] rounded-2xl p-3 text-right transition-all">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-xl bg-[#FDF8F0] border border-[#A98159]/20 flex items-center justify-center shrink-0">
+                      <span className="text-[12px] font-black tabular-nums text-[#A98159]">
+                        {(c.id.match(/\d+/) || ['—'])[0]}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-[#2D2926] truncate">{c.id}</p>
+                      <p className="text-[10px] text-[#A98159] font-bold truncate">{c.caterer || '—'}</p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+
   if (!selectedTask) {
     return (
       <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-28 font-arabic px-4 md:px-8">
@@ -211,11 +304,14 @@ export default function SupMinaReadiness() {
     <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-28 font-arabic px-4 md:px-8">
       <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 md:px-8 py-3 mb-6 shadow-sm">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <button onClick={() => { setSelectedTask(null); setAnswers({}); setDetails({}); }}
+          <button onClick={() => {
+              setSelectedTask(null); setAnswers({}); setDetails({}); setPhotos({});
+              if (sweepMode) setSweepCenter(null);
+            }}
             className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition shrink-0">
             <ChevronRight className="text-[#A98159]" size={22} strokeWidth={2.5} />
           </button>
-          <h1 className="text-base font-bold text-[#2D2926] absolute left-1/2 -translate-x-1/2 whitespace-nowrap">جاهزية مشعر منى</h1>
+          <h1 className="text-base font-bold text-[#2D2926] absolute left-1/2 -translate-x-1/2 whitespace-nowrap">{sweepMode ? 'تمشيط منى' : 'جاهزية مشعر منى'}</h1>
           <div className="w-10 shrink-0" />
         </div>
       </header>
