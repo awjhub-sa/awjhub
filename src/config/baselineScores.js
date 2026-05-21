@@ -1,0 +1,162 @@
+/**
+ * Baseline (pre-Hajj / previous-round) readiness scores per center.
+ *
+ * Source: external PDFs sent by the operations team. Updated by editing
+ * this file directly — no DB, no UI. Used by the "تقرير مراحل" stages
+ * report (src/pages/admin/StagesReport.jsx) to compare BEFORE vs AFTER.
+ *
+ * Score: 0–100 percentage (يقابل /10 × 10 من التقييمات الحالية في النظام).
+ * Violations: count of flagged items recorded in the previous round.
+ *
+ * To update: edit the entries, save, commit & push. The dashboard
+ * picks it up immediately — no SQL, no migration.
+ */
+
+export const BASELINE_SCORES = {
+  arafat: {
+    /* From PDF: تقارير للفرضية عرفة (16 May 2026) */
+    'مركز 5':    { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 7':    { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 8':    { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 20':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 21':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 22':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 23':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 24':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 25-أ': { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 25-ب': { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 26':   { score: 86,  violations: 2, date: '2026-05-16' },
+    'مركز 30':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 31':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 32':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 33':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 34':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 35':   { score: 86,  violations: 0, date: '2026-05-16' },
+    'مركز 40':   { score: 71,  violations: 2, date: '2026-05-16' },
+    'مركز 41':   { score: 100, violations: 1, date: '2026-05-16' },
+    'مركز 42':   { score: 100, violations: 1, date: '2026-05-16' },
+    'مركز 43':   { score: 100, violations: 1, date: '2026-05-16' },
+    'مركز 44':   { score: 100, violations: 2, date: '2026-05-16' },
+    'مركز 45':   { score: 100, violations: 3, date: '2026-05-16' },
+    'مركز 46':   { score: 100, violations: 2, date: '2026-05-16' },
+    'مركز 47':   { score: 100, violations: 1, date: '2026-05-16' },
+    'مركز 48-أ': { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 48-ب': { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 49':   { score: 100, violations: 2, date: '2026-05-16' },
+    'مركز 50':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 51':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 60':   { score: 50,  violations: 5, date: '2026-05-16' },
+    'مركز 61':   { score: 86,  violations: 2, date: '2026-05-16' },
+    'مركز 62':   { score: 86,  violations: 0, date: '2026-05-16' },
+    'مركز 63':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 64':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 65':   { score: 71,  violations: 0, date: '2026-05-16' },
+    'مركز 66':   { score: 86,  violations: 1, date: '2026-05-16' },
+    'مركز 67':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 68':   { score: 71,  violations: 0, date: '2026-05-16' },
+    'مركز 69':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 70':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 71':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 72':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 73':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 74':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 75':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 76-أ': { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 77':   { score: 100, violations: 2, date: '2026-05-16' },
+    'مركز 78':   { score: 86,  violations: 1, date: '2026-05-16' },
+    'مركز 79':   { score: 86,  violations: 1, date: '2026-05-16' },
+    'مركز 80':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 81':   { score: 57,  violations: 1, date: '2026-05-16' },
+    'مركز 82':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 83':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 84':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 85':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 86':   { score: 100, violations: 1, date: '2026-05-16' },
+    'مركز 87':   { score: 86,  violations: 2, date: '2026-05-16' },
+    'مركز 88':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 89':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 90':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 101':  { score: 80,  violations: 0, date: '2026-05-16' },
+    'مركز 102':  { score: 100, violations: 0, date: '2026-05-16' },
+  },
+  mina: {
+    /* From PDF: تقارير منى للفرضية (16 May 2026) */
+    'مركز 5':    { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 7':    { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 8':    { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 20':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 21':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 22':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 23':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 24':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 25-أ': { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 25-ب': { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 26':   { score: 100, violations: 1, date: '2026-05-16' },
+    'مركز 30':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 31':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 32':   { score: 67,  violations: 2, date: '2026-05-16' },
+    'مركز 33':   { score: 100, violations: 1, date: '2026-05-16' },
+    'مركز 34':   { score: 67,  violations: 2, date: '2026-05-16' },
+    'مركز 35':   { score: 67,  violations: 2, date: '2026-05-16' },
+    'مركز 40':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 41':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 42':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 43':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 44':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 45':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 46':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 47':   { score: 100, violations: 1, date: '2026-05-16' },
+    'مركز 48-أ': { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 48-ب': { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 49':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 50':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 51':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 60':   { score: 33,  violations: 5, date: '2026-05-16' },
+    'مركز 61':   { score: 100, violations: 1, date: '2026-05-16' },
+    'مركز 62':   { score: 100, violations: 1, date: '2026-05-16' },
+    'مركز 63':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 64':   { score: 50,  violations: 2, date: '2026-05-16' },
+    'مركز 65':   { score: 83,  violations: 0, date: '2026-05-16' },
+    'مركز 66':   { score: 83,  violations: 1, date: '2026-05-16' },
+    'مركز 67':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 68':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 69':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 70':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 71':   { score: 83,  violations: 1, date: '2026-05-16' },
+    'مركز 72':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 73':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 74':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 75':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 76-أ': { score: 50,  violations: 2, date: '2026-05-16' },
+    'مركز 76-ب': { score: 83,  violations: 1, date: '2026-05-16' },
+    'مركز 77':   { score: 83,  violations: 1, date: '2026-05-16' },
+    'مركز 78':   { score: 50,  violations: 3, date: '2026-05-16' },
+    'مركز 79':   { score: 83,  violations: 1, date: '2026-05-16' },
+    'مركز 80':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 81':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 82':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 83':   { score: 100, violations: 1, date: '2026-05-16' },
+    'مركز 84':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 85':   { score: 67,  violations: 2, date: '2026-05-16' },
+    'مركز 86':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 87':   { score: 67,  violations: 3, date: '2026-05-16' },
+    'مركز 88':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 89':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 90':   { score: 100, violations: 0, date: '2026-05-16' },
+    'مركز 99-أ': { score: 100, violations: 2, date: '2026-05-16' },
+    'مركز 99-ب': { score: 83,  violations: 3, date: '2026-05-16' },
+    'مركز 101':  { score: 60,  violations: 3, date: '2026-05-16' },
+    'مركز 102':  { score: 100, violations: 1, date: '2026-05-16' },
+  },
+};
+
+/** Returns { score, violations, date } or null when no baseline exists. */
+export function getBaseline(centerId, holySite) {
+  if (!centerId || !holySite) return null;
+  return BASELINE_SCORES[holySite]?.[centerId] || null;
+}
+
+/** Number of centers with baseline data for a given holy site. */
+export function getBaselineCount(holySite) {
+  return Object.keys(BASELINE_SCORES[holySite] || {}).length;
+}

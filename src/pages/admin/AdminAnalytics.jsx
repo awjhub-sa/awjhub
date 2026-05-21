@@ -4,6 +4,7 @@ import {
   ShieldCheck, Mountain, ChevronRight, CheckCircle2, XCircle,
   Sparkles, AlertCircle, User, Calendar, Building2, X, Search, Award,
   TrendingUp, ClipboardList, Trash2, ListChecks, Sun, Hourglass, UserCog,
+  BarChart3,
 } from 'lucide-react';
 import PageHeader from '../../components/PageHeader.jsx';
 import { CENTERS, getCaterer } from '../../config/centers.js';
@@ -340,6 +341,17 @@ export default function AdminAnalytics() {
               </div>
             ))}
           </div>
+
+          {/* ── Stages report button ── */}
+          <button
+            onClick={() => window.open(`/admin/stages-report?tab=${activeTab}`, '_blank', 'noopener')}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-white text-sm font-black transition-all shadow-md hover:shadow-lg active:scale-[0.99]"
+            style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159 60%, #8B6840)' }}
+          >
+            <BarChart3 size={16} strokeWidth={2.5} />
+            تقرير مراحل — قارن مع التقييمات السابقة
+            <ChevronRight size={15} strokeWidth={2.5} className="opacity-70" />
+          </button>
 
           {/* ── Date filter chips ── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">

@@ -34,6 +34,7 @@ import AdminPhases         from './pages/admin/AdminPhases';
 import AdminReportView     from './pages/admin/AdminReportView';
 import AdminStaff          from './pages/admin/AdminStaff';
 import AdminMenu           from './pages/admin/AdminMenu';
+import StagesReport        from './pages/admin/StagesReport';
 
 // شاشة تحميل بسيطة مطابقة لهوية التطبيق
 const FullPageLoader = () => (
@@ -87,6 +88,10 @@ export default function App() {
         <Route
           path="/admin/report-view"
           element={<RequireAdmin><AdminReportView /></RequireAdmin>}
+        />
+        <Route
+          path="/admin/stages-report"
+          element={<RequireAdmin><StagesReport /></RequireAdmin>}
         />
 
         {/* Admin Routes */}
