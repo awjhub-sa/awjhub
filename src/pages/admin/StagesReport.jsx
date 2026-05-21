@@ -16,8 +16,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   ShieldCheck, Mountain, AlertCircle, CheckCircle2, TrendingUp, TrendingDown,
-  Minus, Calendar, Printer, X, ClipboardList, ArrowLeft, Award, Target,
-  Layers, Sparkles, FileText, Building2,
+  Minus, Printer, X, ClipboardList, ArrowLeft, Target,
+  Layers, Sparkles, Building2,
 } from 'lucide-react';
 import { db } from '../../lib/db.js';
 import { CENTERS } from '../../config/centers.js';
@@ -68,6 +68,14 @@ export default function StagesReport() {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [minaDocs,  setMinaDocs]  = useState([]);
   const [arafatDocs, setArafatDocs] = useState([]);
+
+  /* Override the document title while on this page so the browser's print
+     header doesn't reveal the app name. Restored on unmount. */
+  useEffect(() => {
+    const prev = document.title;
+    document.title = ' ';
+    return () => { document.title = prev; };
+  }, []);
 
   useEffect(() => {
     const u1 = db.mina_readiness.subscribe(setMinaDocs);
@@ -168,10 +176,6 @@ export default function StagesReport() {
     };
   }, [rows]);
 
-  const today = new Date().toLocaleString('ar-SA', {
-    year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
-  });
-
   return (
     <div className="stages-report" dir="rtl">
       {/* Toolbar — hidden on print */}
@@ -214,19 +218,13 @@ export default function StagesReport() {
             style={{ background: 'linear-gradient(135deg, #C4A46E 0%, #A98159 60%, #8B6840 100%)' }}>
             <div className="absolute top-0 right-0 w-48 h-48 rounded-full opacity-15"
               style={{ background: 'radial-gradient(circle, #fff 0%, transparent 70%)', transform: 'translate(40%, -50%)' }} />
-            <div className="flex items-center justify-between relative">
-              <div className="flex items-center gap-5">
-                <div className="bg-white rounded-2xl p-3 shadow-md flex-shrink-0">
-                  <img src={logoSrc} alt="ضيوف البيت" className="w-20 h-auto" />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold mb-1">ضيوف البيت</h1>
-                  <p className="text-white/85 text-sm font-medium">لجنة التغذية — موسم الحج ١٤٤٧ هـ</p>
-                </div>
+            <div className="flex items-center gap-5 relative">
+              <div className="bg-white rounded-2xl p-3 shadow-md flex-shrink-0">
+                <img src={logoSrc} alt="ضيوف البيت" className="w-20 h-auto" />
               </div>
-              <div className="text-left text-white/90 text-xs hidden sm:block">
-                <p className="font-bold mb-0.5">تقرير المراحل</p>
-                <p className="text-white/70">{today}</p>
+              <div>
+                <h1 className="text-3xl font-bold mb-1">ضيوف البيت</h1>
+                <p className="text-white/85 text-sm font-medium">لجنة التغذية — موسم الحج ١٤٤٧ هـ</p>
               </div>
             </div>
           </div>
@@ -369,91 +367,9 @@ export default function StagesReport() {
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="px-6 py-3 border-t border-[#EDE5DC] flex items-center justify-between text-[10px] text-[#9D8F85] font-bold"
-            style={{ background: '#FAFAF8' }}>
-            <span className="flex items-center gap-1.5">
-              <FileText size={11} strokeWidth={2.25} />
-              ضيوف البيت — لجنة التغذية
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Calendar size={11} strokeWidth={2.25} />
-              {today}
-            </span>
-          </div>
         </article>
 
-        {/* ════ PAGE 2 — Comparison table ════ */}
-        <section className="report-page bg-white rounded-3xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden print:break-before-page print:break-after-page print:rounded-none print:border-0 print:shadow-none">
-          <div className="px-5 py-3.5 border-b border-[#EDE5DC] flex items-center gap-2"
-            style={{ background: 'linear-gradient(135deg, #FAFAF8 0%, #fff 100%)' }}>
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-              style={{ background: `${tab.color}15` }}>
-              <ClipboardList size={16} style={{ color: tab.color }} strokeWidth={2.25} />
-            </div>
-            <div>
-              <p className="text-sm font-black text-[#2D2926]">مقارنة الجاهزية — قبل وبعد</p>
-              <p className="text-[11px] text-[#9D8F85] font-bold">{tab.label}</p>
-            </div>
-          </div>
-
-          <div className="grid gap-3 px-5 py-3 border-b border-[#EDE5DC] bg-[#FAFAF8] text-[11px] font-black text-[#9D8F85]"
-            style={{ gridTemplateColumns: '1.5fr 0.8fr 0.8fr 0.8fr 0.8fr 1fr' }}>
-            <span>المركز</span>
-            <span className="text-center">قبل %</span>
-            <span className="text-center">بعد %</span>
-            <span className="text-center">قبل (مخالفات)</span>
-            <span className="text-center">بعد (مخالفات)</span>
-            <span className="text-center">التغيّر</span>
-          </div>
-
-          {rows.map((r, idx) => {
-            const ds = deltaStyle(r.scoreDelta);
-            const DIcon = ds.Icon;
-            const isLast = idx === rows.length - 1;
-            return (
-              <div key={r.center}
-                className={`grid gap-3 px-5 py-3 items-center text-sm ${!isLast ? 'border-b border-[#EDE5DC]' : ''}`}
-                style={{ gridTemplateColumns: '1.5fr 0.8fr 0.8fr 0.8fr 0.8fr 1fr' }}>
-                <div className="min-w-0">
-                  <p className="font-black text-[#2D2926] truncate">{r.center}</p>
-                  <p className="text-[10px] text-[#A98159] font-bold truncate">{r.caterer || '—'}</p>
-                </div>
-                <div className="text-center">
-                  <span className="inline-flex items-center justify-center min-w-[55px] px-2 py-1 rounded-lg text-[12px] font-black tabular-nums"
-                    style={{ background: r.beforeScore != null ? '#F5F0EB' : '#F9F7F5', color: r.beforeScore != null ? '#2D2926' : '#C9B8A8' }}>
-                    {r.beforeScore != null ? `${r.beforeScore}%` : '—'}
-                  </span>
-                </div>
-                <div className="text-center">
-                  <span className="inline-flex items-center justify-center min-w-[55px] px-2 py-1 rounded-lg text-[12px] font-black tabular-nums"
-                    style={{ background: r.afterScore != null ? `${tab.color}15` : '#F9F7F5', color: r.afterScore != null ? tab.color : '#C9B8A8' }}>
-                    {r.afterScore != null ? `${r.afterScore}%` : '—'}
-                  </span>
-                </div>
-                <div className="text-center text-[11px] text-[#6D6E71] tabular-nums">
-                  {r.beforeViols != null ? r.beforeViols : '—'}
-                </div>
-                <div className="text-center text-[11px] text-[#6D6E71] tabular-nums">
-                  {r.afterViols != null ? r.afterViols : '—'}
-                </div>
-                <div className="text-center">
-                  {r.scoreDelta != null ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg border tabular-nums"
-                      style={{ background: ds.bg, borderColor: ds.border, color: ds.color }}>
-                      <DIcon size={11} strokeWidth={2.5} />
-                      {fmtDelta(r.scoreDelta, '%')}
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-bold text-[#9D8F85]">بدون مقارنة</span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </section>
-
-        {/* ════ PAGE 3 — Visual bar comparison ════ */}
+        {/* ════ PAGE 2 — Visual bar comparison ════ */}
         <section className="report-page bg-white rounded-3xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden print:break-before-page print:rounded-none print:border-0 print:shadow-none">
           <div className="px-5 py-3.5 border-b border-[#EDE5DC]"
             style={{ background: 'linear-gradient(135deg, #FAFAF8 0%, #fff 100%)' }}>
