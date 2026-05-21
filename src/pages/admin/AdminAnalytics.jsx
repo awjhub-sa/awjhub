@@ -101,7 +101,7 @@ export default function AdminAnalytics() {
   const [data,      setData]      = useState({ mina: null, arafat: null });
   const [selectedCenter, setSelectedCenter] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  /* 'all' | 'today' | 'remaining' (centers without an evaluation today) */
+  /* 'all' | 'uploaded' (any eval ever) | 'today' | 'remaining' (no eval today) */
   const [dateFilter, setDateFilter] = useState('all');
 
   /* Tick every 60s so "today" boundary auto-refreshes if the page stays open
@@ -142,10 +142,14 @@ export default function AdminAnalytics() {
   /* Today's start (Riyadh local). Re-evaluated on each tick. */
   const todayStartMs = useMemo(() => todayRiyadhStartMs(), [tick]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* Docs scoped by the date filter — 'today' & 'remaining' both restrict to today. */
+  /* Docs scoped by the date filter:
+       - 'today' / 'remaining' → restrict to today's docs
+       - 'all' / 'uploaded'    → use the full lifetime set */
   const scopedDocs = useMemo(() => {
-    if (dateFilter === 'all') return docs;
-    return docs.filter(d => docTimestampMs(d) >= todayStartMs);
+    if (dateFilter === 'today' || dateFilter === 'remaining') {
+      return docs.filter(d => docTimestampMs(d) >= todayStartMs);
+    }
+    return docs;
   }, [docs, dateFilter, todayStartMs]);
 
   /* Aggregate per center using scoped docs */
@@ -185,23 +189,31 @@ export default function AdminAnalytics() {
     return all;
   }, [scopedDocs]);
 
-  /* Counts for filter buttons — computed always-today so badges stay accurate
-     regardless of which filter is currently active. */
-  const todayCountByCenter = useMemo(() => {
+  /* Counts for filter buttons — always computed across the full lifetime set
+     so badges stay accurate regardless of which filter is currently active. */
+  const uploadedCenterSet = useMemo(() => {
+    const set = new Set();
+    docs.forEach(d => set.add(getCenter(d)));
+    return set;
+  }, [docs]);
+  const todayCenterSet = useMemo(() => {
     const set = new Set();
     docs.forEach(d => {
       if (docTimestampMs(d) >= todayStartMs) set.add(getCenter(d));
     });
     return set;
   }, [docs, todayStartMs]);
-  const todayCount     = todayCountByCenter.size;
+  const uploadedCount  = uploadedCenterSet.size;
+  const todayCount     = todayCenterSet.size;
   const remainingCount = CENTERS.length - todayCount;
 
-  /* Filtered by search term + remaining filter */
+  /* Filtered by search term + (remaining / uploaded) filter */
   const filteredSummaries = useMemo(() => {
     let list = centerSummaries;
     if (dateFilter === 'remaining') {
       list = list.filter(s => s.count === 0);
+    } else if (dateFilter === 'uploaded') {
+      list = list.filter(s => s.count > 0);
     }
     if (searchTerm.trim()) {
       const q = searchTerm.trim().toLowerCase();
@@ -330,11 +342,12 @@ export default function AdminAnalytics() {
           </div>
 
           {/* ── Date filter chips ── */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {[
-              { key: 'all',       label: 'الكل',     Icon: ListChecks, count: CENTERS.length, color: '#6D6E71' },
-              { key: 'today',     label: 'اليوم',    Icon: Sun,        count: todayCount,     color: '#0E7C66' },
-              { key: 'remaining', label: 'المتبقي',  Icon: Hourglass,  count: remainingCount, color: '#B91C1C' },
+              { key: 'all',       label: 'الكل',      Icon: ListChecks,  count: CENTERS.length, color: '#6D6E71' },
+              { key: 'uploaded',  label: 'تم رفعها',  Icon: CheckCircle2, count: uploadedCount,  color: '#15803D' },
+              { key: 'today',     label: 'اليوم',     Icon: Sun,         count: todayCount,     color: '#0E7C66' },
+              { key: 'remaining', label: 'المتبقي',   Icon: Hourglass,   count: remainingCount, color: '#B91C1C' },
             ].map(f => {
               const active = dateFilter === f.key;
               const FIcon = f.Icon;
@@ -397,7 +410,9 @@ export default function AdminAnalytics() {
                   ? '🎉 جميع المراكز رُفعت لها تقييمات اليوم'
                   : dateFilter === 'today'
                     ? 'لم تُرفع تقييمات اليوم بعد'
-                    : 'لا توجد مراكز تطابق البحث'}
+                    : dateFilter === 'uploaded'
+                      ? 'لم يُرفع أي تقييم بعد'
+                      : 'لا توجد مراكز تطابق البحث'}
               </p>
             </div>
           ) : (
