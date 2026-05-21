@@ -751,10 +751,7 @@ export default function SupervisorHome() {
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md text-white bg-[#A98159]/90 tracking-wider">تمشيط حر</span>
-                  </div>
-                  <p className="text-base font-black text-[#2D2926] leading-tight">تمشيط منى</p>
+                  <p className="text-base font-black text-[#2D2926] leading-tight">جاهزية منى</p>
                   <p className="text-[11px] text-[#6D6E71] mt-0.5">رفع جاهزية لأي مركز بدون إسناد مسبق</p>
                 </div>
                 <ChevronLeft size={18} className="text-[#A98159] shrink-0 group-hover:-translate-x-1 transition-transform" />
@@ -775,10 +772,7 @@ export default function SupervisorHome() {
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md text-white bg-[#0E7C66]/90 tracking-wider">تمشيط حر</span>
-                  </div>
-                  <p className="text-base font-black text-[#2D2926] leading-tight">تمشيط عرفة</p>
+                  <p className="text-base font-black text-[#2D2926] leading-tight">جاهزية عرفة</p>
                   <p className="text-[11px] text-[#6D6E71] mt-0.5">رفع جاهزية لأي مركز بدون إسناد مسبق</p>
                 </div>
                 <ChevronLeft size={18} className="text-[#0E7C66] shrink-0 group-hover:-translate-x-1 transition-transform" />

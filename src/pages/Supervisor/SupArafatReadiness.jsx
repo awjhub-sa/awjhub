@@ -107,6 +107,7 @@ export default function SupArafatReadiness() {
         center:        centerId,
         caterer:       catererName,
         uid:           profile?.uid || null,
+        role:          'supervisor',
         answers:       { ...answers, __details: details, __photos: photos },
         ...scoring,
         scheduledDate: selectedTask?.scheduledDate || null,
@@ -154,7 +155,7 @@ export default function SupArafatReadiness() {
             <button onClick={() => navigate('/supervisor-home')} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition shrink-0">
               <ChevronRight className="text-[#A98159]" size={22} strokeWidth={2.5} />
             </button>
-            <h1 className="text-base font-bold text-[#2D2926] absolute left-1/2 -translate-x-1/2 whitespace-nowrap">تمشيط عرفة — اختر المركز</h1>
+            <h1 className="text-base font-bold text-[#2D2926] absolute left-1/2 -translate-x-1/2 whitespace-nowrap">جاهزية عرفة — اختر المركز</h1>
             <div className="w-10 shrink-0" />
           </div>
         </header>
@@ -165,7 +166,7 @@ export default function SupArafatReadiness() {
               <Mountain size={22} className="text-white" strokeWidth={2.25} />
             </div>
             <div>
-              <p className="text-[#0E7C66] text-[10px] font-black uppercase tracking-widest mb-0.5">تمشيط عرفة</p>
+              <p className="text-[#0E7C66] text-[10px] font-black uppercase tracking-widest mb-0.5">جاهزية عرفة</p>
               <h2 className="text-white text-lg font-bold leading-snug">اختر المركز لرفع تقييم الجاهزية</h2>
               <p className="text-white/60 text-xs mt-1">تقدر تختار أي مركز بدون الحاجة لإسناد مسبق.</p>
             </div>
@@ -304,7 +305,7 @@ export default function SupArafatReadiness() {
             className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition shrink-0">
             <ChevronRight className="text-[#A98159]" size={22} strokeWidth={2.5} />
           </button>
-          <h1 className="text-base font-bold text-[#2D2926] absolute left-1/2 -translate-x-1/2 whitespace-nowrap">{sweepMode ? 'تمشيط عرفة' : 'جاهزية مشعر عرفة'}</h1>
+          <h1 className="text-base font-bold text-[#2D2926] absolute left-1/2 -translate-x-1/2 whitespace-nowrap">جاهزية عرفة</h1>
           <div className="w-10 shrink-0" />
         </div>
       </header>

@@ -3,7 +3,7 @@ import { db } from '../../lib/db.js';
 import {
   ShieldCheck, Mountain, ChevronRight, CheckCircle2, XCircle,
   Sparkles, AlertCircle, User, Calendar, Building2, X, Search, Award,
-  TrendingUp, ClipboardList, Trash2,
+  TrendingUp, ClipboardList, Trash2, ListChecks, Sun, Hourglass, UserCog,
 } from 'lucide-react';
 import PageHeader from '../../components/PageHeader.jsx';
 import { CENTERS, getCaterer } from '../../config/centers.js';
@@ -77,12 +77,40 @@ function scoreStyle(score) {
 }
 const getObserver = d => d.observer || d.observerName || '—';
 const getCenter   = d => d.center   || d.centerId     || '—';
+const isSupervisorDoc = d => d?.role === 'supervisor';
+
+/* Returns the UTC timestamp (ms) for 00:00 Riyadh of today.
+   Riyadh = UTC+3 (no DST), so 00:00 Riyadh = 21:00 UTC the previous day. */
+function todayRiyadhStartMs() {
+  const fmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric',
+  });
+  const parts = fmt.formatToParts(new Date());
+  const y = parseInt(parts.find(p => p.type === 'year').value, 10);
+  const m = parseInt(parts.find(p => p.type === 'month').value, 10);
+  const d = parseInt(parts.find(p => p.type === 'day').value, 10);
+  /* 00:00 Riyadh = -3:00 UTC (i.e., 21:00 UTC previous calendar day). */
+  return Date.UTC(y, m - 1, d, -3, 0, 0, 0);
+}
+const docTimestampMs = d =>
+  d?.timestamp?.toMillis?.()
+    ?? (d?.timestamp ? new Date(d.timestamp).getTime() : 0);
 
 export default function AdminAnalytics() {
   const [activeTab, setActiveTab] = useState('mina');
   const [data,      setData]      = useState({ mina: null, arafat: null });
   const [selectedCenter, setSelectedCenter] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  /* 'all' | 'today' | 'remaining' (centers without an evaluation today) */
+  const [dateFilter, setDateFilter] = useState('all');
+
+  /* Tick every 60s so "today" boundary auto-refreshes if the page stays open
+     across midnight Riyadh time. */
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     const unsubs = TABS.map(t =>
@@ -111,15 +139,24 @@ export default function AdminAnalytics() {
     }
   };
 
-  /* Aggregate per center */
+  /* Today's start (Riyadh local). Re-evaluated on each tick. */
+  const todayStartMs = useMemo(() => todayRiyadhStartMs(), [tick]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Docs scoped by the date filter — 'today' & 'remaining' both restrict to today. */
+  const scopedDocs = useMemo(() => {
+    if (dateFilter === 'all') return docs;
+    return docs.filter(d => docTimestampMs(d) >= todayStartMs);
+  }, [docs, dateFilter, todayStartMs]);
+
+  /* Aggregate per center using scoped docs */
   const centerSummaries = useMemo(() => {
     const map = new Map();
-    docs.forEach(d => {
+    scopedDocs.forEach(d => {
       const c = getCenter(d);
       if (!map.has(c)) map.set(c, []);
       map.get(c).push(d);
     });
-    /* Build summary for every center (even those without evaluations) */
+    /* Build summary for every center (even those without evaluations in scope) */
     const all = CENTERS.map(c => {
       const list = map.get(c.id) || [];
       const scores = list.map(getScore).filter(s => s != null);
@@ -132,6 +169,7 @@ export default function AdminAnalytics() {
       list.forEach(d => {
         if (d.answers) totalViolations += Object.values(d.answers).filter(v => v === 'لا').length;
       });
+      const supervisorCount = list.filter(isSupervisorDoc).length;
       return {
         center:  c.id,
         caterer: c.caterer,
@@ -141,20 +179,39 @@ export default function AdminAnalytics() {
         latestDoc,
         totalViolations,
         evaluations: list,
+        supervisorCount,
       };
     });
     return all;
-  }, [docs]);
+  }, [scopedDocs]);
 
-  /* Filtered by search term */
+  /* Counts for filter buttons — computed always-today so badges stay accurate
+     regardless of which filter is currently active. */
+  const todayCountByCenter = useMemo(() => {
+    const set = new Set();
+    docs.forEach(d => {
+      if (docTimestampMs(d) >= todayStartMs) set.add(getCenter(d));
+    });
+    return set;
+  }, [docs, todayStartMs]);
+  const todayCount     = todayCountByCenter.size;
+  const remainingCount = CENTERS.length - todayCount;
+
+  /* Filtered by search term + remaining filter */
   const filteredSummaries = useMemo(() => {
-    if (!searchTerm.trim()) return centerSummaries;
-    const q = searchTerm.trim().toLowerCase();
-    return centerSummaries.filter(s =>
-      s.center.toLowerCase().includes(q) ||
-      (s.caterer || '').toLowerCase().includes(q)
-    );
-  }, [centerSummaries, searchTerm]);
+    let list = centerSummaries;
+    if (dateFilter === 'remaining') {
+      list = list.filter(s => s.count === 0);
+    }
+    if (searchTerm.trim()) {
+      const q = searchTerm.trim().toLowerCase();
+      list = list.filter(s =>
+        s.center.toLowerCase().includes(q) ||
+        (s.caterer || '').toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [centerSummaries, searchTerm, dateFilter]);
 
   /* Stats */
   const evaluated   = centerSummaries.filter(s => s.count > 0).length;
@@ -272,6 +329,38 @@ export default function AdminAnalytics() {
             ))}
           </div>
 
+          {/* ── Date filter chips ── */}
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { key: 'all',       label: 'الكل',     Icon: ListChecks, count: CENTERS.length, color: '#6D6E71' },
+              { key: 'today',     label: 'اليوم',    Icon: Sun,        count: todayCount,     color: '#0E7C66' },
+              { key: 'remaining', label: 'المتبقي',  Icon: Hourglass,  count: remainingCount, color: '#B91C1C' },
+            ].map(f => {
+              const active = dateFilter === f.key;
+              const FIcon = f.Icon;
+              return (
+                <button key={f.key}
+                  onClick={() => setDateFilter(f.key)}
+                  className={`group/flt flex items-center justify-center gap-2 px-3 py-2.5 rounded-2xl border-2 text-xs font-black transition-all ${
+                    active ? 'shadow-md scale-[1.02] text-white' : 'bg-white text-[#6D6E71] border-[#EDE5DC] hover:border-[#A98159]/50'
+                  }`}
+                  style={active
+                    ? { background: `linear-gradient(135deg, ${f.color}, ${f.color}D0)`, borderColor: f.color }
+                    : undefined}
+                >
+                  <FIcon size={13} strokeWidth={2.5} />
+                  <span>{f.label}</span>
+                  <span className={`tabular-nums text-[10px] px-1.5 py-0.5 rounded-md ${
+                    active ? 'bg-white/25' : 'text-[#9D8F85]'
+                  }`}
+                    style={!active ? { background: `${f.color}15` } : undefined}>
+                    {f.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
           {/* ── Search bar ── */}
           <div className="relative">
             <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9D8F85]" strokeWidth={2} />
@@ -298,10 +387,18 @@ export default function AdminAnalytics() {
                   style={{ background: tab.color }} />
                 <div className="relative w-12 h-12 rounded-2xl flex items-center justify-center"
                   style={{ background: `${tab.color}1A` }}>
-                  <Search size={22} style={{ color: tab.color }} strokeWidth={1.75} />
+                  {dateFilter === 'remaining'
+                    ? <CheckCircle2 size={22} style={{ color: '#15803D' }} strokeWidth={1.75} />
+                    : <Search size={22} style={{ color: tab.color }} strokeWidth={1.75} />}
                 </div>
               </div>
-              <p className="text-[#6D6E71] font-medium">لا توجد مراكز تطابق البحث</p>
+              <p className="text-[#6D6E71] font-medium">
+                {dateFilter === 'remaining'
+                  ? '🎉 جميع المراكز رُفعت لها تقييمات اليوم'
+                  : dateFilter === 'today'
+                    ? 'لم تُرفع تقييمات اليوم بعد'
+                    : 'لا توجد مراكز تطابق البحث'}
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -350,7 +447,20 @@ function CenterCard({ summary, tab, onSelect }) {
           </div>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-black text-[#2D2926] truncate">{summary.center}</p>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className="text-sm font-black text-[#2D2926] truncate">{summary.center}</p>
+            {summary.supervisorCount > 0 && (
+              <span className="inline-flex items-center gap-1 text-[8.5px] font-black px-1.5 py-0.5 rounded-md text-white"
+                title={`${summary.supervisorCount} تقييم من المشرف`}
+                style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}>
+                <UserCog size={9} strokeWidth={2.5} />
+                مشرف
+                {summary.supervisorCount > 1 && (
+                  <span className="bg-white/20 rounded px-1 tabular-nums">{summary.supervisorCount}</span>
+                )}
+              </span>
+            )}
+          </div>
           <p className="text-[10px] text-[#A98159] font-bold truncate mt-0.5">{summary.caterer || '—'}</p>
           {hasData && summary.latestDoc?.timestamp && (
             <p className="text-[9px] text-[#9D8F85] font-bold mt-1 flex items-center gap-1">
@@ -518,6 +628,13 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete }) {
               style={{ background: `${tab.color}15`, color: tab.color, border: `1px solid ${tab.color}30` }}>
               تقييم #{index}
             </span>
+            {isSupervisorDoc(evalDoc) && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md text-white"
+                style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}>
+                <UserCog size={10} strokeWidth={2.5} />
+                مشرف
+              </span>
+            )}
             {no > 0 && (
               <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md bg-red-50 border border-red-200 text-red-700">
                 <AlertCircle size={10} strokeWidth={2.5} />
