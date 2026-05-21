@@ -21,7 +21,9 @@
  * أبداً إلى الكود (لذلك الـ IDs متصلة 1-24 بدون فجوة).
  */
 
-export const ARAFAT_SECTIONS = [
+/* TEMP: any criterion with `hidden: true` is filtered out everywhere it's
+   consumed (forms, scoring, AdminAnalytics). To restore, remove the flag. */
+const _ARAFAT_SECTIONS_RAW = [
   {
     id: 'general',
     title: 'متطلبات عامة',
@@ -56,18 +58,22 @@ export const ARAFAT_SECTIONS = [
           { key: 'thermosType', label: 'ترامس وأنواعها (درفة / درفتين)',        type: 'text'   },
         ],
       },
-      { id: 15, text: 'هل تم تحديد موقع مهيأ/مخصص لتخزين المواد الغذائية؟', score: null, type: 'yesno' },
-      { id: 16, text: 'هل جميع المنتجات المستخدمة بها بطاقة تعريف المنتج (وصف المنتج – تاريخ الصلاحية – بلد المصدر – مسببات الحساسية – شروط النقل والتخزين)؟', score: 0.25, type: 'yesno' },
-      { id: 17, text: 'هل يتم تخزين المواد الغذائية بطريقة آمنة وسليمة؟', score: 0.25, type: 'yesno' },
+      { id: 15, text: 'هل تم تحديد موقع مهيأ/مخصص لتخزين المواد الغذائية؟', score: null, type: 'yesno', hidden: true },
+      { id: 16, text: 'هل جميع المنتجات المستخدمة بها بطاقة تعريف المنتج (وصف المنتج – تاريخ الصلاحية – بلد المصدر – مسببات الحساسية – شروط النقل والتخزين)؟', score: 0.25, type: 'yesno', hidden: true },
+      { id: 17, text: 'هل يتم تخزين المواد الغذائية بطريقة آمنة وسليمة؟', score: 0.25, type: 'yesno', hidden: true },
       { id: 18, text: 'هل تم توفير مياه للشرب بشكل كافٍ داخل الموقع (علب – ريطات / شرنكات)؟', score: 2,    type: 'yesno', requiresPhoto: true },
-      { id: 19, text: 'هل تم توفير المواد الأساسية الغذائية من المتعهد (المواد الخام + البروتين)؟', score: 2,    type: 'yesno', requiresPhoto: true },
+      { id: 19, text: 'هل تم توفير المواد الأساسية الغذائية من المتعهد (المواد الخام + البروتين)؟', score: 2,    type: 'yesno', requiresPhoto: true, hidden: true },
       { id: 20, text: 'هل تم توفير معدات وأدوات الطبخ (القدور – مواد التعبئة – المواد الغذائية – الحطب)؟', score: 0.50, type: 'yesno' },
       { id: 21, text: 'هل يوجد داخل الموقع مستودع (غرفة) تبريد مهيأة وجاهزة للاستخدام؟', score: null, type: 'yesno' },
       { id: 22, text: 'هل تم توفير مستودع منفصل مطابق للإشتراطات لتخزين الحطب؟', score: null, type: 'yesno' },
       { id: 23, text: 'هل الحطب متوفر بكميات كافية؟', score: 1,    type: 'yesno', requiresPhoto: true },
-      { id: 24, text: 'هل تم توفير الوجبات الجافة بكميات كافية (وجبات احتياطية)؟', score: 1,    type: 'yesno' },
+      { id: 24, text: 'هل تم توفير الوجبات الجافة بكميات كافية (وجبات احتياطية)؟', score: 1,    type: 'yesno', hidden: true },
     ],
   },
 ];
+
+export const ARAFAT_SECTIONS = _ARAFAT_SECTIONS_RAW
+  .map(s => ({ ...s, criteria: s.criteria.filter(c => !c.hidden) }))
+  .filter(s => s.criteria.length > 0);
 
 export const ARAFAT_ALL_CRITERIA = ARAFAT_SECTIONS.flatMap(s => s.criteria);

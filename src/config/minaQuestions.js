@@ -17,7 +17,9 @@
  * computeReadinessTotals (src/config/readinessScore.js).
  */
 
-export const MINA_SECTIONS = [
+/* TEMP: any criterion with `hidden: true` is filtered out everywhere it's
+   consumed (forms, scoring, AdminAnalytics). To restore, remove the flag. */
+const _MINA_SECTIONS_RAW = [
   {
     id: 'general',
     title: 'متطلبات عامة',
@@ -40,21 +42,25 @@ export const MINA_SECTIONS = [
     title: 'متطلبات فنية',
     criteria: [
       { id: 12, text: 'هل تم توفير مياه للشرب بشكل كافٍ داخل الموقع (علب – ريطات / شرنكات)؟', score: 2,    type: 'yesno', requiresPhoto: true },
-      { id: 13, text: 'هل تم توفير المواد الأساسية الغذائية من المتعهد (المواد الخام + البروتين)؟', score: 2,    type: 'yesno' },
+      { id: 13, text: 'هل تم توفير المواد الأساسية الغذائية من المتعهد (المواد الخام + البروتين)؟', score: 2,    type: 'yesno', hidden: true },
       { id: 14, text: 'هل مواقد الطبخ / الدوافير (الكيروسين) تعمل بشكل جيد وتم تجربتها؟', score: 1,    type: 'yesno' },
       { id: 15, text: 'هل تم توفير فلتر للمياه (فلتر ثلاثي) داخل المطبخ؟', score: 0.75, type: 'yesno' },
       { id: 16, text: 'هل تم توفير (ثلاجات / ترامس) لتبريد مياه الشرب داخل المخيم؟', score: null, type: 'yesno_detail', detailLabel: 'عدد الثلاجات / الترامس ونوعها (درفة / درفتين):' },
       { id: 17, text: 'هل تم تحديد موقع مهيأ/مخصص لتخزين المواد الغذائية؟', score: null, type: 'yesno' },
-      { id: 18, text: 'هل جميع المنتجات المستخدمة بها بطاقة تعريف المنتج (وصف المنتج – تاريخ الصلاحية – بلد المصدر – مسببات الحساسية – شروط النقل)؟', score: 0.25, type: 'yesno' },
-      { id: 19, text: 'هل يتم تخزين المواد الغذائية بطريقة آمنة وسليمة؟', score: 0.25, type: 'yesno', requiresPhoto: true },
+      { id: 18, text: 'هل جميع المنتجات المستخدمة بها بطاقة تعريف المنتج (وصف المنتج – تاريخ الصلاحية – بلد المصدر – مسببات الحساسية – شروط النقل)؟', score: 0.25, type: 'yesno', hidden: true },
+      { id: 19, text: 'هل يتم تخزين المواد الغذائية بطريقة آمنة وسليمة؟', score: 0.25, type: 'yesno', requiresPhoto: true, hidden: true },
       { id: 20, text: 'هل تم توفير معدات وأدوات الطبخ (القدور – مواد التعبئة – المواد الغذائية – الإحتياجات الأخرى)؟', score: 0.50, type: 'yesno' },
       { id: 21, text: 'هل يوجد داخل الموقع مستودع (غرفة) تبريد مهيأة وجاهزة للاستخدام؟', score: null, type: 'yesno' },
       { id: 22, text: 'هل يوجد داخل الموقع مستودع (غرفة) تجميد مهيأة وجاهزة للاستخدام؟', score: null, type: 'yesno' },
       { id: 23, text: 'هل تم توفير حافظات (غرف الثلج)؟', score: 0.25, type: 'yesno' },
       { id: 24, text: 'هل تم توفير كميات كافية من الثلج داخل حافظة الثلج؟', score: 0.50, type: 'yesno', requiresPhoto: true },
-      { id: 25, text: 'هل تم توفير الوجبات الجافة بكميات كافية (وجبات احتياطية)؟', score: 1,    type: 'yesno', requiresPhoto: true },
+      { id: 25, text: 'هل تم توفير الوجبات الجافة بكميات كافية (وجبات احتياطية)؟', score: 1,    type: 'yesno', requiresPhoto: true, hidden: true },
     ],
   },
 ];
+
+export const MINA_SECTIONS = _MINA_SECTIONS_RAW
+  .map(s => ({ ...s, criteria: s.criteria.filter(c => !c.hidden) }))
+  .filter(s => s.criteria.length > 0);
 
 export const MINA_ALL_CRITERIA = MINA_SECTIONS.flatMap(s => s.criteria);
