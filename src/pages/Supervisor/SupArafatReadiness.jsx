@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronRight, Save, CheckCircle2, AlertCircle, Mountain, ArrowLeft, Ban, Calendar, Camera, Loader2, X, Search } from 'lucide-react';
+import { ChevronRight, Save, CheckCircle2, AlertCircle, Mountain, ArrowLeft, Ban, Calendar, Camera, Loader2, X, Search, Check } from 'lucide-react';
 import { db, serverTimestamp, uploadFile, STORAGE_BUCKETS } from '../../lib/db.js';
 import { compressImage } from '../../lib/imageCompression.js';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -60,6 +60,30 @@ export default function SupArafatReadiness() {
   const isDone       = (task) => completions.some(c => c.taskId === task.id && c.taskType === 'arafat_readiness');
   const pendingTasks = arafatTasks.filter(t => !isDone(t));
   const doneTasks    = arafatTasks.filter(t => isDone(t));
+
+  /* Centers this supervisor already submitted Arafat readiness for today */
+  const [myDoneToday, setMyDoneToday] = useState(new Set());
+  useEffect(() => {
+    if (!sweepMode || !profile?.uid) return;
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric',
+    });
+    const parts = fmt.formatToParts(new Date());
+    const y = parseInt(parts.find(p => p.type === 'year').value, 10);
+    const m = parseInt(parts.find(p => p.type === 'month').value, 10);
+    const d = parseInt(parts.find(p => p.type === 'day').value, 10);
+    const todayStart = Date.UTC(y, m - 1, d, -3, 0, 0, 0);
+
+    const unsub = db.arafat_readiness.subscribe(rows => {
+      const set = new Set();
+      rows.forEach(r => {
+        const ts = r.timestamp?.toMillis?.() ?? (r.timestamp ? new Date(r.timestamp).getTime() : 0);
+        if (r.uid === profile.uid && ts >= todayStart) set.add(r.center);
+      });
+      setMyDoneToday(set);
+    });
+    return () => unsub?.();
+  }, [sweepMode, profile?.uid]);
 
   const handleAnswer = (id, value) => setAnswers(prev => ({ ...prev, [id]: value }));
   const handleDetail = (id, value) => setDetails(prev => ({ ...prev, [id]: value }));
@@ -190,26 +214,42 @@ export default function SupArafatReadiness() {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-              {filteredCenters.map(c => (
-                <button key={c.id}
-                  onClick={() => {
-                    setSweepCenter(c.id);
-                    setSelectedTask({ taskId: null, scheduledDate: null });
-                  }}
-                  className="group/ctr bg-gradient-to-br from-white to-[#FDF8F0]/60 border-2 border-[#EDE5DC] hover:border-[#0E7C66] hover:shadow-[0_6px_18px_rgba(14,124,102,0.18)] active:scale-[0.98] rounded-2xl p-3 text-right transition-all">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-10 h-10 rounded-xl bg-[#F0FDF4] border border-[#0E7C66]/20 flex items-center justify-center shrink-0">
-                      <span className="text-[12px] font-black tabular-nums text-[#0E7C66]">
-                        {(c.id.match(/\d+/) || ['—'])[0]}
-                      </span>
+              {filteredCenters.map(c => {
+                const done = myDoneToday.has(c.id);
+                return (
+                  <button key={c.id}
+                    onClick={() => {
+                      setSweepCenter(c.id);
+                      setSelectedTask({ taskId: null, scheduledDate: null });
+                    }}
+                    className={`group/ctr relative rounded-2xl p-3 text-right border-2 transition-all active:scale-[0.98] ${
+                      done
+                        ? 'bg-gradient-to-br from-green-50 to-white border-green-300 hover:border-green-500 hover:shadow-[0_6px_18px_rgba(34,197,94,0.20)]'
+                        : 'bg-gradient-to-br from-white to-[#FDF8F0]/60 border-[#EDE5DC] hover:border-[#0E7C66] hover:shadow-[0_6px_18px_rgba(14,124,102,0.18)]'
+                    }`}>
+                    {done && (
+                      <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-green-500 border-2 border-white flex items-center justify-center shadow-md">
+                        <Check size={11} strokeWidth={3} className="text-white" />
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+                        done ? 'bg-green-50 border-green-200' : 'bg-[#F0FDF4] border-[#0E7C66]/20'
+                      }`}>
+                        <span className={`text-[12px] font-black tabular-nums ${done ? 'text-green-700' : 'text-[#0E7C66]'}`}>
+                          {(c.id.match(/\d+/) || ['—'])[0]}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm text-[#2D2926] truncate">{c.id}</p>
+                        <p className={`text-[10px] font-bold truncate ${done ? 'text-green-700' : 'text-[#A98159]'}`}>
+                          {done ? 'تم الرفع اليوم' : (c.caterer || '—')}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm text-[#2D2926] truncate">{c.id}</p>
-                      <p className="text-[10px] text-[#A98159] font-bold truncate">{c.caterer || '—'}</p>
-                    </div>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
