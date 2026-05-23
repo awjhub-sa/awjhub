@@ -62,6 +62,7 @@ function formatSubmitTime(ts) {
 }
 
 const DHU_DAYS = [
+  '٦ ذو الحجة ١٤٤٧',
   '٧ ذو الحجة ١٤٤٧',
   '٨ ذو الحجة ١٤٤٧',
   '٩ ذو الحجة ١٤٤٧',
