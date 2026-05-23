@@ -98,19 +98,56 @@ function formatTime(ts) {
   } catch { return '—'; }
 }
 
-/* centerFilter is an array of exact center IDs (empty = all centers). */
+/* Convert "٦ ذو الحجة ١٤٤٧" → 6. Returns null if not parseable. */
+function dhuDayFromLabel(label) {
+  if (!label) return null;
+  const arabicDigits = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+  const m = String(label).trim().match(/^[٠-٩\d]+/);
+  if (!m) return null;
+  let n = 0;
+  for (const ch of m[0]) {
+    const idx = arabicDigits.indexOf(ch);
+    n = n * 10 + (idx >= 0 ? idx : parseInt(ch, 10));
+  }
+  return Number.isFinite(n) ? n : null;
+}
+
+/* Returns day-of-month in Dhul Hijjah for a timestamp (Riyadh tz), or null. */
+function dhuDayFromTimestamp(ts) {
+  if (!ts) return null;
+  try {
+    const d = ts?.toDate ? ts.toDate() : new Date(ts);
+    if (isNaN(d.getTime())) return null;
+    const fmt = new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura', {
+      day: 'numeric', month: 'numeric', timeZone: 'Asia/Riyadh',
+    });
+    const parts = fmt.formatToParts(d);
+    const day   = parseInt(parts.find(p => p.type === 'day')?.value,   10);
+    const month = parseInt(parts.find(p => p.type === 'month')?.value, 10);
+    return month === 12 ? day : null;
+  } catch { return null; }
+}
+
+/* centerFilter is an array of exact center IDs (empty = all centers).
+   dateFilter matches either the legacy scheduledDate string OR the
+   timestamp's Hijri day in Riyadh. */
 async function fetchReportData({ centerFilter, dateFilter, types }) {
   const result = {};
   const wantCenters = Array.isArray(centerFilter) && centerFilter.length > 0
     ? new Set(centerFilter)
     : null;
+  const wantDay = dateFilter ? dhuDayFromLabel(dateFilter) : null;
   await Promise.all(types.map(async (type) => {
     let docs = await db[type].list();
     if (wantCenters) {
       docs = docs.filter(d => wantCenters.has(d.center));
     }
     if (dateFilter) {
-      docs = docs.filter(d => (d.scheduledDate ?? '') === dateFilter);
+      docs = docs.filter(d => {
+        if ((d.scheduledDate ?? '') === dateFilter) return true;
+        if (wantDay != null && dhuDayFromTimestamp(d.timestamp) === wantDay) return true;
+        return false;
+      });
     }
     docs.sort((a, b) =>
       (b.timestamp?.toMillis?.() ?? 0) - (a.timestamp?.toMillis?.() ?? 0)
