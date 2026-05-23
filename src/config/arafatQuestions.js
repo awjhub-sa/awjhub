@@ -56,8 +56,8 @@ export const ARAFAT_SECTIONS = [
         score: null,
         type: 'yesno_multi_detail',
         fields: [
-          { key: 'fridgeCount', label: 'عدد الثلاجات',                   type: 'number' },
-          { key: 'thermosType', label: 'ترامس وأنواعها (درفة / درفتين)', type: 'text'   },
+          { key: 'fridgeCount', label: 'عدد الثلاجات / الترامس',                                  type: 'number' },
+          { key: 'thermosType', label: 'نوع الثلاجات: درفة أو درفتين (إذا كانت ترامس اكتب «ترامس»)', type: 'text'   },
         ],
       },
       { id: 16, text: 'هل تم تحديد موقع مهيأ/مخصص لتخزين المواد الغذائية؟', score: null, type: 'yesno' },
