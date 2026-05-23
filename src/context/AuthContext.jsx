@@ -34,7 +34,21 @@ export function AuthProvider({ children }) {
       /* Admin auth always wins over a stale monitor session. */
       localStorage.removeItem(MONITOR_SESSION_KEY);
       try {
-        const profileRow = await db.users.findBy('authUid', authUser.id);
+        /* Primary lookup by auth_uid (set for users created via the new
+           AdminStaff flow). Fallback by email for legacy rows where
+           auth_uid was never linked. Self-heal by writing auth_uid back
+           when we find a match via email. */
+        let profileRow = await db.users.findBy('authUid', authUser.id);
+        if (!profileRow && authUser.email) {
+          profileRow = await db.users.findBy('email', authUser.email);
+          if (profileRow && !profileRow.authUid) {
+            try {
+              await db.users.update(profileRow.uid, { authUid: authUser.id });
+            } catch (linkErr) {
+              console.warn('[AuthContext] failed to backfill auth_uid:', linkErr);
+            }
+          }
+        }
         if (!mounted) return;
         if (profileRow) {
           setUser({ uid: profileRow.uid, email: authUser.email });
