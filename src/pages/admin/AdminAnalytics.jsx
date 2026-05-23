@@ -115,15 +115,55 @@ export default function AdminAnalytics() {
     return () => clearInterval(id);
   }, []);
 
+  /* Track docs that just arrived via Realtime — they get a pulsing red dot
+     for 10 seconds to draw attention. The first payload of each table is
+     treated as "already seen" so we don't flash everything on page load. */
+  const [recentDocIds, setRecentDocIds] = useState(() => new Set());
+  const seenIdsRef = useRef({ mina: null, arafat: null });
+
   useEffect(() => {
+    const cleanupTimers = new Map();
     const unsubs = TABS.map(t =>
       db[t.col].subscribe(rows => {
         const docs = [...rows].sort((a, b) =>
           (b.timestamp?.toMillis?.() ?? 0) - (a.timestamp?.toMillis?.() ?? 0));
         setData(prev => ({ ...prev, [t.key]: docs }));
+
+        const incomingIds = new Set(rows.map(r => r.id));
+        const prevSeen = seenIdsRef.current[t.key];
+        if (prevSeen === null) {
+          seenIdsRef.current[t.key] = incomingIds;
+          return;
+        }
+        /* Detect newly-arrived docs */
+        const newIds = rows.filter(r => !prevSeen.has(r.id)).map(r => r.id);
+        seenIdsRef.current[t.key] = incomingIds;
+        if (newIds.length === 0) return;
+        setRecentDocIds(prev => {
+          const next = new Set(prev);
+          newIds.forEach(id => next.add(id));
+          return next;
+        });
+        /* Auto-clear after 10 seconds */
+        newIds.forEach(id => {
+          if (cleanupTimers.has(id)) clearTimeout(cleanupTimers.get(id));
+          const tid = setTimeout(() => {
+            setRecentDocIds(prev => {
+              if (!prev.has(id)) return prev;
+              const next = new Set(prev);
+              next.delete(id);
+              return next;
+            });
+            cleanupTimers.delete(id);
+          }, 10_000);
+          cleanupTimers.set(id, tid);
+        });
       })
     );
-    return () => unsubs.forEach(u => u?.());
+    return () => {
+      unsubs.forEach(u => u?.());
+      cleanupTimers.forEach(t => clearTimeout(t));
+    };
   }, []);
 
   const tab  = TABS.find(t => t.key === activeTab);
@@ -327,6 +367,7 @@ export default function AdminAnalytics() {
           summary={activeSummary}
           onBack={() => setSelectedCenter(null)}
           onDelete={handleDeleteEval}
+          recentDocIds={recentDocIds}
         />
       ) : (
         <>
@@ -442,6 +483,7 @@ export default function AdminAnalytics() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredSummaries.map(s => (
                 <CenterCard key={s.center} summary={s} tab={tab}
+                  isRecent={s.latestDoc?.id ? recentDocIds.has(s.latestDoc.id) : false}
                   onSelect={() => setSelectedCenter(s.center)} />
               ))}
             </div>
@@ -452,7 +494,7 @@ export default function AdminAnalytics() {
   );
 }
 
-function CenterCard({ summary, tab, onSelect }) {
+function CenterCard({ summary, tab, onSelect, isRecent }) {
   const sst = scoreStyle(summary.avgScore);
   const hasData = summary.count > 0;
   const centerNum = (summary.center.match(/\d+\S*/) || ['—'])[0];
@@ -461,12 +503,16 @@ function CenterCard({ summary, tab, onSelect }) {
     <button
       onClick={onSelect}
       disabled={!hasData}
-      className={`text-right group bg-white rounded-2xl border-2 p-4 transition-all ${
+      className={`relative text-right group bg-white rounded-2xl border-2 p-4 transition-all ${
         hasData
           ? 'border-[#EDE5DC] shadow-[0_2px_8px_rgba(45,41,38,0.07)] hover:shadow-[0_6px_24px_rgba(169,129,89,0.18)] hover:border-[#D9CEBC] hover:-translate-y-0.5 cursor-pointer'
           : 'border-dashed border-[#EDE5DC] bg-[#FAFAF8] opacity-70 cursor-not-allowed'
       }`}
     >
+      {/* Pulsing red dot for newly-arrived evaluations */}
+      {isRecent && (
+        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 border-2 border-white badge-pulse-red z-10" />
+      )}
       {/* Header */}
       <div className="flex items-start gap-3 mb-3">
         <div className="relative shrink-0">
@@ -574,7 +620,7 @@ function CenterCard({ summary, tab, onSelect }) {
   );
 }
 
-function CenterDetail({ tab, summary, onBack, onDelete }) {
+function CenterDetail({ tab, summary, onBack, onDelete, recentDocIds }) {
   const [openEval, setOpenEval] = useState(summary.evaluations[0]?.id || null);
   const centerNum = (summary.center.match(/\d+\S*/) || ['—'])[0];
   const sst = scoreStyle(summary.avgScore);
@@ -623,6 +669,7 @@ function CenterDetail({ tab, summary, onBack, onDelete }) {
           <EvaluationCard key={ev.id}
             evalDoc={ev} tab={tab} index={idx + 1}
             isOpen={openEval === ev.id}
+            isRecent={recentDocIds?.has(ev.id) || false}
             onToggle={() => setOpenEval(openEval === ev.id ? null : ev.id)}
             onDelete={() => onDelete?.(ev.id)} />
         ))}
@@ -631,7 +678,7 @@ function CenterDetail({ tab, summary, onBack, onDelete }) {
   );
 }
 
-function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete }) {
+function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRecent }) {
   /* Edit-mode state. When `isEditing` is true, the user can toggle answers
      and replace photos. Changes accumulate locally until "Save". */
   const [isEditing,    setIsEditing]    = useState(false);
@@ -737,8 +784,12 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete }) {
   };
 
   return (
-    <div className="bg-white rounded-2xl border-2 overflow-hidden shadow-[0_2px_12px_rgba(45,41,38,0.07)]"
+    <div className="relative bg-white rounded-2xl border-2 overflow-hidden shadow-[0_2px_12px_rgba(45,41,38,0.07)]"
       style={{ borderColor: isOpen ? sst.border : '#EDE5DC' }}>
+      {/* Pulsing red dot for newly-arrived evaluations */}
+      {isRecent && (
+        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 border-2 border-white badge-pulse-red z-10" />
+      )}
       {/* Header row — always visible */}
       <div className="relative flex items-center hover:bg-[#FDFAF7] transition-colors">
       <button onClick={onToggle}
