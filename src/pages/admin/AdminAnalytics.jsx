@@ -1,15 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
-import { db } from '../../lib/db.js';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { db, uploadFile, STORAGE_BUCKETS } from '../../lib/db.js';
+import { compressImage } from '../../lib/imageCompression.js';
 import {
   ShieldCheck, Mountain, ChevronRight, CheckCircle2, XCircle,
   Sparkles, AlertCircle, User, Calendar, Building2, X, Search, Award,
   TrendingUp, ClipboardList, Trash2, ListChecks, Sun, Hourglass, UserCog,
-  BarChart3,
+  BarChart3, Pencil, Save, Camera, ImageIcon, RotateCcw,
 } from 'lucide-react';
 import PageHeader from '../../components/PageHeader.jsx';
 import { CENTERS, getCaterer } from '../../config/centers.js';
 import { MINA_ALL_CRITERIA } from '../../config/minaQuestions.js';
 import { ARAFAT_ALL_CRITERIA } from '../../config/arafatQuestions.js';
+import { computeReadinessTotals } from '../../config/readinessScore.js';
 
 const MINA_Qs   = MINA_ALL_CRITERIA;
 const ARAFAT_Qs = ARAFAT_ALL_CRITERIA;
@@ -208,7 +210,9 @@ export default function AdminAnalytics() {
   const todayCount     = todayCenterSet.size;
   const remainingCount = CENTERS.length - todayCount;
 
-  /* Filtered by search term + (remaining / uploaded) filter */
+  /* Filtered by search term + (remaining / uploaded) filter.
+     For 'today' & 'uploaded', sort by latest submission time (newest first)
+     so the most recently uploaded reports surface immediately. */
   const filteredSummaries = useMemo(() => {
     let list = centerSummaries;
     if (dateFilter === 'remaining') {
@@ -222,6 +226,13 @@ export default function AdminAnalytics() {
         s.center.toLowerCase().includes(q) ||
         (s.caterer || '').toLowerCase().includes(q)
       );
+    }
+    if (dateFilter === 'today' || dateFilter === 'uploaded') {
+      list = [...list].sort((a, b) => {
+        const ta = a.latestDoc ? docTimestampMs(a.latestDoc) : 0;
+        const tb = b.latestDoc ? docTimestampMs(b.latestDoc) : 0;
+        return tb - ta;
+      });
     }
     return list;
   }, [centerSummaries, searchTerm, dateFilter]);
@@ -621,14 +632,109 @@ function CenterDetail({ tab, summary, onBack, onDelete }) {
 }
 
 function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete }) {
+  /* Edit-mode state. When `isEditing` is true, the user can toggle answers
+     and replace photos. Changes accumulate locally until "Save". */
+  const [isEditing,    setIsEditing]    = useState(false);
+  const [savingEdit,   setSavingEdit]   = useState(false);
+  const [draftAns,     setDraftAns]     = useState(null);
+  const [draftDetails, setDraftDetails] = useState(null);
+  const [draftPhotos,  setDraftPhotos]  = useState(null);
+  const [uploadingQ,   setUploadingQ]   = useState(null);
+  const fileInputRefs = useRef({});
+
   const score = getScore(evalDoc);
   const sst   = scoreStyle(score);
-  const ans     = evalDoc.answers || {};
-  const photos  = ans.__photos || {};
-  const detailsMap = ans.__details || {};
+  /* When editing, the "current" values come from draft; otherwise from doc */
+  const savedAns      = evalDoc.answers || {};
+  const ans           = isEditing ? draftAns     : savedAns;
+  const photos        = isEditing ? draftPhotos  : (savedAns.__photos  || {});
+  const detailsMap    = isEditing ? draftDetails : (savedAns.__details || {});
   const yes     = tab.allQs.filter(q => ans[q.id] === 'نعم').length;
   const no      = tab.allQs.filter(q => ans[q.id] === 'لا').length;
   const noQs    = tab.allQs.filter(q => ans[q.id] === 'لا');
+
+  const startEdit = (e) => {
+    e?.stopPropagation();
+    setDraftAns({ ...savedAns });
+    setDraftDetails({ ...(savedAns.__details || {}) });
+    setDraftPhotos({ ...(savedAns.__photos  || {}) });
+    setIsEditing(true);
+  };
+
+  const cancelEdit = () => {
+    setIsEditing(false);
+    setDraftAns(null);
+    setDraftDetails(null);
+    setDraftPhotos(null);
+  };
+
+  const setAnswer = (qid, value) => {
+    setDraftAns(prev => ({ ...prev, [qid]: value }));
+  };
+
+  const setDetail = (qid, text) => {
+    setDraftDetails(prev => ({ ...prev, [qid]: text }));
+  };
+
+  const handlePhotoUpload = async (qid, file) => {
+    if (!file) return;
+    setUploadingQ(qid);
+    try {
+      const compressed = await compressImage(file);
+      const folder = tab.key === 'mina' ? 'mina' : 'arafat';
+      const center = evalDoc.center || 'unknown';
+      const url = await uploadFile(
+        STORAGE_BUCKETS.phases,
+        `readiness/${folder}/${center}/edited/q${qid}_${Date.now()}.jpg`,
+        compressed,
+      );
+      setDraftPhotos(prev => ({ ...prev, [qid]: url }));
+    } catch (err) {
+      console.error('[EvaluationCard photo upload]', err);
+      alert(`فشل رفع الصورة: ${err?.message || err}`);
+    } finally {
+      setUploadingQ(null);
+    }
+  };
+
+  const removePhoto = (qid) => {
+    setDraftPhotos(prev => {
+      const next = { ...prev };
+      delete next[qid];
+      return next;
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!window.confirm('هل تريد حفظ التعديلات على هذا التقييم؟')) return;
+    setSavingEdit(true);
+    try {
+      /* Strip special keys before scoring, then rebuild final answers */
+      const cleanAns = {};
+      Object.keys(draftAns).forEach(k => {
+        if (!String(k).startsWith('__')) cleanAns[k] = draftAns[k];
+      });
+      const scoring = computeReadinessTotals(tab.allQs, cleanAns);
+      const newAnswers = {
+        ...cleanAns,
+        __details: draftDetails,
+        __photos:  draftPhotos,
+      };
+      await db[tab.col].update(evalDoc.id, {
+        answers: newAnswers,
+        ...scoring,
+      });
+      setIsEditing(false);
+      setDraftAns(null);
+      setDraftDetails(null);
+      setDraftPhotos(null);
+    } catch (err) {
+      console.error('[EvaluationCard save]', err);
+      alert(`فشل حفظ التعديلات: ${err?.message || err}`);
+    } finally {
+      setSavingEdit(false);
+    }
+  };
 
   return (
     <div className="bg-white rounded-2xl border-2 overflow-hidden shadow-[0_2px_12px_rgba(45,41,38,0.07)]"
@@ -693,17 +799,65 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete }) {
         </div>
       </button>
 
-      {/* Delete — sibling of toggle so its click never collides */}
-      <button onClick={onDelete}
-        title="حذف التقييم"
-        className="ml-3 sm:ml-4 mr-1 w-9 h-9 rounded-lg border border-red-200 bg-red-50 flex items-center justify-center hover:bg-red-500 hover:border-red-500 group/del transition-colors shrink-0">
-        <Trash2 size={14} className="text-red-500 group-hover/del:text-white" strokeWidth={2.25} />
-      </button>
+      {/* Edit + Delete buttons — siblings of toggle so their clicks never collide */}
+      <div className="flex items-center gap-1.5 ml-2 sm:ml-3 mr-1 shrink-0">
+        {!isEditing && (
+          <button onClick={startEdit}
+            title="تعديل التقييم"
+            style={{ borderColor: `${tab.color}40`, background: `${tab.color}10`, color: tab.color }}
+            className="w-9 h-9 rounded-lg border-2 flex items-center justify-center hover:scale-105 transition-transform">
+            <Pencil size={14} strokeWidth={2.25} />
+          </button>
+        )}
+        <button onClick={onDelete}
+          title="حذف التقييم"
+          className="w-9 h-9 rounded-lg border border-red-200 bg-red-50 flex items-center justify-center hover:bg-red-500 hover:border-red-500 group/del transition-colors">
+          <Trash2 size={14} className="text-red-500 group-hover/del:text-white" strokeWidth={2.25} />
+        </button>
+      </div>
       </div>
 
       {/* Expanded details */}
       {isOpen && (
         <div className="border-t border-[#EDE5DC] bg-[#FDFCFB] px-4 sm:px-5 py-4 space-y-4">
+          {/* Edit-mode toolbar */}
+          {isEditing && (
+            <div className="rounded-2xl border-2 p-3 flex items-center justify-between gap-3"
+              style={{ background: `${tab.color}08`, borderColor: `${tab.color}60` }}>
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: tab.gradient }}>
+                  <Pencil size={15} className="text-white" strokeWidth={2.5} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-black text-[#2D2926]">وضع التعديل</p>
+                  <p className="text-[11px] text-[#6D6E71] font-bold">اضغط نعم/لا لتبديل الإجابات وضع/استبدل الصور</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button onClick={cancelEdit} disabled={savingEdit}
+                  className="px-3 py-2 rounded-xl border border-[#EDE5DC] text-[#6D6E71] text-xs font-bold hover:bg-[#F5F0EB] transition-colors disabled:opacity-60">
+                  إلغاء
+                </button>
+                <button onClick={saveEdit} disabled={savingEdit}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-xs font-black shadow-md transition-all active:scale-95 disabled:opacity-60"
+                  style={{ background: tab.gradient }}>
+                  {savingEdit ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      جاري الحفظ...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={13} strokeWidth={2.5} />
+                      حفظ التعديلات
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Quick stats */}
           <div className="grid grid-cols-3 gap-2.5">
             <div className="rounded-xl border-2 p-3 text-center"
@@ -794,11 +948,15 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete }) {
             <div className="space-y-1.5">
               {tab.allQs.map(q => {
                 const a = ans[q.id];
-                if (!a) return null;
+                /* In edit mode, show ALL questions (so admin can add answers).
+                   In view mode, hide unanswered ones. */
+                if (!a && !isEditing) return null;
                 const isYes = a === 'نعم';
                 const isNo  = a === 'لا';
                 const photoUrl = photos[q.id];
                 const detail   = detailsMap[q.id];
+                const isChoice = q.type === 'choice';
+                const isUploadingThis = uploadingQ === q.id;
                 return (
                   <div key={q.id}
                     className={`rounded-xl px-3 py-2 border ${
@@ -806,34 +964,110 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete }) {
                       : isNo ? 'bg-red-50/60 border-red-200/70'
                       :        'bg-white border-[#EDE5DC]'
                     }`}>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[10px] font-black flex-shrink-0 tabular-nums"
                         style={{ color: isYes ? '#15803D' : isNo ? '#B91C1C' : '#6D6E71' }}>
                         #{q.id}
                       </span>
-                      <p className="text-xs flex-1 leading-relaxed"
+                      <p className="text-xs flex-1 min-w-[180px] leading-relaxed"
                         style={{ color: isYes ? '#166534' : isNo ? '#991B1B' : '#2D2926' }}>
                         {q.text}
                       </p>
-                      <span className={`text-[10px] font-black flex-shrink-0 flex items-center gap-0.5 ${
-                        isYes ? 'text-green-700' : isNo ? 'text-red-700' : 'text-[#6D6E71]'
-                      }`}>
-                        {isYes
-                          ? <CheckCircle2 size={12} strokeWidth={2.25} />
-                          : isNo ? <XCircle size={12} strokeWidth={2.25} /> : null}
-                        {a}
-                      </span>
+                      {isEditing ? (
+                        isChoice ? (
+                          <select value={a || ''} onChange={(e) => setAnswer(q.id, e.target.value)}
+                            className="text-[11px] font-black px-2 py-1 rounded-md border-2 bg-white outline-none focus:border-[#A98159]"
+                            style={{ borderColor: '#EDE5DC' }}>
+                            <option value="">—</option>
+                            {(q.choices || []).map(c => <option key={c} value={c}>{c}</option>)}
+                          </select>
+                        ) : (
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button onClick={() => setAnswer(q.id, 'نعم')}
+                              className={`px-2.5 py-1 rounded-md text-[10px] font-black border-2 transition-all ${
+                                isYes ? 'bg-green-600 border-green-600 text-white shadow-sm'
+                                      : 'bg-white border-[#EDE5DC] text-[#6D6E71] hover:border-green-400'
+                              }`}>
+                              نعم
+                            </button>
+                            <button onClick={() => setAnswer(q.id, 'لا')}
+                              className={`px-2.5 py-1 rounded-md text-[10px] font-black border-2 transition-all ${
+                                isNo ? 'bg-red-600 border-red-600 text-white shadow-sm'
+                                     : 'bg-white border-[#EDE5DC] text-[#6D6E71] hover:border-red-400'
+                              }`}>
+                              لا
+                            </button>
+                          </div>
+                        )
+                      ) : (
+                        <span className={`text-[10px] font-black flex-shrink-0 flex items-center gap-0.5 ${
+                          isYes ? 'text-green-700' : isNo ? 'text-red-700' : 'text-[#6D6E71]'
+                        }`}>
+                          {isYes
+                            ? <CheckCircle2 size={12} strokeWidth={2.25} />
+                            : isNo ? <XCircle size={12} strokeWidth={2.25} /> : null}
+                          {a || '—'}
+                        </span>
+                      )}
                     </div>
-                    {detail && (
-                      <p className="mt-1.5 text-[11px] text-[#6D6E71] bg-white border border-[#EDE5DC] rounded px-2 py-1 leading-snug">
-                        {detail}
-                      </p>
+                    {/* Details textarea (yesno_detail) */}
+                    {isEditing && q.type === 'yesno_detail' ? (
+                      <input type="text" value={detail || ''}
+                        onChange={(e) => setDetail(q.id, e.target.value)}
+                        placeholder={q.detailLabel || 'تفاصيل...'}
+                        className="mt-1.5 w-full text-[11px] px-2 py-1 rounded border border-[#EDE5DC] outline-none focus:border-[#A98159]" />
+                    ) : (
+                      detail && (
+                        <p className="mt-1.5 text-[11px] text-[#6D6E71] bg-white border border-[#EDE5DC] rounded px-2 py-1 leading-snug">
+                          {detail}
+                        </p>
+                      )
                     )}
-                    {photoUrl && (
-                      <a href={photoUrl} target="_blank" rel="noreferrer" className="mt-2 block">
-                        <img src={photoUrl} alt={`q${q.id}`}
-                          className="rounded-lg border border-[#EDE5DC] max-h-44 object-cover hover:opacity-90 transition-opacity" />
-                      </a>
+                    {/* Photo */}
+                    {(photoUrl || (isEditing && (q.requiresPhoto || photoUrl))) && (
+                      <div className="mt-2 space-y-1.5">
+                        {photoUrl ? (
+                          <a href={photoUrl} target="_blank" rel="noreferrer" className="block">
+                            <img src={photoUrl} alt={`q${q.id}`}
+                              className="rounded-lg border border-[#EDE5DC] max-h-44 object-cover hover:opacity-90 transition-opacity" />
+                          </a>
+                        ) : isEditing && (
+                          <div className="rounded-lg border-2 border-dashed border-[#D9CEBC] bg-[#FAFAF8] p-3 text-center">
+                            <ImageIcon size={20} className="text-[#A98159] mx-auto mb-1" strokeWidth={2} />
+                            <p className="text-[10px] text-[#9D8F85] font-bold">لا توجد صورة بعد</p>
+                          </div>
+                        )}
+                        {isEditing && (
+                          <div className="flex items-center gap-1.5">
+                            <input type="file" accept="image/*" hidden
+                              ref={el => fileInputRefs.current[q.id] = el}
+                              onChange={(e) => handlePhotoUpload(q.id, e.target.files?.[0])} />
+                            <button onClick={() => fileInputRefs.current[q.id]?.click()}
+                              disabled={isUploadingThis}
+                              className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-black border-2 transition-colors disabled:opacity-60"
+                              style={{ borderColor: `${tab.color}40`, background: `${tab.color}10`, color: tab.color }}>
+                              {isUploadingThis ? (
+                                <>
+                                  <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                  جاري الرفع
+                                </>
+                              ) : (
+                                <>
+                                  <Camera size={11} strokeWidth={2.5} />
+                                  {photoUrl ? 'استبدال الصورة' : 'إضافة صورة'}
+                                </>
+                              )}
+                            </button>
+                            {photoUrl && (
+                              <button onClick={() => removePhoto(q.id)}
+                                className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-black border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors">
+                                <X size={11} strokeWidth={2.5} />
+                                حذف الصورة
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 );

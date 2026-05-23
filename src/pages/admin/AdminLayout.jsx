@@ -10,6 +10,7 @@ import {
 } from '@phosphor-icons/react';
 import logo from '../../assets/logo-light.svg';
 import { getCaterer } from '../../config/centers.js';
+import UploadToastListener from '../../components/UploadToastListener.jsx';
 
 const NAV = [
   { to: '/admin/dashboard',  label: 'نظرة عامة',         icon: SquaresFour  },
@@ -303,6 +304,9 @@ export default function AdminLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Global toast notifications for new readiness uploads */}
+      <UploadToastListener />
 
       <style>{`
         @keyframes badgePulse {
