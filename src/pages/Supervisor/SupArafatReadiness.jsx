@@ -123,6 +123,21 @@ export default function SupArafatReadiness() {
       alert(`الأسئلة التالية تحتاج صورة: ${missingPhotos.join('، ')}`);
       return;
     }
+    /* For yesno_multi_detail answered 'نعم': all fields must have values */
+    const missingMultiFields = [];
+    ALL_CRITERIA.forEach(c => {
+      if (c.type !== 'yesno_multi_detail' || answers[c.id] !== 'نعم') return;
+      (c.fields || []).forEach(f => {
+        const v = details[`${c.id}_${f.key}`];
+        if (v == null || String(v).trim() === '') {
+          missingMultiFields.push(`السؤال ${c.id} — ${f.label}`);
+        }
+      });
+    });
+    if (missingMultiFields.length > 0) {
+      alert(`الرجاء تعبئة الحقول التالية:\n${missingMultiFields.join('\n')}`);
+      return;
+    }
     setLoading(true);
     try {
       const scoring = computeReadinessTotals(ALL_CRITERIA, answers);

@@ -1010,18 +1010,51 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete }) {
                         </span>
                       )}
                     </div>
-                    {/* Details textarea (yesno_detail) */}
-                    {isEditing && q.type === 'yesno_detail' ? (
-                      <input type="text" value={detail || ''}
-                        onChange={(e) => setDetail(q.id, e.target.value)}
-                        placeholder={q.detailLabel || 'تفاصيل...'}
-                        className="mt-1.5 w-full text-[11px] px-2 py-1 rounded border border-[#EDE5DC] outline-none focus:border-[#A98159]" />
-                    ) : (
-                      detail && (
-                        <p className="mt-1.5 text-[11px] text-[#6D6E71] bg-white border border-[#EDE5DC] rounded px-2 py-1 leading-snug">
-                          {detail}
-                        </p>
+                    {/* Details — single text (yesno_detail) */}
+                    {q.type === 'yesno_detail' && (
+                      isEditing ? (
+                        <input type="text" value={detail || ''}
+                          onChange={(e) => setDetail(q.id, e.target.value)}
+                          placeholder={q.detailLabel || 'تفاصيل...'}
+                          className="mt-1.5 w-full text-[11px] px-2 py-1 rounded border border-[#EDE5DC] outline-none focus:border-[#A98159]" />
+                      ) : (
+                        detail && (
+                          <p className="mt-1.5 text-[11px] text-[#6D6E71] bg-white border border-[#EDE5DC] rounded px-2 py-1 leading-snug">
+                            {detail}
+                          </p>
+                        )
                       )
+                    )}
+                    {/* Details — multi-field (yesno_multi_detail). Stored as
+                        detailsMap[`${qid}_${fieldKey}`]. Only relevant when answer is 'نعم'. */}
+                    {q.type === 'yesno_multi_detail' && a === 'نعم' && (
+                      <div className="mt-1.5 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                        {(q.fields || []).map(field => {
+                          const fieldKey = `${q.id}_${field.key}`;
+                          const fieldVal = detailsMap[fieldKey];
+                          if (isEditing) {
+                            return (
+                              <div key={field.key} className="flex flex-col gap-0.5">
+                                <label className="text-[9px] font-bold text-[#9D8F85]">{field.label}</label>
+                                <input type={field.type === 'number' ? 'number' : 'text'}
+                                  value={fieldVal || ''}
+                                  onChange={(e) => setDetail(fieldKey, e.target.value)}
+                                  placeholder={field.label}
+                                  className="w-full text-[11px] px-2 py-1 rounded border border-[#EDE5DC] outline-none focus:border-[#A98159]" />
+                              </div>
+                            );
+                          }
+                          return (
+                            <div key={field.key}
+                              className="bg-white border border-[#EDE5DC] rounded px-2 py-1 flex items-baseline gap-1.5 min-w-0">
+                              <span className="text-[9px] font-bold text-[#9D8F85] shrink-0">{field.label}:</span>
+                              <span className="text-[11px] font-bold text-[#2D2926] truncate tabular-nums">
+                                {fieldVal != null && fieldVal !== '' ? fieldVal : '—'}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
                     {/* Photo */}
                     {(photoUrl || (isEditing && (q.requiresPhoto || photoUrl))) && (
