@@ -8,11 +8,56 @@ import {
 } from 'lucide-react';
 import PageHeader from '../../components/PageHeader.jsx';
 
-/* Auth-creation is intentionally a no-op in dev mode: only inserts the row
-   into public.users. The matching auth.users entry must be created in
-   Supabase Studio (or via service_role) before the user can log in. */
-async function createStaffRow(email, userData) {
-  await db.users.insert({ email, ...userData });
+/* Create the staff/admin account end-to-end:
+   1. Save the current admin's auth tokens so we can restore the session
+      after signUp (which auto-signs-in the newly-created user).
+   2. Call supabase.auth.signUp to create an entry in auth.users.
+   3. Insert the matching public.users row, linking via auth_uid.
+   4. Restore the admin session so the admin remains logged in.
+
+   Note: this assumes Supabase email confirmation is disabled (Project
+   Settings → Authentication → "Email Confirmations" off). If enabled,
+   the new user must confirm their email before they can log in. */
+async function createStaffRow(email, password, userData) {
+  /* 1. Snapshot the current admin session */
+  const { data: sessionData } = await supabase.auth.getSession();
+  const adminSession = sessionData?.session
+    ? {
+        access_token:  sessionData.session.access_token,
+        refresh_token: sessionData.session.refresh_token,
+      }
+    : null;
+
+  /* 2. Create auth.users entry */
+  const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
+    email,
+    password,
+  });
+  if (signUpErr) {
+    /* Make sure the admin session is intact before re-throwing */
+    if (adminSession) await supabase.auth.setSession(adminSession).catch(() => {});
+    throw new Error(signUpErr.message || 'تعذّر إنشاء حساب المصادقة');
+  }
+
+  const authUid = signUpData?.user?.id || null;
+
+  /* 3. Insert public.users row — link to auth account if we got an id */
+  try {
+    await db.users.insert({
+      email,
+      ...userData,
+      ...(authUid ? { authUid } : {}),
+    });
+  } catch (insertErr) {
+    /* Restore admin session even on failure so they aren't stuck logged out */
+    if (adminSession) await supabase.auth.setSession(adminSession).catch(() => {});
+    throw insertErr;
+  }
+
+  /* 4. Restore the admin's session (signUp auto-logged in the new user) */
+  if (adminSession) {
+    await supabase.auth.setSession(adminSession).catch(() => {});
+  }
 }
 
 const ROLES = [
@@ -160,13 +205,13 @@ export default function AdminStaff() {
         role:            form.role,
         assignedCenters: form.role === 'admin' ? [] : form.assigned_centers,
       };
-      await createStaffRow(form.email.trim(), userData);
-      setSuccess('تم إنشاء سجل الموظف. أنشئ له حساب المصادقة من Supabase Studio.');
+      await createStaffRow(form.email.trim(), form.password, userData);
+      setSuccess('تم إنشاء الحساب بنجاح — يقدر الموظف يسجّل دخوله الآن.');
       setForm(EMPTY_FORM);
       setShowPass(false);
-      setTimeout(() => setSuccess(null), 4000);
+      setTimeout(() => setSuccess(null), 5000);
     } catch (ex) {
-      setError(ex.message);
+      setError(ex.message || 'حدث خطأ غير متوقع');
     }
     setSaving(false);
   };
