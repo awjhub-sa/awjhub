@@ -380,10 +380,10 @@ export default function SupervisorHome() {
       localStorage.clear();
       sessionStorage.removeItem('sup_selected_center');
       await logout();
-      window.location.replace('./login');
+      window.location.replace('/login');
     } catch (e) {
       console.error('Logout Error:', e);
-      window.location.replace('./login');
+      window.location.replace('/login');
     }
   };
 
