@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../config/supabase.js';
 import { db } from '../lib/db.js';
-import { isDemoEmail } from '../lib/demoData.js';
+import { isDemoEmail, getDemoMonitorProfile } from '../lib/demoData.js';
 
 const AuthContext = createContext(null);
 
@@ -103,6 +103,38 @@ export function AuthProvider({ children }) {
     const id = (idNumber || '').trim();
     if (!id) throw new Error('أدخل رقم الهوية');
     if (id.length !== 10) throw new Error('رقم الهوية يجب أن يكون 10 أرقام');
+
+    // Demo IDs: short-circuit the DB lookup so the portfolio viewer can sign
+    // in without an actual `users` row existing. Setting the window flag
+    // here means db.* calls made during this render already see demo mode.
+    const demoRow = getDemoMonitorProfile(id);
+    if (demoRow) {
+      if (expectedRole && demoRow.role !== expectedRole) {
+        const label = expectedRole === 'observer' ? 'كمراقب' : 'كمشرف';
+        throw new Error(`حساب الديمو هذا غير مسجّل ${label} ميداني`);
+      }
+      if (typeof window !== 'undefined') window.__moraqeb_demo_active = true;
+      // Convert snake_case → camelCase to match what the rest of the app
+      // expects from a db.users row.
+      const profile = {
+        uid: demoRow.uid,
+        idNumber: demoRow.id_number,
+        name: demoRow.name,
+        nameAr: demoRow.name_ar,
+        role: demoRow.role,
+        center: demoRow.center,
+        assignedCenters: demoRow.assigned_centers,
+        caterer: demoRow.caterer,
+        roleCode: demoRow.role_code,
+        bravoCode: demoRow.bravo_code,
+        _demo: true,
+      };
+      localStorage.setItem(MONITOR_SESSION_KEY, JSON.stringify(profile));
+      setUser({ uid: profile.uid, idNumber: profile.idNumber });
+      setRole(profile.role);
+      setProfile(profile);
+      return profile;
+    }
 
     const row = await db.users.findBy('idNumber', id);
     if (!row) throw new Error('رقم الهوية غير مسجل في النظام');

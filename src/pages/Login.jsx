@@ -188,9 +188,9 @@ export default function Login() {
             type="submit"
             disabled={busy}
             className="w-full py-4 rounded-xl font-bold text-white text-base transition-all hover:opacity-95 active:scale-[0.98] disabled:opacity-60 flex items-center justify-center gap-3"
-            style={{ 
-              background: 'linear-gradient(135deg,#C4A46E,#A98159,#8B6840)', 
-              boxShadow: '0 4px 20px rgba(169,129,89,0.25)' 
+            style={{
+              background: 'linear-gradient(135deg,#C4A46E,#A98159,#8B6840)',
+              boxShadow: '0 4px 20px rgba(169,129,89,0.25)'
             }}
           >
             {busy ? (
@@ -200,6 +200,39 @@ export default function Login() {
               </>
             ) : 'تسجيل الدخول'}
           </button>
+
+          <div className="border-t border-[#D1C4B9] pt-3 mt-1">
+            <p className="text-[10px] text-[#6D6E71] text-center mb-2 font-bold">
+              تجربة العرض التوضيحي
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedType('observer');
+                  setIdNumber('9999000001');
+                  setError('');
+                }}
+                className="flex-1 py-2 rounded-lg text-[11px] font-bold border-2 border-dashed border-[#D1C4B9] text-[#6D6E71] hover:bg-[#F5EDE0] hover:text-[#2D2926] transition-all"
+              >
+                ديمو مراقب
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedType('supervisor');
+                  setIdNumber('9999000002');
+                  setError('');
+                }}
+                className="flex-1 py-2 rounded-lg text-[11px] font-bold border-2 border-dashed border-[#D1C4B9] text-[#6D6E71] hover:bg-[#F5EDE0] hover:text-[#2D2926] transition-all"
+              >
+                ديمو مشرف
+              </button>
+            </div>
+            <p className="text-[9px] text-[#9D8F85] text-center mt-2 leading-relaxed">
+              للعرض فقط — بيانات افتراضية بالكامل
+            </p>
+          </div>
         </div>
       </form>
 

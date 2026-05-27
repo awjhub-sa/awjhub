@@ -7,15 +7,31 @@
 
 export const DEMO_EMAIL = 'demo@moraqeb.com';
 
+/* National-ID demo logins for the field-monitor + supervisor entry paths.
+ * Anyone typing these into the login form gets a fake session with no DB
+ * lookup. Picked so they can be displayed on the portfolio card without
+ * colliding with real 10-digit IDs (real ones start with 1, 2, or 3 — the
+ * demo ones use 9999... which is invalid as a Saudi national ID format). */
+export const DEMO_OBSERVER_ID   = '9999000001';
+export const DEMO_SUPERVISOR_ID = '9999000002';
+
 export function isDemoEmail(email) {
   return (email || '').trim().toLowerCase() === DEMO_EMAIL;
 }
 
-/* Detect demo session by inspecting the persisted Supabase auth token. */
+export function isDemoMonitorId(id) {
+  const v = (id || '').trim();
+  return v === DEMO_OBSERVER_ID || v === DEMO_SUPERVISOR_ID;
+}
+
+/* Detect demo session by inspecting the persisted Supabase auth token OR a
+ * monitor-session marker we set during loginAsMonitor for demo IDs. */
 export function isDemoActive() {
   try {
     if (typeof window === 'undefined') return false;
     if (window.__moraqeb_demo_active === true) return true;
+    const monitor = localStorage.getItem('moraqeb_monitor_session_v1');
+    if (monitor && monitor.includes('"_demo":true')) return true;
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
       if (k && k.includes('-auth-token')) {
@@ -63,6 +79,43 @@ function isoDaysAgo(days = 0, hours = 0) {
 }
 
 /* ---------------- USERS ---------------- */
+/* The first three entries are the "fixture" accounts the public portfolio
+ * card advertises. They double as the loginAsMonitor lookup targets — the
+ * AuthContext checks the typed ID against DEMO_OBSERVER_ID / DEMO_SUPERVISOR_ID
+ * and reads the profile from here without ever touching Supabase. */
+export const DEMO_OBSERVER_PROFILE = {
+  uid: uid(2), id_number: DEMO_OBSERVER_ID, email: null, auth_uid: null,
+  name: 'مراقب العرض التوضيحي', name_ar: 'مراقب العرض التوضيحي',
+  role: 'observer',
+  center: 'مركز 1',
+  assigned_centers: ['مركز 1', 'مركز 2', 'مركز 3'],
+  caterer: 'شركة الذواقة الذهبية للأغذية',
+  role_code: 'OBS-DEMO', bravo_code: null,
+  created_at: isoDaysAgo(30),
+  _demo: true,
+};
+
+export const DEMO_SUPERVISOR_PROFILE = {
+  uid: uid(3), id_number: DEMO_SUPERVISOR_ID, email: null, auth_uid: null,
+  name: 'مشرف العرض التوضيحي', name_ar: 'مشرف العرض التوضيحي',
+  role: 'supervisor',
+  center: null,
+  assigned_centers: ['مركز 1', 'مركز 2', 'مركز 3', 'مركز 4', 'مركز 5', 'مركز 6'],
+  caterer: null,
+  role_code: 'SUP-DEMO', bravo_code: null,
+  created_at: isoDaysAgo(60),
+  _demo: true,
+};
+
+/* Look up a demo monitor profile by national ID. Returns null for non-demo
+ * IDs so the real DB path can still be tried. */
+export function getDemoMonitorProfile(idNumber) {
+  const v = (idNumber || '').trim();
+  if (v === DEMO_OBSERVER_ID)   return DEMO_OBSERVER_PROFILE;
+  if (v === DEMO_SUPERVISOR_ID) return DEMO_SUPERVISOR_PROFILE;
+  return null;
+}
+
 const DEMO_USERS = [
   {
     uid: uid(1), id_number: '1000000001', email: DEMO_EMAIL, auth_uid: null,
@@ -71,6 +124,8 @@ const DEMO_USERS = [
     role_code: 'ADM-001', bravo_code: 'BRV-001',
     created_at: isoDaysAgo(120),
   },
+  DEMO_OBSERVER_PROFILE,
+  DEMO_SUPERVISOR_PROFILE,
   ...DEMO_OBSERVERS.map((name, i) => ({
     uid: uid(10 + i), id_number: `200000000${i+1}`, email: null, auth_uid: null,
     name, name_ar: name, role: 'observer',
