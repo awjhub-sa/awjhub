@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../config/supabase.js';
 import { db } from '../lib/db.js';
+import { isDemoEmail } from '../lib/demoData.js';
 
 const AuthContext = createContext(null);
 
@@ -44,6 +45,26 @@ export function AuthProvider({ children }) {
         return;
       }
       const authUser = session.user;
+
+      // Demo account → force admin role with a synthetic profile and tag the
+      // window so the db layer short-circuits all reads/writes.
+      if (isDemoEmail(authUser.email)) {
+        if (typeof window !== 'undefined') window.__moraqeb_demo_active = true;
+        const demoProfile = {
+          uid: authUser.id,
+          email: authUser.email,
+          name: 'حساب العرض التوضيحي',
+          nameAr: 'حساب العرض التوضيحي',
+          role: 'admin',
+          assignedCenters: [],
+        };
+        setUser({ uid: authUser.id, email: authUser.email });
+        setRole('admin');
+        setProfile(demoProfile);
+        setLoading(false);
+        return;
+      }
+
       try {
         // Look up the user's profile row by auth_uid
         const profileRow = await db.users.findBy('authUid', authUser.id);

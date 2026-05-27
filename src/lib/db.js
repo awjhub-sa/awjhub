@@ -1,5 +1,6 @@
 // Supabase abstraction: per-table CRUD + realtime + storage helpers
 import { supabase, STORAGE_BUCKETS } from '../config/supabase.js';
+import { isDemoActive, DEMO_TABLES } from './demoData.js';
 
 /* Split on every lowercase|digit → uppercase boundary so:
      scoreOutOf10 → score_out_of10
@@ -62,9 +63,37 @@ function logErr(op, error) {
   if (error) console.error(`[db.${op}]`, error.message || error);
 }
 
+/* Demo-mode interception: when isDemoActive(), reads return hardcoded data
+ * from DEMO_TABLES and writes are no-op'd to keep real DB untouched. */
+function applyFilter(rows, filter) {
+  if (!filter) return rows;
+  return rows.filter(r =>
+    Object.entries(filter).every(([k, v]) => r[toSnake(k)] === v)
+  );
+}
+function applyOrder(rows, orderBy, ascending) {
+  if (!orderBy) return rows;
+  const key = toSnake(orderBy);
+  const sorted = [...rows].sort((a, b) => {
+    const va = a[key], vb = b[key];
+    if (va === vb) return 0;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    return va < vb ? -1 : 1;
+  });
+  return ascending === false ? sorted.reverse() : sorted;
+}
+function demoListSync(table, options = {}) {
+  const rows = (DEMO_TABLES[table] || []).slice();
+  return applyOrder(applyFilter(rows, options.filter), options.orderBy, options.ascending);
+}
+
 function createTableApi(table, { pk = 'id' } = {}) {
   return {
     async list(options = {}) {
+      if (isDemoActive()) {
+        return demoListSync(table, options).map(rowFromDb);
+      }
       let q = supabase.from(table).select('*');
       if (options.filter) {
         for (const [k, v] of Object.entries(options.filter)) {
@@ -80,12 +109,20 @@ function createTableApi(table, { pk = 'id' } = {}) {
     },
 
     async get(id) {
+      if (isDemoActive()) {
+        const row = (DEMO_TABLES[table] || []).find(r => r[pk] === id);
+        return row ? rowFromDb(row) : null;
+      }
       const { data, error } = await supabase.from(table).select('*').eq(pk, id).maybeSingle();
       logErr(`${table}.get`, error);
       return data ? rowFromDb(data) : null;
     },
 
     async findBy(column, value) {
+      if (isDemoActive()) {
+        const row = (DEMO_TABLES[table] || []).find(r => r[toSnake(column)] === value);
+        return row ? rowFromDb(row) : null;
+      }
       const { data, error } = await supabase
         .from(table)
         .select('*')
@@ -96,6 +133,10 @@ function createTableApi(table, { pk = 'id' } = {}) {
     },
 
     async insert(row) {
+      if (isDemoActive()) {
+        const fake = { ...row, [pk]: row[pk] || `demo-${Date.now()}-${Math.random().toString(36).slice(2,8)}` };
+        return rowFromDb(rowToDb(fake));
+      }
       const { data, error } = await supabase
         .from(table)
         .insert(rowToDb(row))
@@ -107,6 +148,9 @@ function createTableApi(table, { pk = 'id' } = {}) {
     },
 
     async upsert(row, { onConflict = pk } = {}) {
+      if (isDemoActive()) {
+        return rowFromDb(rowToDb(row));
+      }
       const { data, error } = await supabase
         .from(table)
         .upsert(rowToDb(row), { onConflict })
@@ -118,6 +162,9 @@ function createTableApi(table, { pk = 'id' } = {}) {
     },
 
     async update(id, patch) {
+      if (isDemoActive()) {
+        return rowFromDb(rowToDb({ ...patch, [pk]: id }));
+      }
       const { data, error } = await supabase
         .from(table)
         .update(rowToDb(patch))
@@ -130,12 +177,14 @@ function createTableApi(table, { pk = 'id' } = {}) {
     },
 
     async delete(id) {
+      if (isDemoActive()) return;
       const { error } = await supabase.from(table).delete().eq(pk, id);
       logErr(`${table}.delete`, error);
       if (error) throw error;
     },
 
     async deleteMany(ids) {
+      if (isDemoActive()) return;
       if (!ids?.length) return;
       const { error } = await supabase.from(table).delete().in(pk, ids);
       logErr(`${table}.deleteMany`, error);
@@ -143,6 +192,11 @@ function createTableApi(table, { pk = 'id' } = {}) {
     },
 
     subscribe(callback, options = {}) {
+      if (isDemoActive()) {
+        const rows = demoListSync(table, options).map(rowFromDb);
+        Promise.resolve().then(() => callback(rows));
+        return () => {};
+      }
       let cache = [];
       let mounted = true;
       const pkKey = toCamel(pk);

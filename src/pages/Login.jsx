@@ -294,6 +294,19 @@ export default function Login() {
                   </>
                 ) : 'دخول'}
               </button>
+
+              <div className="border-t border-[#D1C4B9] pt-3 mt-1">
+                <button
+                  type="button"
+                  onClick={() => { setAdminEmail('demo@moraqeb.com'); setAdminPassword('Demo1234'); setAdminError(''); }}
+                  className="w-full py-2.5 rounded-xl text-xs font-bold border-2 border-dashed border-[#D1C4B9] text-[#6D6E71] hover:bg-[#F5EDE0] hover:text-[#2D2926] transition-all"
+                >
+                  تعبئة بيانات حساب العرض التوضيحي
+                </button>
+                <p className="text-[10px] text-[#6D6E71]/60 text-center mt-2 leading-relaxed">
+                  العرض التوضيحي يستخدم بيانات افتراضية فقط ولا يصل لأي بيانات حقيقية
+                </p>
+              </div>
             </div>
           </form>
         </div>

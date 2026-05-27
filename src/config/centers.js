@@ -1,4 +1,6 @@
-export const CENTERS = [
+import { isDemoActive, DEMO_CENTERS } from '../lib/demoData.js';
+
+const _REAL_CENTERS = [
   { id: 'مركز 5',    caterer: 'مطابخ نعيمة ادريس صالح نوح' },
   { id: 'مركز 7',    caterer: 'مؤسسة شعاع الشروق المتميزة لتقديم الوجبات' },
   { id: 'مركز 8',    caterer: 'مؤسسة شعاع الشروق المتميزة لتقديم الوجبات' },
@@ -63,6 +65,27 @@ export const CENTERS = [
   { id: 'مركز 101',  caterer: 'مؤسسة سفير الطهاة لخدمات الاعاشة' },
   { id: 'مركز 102',  caterer: 'مؤسسة مطبخ رفادة الضيف لتقديم الوجبات' },
 ];
+
+/* Proxy that swaps between real and demo centers based on runtime demo flag.
+ * Importers keep using `CENTERS` exactly like a normal array. */
+export const CENTERS = new Proxy(_REAL_CENTERS, {
+  get(target, prop) {
+    const arr = isDemoActive() ? DEMO_CENTERS : target;
+    const v = arr[prop];
+    return typeof v === 'function' ? v.bind(arr) : v;
+  },
+  has(target, prop) {
+    const arr = isDemoActive() ? DEMO_CENTERS : target;
+    return prop in arr;
+  },
+  ownKeys(target) {
+    return Reflect.ownKeys(isDemoActive() ? DEMO_CENTERS : target);
+  },
+  getOwnPropertyDescriptor(target, prop) {
+    const arr = isDemoActive() ? DEMO_CENTERS : target;
+    return Object.getOwnPropertyDescriptor(arr, prop);
+  },
+});
 
 export const getCaterer = (centerId) =>
   CENTERS.find(c => c.id === centerId)?.caterer || '';
