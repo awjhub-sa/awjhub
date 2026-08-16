@@ -626,7 +626,7 @@ export default function SupervisorHome() {
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-line w-full px-4 py-3 mb-6 shadow-sm">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <img src={BRAND.logo.color} alt={BRAND.companyName} className="w-10 h-10" />
+            <img src={BRAND.logo.icon} alt={BRAND.companyName} className="w-10 h-10" />
             <div>
               <p className="text-xs font-bold text-ink">{BRAND.companyName}</p>
               <p className="text-[10px] text-primary font-bold leading-tight">لوحة تحكم المشرف</p>

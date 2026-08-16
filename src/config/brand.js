@@ -29,8 +29,8 @@ export const BRAND = {
   logo: {
     full:       '/brand/logo.svg',          // lockup, navy text — light surfaces
     fullOnDark: '/brand/logo-on-dark.svg',  // lockup, white text — navy surfaces
-    color:      '/brand/mark.svg',          // square, light surfaces
-    mono:       '/brand/mark-mono.svg',     // square, inherits currentColor
+    color:      '/brand/icon.svg',          // square lockup, light surfaces
+    icon:       '/brand/icon-mark.svg',     // square, letters only — small sizes
   },
 };
 
