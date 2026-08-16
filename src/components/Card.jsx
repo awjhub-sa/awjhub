@@ -1,4 +1,6 @@
-import { Sparkles } from 'lucide-react';
+import {
+  Sparkle as Sparkles,
+} from '@phosphor-icons/react';
 
 export function Card({
   children,
@@ -11,8 +13,8 @@ export function Card({
   return (
     <div
       {...rest}
-      className={`group relative bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] overflow-hidden transition-all duration-300 ${
-        hover ? 'hover:shadow-[0_8px_28px_rgba(169,129,89,0.15)] hover:-translate-y-0.5' : ''
+      className={`group relative bg-white rounded-2xl border border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] overflow-hidden transition-all duration-300 ${
+        hover ? 'hover:shadow-[0_8px_28px_rgb(var(--c-primary)/0.15)] hover:-translate-y-0.5' : ''
       } ${className}`}
       style={{
         ...(accentColor ? { borderRight: `3px solid ${accentColor}` } : {}),
@@ -44,7 +46,7 @@ export function CardHeader({
   Icon,
   title,
   subtitle,
-  color = '#A98159',
+  color = 'rgb(var(--c-primary))',
   bgGradient,
   right,
   sparkle = false,
@@ -57,7 +59,7 @@ export function CardHeader({
 
   return (
     <div
-      className={`flex items-center justify-between px-5 py-3.5 border-b border-[#EDE5DC] gap-3 ${className}`}
+      className={`flex items-center justify-between px-5 py-3.5 border-b border-line gap-3 ${className}`}
       style={{ background: headerBg }}
     >
       <div className="flex items-center gap-3 min-w-0">
@@ -71,7 +73,7 @@ export function CardHeader({
               className="relative w-9 h-9 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300"
               style={{ background: iconGradient }}
             >
-              <Icon size={16} className="text-white" strokeWidth={2.25} />
+              <Icon size={16} className="text-white" weight="bold" />
               {sparkle && (
                 <Sparkles
                   size={9}
@@ -82,9 +84,9 @@ export function CardHeader({
           </div>
         )}
         <div className="min-w-0">
-          <h2 className="font-bold text-[#2D2926] text-sm truncate">{title}</h2>
+          <h2 className="font-bold text-ink text-sm truncate">{title}</h2>
           {subtitle && (
-            <p className="text-[11px] text-[#9D8F85] mt-0.5 font-medium truncate">{subtitle}</p>
+            <p className="text-[11px] text-muted mt-0.5 font-medium truncate">{subtitle}</p>
           )}
         </div>
       </div>
@@ -97,7 +99,7 @@ export function SectionPanel({
   Icon,
   title,
   subtitle,
-  color = '#A98159',
+  color = 'rgb(var(--c-primary))',
   bgGradient,
   right,
   sparkle = false,

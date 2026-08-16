@@ -17,7 +17,7 @@ export const CATEGORY_KEYS = ['main', 'side', 'drinks', 'snacks'];
 export const CATEGORY_META = {
   main:   { label: 'الطبق الرئيسي', color: '#DC2626', bg: '#FEF2F2', border: '#FECACA' },
   side:   { label: 'الأصناف الجانبية', color: '#10B981', bg: '#F0FDF4', border: '#86EFAC' },
-  drinks: { label: 'المشروبات',     color: '#3B82F6', bg: '#EFF6FF', border: '#BFDBFE' },
+  drinks: { label: 'المشروبات',     color: '#06B6D4', bg: '#EFF6FF', border: '#BFDBFE' },
   snacks: { label: 'السناكات',      color: '#8B5CF6', bg: '#F5F3FF', border: '#DDD6FE' },
 };
 

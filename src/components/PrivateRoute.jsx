@@ -3,8 +3,8 @@ import { useAuth } from '../context/AuthContext.jsx';
 
 /* Spinner shown while auth resolves */
 const Spinner = () => (
-  <div className="min-h-screen flex items-center justify-center bg-[#FDFCFB]">
-    <div className="w-10 h-10 border-4 border-[#A98159]/30 border-t-[#A98159] rounded-full animate-spin" />
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
   </div>
 );
 

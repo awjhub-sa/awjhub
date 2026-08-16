@@ -38,8 +38,8 @@ import StagesReport        from './pages/admin/StagesReport';
 
 // شاشة تحميل بسيطة مطابقة لهوية التطبيق
 const FullPageLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-[#FDFCFB]">
-    <div className="w-10 h-10 border-4 border-[#A98159]/30 border-t-[#A98159] rounded-full animate-spin" />
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
   </div>
 );
 

@@ -4,24 +4,37 @@ import { db } from '../../lib/db.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  SquaresFour, Warning, Van, ClipboardText, Users, SignOut,
-  Bell, List, X, CaretRight, ListChecks, Stack, CaretLeft,
-  UserGear, ShieldCheck, ForkKnife,
+  SquaresFour as LayoutDashboard,
+  Siren,
+  Stack as Boxes,
+  Gauge,
+  FlowArrow as Workflow,
+  ChefHat,
+  ListChecks as ListTodo,
+  Users as UsersRound,
+  UserGear as UserRoundCog,
+  BellRinging as BellRing,
+  SidebarSimple as PanelLeft,
+  X,
+  CaretRight as ChevronRight,
+  CaretLeft as ChevronLeft,
+  SignOut as LogOut,
 } from '@phosphor-icons/react';
-import logo from '../../assets/logo-light.svg';
 import { getCaterer } from '../../config/centers.js';
 import UploadToastListener from '../../components/UploadToastListener.jsx';
+import { BRAND } from '../../config/brand.js';
 
 const NAV = [
-  { to: '/admin/dashboard',  label: 'نظرة عامة',         icon: SquaresFour  },
-  { to: '/admin/reports',    label: 'البلاغات الميدانية', icon: Warning      },
-  { to: '/admin/logistics',  label: 'الإسناد اللوجستي',  icon: Van          },
-  { to: '/admin/analytics',  label: 'الجاهزية',            icon: ShieldCheck   },
-  { to: '/admin/phases',     label: 'المراحل',             icon: Stack        },
-  { to: '/admin/menu',       label: 'إدارة المنيو',        icon: ForkKnife    },
-  { to: '/admin/tasks',      label: 'إسناد المهام',       icon: ListChecks   },
-  { to: '/admin/users',      label: 'إدارة المستخدمين',  icon: Users        },
-  { to: '/admin/staff',      label: 'إدارة الموظفين',    icon: UserGear     },
+  { to: '/admin/dashboard',  label: 'نظرة عامة',         icon: LayoutDashboard },
+  { to: '/admin/reports',    label: 'البلاغات الميدانية', icon: Siren           },
+  { to: '/admin/logistics',  label: 'الإسناد اللوجستي',  icon: Boxes           },
+  { to: '/admin/analytics',  label: 'الجاهزية',            icon: Gauge           },
+  { to: '/admin/phases',     label: 'المراحل',             icon: Workflow        },
+  { to: '/admin/menu',       label: 'إدارة المنيو',        icon: ChefHat         },
+  { to: '/admin/tasks',      label: 'إسناد المهام',       icon: ListTodo        },
+  { to: '/admin/users',      label: 'إدارة المستخدمين',  icon: UsersRound      },
+  { to: '/admin/staff',      label: 'إدارة الموظفين',    icon: UserRoundCog    },
+  { to: '/admin/notifications', label: 'التنبيهات',       icon: BellRing        },
 ];
 
 const NOTIF_COLS = [
@@ -85,14 +98,18 @@ export default function AdminLayout() {
       {/* Logo */}
       <div className="relative px-5 py-4 border-b border-white/10 overflow-hidden">
         <div className="absolute inset-0 opacity-15"
-          style={{ background: 'radial-gradient(ellipse at 70% 50%, #C4A46E 0%, transparent 70%)' }} />
+          style={{ background: 'radial-gradient(ellipse at 70% 50%, rgb(var(--c-primary-400)) 0%, transparent 70%)' }} />
         <motion.div
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: 'easeOut' }}
           className="relative flex flex-col items-center gap-1 cursor-default"
         >
-          <img src={logo} alt="ضيوف البيت" className="w-full max-w-[152px] h-auto object-contain" />
+          <img
+            src={BRAND.logo.fullOnDark}
+            alt={BRAND.companyName}
+            className="w-full max-w-[186px] h-auto"
+          />
           <p className="text-[9px] font-semibold tracking-widest uppercase opacity-40 text-white">لوحة الإدارة</p>
         </motion.div>
       </div>
@@ -105,13 +122,13 @@ export default function AdminLayout() {
             to={to}
             onClick={() => setOpen(false)}
             className={({ isActive }) =>
-              `group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-150 ${
-                isActive ? 'text-white' : 'text-white/55 hover:text-white/90'
+              `group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors duration-150 ${
+                isActive ? 'text-white font-bold' : 'text-white/80 font-semibold hover:text-white'
               }`
             }
             style={({ isActive }) => isActive
-              ? { background: 'linear-gradient(135deg, rgba(196,164,110,0.25), rgba(169,129,89,0.15))', borderLeft: '2px solid #C4A46E' }
-              : { borderLeft: '2px solid transparent' }
+              ? { background: 'rgb(255 255 255 / 0.12)', borderRight: '3px solid rgb(var(--c-accent))' }
+              : { borderRight: '3px solid transparent' }
             }
           >
             {({ isActive }) => (
@@ -124,31 +141,39 @@ export default function AdminLayout() {
                   whileTap={{ scale: 0.88 }}
                   className="w-8 h-8 flex items-center justify-center rounded-xl flex-shrink-0 backdrop-blur-md border"
                   style={{
-                    background: isActive ? 'rgba(196,164,110,0.18)' : 'rgba(255,255,255,0.04)',
-                    borderColor: isActive ? 'rgba(196,164,110,0.35)' : 'rgba(255,255,255,0.07)',
+                    background: isActive ? 'rgb(var(--c-accent) / 0.18)' : 'rgba(255,255,255,0.06)',
+                    borderColor: isActive ? 'rgb(var(--c-accent) / 0.45)' : 'rgba(255,255,255,0.10)',
                   }}
                 >
                   <Icon
                     size={17}
-                    weight={isActive ? 'duotone' : 'thin'}
-                    color={isActive ? '#C4A46E' : 'rgba(255,255,255,0.55)'}
+                    weight={isActive ? 'bold' : 'regular'}
+                    color={isActive ? 'rgb(var(--c-accent))' : 'rgba(255,255,255,0.75)'}
                   />
                 </motion.div>
 
                 <span className="flex-1 text-[13px]">{label}</span>
 
-                {to === '/admin/reports' && pendingCount > 0 && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center"
-                  >
-                    {pendingCount}
-                  </motion.span>
-                )}
+                {/* Reports counts what is still pending; notifications counts
+                    what arrived since the page was last opened. */}
+                {(() => {
+                  const badge = to === '/admin/reports'       ? pendingCount
+                              : to === '/admin/notifications' ? newCount
+                              : 0;
+                  if (!badge) return null;
+                  return (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center"
+                    >
+                      {badge > 99 ? '99+' : badge}
+                    </motion.span>
+                  );
+                })()}
 
                 {isActive && (
-                  <CaretRight size={12} weight="bold" className="opacity-40 flex-shrink-0" />
+                  <ChevronRight size={12} weight="bold" className="opacity-40 flex-shrink-0" />
                 )}
               </>
             )}
@@ -162,7 +187,7 @@ export default function AdminLayout() {
         <div className="flex items-center gap-3 mb-3 px-1">
           <motion.div
             whileHover={{ scale: 1.08 }}
-            className="w-9 h-9 rounded-full bg-gradient-to-br from-[#C4A46E] to-[#A98159] flex items-center justify-center flex-shrink-0 shadow-md cursor-default"
+            className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-400 to-primary flex items-center justify-center flex-shrink-0 shadow-md cursor-default"
           >
             <span className="text-white text-sm font-bold">
               {(profile?.nameAr || profile?.name)?.charAt(0) || 'أ'}
@@ -179,7 +204,7 @@ export default function AdminLayout() {
           <div className="mb-2 px-1 max-h-24 overflow-y-auto space-y-1">
             {profile.centers.map(cid => (
               <div key={cid} className="bg-white/5 rounded-lg px-2.5 py-1.5 hover:bg-white/10 transition-colors duration-150">
-                <p className="text-[#A98159] text-[10px] font-bold">{cid}</p>
+                <p className="text-primary text-[10px] font-bold">{cid}</p>
                 <p className="text-white/50 text-[9px] truncate leading-tight">
                   {profile.caterers?.[cid] || getCaterer(cid)}
                 </p>
@@ -190,7 +215,7 @@ export default function AdminLayout() {
         {profile?.center && !profile?.centers?.length && (
           <div className="mb-2 px-1">
             <div className="bg-white/5 rounded-lg px-2.5 py-1.5">
-              <p className="text-[#A98159] text-[10px] font-bold">{profile.center}</p>
+              <p className="text-primary text-[10px] font-bold">{profile.center}</p>
               <p className="text-white/50 text-[9px] truncate leading-tight">
                 {profile.caterer || getCaterer(profile.center)}
               </p>
@@ -208,7 +233,7 @@ export default function AdminLayout() {
         >
           {loggingOut
             ? <span className="w-4 h-4 border-2 border-red-400/40 border-t-red-400 rounded-full animate-spin flex-shrink-0" />
-            : <SignOut size={16} weight="thin" className="flex-shrink-0" />}
+            : <LogOut size={16} weight="regular" className="flex-shrink-0" />}
           <span className="text-xs font-semibold">{loggingOut ? 'جارٍ الخروج...' : 'تسجيل الخروج'}</span>
         </motion.button>
       </div>
@@ -216,12 +241,13 @@ export default function AdminLayout() {
   );
 
   return (
-    <div dir="rtl" className="flex h-screen font-arabic overflow-hidden"
-      style={{ fontFamily: "'Cairo', Tahoma, sans-serif", background: 'linear-gradient(160deg, #F5F0EB 0%, #EDE5D8 100%)' }}>
+    <div dir="rtl" className="flex h-screen font-arabic overflow-hidden bg-canvas"
+      style={{ fontFamily: "'Cairo', Tahoma, sans-serif" }}>
 
-      {/* Desktop sidebar */}
+      {/* Desktop sidebar — navy deepening toward the base so the brand mark at
+          the top sits on the lightest part of the gradient. */}
       <aside className="hidden lg:flex flex-col w-60 flex-shrink-0"
-        style={{ background: 'linear-gradient(180deg,#4A3B35 0%,#2D2926 60%,#231F1C 100%)' }}>
+        style={{ background: 'linear-gradient(180deg, rgb(var(--c-primary)) 0%, rgb(var(--c-primary-700)) 55%, rgb(var(--c-primary-900)) 100%)' }}>
         <SidebarContent />
       </aside>
 
@@ -242,7 +268,7 @@ export default function AdminLayout() {
               exit={{ x: 240 }}
               transition={spring}
               className="relative w-64 flex flex-col z-50 shadow-2xl"
-              style={{ background: 'linear-gradient(180deg,#4A3B35 0%,#2D2926 60%,#231F1C 100%)' }}
+              style={{ background: 'linear-gradient(180deg,rgb(var(--c-ink-800)) 0%,rgb(var(--c-ink)) 60%,rgb(var(--c-ink)) 100%)' }}
             >
               <motion.button
                 onClick={() => setOpen(false)}
@@ -261,32 +287,29 @@ export default function AdminLayout() {
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
-        {/* Top header */}
-        <header className="border-b border-[#D9CEBC] px-3 sm:px-6 py-3 flex items-center justify-between flex-shrink-0 shadow-[0_1px_8px_rgba(45,41,38,0.08)]"
-          style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, #FDF8F2 100%)' }}>
-          <div className="flex items-center gap-3">
-            <motion.button
-              onClick={() => setOpen(true)}
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.92 }}
-              className="lg:hidden p-2 rounded-xl hover:bg-[#F5EEE4] transition-colors"
-            >
-              <List size={20} weight="thin" className="text-[#2D2926]" />
-            </motion.button>
-            <div>
-              <p className="text-[11px] font-semibold text-[#9D8F85]">موسم الحج ١٤٤٧ هـ</p>
-              <p className="text-sm font-bold text-[#2D2926]">لجنة التغذية | شركة ضيوف البيت</p>
-            </div>
-          </div>
+        {/* Mobile-only top bar. On desktop the sidebar is always visible and
+            carries both the brand and the notifications item, so a header here
+            would only repeat them — it held no unique content of its own. */}
+        <header className="lg:hidden border-b border-white/10 px-3 py-2 flex items-center justify-between flex-shrink-0 shadow-[0_1px_8px_rgb(var(--c-primary-900)/0.35)]"
+          style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary)) 0%, rgb(var(--c-primary-700)) 100%)' }}>
+          <motion.button
+            onClick={() => setOpen(true)}
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.92 }}
+            className="p-2 rounded-xl hover:bg-white/10 transition-colors"
+            aria-label="فتح القائمة"
+          >
+            <PanelLeft size={22} weight="regular" className="text-white" />
+          </motion.button>
 
           {/* Bell */}
           <motion.button
             onClick={() => navigate('/admin/notifications')}
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.92 }}
-            className="relative p-2.5 rounded-xl border border-[#D9CEBC] bg-white/60 backdrop-blur-md hover:bg-[#FDF8F0] hover:border-[#A98159]/50 transition-colors"
+            className="relative p-2.5 rounded-xl border border-white/15 bg-white/10 backdrop-blur-md hover:bg-white/20 hover:border-accent/50 transition-colors"
           >
-            <Bell size={18} weight="thin" className="text-[#6D6E71]" />
+            <BellRing size={18} weight="regular" className="text-white/80" />
             {newCount > 0 && (
               <motion.span
                 initial={{ scale: 0 }}
@@ -300,7 +323,7 @@ export default function AdminLayout() {
           </motion.button>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+        <main className="flex-1 overflow-y-auto bg-canvas p-3 sm:p-4 md:p-6">
           <Outlet />
         </main>
       </div>

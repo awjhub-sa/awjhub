@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import { db } from '../lib/db.js';
-import { Coffee, ForkKnife, Moon } from '@phosphor-icons/react';
+/* One coherent metaphor — time of day — instead of mixing food and time.
+   Kept in sync with the same trio in AdminPhases and AdminTaskAssign. */
+import {
+  SunHorizon as Sunrise,
+  Sun as SunMedium,
+  MoonStars as MoonStar,
+} from '@phosphor-icons/react';
 
 export function extractCenterNum(centerStr) {
   return parseInt((centerStr || '').replace(/[^0-9]/g, '')) || 0;
@@ -45,7 +51,7 @@ export function useAssignedTasks(profile) {
 }
 
 export const MEAL_META = {
-  breakfast: { label: 'الإفطار', icon: Coffee,    color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A' },
-  lunch:     { label: 'الغداء',  icon: ForkKnife, color: '#EF4444', bg: '#FEF2F2', border: '#FCA5A5' },
-  dinner:    { label: 'العشاء',  icon: Moon,      color: '#6366F1', bg: '#EEF2FF', border: '#C7D2FE' },
+  breakfast: { label: 'الإفطار', icon: Sunrise,   color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A' },
+  lunch:     { label: 'الغداء',  icon: SunMedium, color: '#06B6D4', bg: '#ECFEFF', border: '#A5F3FC' },
+  dinner:    { label: 'العشاء',  icon: MoonStar,  color: '#8B5CF6', bg: '#F5F3FF', border: '#DDD6FE' },
 };

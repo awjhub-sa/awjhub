@@ -1,10 +1,33 @@
 import { useEffect, useMemo, useState } from 'react';
 import { db } from '../../lib/db.js';
 import {
-  Truck, Package, ChevronRight, Pencil, Trash2, X, Save, User, Building2, Clock,
-  Filter, CheckCircle2, XCircle, ThumbsUp, Sparkles, AlertTriangle, Search,
-  MapPin, Hash, Factory, Calendar, Activity, ArrowRight, ArrowLeft, Layers, Mountain,
-} from 'lucide-react';
+  Truck,
+  Package,
+  CaretRight as ChevronRight,
+  Pencil,
+  Trash as Trash2,
+  X,
+  FloppyDisk as Save,
+  User,
+  Buildings as Building2,
+  Clock,
+  Funnel as Filter,
+  CheckCircle as CheckCircle2,
+  XCircle,
+  ThumbsUp,
+  Sparkle as Sparkles,
+  Warning as AlertTriangle,
+  MagnifyingGlass as Search,
+  MapPin,
+  Hash,
+  Factory,
+  CalendarBlank as Calendar,
+  Pulse as Activity,
+  ArrowRight,
+  ArrowLeft,
+  Stack as Layers,
+  Mountains as Mountain,
+} from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
 import NotificationBadge from '../../components/NotificationBadge.jsx';
 import { getCaterer, getShakhis, getLocation } from '../../config/centers.js';
@@ -15,7 +38,7 @@ import { StatusTimerChip, StatusTimeline } from '../../components/StatusTimeline
 import CenterNotesPanel from '../../components/CenterNotesPanel.jsx';
 
 const HOLY_SITE_LABEL = { mina: 'منى', arafat: 'عرفات' };
-const HOLY_SITE_COLOR = { mina: '#A98159', arafat: '#0E7C66' };
+const HOLY_SITE_COLOR = { mina: 'rgb(var(--c-primary))', arafat: '#10B981' };
 const HOLY_SITE_ICON  = { mina: MapPin,   arafat: Mountain };
 
 /* A request is "new" when pending AND submitted within the last 10 minutes */
@@ -36,7 +59,7 @@ const REPORT_TYPE_LABEL = {
 /* ── constants ── */
 const STATUS_OPTIONS = [
   { value: 'pending',   label: 'قيد الانتظار', color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A', Icon: Clock        },
-  { value: 'approved',  label: 'موافق عليه',   color: '#3B82F6', bg: '#EFF6FF', border: '#BFDBFE', Icon: ThumbsUp     },
+  { value: 'approved',  label: 'موافق عليه',   color: '#06B6D4', bg: '#EFF6FF', border: '#BFDBFE', Icon: ThumbsUp     },
   { value: 'delivered', label: 'تم التسليم',   color: '#10B981', bg: '#F0FDF4', border: '#86EFAC', Icon: CheckCircle2 },
   { value: 'rejected',  label: 'مرفوض',        color: '#EF4444', bg: '#FEF2F2', border: '#FECACA', Icon: XCircle      },
 ];
@@ -44,9 +67,9 @@ const STATUS_LOOKUP = Object.fromEntries(STATUS_OPTIONS.map(s => [s.value, s]));
 const getSB = r => STATUS_LOOKUP[r.status] || STATUS_OPTIONS[0];
 
 const SUPPORT_TYPES = [
-  { value: 'internal', label: 'داخلي',            short: 'داخلي',         Icon: ArrowRight, color: '#3B82F6' },
+  { value: 'internal', label: 'داخلي',            short: 'داخلي',         Icon: ArrowRight, color: '#06B6D4' },
   { value: 'external', label: 'خارجي',            short: 'خارجي',         Icon: ArrowLeft,  color: '#8B5CF6' },
-  { value: 'both',     label: 'داخلي وخارجي',     short: 'داخلي وخارجي',  Icon: Layers,     color: '#1D6FA4' },
+  { value: 'both',     label: 'داخلي وخارجي',     short: 'داخلي وخارجي',  Icon: Layers,     color: '#0E7490' },
 ];
 const SUPPORT_LOOKUP = Object.fromEntries(SUPPORT_TYPES.map(t => [t.value, t]));
 
@@ -142,7 +165,7 @@ export default function AdminLogistics() {
         Icon={Truck}
         title="الإسناد اللوجستي"
         subtitle={`${requests.length} طلب إجمالاً · تحديث فوري`}
-        gradient={{ from: '#93C5FD', to: '#3182CE' }}
+        gradient={{ from: '#93C5FD', to: '#06B6D4' }}
         glowColor="rgba(49,130,206,0.4)"
         right={
           countOf('pending') > 0 ? (
@@ -160,32 +183,32 @@ export default function AdminLogistics() {
       {/* Stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'إجمالي الطلبات', value: requests.length,       color: '#A98159', Icon: Truck        },
+          { label: 'إجمالي الطلبات', value: requests.length,       color: 'rgb(var(--c-primary))', Icon: Truck        },
           { label: 'قيد الانتظار',    value: countOf('pending'),    color: '#F59E0B', Icon: Clock        },
-          { label: 'موافق عليه',      value: countOf('approved'),   color: '#3B82F6', Icon: ThumbsUp     },
+          { label: 'موافق عليه',      value: countOf('approved'),   color: '#06B6D4', Icon: ThumbsUp     },
           { label: 'تم التسليم',      value: countOf('delivered'),  color: '#10B981', Icon: CheckCircle2 },
         ].map(c => (
           <div key={c.label}
-            className="bg-white rounded-2xl p-4 border border-[#EDE5DC] shadow-[0_2px_8px_rgba(45,41,38,0.07)] flex items-center gap-3"
+            className="bg-white rounded-2xl p-4 border border-line shadow-[0_2px_8px_rgb(var(--c-ink)/0.07)] flex items-center gap-3"
             style={{ borderRight: `3px solid ${c.color}` }}>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-semibold text-[#9D8F85] mb-0.5">{c.label}</p>
+              <p className="text-[10px] font-semibold text-muted mb-0.5">{c.label}</p>
               <p className="text-2xl font-bold tabular-nums" style={{ color: c.color }}>{c.value}</p>
             </div>
             <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
               style={{ background: `${c.color}18` }}>
-              <c.Icon size={18} style={{ color: c.color }} strokeWidth={1.75} />
+              <c.Icon size={18} style={{ color: c.color }} weight="regular" />
             </div>
           </div>
         ))}
       </div>
 
       {/* Filter tabs */}
-      <div className="bg-white border border-[#EDE5DC] rounded-2xl p-1.5 flex overflow-x-auto no-scrollbar shadow-[0_2px_8px_rgba(45,41,38,0.05)]">
+      <div className="bg-white border border-line rounded-2xl p-1.5 flex overflow-x-auto no-scrollbar shadow-[0_2px_8px_rgb(var(--c-ink)/0.05)]">
         {[
-          { value: 'all',       label: 'الكل',         count: requests.length,        Icon: Filter,        color: '#6D6E71' },
+          { value: 'all',       label: 'الكل',         count: requests.length,        Icon: Filter,        color: 'rgb(var(--c-muted))' },
           { value: 'pending',   label: 'قيد الانتظار', count: countOf('pending'),     Icon: Clock,         color: '#F59E0B' },
-          { value: 'approved',  label: 'موافق عليه',   count: countOf('approved'),    Icon: ThumbsUp,      color: '#3B82F6' },
+          { value: 'approved',  label: 'موافق عليه',   count: countOf('approved'),    Icon: ThumbsUp,      color: '#06B6D4' },
           { value: 'delivered', label: 'تم التسليم',   count: countOf('delivered'),   Icon: CheckCircle2,  color: '#10B981' },
           { value: 'rejected',  label: 'مرفوض',         count: countOf('rejected'),    Icon: XCircle,       color: '#EF4444' },
         ].map(opt => {
@@ -195,12 +218,12 @@ export default function AdminLogistics() {
             <button key={opt.value}
               onClick={() => setFilter(opt.value)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${
-                active ? 'text-white shadow-md' : 'text-[#6D6E71] hover:text-[#2D2926] hover:bg-[#FDF8F0]'
+                active ? 'text-white shadow-md' : 'text-muted hover:text-ink hover:bg-background'
               }`}
               style={active
                 ? { background: `linear-gradient(135deg, ${opt.color}, ${opt.color}DD)` }
                 : undefined}>
-              <OIcon size={14} strokeWidth={2.25} />
+              <OIcon size={14} weight="bold" />
               {opt.label}
               <span className={`tabular-nums text-[10px] px-1.5 py-0.5 rounded-md ${
                 active ? 'bg-white/25' : ''
@@ -215,18 +238,18 @@ export default function AdminLogistics() {
 
       {/* Search bar */}
       <div className="relative">
-        <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9D8F85]" strokeWidth={2} />
+        <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted" weight="regular" />
         <input
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="بحث برقم الطلب، البلاغ، المركز، المراقب..."
-          className="w-full pr-11 pl-4 py-3 rounded-2xl border-2 border-[#EDE5DC] bg-white text-sm font-medium text-[#2D2926] placeholder:text-[#C9B8A8] focus:border-[#3B82F6] focus:outline-none transition-colors shadow-[0_2px_8px_rgba(45,41,38,0.05)]"
+          className="w-full pr-11 pl-4 py-3 rounded-2xl border-2 border-line bg-white text-sm font-medium text-ink placeholder:text-muted focus:border-[#06B6D4] focus:outline-none transition-colors shadow-[0_2px_8px_rgb(var(--c-ink)/0.05)]"
         />
         {searchTerm && (
           <button onClick={() => setSearchTerm('')}
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center text-[#9D8F85] hover:bg-[#F5F0EB] transition-colors">
-            <X size={14} strokeWidth={2.25} />
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:bg-[rgb(var(--c-primary-50))] transition-colors">
+            <X size={14} weight="bold" />
           </button>
         )}
       </div>
@@ -234,16 +257,16 @@ export default function AdminLogistics() {
       {/* Cards */}
       <div className="space-y-3">
         {filtered.length === 0 ? (
-          <div className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-3xl border border-[#EDE5DC] py-20 text-center shadow-[0_2px_12px_rgba(45,41,38,0.06)]">
+          <div className="bg-gradient-to-br from-white via-white to-background/40 rounded-3xl border border-line py-20 text-center shadow-[0_2px_12px_rgb(var(--c-ink)/0.06)]">
             <div className="relative w-fit mx-auto mb-3 group">
               <div className="absolute inset-0 rounded-2xl blur-xl bg-blue-400 opacity-30 group-hover:opacity-60 transition-opacity" />
               <div className="relative w-14 h-14 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300"
                 style={{ background: 'linear-gradient(135deg, #DBEAFE, #BFDBFE)' }}>
-                <Truck size={24} className="text-blue-400" strokeWidth={1.75} />
+                <Truck size={24} className="text-blue-400" weight="regular" />
                 <Sparkles size={9} className="absolute -top-0.5 -right-0.5 text-blue-300 drop-shadow animate-pulse" />
               </div>
             </div>
-            <p className="text-[#6D6E71] text-sm font-medium">لا توجد طلبات تطابق البحث</p>
+            <p className="text-muted text-sm font-medium">لا توجد طلبات تطابق البحث</p>
           </div>
         ) : filtered.map(r => (
           <RequestCard
@@ -301,18 +324,18 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
 
   return (
     <div
-      className={`group/row relative bg-white rounded-2xl border-2 overflow-hidden transition-all duration-300 hover:shadow-[0_8px_28px_rgba(45,41,38,0.10)] ${
+      className={`group/row relative bg-white rounded-2xl border-2 overflow-hidden transition-all duration-300 hover:shadow-[0_8px_28px_rgb(var(--c-ink)/0.10)] ${
         isNew && !isOpen ? 'card-pulse-blue' : ''
       }`}
       style={!isNew || isOpen ? {
-        borderColor: isOpen ? `${st.color}40` : '#EDE5DC',
-        boxShadow: isOpen ? `0 8px 28px ${st.color}1F` : '0 2px 10px rgba(45,41,38,0.06)',
+        borderColor: isOpen ? `${st.color}40` : 'rgb(var(--c-line))',
+        boxShadow: isOpen ? `0 8px 28px ${st.color}1F` : '0 2px 10px rgb(var(--c-ink) / 0.06)',
       } : undefined}
     >
       {/* "جديد" floating pill */}
       {isNew && !isOpen && (
         <span className="absolute top-2 left-2 z-10 inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md text-white shadow-md tabular-nums tracking-wide"
-          style={{ background: 'linear-gradient(135deg, #3B82F6, #2563EB)' }}>
+          style={{ background: 'linear-gradient(135deg, #06B6D4, #0891B2)' }}>
           <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
           جديد
         </span>
@@ -333,11 +356,11 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
               background: `linear-gradient(135deg, ${st.color}, ${st.color}CC)`,
               border: '2px solid rgba(255,255,255,0.7)',
             }}>
-            <Package size={26} className="text-white" strokeWidth={2} />
+            <Package size={26} className="text-white" weight="regular" />
           </div>
           {isNew && (
             <div className="absolute -top-1.5 -right-1.5 badge-pulse-blue w-5 h-5 rounded-full bg-blue-500 border-2 border-white flex items-center justify-center">
-              <Sparkles size={9} className="text-white" strokeWidth={2.5} />
+              <Sparkles size={9} className="text-white" weight="bold" />
             </div>
           )}
         </div>
@@ -346,18 +369,18 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
         <div className="flex-1 min-w-0">
           {/* Title row */}
           <div className="flex items-center gap-2 flex-wrap mb-1">
-            <p className="text-base sm:text-lg font-black text-[#2D2926] leading-tight">طلب إسناد</p>
+            <p className="text-base sm:text-lg font-black text-ink leading-tight">طلب إسناد</p>
             <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md border"
               style={{ background: `${st.color}15`, borderColor: `${st.color}40`, color: st.color }}>
-              <SupportIcon size={10} strokeWidth={2.5} />
+              <SupportIcon size={10} weight="bold" />
               {st.short}
             </span>
             {r.requestNumber && (
               <span className={`inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md tabular-nums tracking-wide ${
-                isNew ? 'badge-pulse-blue text-white' : 'text-[#2D2926] border'
+                isNew ? 'badge-pulse-blue text-white' : 'text-ink border'
               }`}
                 style={isNew
-                  ? { background: 'linear-gradient(135deg, #3B82F6, #2563EB)' }
+                  ? { background: 'linear-gradient(135deg, #06B6D4, #0891B2)' }
                   : { background: '#EFF6FF', borderColor: '#BFDBFE' }}>
                 #{r.requestNumber}
               </span>
@@ -367,7 +390,7 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
               return (
                 <span className="text-[10px] font-black px-2 py-0.5 rounded-md text-white inline-flex items-center gap-1"
                   style={{ background: HOLY_SITE_COLOR[r.holySite] }}>
-                  <HSIcon size={10} strokeWidth={2.5} />
+                  <HSIcon size={10} weight="bold" />
                   {HOLY_SITE_LABEL[r.holySite]}
                 </span>
               );
@@ -375,25 +398,25 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
           </div>
 
           {/* Meta row */}
-          <div className="flex items-center gap-3 text-[11px] text-[#6D6E71] flex-wrap mb-1.5">
+          <div className="flex items-center gap-3 text-[11px] text-muted flex-wrap mb-1.5">
             <span className="flex items-center gap-1">
-              <User size={11} strokeWidth={2.25} className="text-[#A98159]" />
-              <span className="font-bold text-[#2D2926]">{r.observer || '—'}</span>
+              <User size={11} weight="bold" className="text-primary" />
+              <span className="font-bold text-ink">{r.observer || '—'}</span>
             </span>
             <span className="flex items-center gap-1">
-              <Building2 size={11} strokeWidth={2.25} className="text-[#A98159]" />
-              <span className="font-bold text-[#2D2926]">{r.center || '—'}</span>
+              <Building2 size={11} weight="bold" className="text-primary" />
+              <span className="font-bold text-ink">{r.center || '—'}</span>
             </span>
             <span className="flex items-center gap-1">
-              <Clock size={11} strokeWidth={2.25} className="text-[#A98159]" />
+              <Clock size={11} weight="bold" className="text-primary" />
               <span className="font-bold">{timeAgo(r.timestamp)}</span>
             </span>
           </div>
 
           {/* Caterer accent + timer chip */}
           <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
-            <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-[#A98159] bg-[#FDF8F0] border border-[#E8DDD4] rounded-md px-2 py-0.5">
-              <Factory size={10} strokeWidth={2.25} />
+            <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-primary bg-background border border-line rounded-md px-2 py-0.5">
+              <Factory size={10} weight="bold" />
               <span className="truncate max-w-[200px]">{r.caterer || getCaterer(r.center) || '—'}</span>
             </div>
             <StatusTimerChip doc={r} terminalStatuses={TERMINAL_LOGISTICS_STATUSES} statusMeta={STATUS_LOOKUP} />
@@ -403,20 +426,20 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
           <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
             {hasInternal && (
               <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-700">
-                <ArrowRight size={10} strokeWidth={2.5} />
+                <ArrowRight size={10} weight="bold" />
                 داخلي
                 <span className="tabular-nums bg-white border border-blue-200 rounded px-1.5 ms-0.5">{r.qtyInternal}</span>
               </span>
             )}
             {hasExternal && (
               <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-1 rounded-lg bg-violet-50 border border-violet-200 text-violet-700">
-                <ArrowLeft size={10} strokeWidth={2.5} />
+                <ArrowLeft size={10} weight="bold" />
                 خارجي
                 <span className="tabular-nums bg-white border border-violet-200 rounded px-1.5 ms-0.5">{r.qtyExternal}</span>
               </span>
             )}
             {(hasInternal || hasExternal) && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-1 rounded-lg bg-[#FDF8F0] border border-[#E8DDD4] text-[#A98159]">
+              <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-1 rounded-lg bg-background border border-line text-primary">
                 المجموع <span className="tabular-nums">{totalQty}</span>
               </span>
             )}
@@ -425,7 +448,7 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
           {/* Linked report compact chip */}
           {r.reportNumber && !isOpen && (
             <div className="mt-2 inline-flex items-center gap-1.5 text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-2 py-1">
-              <AlertTriangle size={10} strokeWidth={2.5} className="text-amber-600" />
+              <AlertTriangle size={10} weight="bold" className="text-amber-600" />
               مرتبط بالبلاغ
               <span className="tabular-nums bg-white border border-amber-300 rounded px-1.5 text-amber-700">#{r.reportNumber}</span>
               {r.reportType && (
@@ -442,19 +465,19 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
         <div className="flex flex-col items-end gap-2 shrink-0">
           <span className="inline-flex items-center gap-1.5 text-[10px] font-black px-2.5 py-1.5 rounded-xl border-2"
             style={{ background: b.bg, borderColor: b.border, color: b.color }}>
-            <StatusIcon size={11} strokeWidth={2.5} />
+            <StatusIcon size={11} weight="bold" />
             {b.label}
           </span>
-          <div className="w-8 h-8 rounded-lg border border-[#EDE5DC] bg-white flex items-center justify-center transition-transform"
+          <div className="w-8 h-8 rounded-lg border border-line bg-white flex items-center justify-center transition-transform"
             style={{ transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>
-            <ChevronRight size={14} className="text-[#A98159]" strokeWidth={2.25} />
+            <ChevronRight size={14} className="text-primary" weight="bold" />
           </div>
         </div>
       </button>
 
       {/* Expanded panel */}
       {isOpen && (
-        <div className="border-t-2 border-[#EDE5DC]/60 bg-[#FDFCFB] px-4 sm:px-5 py-5 space-y-4">
+        <div className="border-t-2 border-line/60 bg-background px-4 sm:px-5 py-5 space-y-4">
 
           {/* Center-specific operations notes */}
           <CenterNotesPanel centerId={r.center} variant="card" />
@@ -466,7 +489,7 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
                 <div className="absolute inset-0 rounded-xl blur-md bg-amber-400 opacity-40" />
                 <div className="relative w-11 h-11 rounded-xl flex items-center justify-center shadow-sm"
                   style={{ background: 'linear-gradient(135deg, #F59E0B, #D97706)' }}>
-                  <AlertTriangle size={20} className="text-white" strokeWidth={2.25} />
+                  <AlertTriangle size={20} className="text-white" weight="bold" />
                 </div>
               </div>
               <div className="flex-1 min-w-0">
@@ -474,7 +497,7 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
                   مرتبط ببلاغ ميداني
                 </p>
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <p className="text-sm font-black text-[#2D2926] leading-tight">
+                  <p className="text-sm font-black text-ink leading-tight">
                     {REPORT_TYPE_LABEL[r.reportType] || r.reportType || 'بلاغ ميداني'}
                   </p>
                   <span className="text-[10px] font-black px-2 py-0.5 rounded-md tabular-nums tracking-wide bg-white border border-amber-300 text-amber-700">
@@ -495,9 +518,9 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
           />
 
           {/* Quick status changer */}
-          <div className="bg-white rounded-2xl border border-[#EDE5DC] p-3">
-            <p className="text-[10px] font-bold text-[#9D8F85] mb-2 flex items-center gap-1">
-              <Activity size={11} strokeWidth={2.25} className="text-[#3B82F6]" />
+          <div className="bg-white rounded-2xl border border-line p-3">
+            <p className="text-[10px] font-bold text-muted mb-2 flex items-center gap-1">
+              <Activity size={11} weight="bold" className="text-[#06B6D4]" />
               تغيير الحالة
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -508,12 +531,12 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
                   <button key={s.value}
                     onClick={(e) => { e.stopPropagation(); onStatus(r.id, s.value); }}
                     className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-bold border-2 transition-all ${
-                      active ? 'shadow-md scale-[1.02]' : 'bg-white border-[#EDE5DC] text-[#6D6E71] hover:border-[#D9CEBC]'
+                      active ? 'shadow-md scale-[1.02]' : 'bg-white border-line text-muted hover:border-line'
                     }`}
                     style={active
                       ? { background: s.bg, borderColor: s.color, color: s.color }
                       : undefined}>
-                    <SIcon size={12} strokeWidth={2.5} />
+                    <SIcon size={12} weight="bold" />
                     {s.label}
                   </button>
                 );
@@ -527,8 +550,8 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
               {hasInternal && (
                 <div className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4 flex items-center gap-3">
                   <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-                    style={{ background: 'linear-gradient(135deg, #60A5FA, #3B82F6)' }}>
-                    <ArrowRight size={18} className="text-white" strokeWidth={2.5} />
+                    style={{ background: 'linear-gradient(135deg, #67E8F9, #06B6D4)' }}>
+                    <ArrowRight size={18} className="text-white" weight="bold" />
                   </div>
                   <div>
                     <p className="text-[10px] font-bold text-blue-700">الكمية الداخلية</p>
@@ -540,7 +563,7 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
                 <div className="rounded-2xl border-2 border-violet-200 bg-gradient-to-br from-violet-50 to-white p-4 flex items-center gap-3">
                   <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
                     style={{ background: 'linear-gradient(135deg, #A78BFA, #8B5CF6)' }}>
-                    <ArrowLeft size={18} className="text-white" strokeWidth={2.5} />
+                    <ArrowLeft size={18} className="text-white" weight="bold" />
                   </div>
                   <div>
                     <p className="text-[10px] font-bold text-violet-700">الكمية الخارجية</p>
@@ -554,19 +577,19 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
           {/* Info grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             {[
-              { label: 'المراقب',     val: r.observer, Icon: User,     color: '#A98159' },
+              { label: 'المراقب',     val: r.observer, Icon: User,     color: 'rgb(var(--c-primary))' },
               { label: 'المركز',      val: r.center,   Icon: Building2,color: st.color   },
               { label: 'نوع الإسناد', val: st.label,   Icon: SupportIcon, color: st.color },
-              { label: 'الوقت',       val: fullDate(r.timestamp), Icon: Calendar, color: '#6D6E71' },
+              { label: 'الوقت',       val: fullDate(r.timestamp), Icon: Calendar, color: 'rgb(var(--c-muted))' },
             ].map(c => (
-              <div key={c.label} className="bg-white rounded-xl border border-[#EDE5DC] p-2.5 flex items-center gap-2">
+              <div key={c.label} className="bg-white rounded-xl border border-line p-2.5 flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                   style={{ background: `${c.color}15` }}>
-                  <c.Icon size={13} style={{ color: c.color }} strokeWidth={2.25} />
+                  <c.Icon size={13} style={{ color: c.color }} weight="bold" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[9px] text-[#9D8F85] font-bold">{c.label}</p>
-                  <p className="text-[11px] font-bold text-[#2D2926] truncate">{c.val || '—'}</p>
+                  <p className="text-[9px] text-muted font-bold">{c.label}</p>
+                  <p className="text-[11px] font-bold text-ink truncate">{c.val || '—'}</p>
                 </div>
               </div>
             ))}
@@ -574,14 +597,14 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
 
           {/* Caterer + Shakhis + Location */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <div className="bg-gradient-to-br from-[#FDF8F0] to-white rounded-xl border border-[#E8DDD4] p-3 flex items-center gap-2.5">
+            <div className="bg-gradient-to-br from-background to-white rounded-xl border border-line p-3 flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-                style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
-                <Factory size={15} className="text-white" strokeWidth={2.25} />
+                style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
+                <Factory size={15} className="text-white" weight="bold" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[9px] text-[#9D8F85] font-bold">المتعهد</p>
-                <p className="text-xs font-black text-[#A98159] truncate leading-tight">
+                <p className="text-[9px] text-muted font-bold">المتعهد</p>
+                <p className="text-xs font-black text-primary truncate leading-tight">
                   {r.caterer || getCaterer(r.center) || '—'}
                 </p>
               </div>
@@ -591,10 +614,10 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
                 style={{ background: 'linear-gradient(135deg, #F5F3FF, #EDE9FE)', borderColor: '#7C3AED40' }}>
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
                   style={{ background: 'linear-gradient(135deg, #8B5CF6, #7C3AED)' }}>
-                  <Hash size={15} className="text-white" strokeWidth={2.5} />
+                  <Hash size={15} className="text-white" weight="bold" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[9px] text-[#9D8F85] font-bold">رقم الشاخص</p>
+                  <p className="text-[9px] text-muted font-bold">رقم الشاخص</p>
                   <p className="text-sm font-black tracking-widest leading-tight" style={{ color: '#7C3AED' }}>
                     {getShakhis(r.center)}
                   </p>
@@ -608,10 +631,10 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
                 style={{ background: 'linear-gradient(135deg, #F0FDF4, #DCFCE7)', borderColor: '#22C55E40', textDecoration: 'none' }}>
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm group-hover/map:scale-110 transition-transform"
                   style={{ background: 'linear-gradient(135deg, #22C55E, #16A34A)' }}>
-                  <MapPin size={15} className="text-white" strokeWidth={2.25} />
+                  <MapPin size={15} className="text-white" weight="bold" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[9px] text-[#9D8F85] font-bold">الموقع</p>
+                  <p className="text-[9px] text-muted font-bold">الموقع</p>
                   <p className="text-xs font-black group-hover/map:underline" style={{ color: '#16A34A' }}>
                     فتح في خرائط Google ↗
                   </p>
@@ -622,21 +645,21 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
 
           {/* Notes */}
           {r.notes && (
-            <div className="bg-white rounded-2xl border border-[#EDE5DC] p-4">
-              <p className="text-[10px] text-[#9D8F85] font-bold mb-2 flex items-center gap-1.5">
+            <div className="bg-white rounded-2xl border border-line p-4">
+              <p className="text-[10px] text-muted font-bold mb-2 flex items-center gap-1.5">
                 <span className="w-1.5 h-4 rounded-full" style={{ background: st.color }} />
                 ملاحظات المراقب
               </p>
-              <p className="text-sm text-[#2D2926] leading-relaxed whitespace-pre-wrap">{r.notes}</p>
+              <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap">{r.notes}</p>
             </div>
           )}
 
           {/* Operations room notes */}
-          <div className="bg-gradient-to-br from-[#FDF8F0] to-white border border-[#E8DDD4] rounded-2xl p-4"
+          <div className="bg-gradient-to-br from-background to-white border border-line rounded-2xl p-4"
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-[11px] text-[#9D8F85] font-bold flex items-center gap-1.5">
-                <span className="w-1.5 h-4 rounded-full bg-[#A98159]" />
+              <p className="text-[11px] text-muted font-bold flex items-center gap-1.5">
+                <span className="w-1.5 h-4 rounded-full bg-primary" />
                 ملاحظات غرفة العمليات
               </p>
               {savedNotes && (
@@ -650,23 +673,23 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
               onChange={e => { setNotes(e.target.value); setSavedNotes(false); }}
               rows={3}
               placeholder="اكتب ملاحظات تظهر للمراقب/المشرف الذي رفع الطلب..."
-              className="w-full px-3 py-2.5 border border-[#E8DDD4] rounded-xl text-sm text-[#2D2926] placeholder-[#C9B8A8] focus:border-[#A98159] focus:ring-2 focus:ring-[#A98159]/15 outline-none transition-all bg-white resize-none"
+              className="w-full px-3 py-2.5 border border-line rounded-xl text-sm text-ink placeholder-muted focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none transition-all bg-white resize-none"
             />
             <button onClick={handleSaveNotes} disabled={savingNotes || notes === (r.adminNotes || '')}
-              className="mt-2 w-full py-2.5 rounded-xl bg-gradient-to-br from-[#C4A46E] to-[#A98159] text-white text-sm font-black shadow-sm active:scale-[0.98] transition-all disabled:opacity-50">
+              className="mt-2 w-full py-2.5 rounded-xl bg-gradient-to-br from-primary-400 to-primary text-white text-sm font-black shadow-sm active:scale-[0.98] transition-all disabled:opacity-50">
               {savingNotes ? 'جارٍ الحفظ...' : 'حفظ الملاحظات'}
             </button>
           </div>
 
           {/* Action toolbar */}
-          <div className="flex items-center gap-2 pt-2 border-t border-[#EDE5DC]">
+          <div className="flex items-center gap-2 pt-2 border-t border-line">
             <button onClick={(e) => { e.stopPropagation(); onEdit(); }}
               className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-black bg-blue-50 text-blue-700 border-2 border-blue-200 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all">
-              <Pencil size={13} strokeWidth={2.25} /> تعديل الطلب
+              <Pencil size={13} weight="bold" /> تعديل الطلب
             </button>
             <button onClick={(e) => { e.stopPropagation(); onDelete(); }}
               className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-black bg-red-50 text-red-600 border-2 border-red-200 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all">
-              <Trash2 size={13} strokeWidth={2.25} /> حذف
+              <Trash2 size={13} weight="bold" /> حذف
             </button>
           </div>
         </div>
@@ -701,24 +724,24 @@ function EditModal({ req, onClose, onSave }) {
       <div className="relative bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#EDE5DC] shrink-0"
-          style={{ background: 'linear-gradient(135deg, #EFF6FF, #FDFCFB)' }}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-line shrink-0"
+          style={{ background: 'linear-gradient(135deg, #EFF6FF, rgb(var(--c-bg)))' }}>
           <div className="flex items-center gap-2.5">
             <div className="relative shrink-0">
               <div className="absolute inset-0 rounded-xl blur-md opacity-40 bg-blue-500" />
               <div className="relative w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
-                style={{ background: 'linear-gradient(135deg, #60A5FA, #3B82F6)' }}>
-                <Package size={18} className="text-white" strokeWidth={2} />
+                style={{ background: 'linear-gradient(135deg, #67E8F9, #06B6D4)' }}>
+                <Package size={18} className="text-white" weight="regular" />
               </div>
             </div>
             <div>
-              <p className="font-black text-[#2D2926] text-sm">تعديل طلب الإسناد</p>
-              <p className="text-[11px] text-[#6D6E71] font-bold mt-0.5">{req.observer} · {req.center}</p>
+              <p className="font-black text-ink text-sm">تعديل طلب الإسناد</p>
+              <p className="text-[11px] text-muted font-bold mt-0.5">{req.observer} · {req.center}</p>
             </div>
           </div>
           <button onClick={onClose}
-            className="w-8 h-8 rounded-xl border border-[#EDE5DC] flex items-center justify-center hover:bg-[#F5F0EB] transition-colors">
-            <X size={15} className="text-[#6D6E71]" strokeWidth={2.25} />
+            className="w-8 h-8 rounded-xl border border-line flex items-center justify-center hover:bg-[rgb(var(--c-primary-50))] transition-colors">
+            <X size={15} className="text-muted" weight="bold" />
           </button>
         </div>
 
@@ -726,35 +749,35 @@ function EditModal({ req, onClose, onSave }) {
           {/* Observer info (read-only) */}
           <div className="grid grid-cols-2 gap-2.5">
             {[
-              { label: 'المراقب', val: req.observer, Icon: User,     color: '#A98159' },
-              { label: 'المركز',  val: req.center,   Icon: Building2,color: '#3B82F6' },
+              { label: 'المراقب', val: req.observer, Icon: User,     color: 'rgb(var(--c-primary))' },
+              { label: 'المركز',  val: req.center,   Icon: Building2,color: '#06B6D4' },
             ].map(c => (
-              <div key={c.label} className="bg-white rounded-xl border border-[#EDE5DC] p-2.5 flex items-center gap-2">
+              <div key={c.label} className="bg-white rounded-xl border border-line p-2.5 flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                   style={{ background: `${c.color}15` }}>
-                  <c.Icon size={13} style={{ color: c.color }} strokeWidth={2.25} />
+                  <c.Icon size={13} style={{ color: c.color }} weight="bold" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[9px] text-[#9D8F85] font-bold">{c.label}</p>
-                  <p className="text-[11px] font-bold text-[#2D2926] truncate">{c.val || '—'}</p>
+                  <p className="text-[9px] text-muted font-bold">{c.label}</p>
+                  <p className="text-[11px] font-bold text-ink truncate">{c.val || '—'}</p>
                 </div>
               </div>
             ))}
           </div>
-          <div className="bg-gradient-to-br from-[#FDF8F0] to-white rounded-xl border border-[#E8DDD4] p-2.5 flex items-center gap-2">
+          <div className="bg-gradient-to-br from-background to-white rounded-xl border border-line p-2.5 flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm"
-              style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
-              <Factory size={13} className="text-white" strokeWidth={2.25} />
+              style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
+              <Factory size={13} className="text-white" weight="bold" />
             </div>
             <div className="min-w-0">
-              <p className="text-[9px] text-[#9D8F85] font-bold">المتعهد</p>
-              <p className="text-[11px] font-black text-[#A98159] truncate">{req.caterer || getCaterer(req.center) || '—'}</p>
+              <p className="text-[9px] text-muted font-bold">المتعهد</p>
+              <p className="text-[11px] font-black text-primary truncate">{req.caterer || getCaterer(req.center) || '—'}</p>
             </div>
           </div>
 
           {/* Support type */}
           <div>
-            <label className="text-xs font-black text-[#2D2926] mb-2 block">نوع الإسناد</label>
+            <label className="text-xs font-black text-ink mb-2 block">نوع الإسناد</label>
             <div className="grid grid-cols-3 gap-2">
               {SUPPORT_TYPES.map(t => {
                 const TIcon = t.Icon;
@@ -763,12 +786,12 @@ function EditModal({ req, onClose, onSave }) {
                   <button key={t.value}
                     onClick={() => setForm(f => ({ ...f, supportType: t.value, qtyInternal: '', qtyExternal: '' }))}
                     className={`flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl text-[10px] font-black border-2 transition-all ${
-                      active ? 'shadow-md scale-[1.02] text-white' : 'bg-white border-[#EDE5DC] text-[#6D6E71]'
+                      active ? 'shadow-md scale-[1.02] text-white' : 'bg-white border-line text-muted'
                     }`}
                     style={active
                       ? { background: `linear-gradient(135deg, ${t.color}, ${t.color}DD)`, borderColor: t.color }
                       : undefined}>
-                    <TIcon size={14} strokeWidth={2.5} />
+                    <TIcon size={14} weight="bold" />
                     {t.short}
                   </button>
                 );
@@ -780,25 +803,25 @@ function EditModal({ req, onClose, onSave }) {
           <div className="grid grid-cols-2 gap-3">
             {showInternal && (
               <div>
-                <label className="text-xs font-black text-[#2D2926] mb-1.5 block flex items-center gap-1.5">
-                  <ArrowRight size={12} strokeWidth={2.5} className="text-blue-500" />
+                <label className="text-xs font-black text-ink mb-1.5 block flex items-center gap-1.5">
+                  <ArrowRight size={12} weight="bold" className="text-blue-500" />
                   {form.supportType === 'both' ? 'الكمية الداخلية' : 'الكمية'}
                 </label>
                 <input type="number" min="1" value={form.qtyInternal}
                   onChange={e => setForm(f => ({ ...f, qtyInternal: e.target.value }))}
-                  className="w-full px-4 py-2.5 border-2 border-[#EDE5DC] rounded-xl text-sm font-bold text-[#2D2926] outline-none focus:border-blue-500 transition-colors bg-white"
+                  className="w-full px-4 py-2.5 border-2 border-line rounded-xl text-sm font-bold text-ink outline-none focus:border-blue-500 transition-colors bg-white"
                   placeholder="0" />
               </div>
             )}
             {showExternal && (
               <div>
-                <label className="text-xs font-black text-[#2D2926] mb-1.5 block flex items-center gap-1.5">
-                  <ArrowLeft size={12} strokeWidth={2.5} className="text-violet-500" />
+                <label className="text-xs font-black text-ink mb-1.5 block flex items-center gap-1.5">
+                  <ArrowLeft size={12} weight="bold" className="text-violet-500" />
                   {form.supportType === 'both' ? 'الكمية الخارجية' : 'الكمية'}
                 </label>
                 <input type="number" min="1" value={form.qtyExternal}
                   onChange={e => setForm(f => ({ ...f, qtyExternal: e.target.value }))}
-                  className="w-full px-4 py-2.5 border-2 border-[#EDE5DC] rounded-xl text-sm font-bold text-[#2D2926] outline-none focus:border-violet-500 transition-colors bg-white"
+                  className="w-full px-4 py-2.5 border-2 border-line rounded-xl text-sm font-bold text-ink outline-none focus:border-violet-500 transition-colors bg-white"
                   placeholder="0" />
               </div>
             )}
@@ -806,7 +829,7 @@ function EditModal({ req, onClose, onSave }) {
 
           {/* Status */}
           <div>
-            <label className="text-xs font-black text-[#2D2926] mb-2 block">حالة الطلب</label>
+            <label className="text-xs font-black text-ink mb-2 block">حالة الطلب</label>
             <div className="grid grid-cols-2 gap-2">
               {STATUS_OPTIONS.map(s => {
                 const SIcon = s.Icon;
@@ -814,12 +837,12 @@ function EditModal({ req, onClose, onSave }) {
                 return (
                   <button key={s.value} onClick={() => setForm(f => ({ ...f, status: s.value }))}
                     className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[11px] font-black border-2 transition-all ${
-                      active ? 'shadow-md scale-[1.02]' : 'bg-white border-[#EDE5DC] text-[#6D6E71]'
+                      active ? 'shadow-md scale-[1.02]' : 'bg-white border-line text-muted'
                     }`}
                     style={active
                       ? { background: s.bg, borderColor: s.color, color: s.color }
                       : undefined}>
-                    <SIcon size={12} strokeWidth={2.5} />
+                    <SIcon size={12} weight="bold" />
                     {s.label}
                   </button>
                 );
@@ -829,26 +852,26 @@ function EditModal({ req, onClose, onSave }) {
 
           {/* Notes */}
           <div>
-            <label className="text-xs font-black text-[#2D2926] mb-1.5 block">ملاحظات</label>
+            <label className="text-xs font-black text-ink mb-1.5 block">ملاحظات</label>
             <textarea rows={3} value={form.notes}
               onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-              className="w-full px-4 py-3 border-2 border-[#EDE5DC] rounded-xl text-sm text-[#2D2926] outline-none focus:border-blue-500 transition-colors resize-none bg-white"
+              className="w-full px-4 py-3 border-2 border-line rounded-xl text-sm text-ink outline-none focus:border-blue-500 transition-colors resize-none bg-white"
               placeholder="ملاحظات إضافية..." />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-[#EDE5DC] flex gap-2.5 shrink-0">
+        <div className="px-6 py-4 border-t border-line flex gap-2.5 shrink-0">
           <button onClick={onClose}
-            className="flex-1 py-3 rounded-xl text-sm font-black border-2 border-[#EDE5DC] text-[#6D6E71] hover:bg-[#F5F0EB] transition-colors">
+            className="flex-1 py-3 rounded-xl text-sm font-black border-2 border-line text-muted hover:bg-[rgb(var(--c-primary-50))] transition-colors">
             إلغاء
           </button>
           <button onClick={handleSave} disabled={saving}
             className="flex-1 py-3 rounded-xl text-sm font-black text-white flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-60 shadow-md"
-            style={{ background: 'linear-gradient(135deg, #60A5FA, #3B82F6)' }}>
+            style={{ background: 'linear-gradient(135deg, #67E8F9, #06B6D4)' }}>
             {saving
               ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              : <Save size={15} strokeWidth={2.25} />}
+              : <Save size={15} weight="bold" />}
             {saving ? 'جارٍ الحفظ...' : 'حفظ التعديلات'}
           </button>
         </div>

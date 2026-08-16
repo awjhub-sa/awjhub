@@ -1,9 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  ChevronRight, Send, Truck, Package, Utensils, Droplets, User, Sparkles,
-  AlertTriangle, ArrowLeft, FileText, Clock, MapPin, Mountain,
-} from 'lucide-react';
+  CaretRight as ChevronRight,
+  PaperPlaneTilt as Send,
+  Truck,
+  Package,
+  ForkKnife as Utensils,
+  Drop as Droplets,
+  User,
+  Sparkle as Sparkles,
+  Warning as AlertTriangle,
+  ArrowLeft,
+  FileText,
+  Clock,
+  MapPin,
+  Mountains as Mountain,
+} from '@phosphor-icons/react';
 import { supabase } from '../../config/supabase.js';
 import { db, serverTimestamp, rowFromDb } from '../../lib/db.js';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -13,8 +25,8 @@ import { initialStatusFields } from '../../lib/statusTracking.js';
 const CATEGORY_TYPES = [{ id: 'meals', label: 'إسناد وجبات', icon: Utensils }, { id: 'water', label: 'إسناد مياه', icon: Droplets }];
 const SUPPORT_TYPES = [{ value: 'internal', label: 'داخلي' }, { value: 'external', label: 'خارجي' }, { value: 'both', label: 'داخلي وخارجي' }];
 const HOLY_SITES = [
-  { key: 'mina',   label: 'منى',   Icon: MapPin,   color: '#A98159' },
-  { key: 'arafat', label: 'عرفات', Icon: Mountain, color: '#0E7C66' },
+  { key: 'mina',   label: 'منى',   Icon: MapPin,   color: 'rgb(var(--c-primary))' },
+  { key: 'arafat', label: 'عرفات', Icon: Mountain, color: '#10B981' },
 ];
 
 const REPORT_TYPE_LABEL = {
@@ -133,42 +145,42 @@ export default function SupLogisticsRequest() {
   /* Step 0 — report picker */
   if (!selectedReport) {
     return (
-      <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-10 font-arabic">
-        <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 md:px-8 py-3 mb-4 shadow-sm">
+      <div dir="rtl" className="min-h-screen bg-canvas pb-10 font-arabic">
+        <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-line w-full px-4 md:px-8 py-3 mb-4 shadow-sm">
           <div className="max-w-3xl mx-auto flex items-center justify-between">
             <button onClick={() => navigate('/supervisor-home')} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition shrink-0">
-              <ChevronRight className="text-[#A98159]" size={22} strokeWidth={2.5} />
+              <ChevronRight className="text-primary" size={22} weight="bold" />
             </button>
-            <h1 className="text-base font-bold text-[#2D2926] absolute left-1/2 -translate-x-1/2 whitespace-nowrap">طلب إسناد</h1>
+            <h1 className="text-base font-bold text-ink absolute left-1/2 -translate-x-1/2 whitespace-nowrap">طلب إسناد</h1>
             <div className="w-10 shrink-0" />
           </div>
         </header>
 
         <div className="max-w-3xl mx-auto px-4 space-y-4">
-          <div className="bg-gradient-to-br from-[#3D3330] via-[#2D2926] to-[#1F1A17] rounded-3xl p-5 sm:p-6 shadow-lg overflow-hidden relative">
+          <div className="bg-gradient-to-br from-ink-800 via-ink to-[#1F1A17] rounded-3xl p-5 sm:p-6 shadow-lg overflow-hidden relative">
             <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10"
-              style={{ background: 'radial-gradient(circle, #A98159 0%, transparent 70%)', transform: 'translate(30%, -40%)' }} />
+              style={{ background: 'radial-gradient(circle, rgb(var(--c-primary)) 0%, transparent 70%)', transform: 'translate(30%, -40%)' }} />
             <div className="flex items-start gap-3 relative">
               <div className="relative">
-                <div className="absolute inset-0 rounded-2xl blur-xl bg-[#A98159] opacity-50" />
-                <div className="relative bg-gradient-to-br from-[#C4A46E] to-[#A98159] p-3 rounded-2xl shadow-md">
-                  <FileText size={22} className="text-white" strokeWidth={2.25} />
+                <div className="absolute inset-0 rounded-2xl blur-xl bg-primary opacity-50" />
+                <div className="relative bg-gradient-to-br from-primary-400 to-primary p-3 rounded-2xl shadow-md">
+                  <FileText size={22} className="text-white" weight="bold" />
                 </div>
               </div>
               <div>
-                <p className="text-[#A98159] text-[10px] font-black uppercase tracking-widest mb-1">الخطوة الأولى</p>
+                <p className="text-primary text-[10px] font-black uppercase tracking-widest mb-1">الخطوة الأولى</p>
                 <h2 className="text-white text-lg font-bold leading-snug">اختر البلاغ الذي تطلب الإسناد له</h2>
                 <p className="text-white/60 text-xs mt-1.5 leading-relaxed">
-                  بلاغات <span className="font-bold text-[#A98159]">{selectedCenter}</span> <span className="text-amber-300 font-bold">قيد الانتظار</span> فقط.
+                  بلاغات <span className="font-bold text-primary">{selectedCenter}</span> <span className="text-amber-300 font-bold">قيد الانتظار</span> فقط.
                 </p>
               </div>
             </div>
           </div>
 
           {loadingReports ? (
-            <div className="bg-white rounded-2xl py-14 text-center border border-[#EDE5DC]">
-              <div className="w-8 h-8 border-2 border-[#EDE5DC] border-t-[#A98159] rounded-full animate-spin mx-auto" />
-              <p className="text-[#9D8F85] text-sm mt-3 font-medium">جارٍ التحميل...</p>
+            <div className="bg-white rounded-2xl py-14 text-center border border-line">
+              <div className="w-8 h-8 border-2 border-line border-t-primary rounded-full animate-spin mx-auto" />
+              <p className="text-muted text-sm mt-3 font-medium">جارٍ التحميل...</p>
             </div>
           ) : pendingReports.length === 0 ? (
             <div className="bg-gradient-to-br from-white to-amber-50/40 rounded-2xl border-2 border-amber-200 p-7 text-center">
@@ -176,17 +188,17 @@ export default function SupLogisticsRequest() {
                 <div className="absolute inset-0 rounded-2xl blur-xl bg-amber-400 opacity-30" />
                 <div className="relative w-14 h-14 rounded-2xl flex items-center justify-center"
                   style={{ background: 'linear-gradient(135deg, #FEF3C7, #FDE68A)' }}>
-                  <AlertTriangle size={26} className="text-amber-600" strokeWidth={2} />
+                  <AlertTriangle size={26} className="text-amber-600" weight="regular" />
                 </div>
               </div>
-              <p className="text-[#2D2926] font-bold text-base mb-1">لا توجد بلاغات قيد الانتظار</p>
-              <p className="text-[#6D6E71] text-sm mb-5 leading-relaxed">
+              <p className="text-ink font-bold text-base mb-1">لا توجد بلاغات قيد الانتظار</p>
+              <p className="text-muted text-sm mb-5 leading-relaxed">
                 لا يمكن رفع طلب إسناد بدون بلاغ مرتبط.<br/>
                 ارفع بلاغاً أولاً من قسم البلاغات على هذا المركز.
               </p>
               <button onClick={() => navigate('/sup-report', { state: { centerId: selectedCenter } })}
                 className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-white font-bold text-sm shadow-md active:scale-95 transition-all"
-                style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
+                style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
                 <AlertTriangle size={15} />
                 رفع بلاغ جديد
               </button>
@@ -194,9 +206,9 @@ export default function SupLogisticsRequest() {
           ) : (
             <div className="space-y-2.5">
               <div className="flex items-center gap-2 px-1">
-                <span className="w-1.5 h-4 rounded-full bg-[#A98159]" />
-                <p className="text-xs font-black text-[#A98159] uppercase tracking-wider">بلاغات قيد الانتظار</p>
-                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#A98159]/10 text-[#A98159] border border-[#A98159]/20 tabular-nums">
+                <span className="w-1.5 h-4 rounded-full bg-primary" />
+                <p className="text-xs font-black text-primary uppercase tracking-wider">بلاغات قيد الانتظار</p>
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 tabular-nums">
                   {pendingReports.length}
                 </span>
               </div>
@@ -204,21 +216,21 @@ export default function SupLogisticsRequest() {
                 const label = REPORT_TYPE_LABEL[r.reportType] || REPORT_TYPE_LABEL[r.type] || r.reportType || 'بلاغ';
                 return (
                   <button key={r.id} onClick={() => setSelectedReport(r)}
-                    className="group/rep min-h-[72px] w-full text-right bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 border-2 border-[#EDE5DC] hover:border-[#A98159]/50 active:bg-[#FDF8F0] rounded-2xl p-4 flex items-center gap-3 transition-all duration-300 hover:shadow-[0_6px_20px_rgba(169,129,89,0.15)] hover:-translate-y-0.5 overflow-hidden relative"
+                    className="group/rep min-h-[72px] w-full text-right bg-gradient-to-br from-white via-white to-background/40 border-2 border-line hover:border-primary/50 active:bg-background rounded-2xl p-4 flex items-center gap-3 transition-all duration-300 hover:shadow-[0_6px_20px_rgb(var(--c-primary)/0.15)] hover:-translate-y-0.5 overflow-hidden relative"
                   >
                     <div className="absolute top-0 bottom-0 right-0 w-1 bg-amber-500" />
                     <div className="relative flex-shrink-0">
                       <div className="absolute inset-0 rounded-xl blur-md bg-amber-400 opacity-0 group-hover/rep:opacity-50 transition-opacity" />
                       <div className="relative w-11 h-11 rounded-xl flex items-center justify-center border-2 group-hover/rep:scale-110 group-hover/rep:rotate-3 transition-transform duration-300"
                         style={{ background: 'linear-gradient(135deg, #FEF3C7, #FDE68A)', borderColor: '#FCD34D' }}>
-                        <AlertTriangle size={18} className="text-amber-600" strokeWidth={2} />
+                        <AlertTriangle size={18} className="text-amber-600" weight="regular" />
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                        <p className="text-sm font-bold text-[#2D2926] leading-tight">{label}</p>
+                        <p className="text-sm font-bold text-ink leading-tight">{label}</p>
                         {r.reportNumber && (
-                          <span className="text-[10px] font-black px-2 py-0.5 rounded-md tabular-nums tracking-wide bg-[#FDF8F0] border border-[#A98159]/30 text-[#A98159]">
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-md tabular-nums tracking-wide bg-background border border-primary/30 text-primary">
                             {r.reportNumber}
                           </span>
                         )}
@@ -227,13 +239,13 @@ export default function SupLogisticsRequest() {
                           قيد الانتظار
                         </span>
                       </div>
-                      <p className="text-[11px] text-[#9D8F85] truncate flex items-center gap-1">
+                      <p className="text-[11px] text-muted truncate flex items-center gap-1">
                         <Clock size={10} />
                         {fmtTime(r.timestamp)} · بواسطة: {r.observer || '—'}
                       </p>
                     </div>
-                    <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-[#FDF8F0] group-hover/rep:bg-[#A98159] flex items-center justify-center group-hover/rep:-translate-x-1 transition-all duration-300">
-                      <ArrowLeft size={16} className="text-[#A98159] group-hover/rep:text-white transition-colors" strokeWidth={2.5} />
+                    <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-background group-hover/rep:bg-primary flex items-center justify-center group-hover/rep:-translate-x-1 transition-all duration-300">
+                      <ArrowLeft size={16} className="text-primary group-hover/rep:text-white transition-colors" weight="bold" />
                     </div>
                   </button>
                 );
@@ -246,20 +258,20 @@ export default function SupLogisticsRequest() {
   }
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-28 font-arabic px-0">
-      <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 md:px-8 py-3 mb-6 shadow-sm"><div className="max-w-5xl mx-auto flex items-center justify-between"><button onClick={() => navigate('/supervisor-home')} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition shrink-0 border border-transparent active:border-[#A98159]/20"><ChevronRight className="text-[#A98159]" size={22} strokeWidth={2.5} /></button><h1 className="text-base font-bold text-[#2D2926] absolute left-1/2 -translate-x-1/2 whitespace-nowrap">طلب إسناد</h1><div className="w-10 shrink-0" /></div></header>
+    <div dir="rtl" className="min-h-screen bg-canvas pb-28 font-arabic px-0">
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-line w-full px-4 md:px-8 py-3 mb-6 shadow-sm"><div className="max-w-5xl mx-auto flex items-center justify-between"><button onClick={() => navigate('/supervisor-home')} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition shrink-0 border border-transparent active:border-primary/20"><ChevronRight className="text-primary" size={22} weight="bold" /></button><h1 className="text-base font-bold text-ink absolute left-1/2 -translate-x-1/2 whitespace-nowrap">طلب إسناد</h1><div className="w-10 shrink-0" /></div></header>
 
       {/* Linked report banner */}
       <div className="max-w-5xl mx-auto px-4 pt-2">
         <div className="bg-gradient-to-br from-amber-50 to-orange-50/40 border-2 border-amber-200/70 rounded-2xl p-3.5 flex items-center gap-3 shadow-sm">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{ background: 'linear-gradient(135deg, #FEF3C7, #FDE68A)' }}>
-            <AlertTriangle size={16} className="text-amber-600" strokeWidth={2.5} />
+            <AlertTriangle size={16} className="text-amber-600" weight="bold" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[10px] font-black text-amber-700 uppercase tracking-wider">إسناد لبلاغ</p>
             <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-              <p className="text-sm font-bold text-[#2D2926] leading-tight">
+              <p className="text-sm font-bold text-ink leading-tight">
                 {REPORT_TYPE_LABEL[selectedReport.reportType] || REPORT_TYPE_LABEL[selectedReport.type] || 'بلاغ'}
               </p>
               {selectedReport.reportNumber && (
@@ -276,8 +288,8 @@ export default function SupLogisticsRequest() {
         </div>
       </div>
 
-      <div className="px-4"><div className="rounded-[2.5rem] p-6 my-6 text-white shadow-lg relative overflow-hidden" style={{ background: '#2D2926' }}><Truck className="absolute -left-4 -bottom-4 text-white/5 w-32 h-32 rotate-12" /><div className="flex justify-between items-center mb-8 relative z-10 group"><div className="flex items-center gap-4"><div className="relative"><div className="absolute inset-0 rounded-2xl blur-xl bg-[#A98159] opacity-50 group-hover:opacity-80 transition-opacity" /><div className="relative bg-gradient-to-br from-[#C4A46E] to-[#A98159] p-3 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300"><Truck className="text-white" size={24} /><Sparkles size={10} className="absolute -top-0.5 -right-0.5 text-yellow-200 drop-shadow" /></div></div><div><p className="text-[#A98159] text-[10px] font-black uppercase tracking-widest">منظومة الخدمات اللوجستية</p><h2 className="text-xl font-bold">رفع طلب إسناد</h2></div></div></div><div className="flex flex-wrap justify-center gap-2 relative z-10 w-full"><div className="bg-white/5 rounded-2xl px-3 py-3 flex-1 min-w-[100px] border border-white/10 backdrop-blur-sm flex flex-col items-center"><span className="text-white/40 text-[10px] block mb-1">المشرف</span><span className="text-white font-bold text-[11px] truncate w-full text-center">{profile?.nameAr || '—'}</span></div><div className="bg-white/5 rounded-2xl px-3 py-3 flex-1 min-w-[80px] border border-white/10 backdrop-blur-sm flex flex-col items-center"><span className="text-white/40 text-[10px] block mb-1">المركز</span><span className="text-[#A98159] font-bold text-sm">{selectedCenter}</span></div><div className="bg-white/5 rounded-2xl px-3 py-3 flex-1 min-w-[100px] border border-white/10 backdrop-blur-sm flex flex-col items-center"><span className="text-white/40 text-[10px] block mb-1">المتعهد</span><span className="text-white font-bold text-[11px] truncate w-full text-center">{getCaterer(selectedCenter) || '—'}</span></div></div></div><div className="bg-white rounded-[2rem] p-6 border border-[#D1C4B9] shadow-sm space-y-8"><div><label className="text-xs font-bold text-[#A98159] mb-4 block text-center uppercase tracking-wide">المشعر *</label><div className="grid grid-cols-2 gap-3">{HOLY_SITES.map(s => { const active = holySite === s.key; const SIcon = s.Icon; return (<button key={s.key} type="button" onClick={() => setHolySite(s.key)} className={`relative flex flex-col items-center gap-1.5 py-4 rounded-2xl border-2 transition-all ${active ? 'text-white scale-[1.02] shadow-md' : 'bg-[#F9F7F5] text-[#6D6E71] border-[#E5DDD5] hover:border-[#A98159]/40'}`} style={active ? { background: `linear-gradient(135deg, ${s.color}, ${s.color}CC)`, borderColor: s.color } : undefined}><SIcon size={22} strokeWidth={2.25} /><span className="text-sm font-bold">{s.label}</span></button>); })}</div></div><div className="h-px bg-[#E5DDD5] w-full" /><div><label className="text-xs font-bold text-[#A98159] mb-4 block text-center uppercase tracking-wide">تصنيف الإسناد</label><div className="grid grid-cols-2 gap-4">{CATEGORY_TYPES.map(type => (<button key={type.id} onClick={() => { setCategory(type.id); setSupportType(''); setQtyInternal(''); setQtyExternal(''); }} className={`py-6 rounded-3xl flex flex-col items-center gap-3 transition-all duration-300 border-2 ${category === type.id ? 'border-[#A98159] bg-[#A98159]/5 text-[#2D2926]' : 'border-transparent bg-[#F9F7F5] text-[#6D6E71]'}`}><type.icon size={32} className={category === type.id ? 'text-[#A98159]' : 'text-[#D1C4B9]'} /><span className="font-bold text-sm">{type.label}</span></button>))}</div></div>{category && (<div className="animate-in fade-in slide-in-from-top-4 duration-500 space-y-8"><div className="h-px bg-[#E5DDD5] w-full" /><div><label className="text-xs font-bold text-[#A98159] mb-4 block text-center tracking-wider">نطاق الإسناد</label><div className="grid grid-cols-3 gap-3">{SUPPORT_TYPES.map(type => (<button key={type.value} onClick={() => { setSupportType(type.value); setQtyInternal(''); setQtyExternal(''); }} className={`py-4 rounded-2xl text-[11px] font-bold transition-all ${supportType === type.value ? 'bg-[#2D2926] text-white shadow-lg' : 'bg-[#F9F7F5] text-[#6D6E71] border border-[#E5DDD5]'}`}>{type.label}</button>))}</div></div><div className="grid grid-cols-1 md:grid-cols-2 gap-6">{showInternal && (<div className="animate-in zoom-in-95 duration-300"><label className="flex items-center gap-2 text-xs font-bold text-[#2D2926] mb-2 px-1"><Package size={14} className="text-[#A98159]" /> {category === 'water' ? 'عدد العبوات (داخلي)' : 'عدد الوجبات (داخلي)'}</label><input type="text" inputMode="numeric" value={qtyInternal} onChange={e => setQtyInternal(sanitizeNumber(e.target.value))} placeholder="0" className="w-full px-5 py-4 bg-[#FDFCFB] border-2 border-[#E5DDD5] rounded-2xl outline-none focus:border-[#A98159] font-bold text-lg" /></div>)}{showExternal && (<div className="animate-in zoom-in-95 duration-300"><label className="flex items-center gap-2 text-xs font-bold text-[#2D2926] mb-2 px-1"><Package size={14} className="text-[#A98159]" /> {category === 'water' ? 'عدد العبوات (خارجي)' : 'عدد الوجبات (خارجي)'}</label><input type="text" inputMode="numeric" value={qtyExternal} onChange={e => setQtyExternal(sanitizeNumber(e.target.value))} placeholder="0" className="w-full px-5 py-4 bg-[#FDFCFB] border-2 border-[#E5DDD5] rounded-2xl outline-none focus:border-[#A98159] font-bold text-lg" /></div>)}</div><textarea placeholder="أضف ملاحظاتك..." value={notes} onChange={e => setNotes(e.target.value)} className="w-full px-4 py-4 border border-[#D1C4B9] rounded-2xl outline-none text-sm resize-none" /></div>)}</div></div>
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-lg border-t border-[#D1C4B9] z-50 text-center"><button onClick={handleSubmit} disabled={!isFormValid || loading} className={`w-full max-w-md mx-auto py-4 rounded-2xl font-bold text-lg shadow-xl flex items-center justify-center gap-3 transition-all duration-300 ${!isFormValid || loading ? 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-70 shadow-none' : 'bg-[#1A73E8] text-white hover:bg-[#1557B0] active:scale-95'}`}>{loading ? 'جاري الإرسال...' : <><Send size={20} /> <span>إرسال طلب الإسناد</span></>}</button></div>
+      <div className="px-4"><div className="rounded-[2.5rem] p-6 my-6 text-white shadow-lg relative overflow-hidden" style={{ background: 'rgb(var(--c-ink))' }}><Truck className="absolute -left-4 -bottom-4 text-white/5 w-32 h-32 rotate-12" /><div className="flex justify-between items-center mb-8 relative z-10 group"><div className="flex items-center gap-4"><div className="relative"><div className="absolute inset-0 rounded-2xl blur-xl bg-primary opacity-50 group-hover:opacity-80 transition-opacity" /><div className="relative bg-gradient-to-br from-primary-400 to-primary p-3 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300"><Truck className="text-white" size={24} /><Sparkles size={10} className="absolute -top-0.5 -right-0.5 text-yellow-200 drop-shadow" /></div></div><div><p className="text-primary text-[10px] font-black uppercase tracking-widest">منظومة الخدمات اللوجستية</p><h2 className="text-xl font-bold">رفع طلب إسناد</h2></div></div></div><div className="flex flex-wrap justify-center gap-2 relative z-10 w-full"><div className="bg-white/5 rounded-2xl px-3 py-3 flex-1 min-w-[100px] border border-white/10 backdrop-blur-sm flex flex-col items-center"><span className="text-white/40 text-[10px] block mb-1">المشرف</span><span className="text-white font-bold text-[11px] truncate w-full text-center">{profile?.nameAr || '—'}</span></div><div className="bg-white/5 rounded-2xl px-3 py-3 flex-1 min-w-[80px] border border-white/10 backdrop-blur-sm flex flex-col items-center"><span className="text-white/40 text-[10px] block mb-1">المركز</span><span className="text-primary font-bold text-sm">{selectedCenter}</span></div><div className="bg-white/5 rounded-2xl px-3 py-3 flex-1 min-w-[100px] border border-white/10 backdrop-blur-sm flex flex-col items-center"><span className="text-white/40 text-[10px] block mb-1">المتعهد</span><span className="text-white font-bold text-[11px] truncate w-full text-center">{getCaterer(selectedCenter) || '—'}</span></div></div></div><div className="bg-white rounded-[2rem] p-6 border border-line shadow-sm space-y-8"><div><label className="text-xs font-bold text-primary mb-4 block text-center uppercase tracking-wide">المشعر *</label><div className="grid grid-cols-2 gap-3">{HOLY_SITES.map(s => { const active = holySite === s.key; const SIcon = s.Icon; return (<button key={s.key} type="button" onClick={() => setHolySite(s.key)} className={`relative flex flex-col items-center gap-1.5 py-4 rounded-2xl border-2 transition-all ${active ? 'text-white scale-[1.02] shadow-md' : 'bg-[#F9F7F5] text-muted border-line hover:border-primary/40'}`} style={active ? { background: `linear-gradient(135deg, ${s.color}, ${s.color}CC)`, borderColor: s.color } : undefined}><SIcon size={22} weight="bold" /><span className="text-sm font-bold">{s.label}</span></button>); })}</div></div><div className="h-px bg-line w-full" /><div><label className="text-xs font-bold text-primary mb-4 block text-center uppercase tracking-wide">تصنيف الإسناد</label><div className="grid grid-cols-2 gap-4">{CATEGORY_TYPES.map(type => (<button key={type.id} onClick={() => { setCategory(type.id); setSupportType(''); setQtyInternal(''); setQtyExternal(''); }} className={`py-6 rounded-3xl flex flex-col items-center gap-3 transition-all duration-300 border-2 ${category === type.id ? 'border-primary bg-primary/5 text-ink' : 'border-transparent bg-[#F9F7F5] text-muted'}`}><type.icon size={32} className={category === type.id ? 'text-primary' : 'text-line'} /><span className="font-bold text-sm">{type.label}</span></button>))}</div></div>{category && (<div className="animate-in fade-in slide-in-from-top-4 duration-500 space-y-8"><div className="h-px bg-line w-full" /><div><label className="text-xs font-bold text-primary mb-4 block text-center tracking-wider">نطاق الإسناد</label><div className="grid grid-cols-3 gap-3">{SUPPORT_TYPES.map(type => (<button key={type.value} onClick={() => { setSupportType(type.value); setQtyInternal(''); setQtyExternal(''); }} className={`py-4 rounded-2xl text-[11px] font-bold transition-all ${supportType === type.value ? 'bg-ink text-white shadow-lg' : 'bg-[#F9F7F5] text-muted border border-line'}`}>{type.label}</button>))}</div></div><div className="grid grid-cols-1 md:grid-cols-2 gap-6">{showInternal && (<div className="animate-in zoom-in-95 duration-300"><label className="flex items-center gap-2 text-xs font-bold text-ink mb-2 px-1"><Package size={14} className="text-primary" /> {category === 'water' ? 'عدد العبوات (داخلي)' : 'عدد الوجبات (داخلي)'}</label><input type="text" inputMode="numeric" value={qtyInternal} onChange={e => setQtyInternal(sanitizeNumber(e.target.value))} placeholder="0" className="w-full px-5 py-4 bg-background border-2 border-line rounded-2xl outline-none focus:border-primary font-bold text-lg" /></div>)}{showExternal && (<div className="animate-in zoom-in-95 duration-300"><label className="flex items-center gap-2 text-xs font-bold text-ink mb-2 px-1"><Package size={14} className="text-primary" /> {category === 'water' ? 'عدد العبوات (خارجي)' : 'عدد الوجبات (خارجي)'}</label><input type="text" inputMode="numeric" value={qtyExternal} onChange={e => setQtyExternal(sanitizeNumber(e.target.value))} placeholder="0" className="w-full px-5 py-4 bg-background border-2 border-line rounded-2xl outline-none focus:border-primary font-bold text-lg" /></div>)}</div><textarea placeholder="أضف ملاحظاتك..." value={notes} onChange={e => setNotes(e.target.value)} className="w-full px-4 py-4 border border-line rounded-2xl outline-none text-sm resize-none" /></div>)}</div></div>
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-lg border-t border-line z-50 text-center"><button onClick={handleSubmit} disabled={!isFormValid || loading} className={`w-full max-w-md mx-auto py-4 rounded-2xl font-bold text-lg shadow-xl flex items-center justify-center gap-3 transition-all duration-300 ${!isFormValid || loading ? 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-70 shadow-none' : 'bg-[#0891B2] text-white hover:bg-[#0E7490] active:scale-95'}`}>{loading ? 'جاري الإرسال...' : <><Send size={20} /> <span>إرسال طلب الإسناد</span></>}</button></div>
     </div>
   );
 }

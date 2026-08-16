@@ -1,22 +1,65 @@
 /* src/index.css */
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
+/* Cairo is loaded from index.html — see the note there. */
 /* src/index.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 
+/* ──────────────────────────────────────────────────────────────
+   Brand tokens — the only place colours are defined.
+   Stored as RGB channels (not hex) so Tailwind can layer opacity
+   on top: text-primary/30, ring-primary/15, bg-primary/10.
+   Rebranding for a new tenant = editing this block + brand.js.
+   ────────────────────────────────────────────────────────────── */
+:root {
+  --c-primary:      27 42 74;     /* #1B2A4A — brand navy */
+  --c-primary-50:  241 244 249;
+  --c-primary-100: 226 232 241;
+  --c-primary-200: 197 208 227;
+  --c-primary-400:  61 90 138;    /* #3D5A8A — hover / gradient head */
+  --c-primary-700:  16 27 49;     /* #101B31 — pressed / gradient tail */
+  --c-primary-900:  10 17 31;
+
+  /* Accent carries the energy the navy cannot: highlights, active states,
+     data emphasis. Deliberately far from success-green and error-red so a
+     status badge is never mistaken for a brand element. */
+  --c-accent:     48 217 203;     /* #30D9CB */
+  --c-accent-50: 236 253 250;
+  --c-accent-600: 13 148 136;
+
+  --c-ink:      22 35 61;         /* headings, primary text */
+  --c-ink-800:  44 62 99;
+  --c-muted:   100 116 139;       /* secondary text */
+
+  /* The page canvas stays near-white so cards read as the content and the
+     navy works as accent rather than mass. Kept separate from --c-bg, which
+     doubles as a light tint *inside* cards. */
+  --c-canvas:    247 249 252;
+  --c-on-canvas:  22 35 61;       /* text that sits directly on the canvas */
+
+  --c-bg:      246 248 251;       /* light tint inside components */
+  --c-surface: 255 255 255;       /* cards */
+  /* Borders carry a navy cast so every card edge is a quiet brand cue. */
+  --c-line:    214 222 234;
+
+  --c-success: 22 163 74;
+  --c-warning: 245 158 11;
+  --c-error:   220 38 38;
+  --c-info:     37 99 235;
+}
+
 @layer base {
   html {
     direction: rtl;
-    font-family: 'IBM Plex Sans Arabic', Tahoma, sans-serif;
+    font-family: 'Cairo', Tahoma, sans-serif;
     -webkit-tap-highlight-color: transparent;
     -webkit-font-smoothing: antialiased;
   }
 
   body {
-    background-color: #FDFCFB;
-    color: #2D2926;
+    background-color: rgb(var(--c-canvas));
+    color: rgb(var(--c-on-canvas));
     overflow-x: hidden;
   }
 
@@ -32,12 +75,13 @@
   /* Custom scrollbar */
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #D1C4B9; border-radius: 4px; }
-  ::-webkit-scrollbar-thumb:hover { background: #A98159; }
+  ::-webkit-scrollbar-thumb { background: rgb(var(--c-line)); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-primary)); }
 
-  /* Select arrow RTL fix */
+  /* Select arrow RTL fix. The chevron is a data: URI, which cannot read a CSS
+     variable, so it stays a literal — matched to --c-muted. */
   select {
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236D6E71' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748B' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
     background-position: left 0.75rem center;
     background-repeat: no-repeat;
     background-size: 1.25em;
@@ -53,26 +97,31 @@
 }
 
 @layer utilities {
-  .bg-gold-gradient {
-    background: linear-gradient(135deg, #C4A46E 0%, #A98159 50%, #8B6840 100%);
+  /* Kept under the original names so existing markup does not need touching;
+     they now follow the brand tokens instead of the retired gold palette. */
+  .bg-brand-gradient, .bg-gold-gradient {
+    background: linear-gradient(135deg,
+      rgb(var(--c-primary-400)) 0%,
+      rgb(var(--c-primary))     50%,
+      rgb(var(--c-primary-700)) 100%);
   }
   .bg-dark-gradient {
-    background: linear-gradient(135deg, #3D3330 0%, #2D2926 100%);
+    background: linear-gradient(135deg, rgb(var(--c-ink-800)) 0%, rgb(var(--c-ink)) 100%);
   }
-  .shadow-gold {
-    box-shadow: 0 4px 24px rgba(169, 129, 89, 0.30);
+  .shadow-brand, .shadow-gold {
+    box-shadow: 0 4px 24px rgb(var(--c-primary) / 0.30);
   }
-  .shadow-gold-lg {
-    box-shadow: 0 8px 40px rgba(169, 129, 89, 0.35);
+  .shadow-brand-lg, .shadow-gold-lg {
+    box-shadow: 0 8px 40px rgb(var(--c-primary) / 0.35);
   }
   .shadow-card {
-    box-shadow: 0 2px 16px rgba(45, 41, 38, 0.07);
+    box-shadow: 0 2px 16px rgb(var(--c-ink) / 0.07);
   }
   .shadow-card-lg {
-    box-shadow: 0 8px 32px rgba(45, 41, 38, 0.12);
+    box-shadow: 0 8px 32px rgb(var(--c-ink) / 0.12);
   }
   .font-arabic {
-    font-family: 'IBM Plex Sans Arabic', Tahoma, sans-serif;
+    font-family: 'Cairo', Tahoma, sans-serif;
   }
 }
 
@@ -85,13 +134,14 @@
   0%, 100% { transform: scale(1);    box-shadow: 0 0 0 0   rgba(59, 130, 246, 0.55); }
   50%      { transform: scale(1.08); box-shadow: 0 0 0 6px rgba(59, 130, 246, 0);     }
 }
-@keyframes badgePulseGold {
-  0%, 100% { transform: scale(1);    box-shadow: 0 0 0 0   rgba(169, 129, 89, 0.55); }
-  50%      { transform: scale(1.08); box-shadow: 0 0 0 6px rgba(169, 129, 89, 0);     }
+@keyframes badgePulseBrand {
+  0%, 100% { transform: scale(1);    box-shadow: 0 0 0 0   rgb(var(--c-primary) / 0.55); }
+  50%      { transform: scale(1.08); box-shadow: 0 0 0 6px rgb(var(--c-primary) / 0);     }
 }
 .badge-pulse-red   { animation: badgePulseRed   2s ease-in-out infinite; }
 .badge-pulse-blue  { animation: badgePulseBlue  2s ease-in-out infinite; }
-.badge-pulse-gold  { animation: badgePulseGold  2s ease-in-out infinite; }
+.badge-pulse-brand,
+.badge-pulse-gold  { animation: badgePulseBrand 2s ease-in-out infinite; }
 
 /* ── Full-row glow pulse (highlights brand-new reports/logistics) ── */
 @keyframes rowPulseRed {

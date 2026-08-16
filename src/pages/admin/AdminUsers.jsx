@@ -2,9 +2,20 @@ import { useEffect, useMemo, useState } from 'react';
 import { db, serverTimestamp } from '../../lib/db.js';
 import { CENTERS, getCaterer } from '../../config/centers.js';
 import {
-  Users, Plus, X, Save, ChevronDown, UserPlus,
-  Eye, ShieldCheck, Pencil, Trash2, Sparkles, Filter, Search,
-} from 'lucide-react';
+  Users,
+  Plus,
+  X,
+  FloppyDisk as Save,
+  CaretDown as ChevronDown,
+  UserPlus,
+  Eye,
+  ShieldCheck,
+  Pencil,
+  Trash as Trash2,
+  Sparkle as Sparkles,
+  Funnel as Filter,
+  MagnifyingGlass as Search,
+} from '@phosphor-icons/react';
 
 const ROLES = [
   { value: 'observer',   label: 'مراقب', Icon: Eye          },
@@ -12,17 +23,17 @@ const ROLES = [
 ];
 
 const ROLE_META = {
-  observer:   { Icon: Eye,         label: 'مراقب', gradient: 'from-[#E9D4B8] to-[#C4A46E]' },
-  supervisor: { Icon: ShieldCheck, label: 'مشرف',  gradient: 'from-[#A98159] to-[#7A5A3D]' },
+  observer:   { Icon: Eye,         label: 'مراقب', gradient: 'from-line to-primary-400' },
+  supervisor: { Icon: ShieldCheck, label: 'مشرف',  gradient: 'from-primary to-[rgb(var(--c-primary-700))]' },
 };
 const MAX_BULK = 10;
 
 const inputCls =
-  'w-full px-4 py-2.5 border border-[#E8DDD4] rounded-xl text-sm text-[#2D2926] outline-none focus:border-[#A98159] transition placeholder-[#6D6E71]/40 bg-white';
+  'w-full px-4 py-2.5 border border-line rounded-xl text-sm text-ink outline-none focus:border-primary transition placeholder-muted/40 bg-white';
 
 const Field = ({ label, required, children }) => (
   <div>
-    <label className="block text-xs font-medium text-[#6D6E71] mb-1.5">
+    <label className="block text-xs font-medium text-muted mb-1.5">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
     {children}
@@ -39,32 +50,32 @@ function MultiCenterSelect({ selected, onChange }) {
       <button
         type="button"
         onClick={() => setOpen((p) => !p)}
-        className="w-full px-4 py-2.5 border border-[#D1C4B9] rounded-xl text-sm text-right flex items-center justify-between focus:border-[#A98159] outline-none transition bg-white"
+        className="w-full px-4 py-2.5 border border-line rounded-xl text-sm text-right flex items-center justify-between focus:border-primary outline-none transition bg-white"
       >
-        <span className={selected.length ? 'text-[#2D2926]' : 'text-[#6D6E71]/50'}>
+        <span className={selected.length ? 'text-ink' : 'text-muted/50'}>
           {selected.length ? selected.join(' - ') : 'اختر مراكز الخدمة'}
         </span>
         <ChevronDown
           size={15}
-          className={`text-[#6D6E71] transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`text-muted transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
       {open && (
-        <div className="absolute z-30 top-full right-0 left-0 mt-1 bg-white border border-[#E8DDD4] rounded-xl shadow-lg max-h-72 overflow-y-auto">
+        <div className="absolute z-30 top-full right-0 left-0 mt-1 bg-white border border-line rounded-xl shadow-lg max-h-72 overflow-y-auto">
           {CENTERS.map((c) => (
             <label
               key={c.id}
-              className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#FDF8F0] cursor-pointer text-sm"
+              className="flex items-center gap-3 px-4 py-2.5 hover:bg-background cursor-pointer text-sm"
             >
               <input
                 type="checkbox"
                 checked={selected.includes(c.id)}
                 onChange={() => toggle(c.id)}
-                className="accent-[#A98159] w-4 h-4"
+                className="accent-primary w-4 h-4"
               />
               <div className="min-w-0">
-                <span className="text-[#2D2926] font-medium">{c.id}</span>
-                <span className="text-[#6D6E71] text-xs block truncate">{c.caterer}</span>
+                <span className="text-ink font-medium">{c.id}</span>
+                <span className="text-muted text-xs block truncate">{c.caterer}</span>
               </div>
             </label>
           ))}
@@ -79,13 +90,13 @@ function CentersCell({ user }) {
   const [open, setOpen] = useState(false);
   if (user.role === 'observer') {
     return user.center
-      ? <span className="text-[#2D2926]">{user.center}</span>
+      ? <span className="text-ink">{user.center}</span>
       : <span>—</span>;
   }
   const centers = user.assignedCenters || user.centers || [];
   if (centers.length === 0) {
     return user.center
-      ? <span className="text-[#2D2926]">{user.center}</span>
+      ? <span className="text-ink">{user.center}</span>
       : <span>—</span>;
   }
   return (
@@ -93,9 +104,9 @@ function CentersCell({ user }) {
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-br from-[#FDF8F0] to-white border border-[#E8DDD4] hover:border-[#A98159] hover:shadow-sm font-bold text-[#A98159] tabular-nums transition-all"
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-br from-background to-white border border-line hover:border-primary hover:shadow-sm font-bold text-primary tabular-nums transition-all"
       >
-        <ChevronDown size={11} strokeWidth={2.5}
+        <ChevronDown size={11} weight="bold"
           className={`transition-transform ${open ? 'rotate-180' : ''}`} />
         {centers.length} {centers.length === 1 ? 'مركز' : 'مراكز'}
       </button>
@@ -103,7 +114,7 @@ function CentersCell({ user }) {
         <div className="flex flex-wrap gap-1 max-w-xs">
           {centers.map(c => (
             <span key={c}
-              className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-md bg-white border border-[#EDE5DC] text-[#2D2926]">
+              className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-md bg-white border border-line text-ink">
               {c}
             </span>
           ))}
@@ -391,30 +402,30 @@ export default function AdminUsers() {
   return (
     <div className="space-y-5" dir="rtl">
       {/* Header */}
-      <div className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgba(169,129,89,0.14)] overflow-hidden group">
+      <div className="bg-gradient-to-br from-white via-white to-background/40 rounded-2xl border border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgb(var(--c-primary)/0.14)] overflow-hidden group">
         <div
           className="flex items-center justify-between px-6 py-4 relative"
-          style={{ background: 'linear-gradient(135deg, #FDF8F0 0%, #fff 55%)' }}
+          style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 55%)' }}
         >
           <div className="absolute inset-y-0 right-0 w-32 opacity-30 pointer-events-none"
-            style={{ background: 'radial-gradient(circle at top right, rgba(196,164,110,0.4), transparent 70%)' }} />
+            style={{ background: 'radial-gradient(circle at top right, rgb(var(--c-primary-400) / 0.4), transparent 70%)' }} />
           <div className="flex items-center gap-3 relative">
             <div className="relative">
               <div
                 className="absolute inset-0 rounded-xl blur-xl opacity-50 group-hover:opacity-80 transition-opacity"
-                style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}
+                style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}
               />
               <div
                 className="relative w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300"
-                style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}
+                style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}
               >
-                <Users size={20} className="text-white" strokeWidth={2.25} />
+                <Users size={20} className="text-white" weight="bold" />
                 <Sparkles size={10} className="absolute -top-0.5 -right-0.5 text-yellow-200 drop-shadow" />
               </div>
             </div>
             <div>
-              <h1 className="text-base font-bold text-[#2D2926]">إدارة المستخدمين</h1>
-              <p className="text-xs text-[#9D8F85] mt-0.5">
+              <h1 className="text-base font-bold text-ink">إدارة المستخدمين</h1>
+              <p className="text-xs text-muted mt-0.5">
                 إضافة وإدارة المراقبين والمشرفين الميدانيين
               </p>
             </div>
@@ -425,15 +436,15 @@ export default function AdminUsers() {
       {/* Main grid */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
         {}
-        <section className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgba(169,129,89,0.14)] lg:col-span-2 h-fit relative">
-          <div className="bg-[#FDF8F0] p-1 m-3 rounded-xl flex">
+        <section className="bg-gradient-to-br from-white via-white to-background/40 rounded-2xl border border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgb(var(--c-primary)/0.14)] lg:col-span-2 h-fit relative">
+          <div className="bg-background p-1 m-3 rounded-xl flex">
             <button
               type="button"
               onClick={() => setMode('single')}
               className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
                 mode === 'single'
-                  ? 'bg-white text-[#A98159] shadow-sm'
-                  : 'text-[#6D6E71] hover:text-[#2D2926]'
+                  ? 'bg-white text-primary shadow-sm'
+                  : 'text-muted hover:text-ink'
               }`}
             >
               إضافة فردية
@@ -443,8 +454,8 @@ export default function AdminUsers() {
               onClick={() => setMode('bulk')}
               className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
                 mode === 'bulk'
-                  ? 'bg-white text-[#A98159] shadow-sm'
-                  : 'text-[#6D6E71] hover:text-[#2D2926]'
+                  ? 'bg-white text-primary shadow-sm'
+                  : 'text-muted hover:text-ink'
               }`}
             >
               إضافة متعددة
@@ -512,8 +523,8 @@ export default function AdminUsers() {
                         onClick={() => setForm((p) => ({ ...p, role: r.value }))}
                         className={`group/role relative overflow-hidden px-3 py-2.5 rounded-xl text-sm font-bold border-2 transition-all flex items-center justify-center gap-2 ${
                           active
-                            ? 'border-[#A98159] bg-gradient-to-br from-[#C4A46E] to-[#A98159] text-white shadow-[0_4px_14px_rgba(169,129,89,0.4)] scale-[1.02]'
-                            : 'border-[#E8DDD4] bg-white text-[#6D6E71] hover:border-[#A98159]/50 hover:scale-[1.02]'
+                            ? 'border-primary bg-gradient-to-br from-primary-400 to-primary text-white shadow-[0_4px_14px_rgb(var(--c-primary)/0.4)] scale-[1.02]'
+                            : 'border-line bg-white text-muted hover:border-primary/50 hover:scale-[1.02]'
                         }`}
                       >
                         <RIcon
@@ -603,8 +614,8 @@ export default function AdminUsers() {
               <button
                 type="submit"
                 disabled={singleSaving}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm hover:opacity-90 disabled:opacity-60 transition shadow-[0_4px_16px_rgba(169,129,89,0.35)]"
-                style={{ background: 'linear-gradient(135deg,#C4A46E,#A98159)' }}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm hover:opacity-90 disabled:opacity-60 transition shadow-[0_4px_16px_rgb(var(--c-primary)/0.35)]"
+                style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}
               >
                 {singleSaving ? (
                   <>
@@ -620,17 +631,17 @@ export default function AdminUsers() {
             </form>
           ) : (
             <form onSubmit={handleBulkAdd} className="p-5 pt-2 space-y-3">
-              <p className="text-xs text-[#6D6E71]">
+              <p className="text-xs text-muted">
                 املأ بيانات حتى {MAX_BULK} مستخدمين وأضفهم بضغطة واحدة. الصفوف الفارغة تُتجاهل.
               </p>
               <div className="space-y-2 max-h-[460px] overflow-y-auto pr-1">
                 {rows.map((row, i) => (
                   <div
                     key={i}
-                    className="border border-[#E8DDD4] rounded-xl p-3 bg-[#FDF8F0]/40 space-y-2"
+                    className="border border-line rounded-xl p-3 bg-background/40 space-y-2"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-[#6D6E71]">المستخدم {i + 1}</span>
+                      <span className="text-xs font-bold text-muted">المستخدم {i + 1}</span>
                       <button
                         type="button"
                         onClick={() => removeRow(i)}
@@ -654,8 +665,8 @@ export default function AdminUsers() {
                             })}
                             className={`px-2 py-1 rounded-md text-xs font-bold border transition flex items-center justify-center gap-1.5 ${
                               active
-                                ? 'bg-gradient-to-br from-[#C4A46E] to-[#A98159] text-white border-[#A98159] shadow-sm'
-                                : 'bg-white text-[#6D6E71] border-[#E8DDD4] hover:border-[#A98159]/50'
+                                ? 'bg-gradient-to-br from-primary-400 to-primary text-white border-primary shadow-sm'
+                                : 'bg-white text-muted border-line hover:border-primary/50'
                             }`}
                           >
                             <RIcon size={12} />
@@ -668,14 +679,14 @@ export default function AdminUsers() {
                       value={row.nameAr}
                       onChange={(e) => updateRow(i, { nameAr: e.target.value })}
                       placeholder="الاسم (عربي)"
-                      className="w-full border border-[#E8DDD4] rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-[#A98159]"
+                      className="w-full border border-line rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-primary"
                     />
                     <input
                       value={row.nameEn}
                       onChange={(e) => updateRow(i, { nameEn: e.target.value })}
                       placeholder="الاسم (إنجليزي — اختياري)"
                       dir="ltr"
-                      className="w-full border border-[#E8DDD4] rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-[#A98159]"
+                      className="w-full border border-line rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-primary"
                     />
                     <div className="grid grid-cols-2 gap-1.5">
                       <input
@@ -688,7 +699,7 @@ export default function AdminUsers() {
                         dir="ltr"
                         maxLength={10}
                         inputMode="numeric"
-                        className="w-full border border-[#E8DDD4] rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-[#A98159]"
+                        className="w-full border border-line rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-primary"
                       />
                       <input
                         value={row.phone}
@@ -700,7 +711,7 @@ export default function AdminUsers() {
                         dir="ltr"
                         maxLength={10}
                         inputMode="numeric"
-                        className="w-full border border-[#E8DDD4] rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-[#A98159]"
+                        className="w-full border border-line rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-primary"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-1.5">
@@ -708,13 +719,13 @@ export default function AdminUsers() {
                         value={row.roleCode}
                         onChange={(e) => updateRow(i, { roleCode: e.target.value })}
                         placeholder={row.role === 'observer' ? 'رمز المراقب' : 'رمز المشرف'}
-                        className="w-full border border-[#E8DDD4] rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-[#A98159]"
+                        className="w-full border border-line rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-primary"
                       />
                       <input
                         value={row.bravoCode}
                         onChange={(e) => updateRow(i, { bravoCode: e.target.value })}
                         placeholder="رمز البرافو"
-                        className="w-full border border-[#E8DDD4] rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-[#A98159]"
+                        className="w-full border border-line rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-primary"
                       />
                     </div>
                     {row.role === 'observer' ? (
@@ -722,7 +733,7 @@ export default function AdminUsers() {
                         <select
                           value={row.center}
                           onChange={(e) => updateRow(i, { center: e.target.value })}
-                          className="w-full border border-[#E8DDD4] rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-[#A98159]"
+                          className="w-full border border-line rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-primary"
                         >
                           <option value="">-- اختر مركز الخدمة --</option>
                           {CENTERS.map((c) => (
@@ -734,7 +745,7 @@ export default function AdminUsers() {
                         <select
                           value={row.supervisorId}
                           onChange={(e) => updateRow(i, { supervisorId: e.target.value })}
-                          className="w-full border border-[#E8DDD4] rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-[#A98159]"
+                          className="w-full border border-line rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-primary"
                         >
                           <option value="">-- اختر المشرف المسؤول --</option>
                           {supervisors.map((s) => (
@@ -757,7 +768,7 @@ export default function AdminUsers() {
                 type="button"
                 onClick={addRow}
                 disabled={rows.length >= MAX_BULK}
-                className="w-full border-2 border-dashed border-[#E8DDD4] text-[#6D6E71] hover:border-[#A98159] hover:text-[#A98159] py-2 rounded-xl text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed transition"
+                className="w-full border-2 border-dashed border-line text-muted hover:border-primary hover:text-primary py-2 rounded-xl text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed transition"
               >
                 <Plus size={14} className="inline mb-0.5" /> إضافة صف ({rows.length}/{MAX_BULK})
               </button>
@@ -771,8 +782,8 @@ export default function AdminUsers() {
               <button
                 type="submit"
                 disabled={bulkSaving}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm hover:opacity-90 disabled:opacity-60 transition shadow-[0_4px_16px_rgba(169,129,89,0.35)]"
-                style={{ background: 'linear-gradient(135deg,#C4A46E,#A98159)' }}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm hover:opacity-90 disabled:opacity-60 transition shadow-[0_4px_16px_rgb(var(--c-primary)/0.35)]"
+                style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}
               >
                 {bulkSaving ? (
                   <>
@@ -790,10 +801,10 @@ export default function AdminUsers() {
         </section>
 
         {}
-        <section className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgba(169,129,89,0.14)] overflow-hidden lg:col-span-3">
-          <div className="p-4 border-b border-[#EDE5DC] space-y-3">
+        <section className="bg-gradient-to-br from-white via-white to-background/40 rounded-2xl border border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgb(var(--c-primary)/0.14)] overflow-hidden lg:col-span-3">
+          <div className="p-4 border-b border-line space-y-3">
             <div className="flex items-center justify-between gap-3 flex-wrap">
-              <h2 className="text-lg font-bold text-[#A98159]">
+              <h2 className="text-lg font-bold text-primary">
                 المستخدمون ({visible.length}
                 {(filter !== 'all' || search) && ` من ${counts.all}`})
               </h2>
@@ -802,23 +813,23 @@ export default function AdminUsers() {
             {/* Search bar */}
             <div className="relative">
               <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                <Search size={15} className="text-[#A98159]" strokeWidth={2.25} />
+                <Search size={15} className="text-primary" weight="bold" />
               </div>
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="ابحث بالاسم العربي أو الانجليزي أو رقم الهوية..."
-                className="w-full pr-10 pl-10 py-2.5 border border-[#E8DDD4] rounded-xl text-sm text-[#2D2926] outline-none focus:border-[#A98159] focus:shadow-[0_0_0_3px_rgba(169,129,89,0.1)] transition-all bg-white placeholder-[#6D6E71]/40"
+                className="w-full pr-10 pl-10 py-2.5 border border-line rounded-xl text-sm text-ink outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgb(var(--c-primary)/0.1)] transition-all bg-white placeholder-muted/40"
               />
               {search && (
                 <button
                   type="button"
                   onClick={() => setSearch('')}
-                  className="absolute inset-y-0 left-3 flex items-center text-[#6D6E71] hover:text-[#A98159] transition-colors"
+                  className="absolute inset-y-0 left-3 flex items-center text-muted hover:text-primary transition-colors"
                   title="مسح البحث"
                 >
-                  <X size={14} strokeWidth={2.5} />
+                  <X size={14} weight="bold" />
                 </button>
               )}
             </div>
@@ -860,8 +871,8 @@ export default function AdminUsers() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead
-                className="text-[#6D6E71] text-xs border-b border-[#EDE5DC]"
-                style={{ background: 'linear-gradient(135deg, #FDF8F0 0%, #fff 60%)' }}
+                className="text-muted text-xs border-b border-line"
+                style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 60%)' }}
               >
                 <tr>
                   <th className="px-4 py-3 text-right font-semibold">الاسم</th>
@@ -875,17 +886,17 @@ export default function AdminUsers() {
                   <th className="px-4 py-3 text-right font-semibold">إجراء</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#EDE5DC]">
+              <tbody className="divide-y divide-line">
                 {loading && (
                   <tr>
-                    <td colSpan={9} className="p-8 text-center text-[#6D6E71]">
+                    <td colSpan={9} className="p-8 text-center text-muted">
                       جارٍ التحميل...
                     </td>
                   </tr>
                 )}
                 {!loading && visible.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="p-8 text-center text-[#6D6E71]">
+                    <td colSpan={9} className="p-8 text-center text-muted">
                       {search ? `لم يتم العثور على نتائج لـ "${search}"` : 'لا يوجد مستخدمون'}
                     </td>
                   </tr>
@@ -896,9 +907,9 @@ export default function AdminUsers() {
                   return (
                     <tr
                       key={u.id}
-                      className="group/row hover:bg-[#FDF8F0] transition-colors"
+                      className="group/row hover:bg-background transition-colors"
                     >
-                      <td className="px-4 py-3 font-medium text-[#2D2926]">
+                      <td className="px-4 py-3 font-medium text-ink">
                         <div className="flex items-center gap-2.5">
                           <div className="relative flex-shrink-0">
                             <div
@@ -913,68 +924,68 @@ export default function AdminUsers() {
                           <div className="min-w-0">
                             <div className="truncate">{u.nameAr || u.name || '—'}</div>
                             {u.nameEn && (
-                              <div className="text-[#6D6E71] text-xs truncate" dir="ltr">
+                              <div className="text-muted text-xs truncate" dir="ltr">
                                 {u.nameEn}
                               </div>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-[#6D6E71]" dir="ltr">
+                      <td className="px-4 py-3 text-muted" dir="ltr">
                         {u.idNumber || '—'}
                       </td>
-                      <td className="px-4 py-3 text-[#6D6E71]" dir="ltr">
+                      <td className="px-4 py-3 text-muted" dir="ltr">
                         {u.phone || '—'}
                       </td>
                       <td className="px-4 py-3">
                         <span
                           className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${
                             u.role === 'supervisor'
-                              ? 'bg-gradient-to-r from-[#C4A46E] to-[#A98159] text-white shadow-sm'
-                              : 'bg-[#A98159]/10 text-[#A98159] border border-[#A98159]/20'
+                              ? 'bg-gradient-to-r from-primary-400 to-primary text-white shadow-sm'
+                              : 'bg-primary/10 text-primary border border-primary/20'
                           }`}
                         >
-                          <RoleIcon size={11} strokeWidth={2.5} />
+                          <RoleIcon size={11} weight="bold" />
                           {meta.label}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-[#6D6E71] text-xs">
+                      <td className="px-4 py-3 text-muted text-xs">
                         {u.roleCode ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-[#FDF8F0] border border-[#E8DDD4] text-[#A98159] font-bold">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-background border border-line text-primary font-bold">
                             {u.roleCode}
                           </span>
                         ) : '—'}
                       </td>
-                      <td className="px-4 py-3 text-[#6D6E71] text-xs" dir="ltr">
+                      <td className="px-4 py-3 text-muted text-xs" dir="ltr">
                         {u.bravoCode ? (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-violet-50 border border-violet-200 text-violet-700 font-bold tabular-nums">
                             {u.bravoCode}
                           </span>
                         ) : '—'}
                       </td>
-                      <td className="px-4 py-3 text-[#6D6E71] text-xs">
+                      <td className="px-4 py-3 text-muted text-xs">
                         <CentersCell user={u} />
                       </td>
                       <td className="px-4 py-3 text-xs">
                         {u.role === 'observer' ? (() => {
                           const sup = centerToSupervisor.get(u.center);
                           return sup ? (
-                            <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gradient-to-br from-[#FDF8F0] to-white border border-[#E8DDD4]">
-                              <ShieldCheck size={11} className="text-[#A98159]" strokeWidth={2.25} />
-                              <span className="font-bold text-[#2D2926]">{sup.nameAr || sup.name}</span>
+                            <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gradient-to-br from-background to-white border border-line">
+                              <ShieldCheck size={11} className="text-primary" weight="bold" />
+                              <span className="font-bold text-ink">{sup.nameAr || sup.name}</span>
                             </div>
                           ) : (
-                            <span className="text-[#C9B8A8]">— غير محدد —</span>
+                            <span className="text-muted">— غير محدد —</span>
                           );
                         })() : (
-                          <span className="text-[#C9B8A8]">—</span>
+                          <span className="text-muted">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => openEdit(u)}
-                            className="group/edit flex items-center gap-1 text-[#A98159] hover:text-white text-xs font-bold px-2 py-1 rounded-lg border border-[#A98159]/20 hover:bg-gradient-to-br hover:from-[#C4A46E] hover:to-[#A98159] hover:border-transparent transition-all hover:shadow-md"
+                            className="group/edit flex items-center gap-1 text-primary hover:text-white text-xs font-bold px-2 py-1 rounded-lg border border-primary/20 hover:bg-gradient-to-br hover:from-primary-400 hover:to-primary hover:border-transparent transition-all hover:shadow-md"
                             title="تعديل"
                           >
                             <Pencil size={12} className="group-hover/edit:rotate-12 transition-transform" />
@@ -1008,23 +1019,23 @@ export default function AdminUsers() {
             dir="rtl"
           >
             <div
-              className="flex items-center justify-between px-6 py-4 border-b border-[#EDE5DC]"
-              style={{ background: 'linear-gradient(135deg, #FDF8F0 0%, #fff 55%)' }}
+              className="flex items-center justify-between px-6 py-4 border-b border-line"
+              style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 55%)' }}
             >
               <div className="flex items-center gap-2.5">
                 <div
                   className="w-9 h-9 rounded-xl flex items-center justify-center"
-                  style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}
+                  style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}
                 >
-                  <Users size={16} className="text-white" strokeWidth={2} />
+                  <Users size={16} className="text-white" weight="regular" />
                 </div>
-                <h2 className="font-bold text-[#2D2926] text-sm">تعديل بيانات المستخدم</h2>
+                <h2 className="font-bold text-ink text-sm">تعديل بيانات المستخدم</h2>
               </div>
               <button
                 onClick={closeEdit}
-                className="w-8 h-8 rounded-xl border border-[#EDE5DC] flex items-center justify-center hover:bg-[#F5F0EB] transition-colors"
+                className="w-8 h-8 rounded-xl border border-line flex items-center justify-center hover:bg-[rgb(var(--c-primary-50))] transition-colors"
               >
-                <X size={15} className="text-[#6D6E71]" strokeWidth={1.75} />
+                <X size={15} className="text-muted" weight="regular" />
               </button>
             </div>
 
@@ -1084,8 +1095,8 @@ export default function AdminUsers() {
                         onClick={() => setEditForm((p) => ({ ...p, role: r.value }))}
                         className={`group/role relative overflow-hidden px-3 py-2.5 rounded-xl text-sm font-bold border-2 transition-all flex items-center justify-center gap-2 ${
                           active
-                            ? 'border-[#A98159] bg-gradient-to-br from-[#C4A46E] to-[#A98159] text-white shadow-[0_4px_14px_rgba(169,129,89,0.4)] scale-[1.02]'
-                            : 'border-[#E8DDD4] bg-white text-[#6D6E71] hover:border-[#A98159]/50 hover:scale-[1.02]'
+                            ? 'border-primary bg-gradient-to-br from-primary-400 to-primary text-white shadow-[0_4px_14px_rgb(var(--c-primary)/0.4)] scale-[1.02]'
+                            : 'border-line bg-white text-muted hover:border-primary/50 hover:scale-[1.02]'
                         }`}
                       >
                         <RIcon
@@ -1174,7 +1185,7 @@ export default function AdminUsers() {
                   onClick={handleEditSave}
                   disabled={editSaving}
                   className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm hover:opacity-90 disabled:opacity-60 transition"
-                  style={{ background: 'linear-gradient(135deg,#C4A46E,#A98159)' }}
+                  style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}
                 >
                   {editSaving ? (
                     <>
@@ -1189,7 +1200,7 @@ export default function AdminUsers() {
                 </button>
                 <button
                   onClick={closeEdit}
-                  className="px-5 py-3 rounded-xl border border-[#D1C4B9] text-[#6D6E71] text-sm font-medium hover:bg-gray-50 transition"
+                  className="px-5 py-3 rounded-xl border border-line text-muted text-sm font-medium hover:bg-gray-50 transition"
                 >
                   إلغاء
                 </button>
@@ -1209,22 +1220,22 @@ function FilterChip({ active, count, onClick, Icon, children }) {
       onClick={onClick}
       className={`group/chip px-3 py-1.5 rounded-xl text-sm font-bold border transition-all flex items-center gap-1.5 ${
         active
-          ? 'bg-gradient-to-br from-[#C4A46E] to-[#A98159] text-white border-[#A98159] shadow-[0_3px_10px_rgba(169,129,89,0.35)] scale-[1.03]'
-          : 'bg-white text-[#2D2926] border-[#E8DDD4] hover:border-[#A98159]/50 hover:scale-[1.02]'
+          ? 'bg-gradient-to-br from-primary-400 to-primary text-white border-primary shadow-[0_3px_10px_rgb(var(--c-primary)/0.35)] scale-[1.03]'
+          : 'bg-white text-ink border-line hover:border-primary/50 hover:scale-[1.02]'
       }`}
     >
       {Icon && (
         <Icon
           size={14}
           className={`transition-transform duration-300 ${
-            active ? 'scale-110' : 'group-hover/chip:scale-110 text-[#A98159]'
+            active ? 'scale-110' : 'group-hover/chip:scale-110 text-primary'
           }`}
         />
       )}
       {children}
       <span
         className={`px-1.5 py-0.5 rounded-full text-xs ${
-          active ? 'bg-white/25 text-white' : 'bg-[#FDF8F0] text-[#A98159]'
+          active ? 'bg-white/25 text-white' : 'bg-background text-primary'
         }`}
       >
         {count}

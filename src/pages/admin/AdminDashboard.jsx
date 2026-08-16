@@ -3,11 +3,36 @@ import { db } from '../../lib/db.js';
 import { formatHijri } from '../../lib/hijri.js';
 import AdminReportGenerator from './AdminReportGenerator.jsx';
 import {
-  AlertTriangle, Truck, ClipboardList, Mountain, Clock, Trash2, X, ArrowLeft,
-  CheckCircle2, ChevronDown, Filter, Search, LayoutDashboard, Sparkles,
-  User, Building2, Calendar, ChevronRight, Activity, ThumbsUp, XCircle,
-  ShieldCheck, Utensils, Droplets, Factory, ArrowRight, Layers, Package, MapPin,
-} from 'lucide-react';
+  Warning as AlertTriangle,
+  Truck,
+  ClipboardText as ClipboardList,
+  Mountains as Mountain,
+  Clock,
+  Trash as Trash2,
+  X,
+  ArrowLeft,
+  CheckCircle as CheckCircle2,
+  CaretDown as ChevronDown,
+  Funnel as Filter,
+  MagnifyingGlass as Search,
+  SquaresFour as LayoutDashboard,
+  Sparkle as Sparkles,
+  User,
+  Buildings as Building2,
+  CalendarBlank as Calendar,
+  CaretRight as ChevronRight,
+  Pulse as Activity,
+  ThumbsUp,
+  XCircle,
+  ShieldCheck,
+  ForkKnife as Utensils,
+  Drop as Droplets,
+  Factory,
+  ArrowRight,
+  Stack as Layers,
+  Package,
+  MapPin,
+} from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/PageHeader.jsx';
 import NotificationBadge from '../../components/NotificationBadge.jsx';
@@ -27,33 +52,33 @@ const REPORT_TYPE = {
 };
 
 const MEAL_LABEL = { breakfast: 'الإفطار', lunch: 'الغداء', dinner: 'العشاء' };
-const MEAL_COLOR = { breakfast: '#F59E0B', lunch: '#EF4444', dinner: '#6366F1' };
+const MEAL_COLOR = { breakfast: '#F59E0B', lunch: '#EF4444', dinner: '#8B5CF6' };
 const HOLY_SITE_LABEL = { mina: 'منى', arafat: 'عرفات' };
-const HOLY_SITE_COLOR = { mina: '#A98159', arafat: '#0E7C66' };
+const HOLY_SITE_COLOR = { mina: 'rgb(var(--c-primary))', arafat: '#10B981' };
 const HOLY_SITE_ICON  = { mina: MapPin,   arafat: Mountain };
 
 const SEV = {
   high:   { label: 'عالية',   bg: '#FEF2F2', text: '#DC2626', border: '#FCA5A5', bar: '#EF4444' },
   urgent: { label: 'عاجل',    bg: '#FEF2F2', text: '#DC2626', border: '#FCA5A5', bar: '#DC2626' },
   medium: { label: 'متوسطة',  bg: '#FFFBEB', text: '#B45309', border: '#FCD34D', bar: '#F59E0B' },
-  low:    { label: 'منخفضة',  bg: '#EFF6FF', text: '#1D4ED8', border: '#93C5FD', bar: '#3B82F6' },
+  low:    { label: 'منخفضة',  bg: '#EFF6FF', text: '#0E7490', border: '#93C5FD', bar: '#06B6D4' },
 };
 
 const STATUS = {
   pending:     { label: 'قيد الانتظار', bg: '#FFFBEB', text: '#B45309', color: '#B45309', border: '#FDE68A', Icon: Clock        },
-  in_progress: { label: 'جارٍ التنفيذ', bg: '#EFF6FF', text: '#1D4ED8', color: '#1D4ED8', border: '#BFDBFE', Icon: Activity     },
+  in_progress: { label: 'جارٍ التنفيذ', bg: '#EFF6FF', text: '#0E7490', color: '#0E7490', border: '#BFDBFE', Icon: Activity     },
   resolved:    { label: 'تم الحل',      bg: '#F0FDF4', text: '#15803D', color: '#15803D', border: '#86EFAC', Icon: CheckCircle2 },
 };
 
 const SUPPORT = {
-  internal: { label: 'داخلي',            short: 'داخلي',        Icon: ArrowRight, color: '#3B82F6' },
+  internal: { label: 'داخلي',            short: 'داخلي',        Icon: ArrowRight, color: '#06B6D4' },
   external: { label: 'خارجي',            short: 'خارجي',        Icon: ArrowLeft,  color: '#8B5CF6' },
-  both:     { label: 'داخلي وخارجي',     short: 'مشترك',         Icon: Layers,     color: '#1D6FA4' },
+  both:     { label: 'داخلي وخارجي',     short: 'مشترك',         Icon: Layers,     color: '#0E7490' },
 };
 
 const LOGISTICS_STATUS = {
   pending:   { label: 'قيد الانتظار', bg: '#FFFBEB', text: '#B45309', color: '#B45309', border: '#FDE68A', Icon: Clock        },
-  approved:  { label: 'موافق عليه',   bg: '#EFF6FF', text: '#1D4ED8', color: '#1D4ED8', border: '#BFDBFE', Icon: ThumbsUp     },
+  approved:  { label: 'موافق عليه',   bg: '#EFF6FF', text: '#0E7490', color: '#0E7490', border: '#BFDBFE', Icon: ThumbsUp     },
   delivered: { label: 'تم التسليم',   bg: '#F0FDF4', text: '#15803D', color: '#15803D', border: '#86EFAC', Icon: CheckCircle2 },
   rejected:  { label: 'مرفوض',        bg: '#FEF2F2', text: '#DC2626', color: '#DC2626', border: '#FECACA', Icon: XCircle      },
 };
@@ -115,20 +140,20 @@ function StatCard({ label, value, Icon, color, sub, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="group bg-white rounded-2xl p-4 border border-[#EDE5DC] shadow-[0_2px_8px_rgba(45,41,38,0.07)] flex items-center gap-3 w-full text-right transition-all hover:shadow-[0_8px_24px_rgba(45,41,38,0.10)] hover:-translate-y-0.5"
+      className="group bg-white rounded-2xl p-4 border border-line shadow-[0_2px_8px_rgb(var(--c-ink)/0.07)] flex items-center gap-3 w-full text-right transition-all hover:shadow-[0_8px_24px_rgb(var(--c-ink)/0.10)] hover:-translate-y-0.5"
       style={{ borderRight: `3px solid ${color}` }}
     >
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-semibold text-[#9D8F85] mb-0.5">{label}</p>
+        <p className="text-[10px] font-semibold text-muted mb-0.5">{label}</p>
         <p className="text-2xl font-black tabular-nums leading-none" style={{ color }}>{value ?? '—'}</p>
-        {sub && <p className="text-[10px] text-[#B5A99E] mt-1 font-bold">{sub}</p>}
+        {sub && <p className="text-[10px] text-muted mt-1 font-bold">{sub}</p>}
       </div>
       <div className="relative shrink-0">
         <div className="absolute inset-0 rounded-xl blur-md opacity-0 group-hover:opacity-50 transition-opacity"
           style={{ background: color }} />
         <div className="relative w-11 h-11 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110"
           style={{ background: `linear-gradient(135deg, ${color}, ${color}CC)` }}>
-          <Icon size={20} className="text-white" strokeWidth={2} />
+          <Icon size={20} className="text-white" weight="regular" />
         </div>
       </div>
     </button>
@@ -170,18 +195,18 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange, onSaveNo
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl">
 
-        <div className="sticky top-0 bg-white border-b border-[#EDE5DC] px-5 py-4 flex items-center justify-between rounded-t-3xl z-10">
+        <div className="sticky top-0 bg-white border-b border-line px-5 py-4 flex items-center justify-between rounded-t-3xl z-10">
           <div className="flex items-center gap-3 min-w-0">
             <div className="relative shrink-0">
               <div className="absolute inset-0 rounded-xl blur-md bg-red-500 opacity-40" />
               <div className="relative w-11 h-11 rounded-xl flex items-center justify-center shadow-sm"
                 style={{ background: 'linear-gradient(135deg, #F87171, #DC2626)' }}>
-                <AlertTriangle size={18} className="text-white" strokeWidth={2.25} />
+                <AlertTriangle size={18} className="text-white" weight="bold" />
               </div>
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <p className="font-black text-[#2D2926] text-sm truncate">{label}</p>
+                <p className="font-black text-ink text-sm truncate">{label}</p>
                 {report.reportNumber && (
                   <span className="text-[10px] font-black px-2 py-0.5 rounded-md tabular-nums"
                     style={{ background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA' }}>
@@ -189,17 +214,17 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange, onSaveNo
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-[#A98159] font-bold mt-0.5">{timeAgo(report.timestamp)} · {clockTime(report.timestamp)}</p>
+              <p className="text-[11px] text-primary font-bold mt-0.5">{timeAgo(report.timestamp)} · {clockTime(report.timestamp)}</p>
             </div>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <button onClick={() => onDelete(report.id)}
               className="w-9 h-9 rounded-xl border-2 border-red-200 flex items-center justify-center hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors text-red-500">
-              <Trash2 size={14} strokeWidth={2.25} />
+              <Trash2 size={14} weight="bold" />
             </button>
             <button onClick={onClose}
-              className="w-9 h-9 rounded-xl border border-[#EDE5DC] flex items-center justify-center hover:bg-[#F5F0EB] transition-colors">
-              <X size={15} className="text-[#6D6E71]" strokeWidth={2.25} />
+              className="w-9 h-9 rounded-xl border border-line flex items-center justify-center hover:bg-[rgb(var(--c-primary-50))] transition-colors">
+              <X size={15} className="text-muted" weight="bold" />
             </button>
           </div>
         </div>
@@ -228,9 +253,9 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange, onSaveNo
           />
 
           {/* Status changer */}
-          <div className="bg-white rounded-2xl border border-[#EDE5DC] p-3">
-            <p className="text-[10px] font-bold text-[#9D8F85] mb-2 flex items-center gap-1">
-              <Activity size={11} strokeWidth={2.25} className="text-red-500" />
+          <div className="bg-white rounded-2xl border border-line p-3">
+            <p className="text-[10px] font-bold text-muted mb-2 flex items-center gap-1">
+              <Activity size={11} weight="bold" className="text-red-500" />
               تغيير الحالة
             </p>
             <div className="grid grid-cols-3 gap-2">
@@ -241,12 +266,12 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange, onSaveNo
                   <button key={key}
                     onClick={() => onStatusChange(report.id, key)}
                     className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-black border-2 transition-all ${
-                      active ? 'shadow-md scale-[1.02]' : 'bg-white border-[#EDE5DC] text-[#6D6E71]'
+                      active ? 'shadow-md scale-[1.02]' : 'bg-white border-line text-muted'
                     }`}
                     style={active
                       ? { background: s.bg, borderColor: s.text, color: s.text }
                       : undefined}>
-                    <SIcon size={12} strokeWidth={2.5} />
+                    <SIcon size={12} weight="bold" />
                     {s.label}
                   </button>
                 );
@@ -257,54 +282,54 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange, onSaveNo
           {/* Info grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             {[
-              { lbl: 'المراقب', val: report.observer, Icon: User,     color: '#A98159' },
+              { lbl: 'المراقب', val: report.observer, Icon: User,     color: 'rgb(var(--c-primary))' },
               { lbl: 'المركز',  val: report.center,   Icon: Building2,color: '#DC2626' },
-              { lbl: 'المشعر',  val: HOLY_SITE_LABEL[report.holySite] || '—', Icon: HOLY_SITE_ICON[report.holySite] || MapPin, color: HOLY_SITE_COLOR[report.holySite] || '#9D8F85' },
-              { lbl: 'الوجبة',  val: MEAL_LABEL[report.mealType] || '—', Icon: Utensils, color: MEAL_COLOR[report.mealType] || '#A98159' },
-              { lbl: 'الوقت',   val: clockTime(report.timestamp), Icon: Calendar, color: '#6D6E71' },
+              { lbl: 'المشعر',  val: HOLY_SITE_LABEL[report.holySite] || '—', Icon: HOLY_SITE_ICON[report.holySite] || MapPin, color: HOLY_SITE_COLOR[report.holySite] || 'rgb(var(--c-muted))' },
+              { lbl: 'الوجبة',  val: MEAL_LABEL[report.mealType] || '—', Icon: Utensils, color: MEAL_COLOR[report.mealType] || 'rgb(var(--c-primary))' },
+              { lbl: 'الوقت',   val: clockTime(report.timestamp), Icon: Calendar, color: 'rgb(var(--c-muted))' },
             ].map(c => (
-              <div key={c.lbl} className="bg-white rounded-xl border border-[#EDE5DC] p-2.5 flex items-center gap-2">
+              <div key={c.lbl} className="bg-white rounded-xl border border-line p-2.5 flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                   style={{ background: `${c.color}15` }}>
-                  <c.Icon size={13} style={{ color: c.color }} strokeWidth={2.25} />
+                  <c.Icon size={13} style={{ color: c.color }} weight="bold" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[9px] text-[#9D8F85] font-bold">{c.lbl}</p>
-                  <p className="text-[11px] font-bold text-[#2D2926] truncate">{c.val || '—'}</p>
+                  <p className="text-[9px] text-muted font-bold">{c.lbl}</p>
+                  <p className="text-[11px] font-bold text-ink truncate">{c.val || '—'}</p>
                 </div>
               </div>
             ))}
           </div>
-          <div className="bg-gradient-to-br from-[#FDF8F0] to-white rounded-xl border border-[#E8DDD4] p-2.5 flex items-center gap-2">
+          <div className="bg-gradient-to-br from-background to-white rounded-xl border border-line p-2.5 flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm"
-              style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
-              <Factory size={13} className="text-white" strokeWidth={2.25} />
+              style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
+              <Factory size={13} className="text-white" weight="bold" />
             </div>
             <div className="min-w-0">
-              <p className="text-[9px] text-[#9D8F85] font-bold">المتعهد</p>
-              <p className="text-[11px] font-black text-[#A98159] truncate">{report.caterer || getCaterer(report.center) || '—'}</p>
+              <p className="text-[9px] text-muted font-bold">المتعهد</p>
+              <p className="text-[11px] font-black text-primary truncate">{report.caterer || getCaterer(report.center) || '—'}</p>
             </div>
           </div>
 
           {report.description && (
-            <div className="bg-white rounded-2xl border border-[#EDE5DC] p-4">
-              <p className="text-[10px] text-[#9D8F85] font-bold mb-2 flex items-center gap-1.5">
+            <div className="bg-white rounded-2xl border border-line p-4">
+              <p className="text-[10px] text-muted font-bold mb-2 flex items-center gap-1.5">
                 <span className="w-1.5 h-4 rounded-full bg-red-500" />
                 وصف المشكلة
               </p>
-              <p className="text-sm text-[#2D2926] leading-relaxed whitespace-pre-wrap">{report.description}</p>
+              <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap">{report.description}</p>
             </div>
           )}
 
           {report.images?.length > 0 && (
             <div>
-              <p className="text-[10px] text-[#9D8F85] font-bold mb-2 flex items-center gap-1.5">
-                <span className="w-1.5 h-4 rounded-full bg-[#A98159]" />
+              <p className="text-[10px] text-muted font-bold mb-2 flex items-center gap-1.5">
+                <span className="w-1.5 h-4 rounded-full bg-primary" />
                 الصور المرفقة ({report.images.length})
               </p>
               <div className="grid grid-cols-2 gap-2">
                 {report.images.map((src, i) => (
-                  <button key={i} onClick={() => openImageTab(src)} className="group relative block rounded-xl overflow-hidden border-2 border-[#EDE5DC] hover:border-[#A98159] transition-colors">
+                  <button key={i} onClick={() => openImageTab(src)} className="group relative block rounded-xl overflow-hidden border-2 border-line hover:border-primary transition-colors">
                     <img src={src} alt="" className="w-full h-32 object-cover transition-transform group-hover:scale-105" />
                     <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition bg-black/30 text-white text-xs font-black">
                       فتح الصورة
@@ -317,20 +342,20 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange, onSaveNo
 
           {report.videoUrl && (
             <div>
-              <p className="text-[10px] text-[#9D8F85] font-bold mb-2 flex items-center gap-1.5">
+              <p className="text-[10px] text-muted font-bold mb-2 flex items-center gap-1.5">
                 <span className="w-1.5 h-4 rounded-full bg-indigo-500" />
                 الفيديو المرفق
               </p>
               <video src={report.videoUrl} controls
-                className="w-full rounded-xl border border-[#EDE5DC] bg-black max-h-72" />
+                className="w-full rounded-xl border border-line bg-black max-h-72" />
             </div>
           )}
 
           {/* Admin notes — operations room */}
-          <div className="bg-gradient-to-br from-[#FDF8F0] to-white border border-[#E8DDD4] rounded-2xl p-4">
+          <div className="bg-gradient-to-br from-background to-white border border-line rounded-2xl p-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-[11px] text-[#9D8F85] font-bold flex items-center gap-1.5">
-                <span className="w-1.5 h-4 rounded-full bg-[#A98159]" />
+              <p className="text-[11px] text-muted font-bold flex items-center gap-1.5">
+                <span className="w-1.5 h-4 rounded-full bg-primary" />
                 ملاحظات غرفة العمليات
               </p>
               {savedNotes && (
@@ -344,10 +369,10 @@ function ReportDetailModal({ report, onClose, onDelete, onStatusChange, onSaveNo
               onChange={e => { setNotes(e.target.value); setSavedNotes(false); }}
               rows={3}
               placeholder="اكتب ملاحظات تظهر للمراقب/المشرف الذي رفع البلاغ..."
-              className="w-full px-3 py-2.5 border border-[#E8DDD4] rounded-xl text-sm text-[#2D2926] placeholder-[#C9B8A8] focus:border-[#A98159] focus:ring-2 focus:ring-[#A98159]/15 outline-none transition-all bg-white resize-none"
+              className="w-full px-3 py-2.5 border border-line rounded-xl text-sm text-ink placeholder-muted focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none transition-all bg-white resize-none"
             />
             <button onClick={handleSaveNotes} disabled={savingNotes || notes === (report.adminNotes || '')}
-              className="mt-2 w-full py-2.5 rounded-xl bg-gradient-to-br from-[#C4A46E] to-[#A98159] text-white text-sm font-black shadow-sm active:scale-[0.98] transition-all disabled:opacity-50">
+              className="mt-2 w-full py-2.5 rounded-xl bg-gradient-to-br from-primary-400 to-primary text-white text-sm font-black shadow-sm active:scale-[0.98] transition-all disabled:opacity-50">
               {savingNotes ? 'جارٍ الحفظ...' : 'حفظ الملاحظات'}
             </button>
           </div>
@@ -389,26 +414,26 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange, onSaveN
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl">
 
-        <div className="sticky top-0 bg-white border-b border-[#EDE5DC] px-5 py-4 flex items-center justify-between rounded-t-3xl z-10">
+        <div className="sticky top-0 bg-white border-b border-line px-5 py-4 flex items-center justify-between rounded-t-3xl z-10">
           <div className="flex items-center gap-3 min-w-0">
             <div className="relative shrink-0">
               <div className="absolute inset-0 rounded-xl blur-md opacity-40" style={{ background: st.color }} />
               <div className="relative w-11 h-11 rounded-xl flex items-center justify-center shadow-sm"
                 style={{ background: `linear-gradient(135deg, ${st.color}, ${st.color}CC)` }}>
-                <Package size={18} className="text-white" strokeWidth={2.25} />
+                <Package size={18} className="text-white" weight="bold" />
               </div>
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <p className="font-black text-[#2D2926] text-sm">طلب إسناد</p>
+                <p className="font-black text-ink text-sm">طلب إسناد</p>
                 <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md border"
                   style={{ background: `${st.color}15`, borderColor: `${st.color}40`, color: st.color }}>
-                  <SupportIcon size={10} strokeWidth={2.5} />
+                  <SupportIcon size={10} weight="bold" />
                   {st.short}
                 </span>
                 {item.requestNumber && (
                   <span className="text-[10px] font-black px-2 py-0.5 rounded-md tabular-nums"
-                    style={{ background: '#EFF6FF', color: '#3B82F6', border: '1px solid #BFDBFE' }}>
+                    style={{ background: '#EFF6FF', color: '#06B6D4', border: '1px solid #BFDBFE' }}>
                     #{item.requestNumber}
                   </span>
                 )}
@@ -417,23 +442,23 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange, onSaveN
                   return (
                     <span className="text-[10px] font-black px-2 py-0.5 rounded-md text-white inline-flex items-center gap-1"
                       style={{ background: HOLY_SITE_COLOR[item.holySite] }}>
-                      <HSIcon size={10} strokeWidth={2.5} />
+                      <HSIcon size={10} weight="bold" />
                       {HOLY_SITE_LABEL[item.holySite]}
                     </span>
                   );
                 })()}
               </div>
-              <p className="text-[11px] text-[#A98159] font-bold mt-0.5">{timeAgo(item.timestamp)} · {clockTime(item.timestamp)}</p>
+              <p className="text-[11px] text-primary font-bold mt-0.5">{timeAgo(item.timestamp)} · {clockTime(item.timestamp)}</p>
             </div>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <button onClick={() => onDelete(item.id)}
               className="w-9 h-9 rounded-xl border-2 border-red-200 flex items-center justify-center hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors text-red-500">
-              <Trash2 size={14} strokeWidth={2.25} />
+              <Trash2 size={14} weight="bold" />
             </button>
             <button onClick={onClose}
-              className="w-9 h-9 rounded-xl border border-[#EDE5DC] flex items-center justify-center hover:bg-[#F5F0EB] transition-colors">
-              <X size={15} className="text-[#6D6E71]" strokeWidth={2.25} />
+              className="w-9 h-9 rounded-xl border border-line flex items-center justify-center hover:bg-[rgb(var(--c-primary-50))] transition-colors">
+              <X size={15} className="text-muted" weight="bold" />
             </button>
           </div>
         </div>
@@ -446,13 +471,13 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange, onSaveN
                 <div className="absolute inset-0 rounded-xl blur-md bg-amber-400 opacity-40" />
                 <div className="relative w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
                   style={{ background: 'linear-gradient(135deg, #F59E0B, #D97706)' }}>
-                  <AlertTriangle size={16} className="text-white" strokeWidth={2.25} />
+                  <AlertTriangle size={16} className="text-white" weight="bold" />
                 </div>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] font-black text-amber-700 uppercase tracking-wider mb-0.5">مرتبط ببلاغ</p>
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <p className="text-xs font-black text-[#2D2926]">{REPORT_TYPE[item.reportType] || item.reportType || 'بلاغ ميداني'}</p>
+                  <p className="text-xs font-black text-ink">{REPORT_TYPE[item.reportType] || item.reportType || 'بلاغ ميداني'}</p>
                   <span className="text-[10px] font-black px-2 py-0.5 rounded-md tabular-nums bg-white border border-amber-300 text-amber-700">
                     #{item.reportNumber}
                   </span>
@@ -470,13 +495,13 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange, onSaveN
             terminalStatuses={TERMINAL_LOGISTICS_STATUSES}
             statusOrder={['pending', 'approved', 'delivered', 'rejected']}
             statusMeta={LOGISTICS_STATUS}
-            accentColor="#2563EB"
+            accentColor="#0891B2"
           />
 
           {/* Status changer */}
-          <div className="bg-white rounded-2xl border border-[#EDE5DC] p-3">
-            <p className="text-[10px] font-bold text-[#9D8F85] mb-2 flex items-center gap-1">
-              <Activity size={11} strokeWidth={2.25} className="text-blue-500" />
+          <div className="bg-white rounded-2xl border border-line p-3">
+            <p className="text-[10px] font-bold text-muted mb-2 flex items-center gap-1">
+              <Activity size={11} weight="bold" className="text-blue-500" />
               تغيير الحالة
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -487,12 +512,12 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange, onSaveN
                   <button key={key}
                     onClick={() => onStatusChange(item.id, key)}
                     className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-black border-2 transition-all ${
-                      active ? 'shadow-md scale-[1.02]' : 'bg-white border-[#EDE5DC] text-[#6D6E71]'
+                      active ? 'shadow-md scale-[1.02]' : 'bg-white border-line text-muted'
                     }`}
                     style={active
                       ? { background: s.bg, borderColor: s.text, color: s.text }
                       : undefined}>
-                    <SIcon size={12} strokeWidth={2.5} />
+                    <SIcon size={12} weight="bold" />
                     {s.label}
                   </button>
                 );
@@ -506,8 +531,8 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange, onSaveN
               {item.qtyInternal != null && (
                 <div className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-3.5 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-                    style={{ background: 'linear-gradient(135deg, #60A5FA, #3B82F6)' }}>
-                    <ArrowRight size={16} className="text-white" strokeWidth={2.5} />
+                    style={{ background: 'linear-gradient(135deg, #67E8F9, #06B6D4)' }}>
+                    <ArrowRight size={16} className="text-white" weight="bold" />
                   </div>
                   <div>
                     <p className="text-[10px] font-bold text-blue-700">داخلي</p>
@@ -519,7 +544,7 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange, onSaveN
                 <div className="rounded-2xl border-2 border-violet-200 bg-gradient-to-br from-violet-50 to-white p-3.5 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
                     style={{ background: 'linear-gradient(135deg, #A78BFA, #8B5CF6)' }}>
-                    <ArrowLeft size={16} className="text-white" strokeWidth={2.5} />
+                    <ArrowLeft size={16} className="text-white" weight="bold" />
                   </div>
                   <div>
                     <p className="text-[10px] font-bold text-violet-700">خارجي</p>
@@ -533,48 +558,48 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange, onSaveN
           {/* Info grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             {[
-              { lbl: 'المراقب', val: item.observer, Icon: User,     color: '#A98159' },
+              { lbl: 'المراقب', val: item.observer, Icon: User,     color: 'rgb(var(--c-primary))' },
               { lbl: 'المركز',  val: item.center,   Icon: Building2,color: st.color  },
-              { lbl: 'الوقت',   val: clockTime(item.timestamp), Icon: Calendar, color: '#6D6E71' },
+              { lbl: 'الوقت',   val: clockTime(item.timestamp), Icon: Calendar, color: 'rgb(var(--c-muted))' },
             ].map(c => (
-              <div key={c.lbl} className="bg-white rounded-xl border border-[#EDE5DC] p-2.5 flex items-center gap-2">
+              <div key={c.lbl} className="bg-white rounded-xl border border-line p-2.5 flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                   style={{ background: `${c.color}15` }}>
-                  <c.Icon size={13} style={{ color: c.color }} strokeWidth={2.25} />
+                  <c.Icon size={13} style={{ color: c.color }} weight="bold" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[9px] text-[#9D8F85] font-bold">{c.lbl}</p>
-                  <p className="text-[11px] font-bold text-[#2D2926] truncate">{c.val || '—'}</p>
+                  <p className="text-[9px] text-muted font-bold">{c.lbl}</p>
+                  <p className="text-[11px] font-bold text-ink truncate">{c.val || '—'}</p>
                 </div>
               </div>
             ))}
           </div>
-          <div className="bg-gradient-to-br from-[#FDF8F0] to-white rounded-xl border border-[#E8DDD4] p-2.5 flex items-center gap-2">
+          <div className="bg-gradient-to-br from-background to-white rounded-xl border border-line p-2.5 flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm"
-              style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
-              <Factory size={13} className="text-white" strokeWidth={2.25} />
+              style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
+              <Factory size={13} className="text-white" weight="bold" />
             </div>
             <div className="min-w-0">
-              <p className="text-[9px] text-[#9D8F85] font-bold">المتعهد</p>
-              <p className="text-[11px] font-black text-[#A98159] truncate">{item.caterer || getCaterer(item.center) || '—'}</p>
+              <p className="text-[9px] text-muted font-bold">المتعهد</p>
+              <p className="text-[11px] font-black text-primary truncate">{item.caterer || getCaterer(item.center) || '—'}</p>
             </div>
           </div>
 
           {item.notes && (
-            <div className="bg-white rounded-2xl border border-[#EDE5DC] p-4">
-              <p className="text-[10px] text-[#9D8F85] font-bold mb-2 flex items-center gap-1.5">
+            <div className="bg-white rounded-2xl border border-line p-4">
+              <p className="text-[10px] text-muted font-bold mb-2 flex items-center gap-1.5">
                 <span className="w-1.5 h-4 rounded-full bg-blue-500" />
                 ملاحظات
               </p>
-              <p className="text-sm text-[#2D2926] leading-relaxed whitespace-pre-wrap">{item.notes}</p>
+              <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap">{item.notes}</p>
             </div>
           )}
 
           {/* Admin notes — operations room */}
-          <div className="bg-gradient-to-br from-[#FDF8F0] to-white border border-[#E8DDD4] rounded-2xl p-4">
+          <div className="bg-gradient-to-br from-background to-white border border-line rounded-2xl p-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-[11px] text-[#9D8F85] font-bold flex items-center gap-1.5">
-                <span className="w-1.5 h-4 rounded-full bg-[#A98159]" />
+              <p className="text-[11px] text-muted font-bold flex items-center gap-1.5">
+                <span className="w-1.5 h-4 rounded-full bg-primary" />
                 ملاحظات غرفة العمليات
               </p>
               {savedNotes && (
@@ -588,10 +613,10 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange, onSaveN
               onChange={e => { setNotes(e.target.value); setSavedNotes(false); }}
               rows={3}
               placeholder="اكتب ملاحظات تظهر للمراقب/المشرف الذي رفع الطلب..."
-              className="w-full px-3 py-2.5 border border-[#E8DDD4] rounded-xl text-sm text-[#2D2926] placeholder-[#C9B8A8] focus:border-[#A98159] focus:ring-2 focus:ring-[#A98159]/15 outline-none transition-all bg-white resize-none"
+              className="w-full px-3 py-2.5 border border-line rounded-xl text-sm text-ink placeholder-muted focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none transition-all bg-white resize-none"
             />
             <button onClick={handleSaveNotes} disabled={savingNotes || notes === (item.adminNotes || '')}
-              className="mt-2 w-full py-2.5 rounded-xl bg-gradient-to-br from-[#C4A46E] to-[#A98159] text-white text-sm font-black shadow-sm active:scale-[0.98] transition-all disabled:opacity-50">
+              className="mt-2 w-full py-2.5 rounded-xl bg-gradient-to-br from-primary-400 to-primary text-white text-sm font-black shadow-sm active:scale-[0.98] transition-all disabled:opacity-50">
               {savingNotes ? 'جارٍ الحفظ...' : 'حفظ الملاحظات'}
             </button>
           </div>
@@ -604,28 +629,28 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange, onSaveN
 /* ─── Section panel header ─── */
 function PanelHeader({ title, subtitle, count, gradient, Icon, onViewAll, viewAllColor, badge, badgeVariant }) {
   return (
-    <div className="flex items-center justify-between px-3 sm:px-5 py-3 sm:py-3.5 border-b border-[#EDE5DC] gap-2">
+    <div className="flex items-center justify-between px-3 sm:px-5 py-3 sm:py-3.5 border-b border-line gap-2">
       <div className="flex items-center gap-3 min-w-0">
         <div className="relative shrink-0">
           <div className="absolute inset-0 rounded-xl blur-md opacity-50" style={{ background: gradient.from }} />
           <div className="relative w-10 h-10 rounded-xl flex items-center justify-center shadow-md"
             style={{ background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})` }}>
-            <Icon size={17} className="text-white" strokeWidth={2.25} />
+            <Icon size={17} className="text-white" weight="bold" />
           </div>
           {badge != null && badge > 0 && (
             <NotificationBadge count={badge} variant={badgeVariant} floating />
           )}
         </div>
         <div className="min-w-0">
-          <p className="font-black text-[#2D2926] text-sm truncate">{title}</p>
-          <p className="text-[11px] text-[#9D8F85] mt-0.5 font-bold truncate">{subtitle}</p>
+          <p className="font-black text-ink text-sm truncate">{title}</p>
+          <p className="text-[11px] text-muted mt-0.5 font-bold truncate">{subtitle}</p>
         </div>
       </div>
       <button onClick={onViewAll}
         className="flex items-center gap-1.5 text-[11px] font-black transition-all px-3 py-1.5 rounded-xl shrink-0"
         style={{ color: viewAllColor, background: `${viewAllColor}10`, border: `1px solid ${viewAllColor}30` }}>
         عرض الكل
-        <ArrowLeft size={11} strokeWidth={2.25} />
+        <ArrowLeft size={11} weight="bold" />
       </button>
     </div>
   );
@@ -751,10 +776,10 @@ export default function AdminDashboard() {
 
   const STATS = [
     { label: 'البلاغات الميدانية', value: counts.reports,   Icon: AlertTriangle,  color: '#EF4444', sub: 'بلاغات نشطة',    nav: '/admin/reports'   },
-    { label: 'تقييم الوجبات',       value: counts.evals,     Icon: Utensils,       color: '#A98159', sub: 'جودة الوجبات',   nav: '/admin/phases'    },
-    { label: 'طلبات الإسناد',       value: counts.logistics, Icon: Truck,          color: '#3B82F6', sub: 'طلبات لوجستية',  nav: '/admin/logistics' },
+    { label: 'تقييم الوجبات',       value: counts.evals,     Icon: Utensils,       color: 'rgb(var(--c-primary))', sub: 'جودة الوجبات',   nav: '/admin/phases'    },
+    { label: 'طلبات الإسناد',       value: counts.logistics, Icon: Truck,          color: '#06B6D4', sub: 'طلبات لوجستية',  nav: '/admin/logistics' },
     { label: 'جاهزية منى',          value: counts.mina,      Icon: ShieldCheck,    color: '#10B981', sub: 'تقييمات منى',    nav: '/admin/analytics' },
-    { label: 'جاهزية عرفة',         value: counts.arafat,    Icon: ShieldCheck,    color: '#1D6FA4', sub: 'تقييمات عرفة',   nav: '/admin/analytics' },
+    { label: 'جاهزية عرفة',         value: counts.arafat,    Icon: ShieldCheck,    color: '#0E7490', sub: 'تقييمات عرفة',   nav: '/admin/analytics' },
   ];
 
   return (
@@ -764,15 +789,15 @@ export default function AdminDashboard() {
       <PageHeader
         Icon={LayoutDashboard}
         title="نظرة عامة"
-        subtitle="مؤشرات الأداء الميداني — موسم الحج ١٤٤٧ هـ"
+        subtitle="مؤشرات الأداء"
         right={
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
             <AdminReportGenerator />
-            <div className="hidden md:flex items-stretch rounded-2xl overflow-hidden shadow-[0_4px_16px_rgba(169,129,89,0.25)]"
-              style={{ background: 'linear-gradient(135deg, #C4A46E 0%, #A98159 50%, #8B6840 100%)' }}>
+            <div className="hidden md:flex items-stretch rounded-2xl overflow-hidden shadow-[0_4px_16px_rgb(var(--c-primary)/0.25)]"
+              style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)) 0%, rgb(var(--c-primary)) 50%, rgb(var(--c-primary-700)) 100%)' }}>
               <div className="flex items-center gap-2.5 px-4 py-3">
                 <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-                  <Calendar size={14} className="text-white" strokeWidth={2.25} />
+                  <Calendar size={14} className="text-white" weight="bold" />
                 </div>
                 <div>
                   <p className="text-white/70 text-[9px] font-bold leading-none">التاريخ الهجري</p>
@@ -798,18 +823,18 @@ export default function AdminDashboard() {
 
       {/* Search bar */}
       <div className="relative">
-        <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9D8F85]" strokeWidth={2} />
+        <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted" weight="regular" />
         <input
           type="text"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           placeholder="بحث برقم البلاغ، طلب الإسناد، المركز، أو المراقب..."
-          className="w-full pr-11 pl-4 py-3 rounded-2xl border-2 border-[#EDE5DC] bg-white text-sm font-medium text-[#2D2926] placeholder:text-[#C9B8A8] focus:border-[#A98159] focus:outline-none transition-colors shadow-[0_2px_8px_rgba(45,41,38,0.05)]"
+          className="w-full pr-11 pl-4 py-3 rounded-2xl border-2 border-line bg-white text-sm font-medium text-ink placeholder:text-muted focus:border-primary focus:outline-none transition-colors shadow-[0_2px_8px_rgb(var(--c-ink)/0.05)]"
         />
         {searchQuery && (
           <button onClick={() => setSearchQuery('')}
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center text-[#9D8F85] hover:bg-[#F5F0EB] transition-colors">
-            <X size={14} strokeWidth={2.25} />
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:bg-[rgb(var(--c-primary-50))] transition-colors">
+            <X size={14} weight="bold" />
           </button>
         )}
       </div>
@@ -818,7 +843,7 @@ export default function AdminDashboard() {
       <div className="space-y-4">
 
         {/* Field reports */}
-        <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_10px_rgba(45,41,38,0.06)] overflow-hidden">
+        <div className="bg-white rounded-2xl border border-line shadow-[0_2px_10px_rgb(var(--c-ink)/0.06)] overflow-hidden">
           <PanelHeader
             title="البلاغات الميدانية"
             subtitle={`${counts.reports} بلاغ ${pendingReports > 0 ? `· ${pendingReports} قيد الانتظار` : ''}`}
@@ -842,9 +867,9 @@ export default function AdminDashboard() {
               <div className="py-12 text-center px-5">
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
                   style={{ background: 'linear-gradient(135deg, #FEE2E2, #FECACA)' }}>
-                  <Search size={20} className="text-red-400" strokeWidth={2} />
+                  <Search size={20} className="text-red-400" weight="regular" />
                 </div>
-                <p className="text-[#9D8F85] text-sm font-bold">
+                <p className="text-muted text-sm font-bold">
                   {q ? 'لا توجد نتائج' : 'لا توجد بلاغات بعد'}
                 </p>
               </div>
@@ -859,7 +884,7 @@ export default function AdminDashboard() {
               return (
                 <button key={r.id}
                   onClick={() => setSelectedReport(r)}
-                  className={`group relative w-full text-right flex items-center gap-3 px-3 sm:px-5 py-3 sm:py-3.5 transition-colors ${!isLast ? 'border-b border-[#EDE5DC]' : ''} ${isNew ? 'row-pulse-red' : 'hover:bg-red-50/30'}`}>
+                  className={`group relative w-full text-right flex items-center gap-3 px-3 sm:px-5 py-3 sm:py-3.5 transition-colors ${!isLast ? 'border-b border-line' : ''} ${isNew ? 'row-pulse-red' : 'hover:bg-red-50/30'}`}>
                   {/* "جديد" pill on new rows */}
                   {isNew && (
                     <span className="absolute top-2 left-2 inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-md text-white shadow-md tabular-nums tracking-wide"
@@ -873,7 +898,7 @@ export default function AdminDashboard() {
                     <div className="absolute inset-0 rounded-xl blur-md bg-red-400 opacity-0 group-hover:opacity-50 transition-opacity" />
                     <div className="relative w-11 h-11 rounded-xl flex items-center justify-center shadow-sm"
                       style={{ background: 'linear-gradient(135deg, #F87171, #DC2626)' }}>
-                      <AlertTriangle size={18} className="text-white" strokeWidth={2.25} />
+                      <AlertTriangle size={18} className="text-white" weight="bold" />
                     </div>
                     {isNew && (
                       <div className="absolute -top-1 -right-1 badge-pulse-red w-4 h-4 rounded-full bg-red-500 border-2 border-white" />
@@ -882,7 +907,7 @@ export default function AdminDashboard() {
                   {/* Body */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                      <p className="text-sm font-black text-[#2D2926] truncate">{label}</p>
+                      <p className="text-sm font-black text-ink truncate">{label}</p>
                       {r.reportNumber && (
                         <span className={`inline-flex items-center text-[10px] font-black px-1.5 py-0.5 rounded-md tabular-nums tracking-wide ${
                           isNew ? 'badge-pulse-red text-white' : 'text-red-700 border'
@@ -902,7 +927,7 @@ export default function AdminDashboard() {
                       )}
                       {r.mealType && MEAL_LABEL[r.mealType] && (
                         <span className="inline-flex items-center text-[9px] font-black px-1.5 py-0.5 rounded-md text-white"
-                          style={{ background: MEAL_COLOR[r.mealType] || '#A98159' }}>
+                          style={{ background: MEAL_COLOR[r.mealType] || 'rgb(var(--c-primary))' }}>
                           {MEAL_LABEL[r.mealType]}
                         </span>
                       )}
@@ -911,20 +936,20 @@ export default function AdminDashboard() {
                         return (
                           <span className="inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-md text-white"
                             style={{ background: HOLY_SITE_COLOR[r.holySite] }}>
-                            <HSIcon size={9} strokeWidth={2.5} />
+                            <HSIcon size={9} weight="bold" />
                             {HOLY_SITE_LABEL[r.holySite]}
                           </span>
                         );
                       })()}
                     </div>
-                    <div className="flex items-center gap-2 text-[11px] text-[#6D6E71] flex-wrap">
+                    <div className="flex items-center gap-2 text-[11px] text-muted flex-wrap">
                       <span className="flex items-center gap-1">
-                        <User size={10} strokeWidth={2.25} className="text-[#A98159]" />
-                        <span className="font-bold text-[#2D2926] truncate max-w-[80px]">{r.observer || '—'}</span>
+                        <User size={10} weight="bold" className="text-primary" />
+                        <span className="font-bold text-ink truncate max-w-[80px]">{r.observer || '—'}</span>
                       </span>
                       <span className="flex items-center gap-1">
-                        <Building2 size={10} strokeWidth={2.25} className="text-[#A98159]" />
-                        <span className="font-bold text-[#2D2926] truncate max-w-[80px]">{r.center || '—'}</span>
+                        <Building2 size={10} weight="bold" className="text-primary" />
+                        <span className="font-bold text-ink truncate max-w-[80px]">{r.center || '—'}</span>
                       </span>
                     </div>
                     <div className="mt-1">
@@ -936,10 +961,10 @@ export default function AdminDashboard() {
                   <div className="flex flex-col items-end gap-1 shrink-0">
                     <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-1 rounded-lg border-2"
                       style={{ background: sb.bg, borderColor: sb.border, color: sb.text }}>
-                      <SIcon size={10} strokeWidth={2.5} />
+                      <SIcon size={10} weight="bold" />
                       {sb.label}
                     </span>
-                    <ChevronRight size={12} className="text-[#C9B8A8] group-hover:text-red-500 transition-colors" strokeWidth={2.25} />
+                    <ChevronRight size={12} className="text-muted group-hover:text-red-500 transition-colors" weight="bold" />
                   </div>
                 </button>
               );
@@ -948,14 +973,14 @@ export default function AdminDashboard() {
         </div>
 
         {/* Logistics requests */}
-        <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_10px_rgba(45,41,38,0.06)] overflow-hidden">
+        <div className="bg-white rounded-2xl border border-line shadow-[0_2px_10px_rgb(var(--c-ink)/0.06)] overflow-hidden">
           <PanelHeader
             title="طلبات الإسناد"
             subtitle={`${counts.logistics} طلب ${pendingLogistics > 0 ? `· ${pendingLogistics} قيد الانتظار` : ''}`}
-            gradient={{ from: '#60A5FA', to: '#2563EB' }}
+            gradient={{ from: '#67E8F9', to: '#0891B2' }}
             Icon={Truck}
             onViewAll={() => navigate('/admin/logistics')}
-            viewAllColor="#2563EB"
+            viewAllColor="#0891B2"
             badge={pendingLogistics}
             badgeVariant="blue"
           />
@@ -973,9 +998,9 @@ export default function AdminDashboard() {
               <div className="py-12 text-center px-5">
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
                   style={{ background: 'linear-gradient(135deg, #DBEAFE, #BFDBFE)' }}>
-                  <Search size={20} className="text-blue-400" strokeWidth={2} />
+                  <Search size={20} className="text-blue-400" weight="regular" />
                 </div>
-                <p className="text-[#9D8F85] text-sm font-bold">
+                <p className="text-muted text-sm font-bold">
                   {q ? 'لا توجد نتائج' : 'لا توجد طلبات إسناد بعد'}
                 </p>
               </div>
@@ -990,11 +1015,11 @@ export default function AdminDashboard() {
               return (
                 <button key={item.id}
                   onClick={() => setSelectedLogistics(item)}
-                  className={`group relative w-full text-right flex items-center gap-3 px-3 sm:px-5 py-3 sm:py-3.5 transition-colors ${!isLast ? 'border-b border-[#EDE5DC]' : ''} ${isNew ? 'row-pulse-blue' : 'hover:bg-blue-50/30'}`}>
+                  className={`group relative w-full text-right flex items-center gap-3 px-3 sm:px-5 py-3 sm:py-3.5 transition-colors ${!isLast ? 'border-b border-line' : ''} ${isNew ? 'row-pulse-blue' : 'hover:bg-blue-50/30'}`}>
                   {/* "جديد" pill on new rows */}
                   {isNew && (
                     <span className="absolute top-2 left-2 inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-md text-white shadow-md tabular-nums tracking-wide"
-                      style={{ background: 'linear-gradient(135deg, #3B82F6, #2563EB)' }}>
+                      style={{ background: 'linear-gradient(135deg, #06B6D4, #0891B2)' }}>
                       <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                       جديد
                     </span>
@@ -1005,7 +1030,7 @@ export default function AdminDashboard() {
                       style={{ background: st.color }} />
                     <div className="relative w-11 h-11 rounded-xl flex items-center justify-center shadow-sm"
                       style={{ background: `linear-gradient(135deg, ${st.color}, ${st.color}CC)` }}>
-                      <Package size={18} className="text-white" strokeWidth={2.25} />
+                      <Package size={18} className="text-white" weight="bold" />
                     </div>
                     {isNew && (
                       <div className="absolute -top-1 -right-1 badge-pulse-blue w-4 h-4 rounded-full bg-blue-500 border-2 border-white" />
@@ -1014,10 +1039,10 @@ export default function AdminDashboard() {
                   {/* Body */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                      <p className="text-sm font-black text-[#2D2926]">طلب إسناد</p>
+                      <p className="text-sm font-black text-ink">طلب إسناد</p>
                       <span className="inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-md border"
                         style={{ background: `${st.color}15`, borderColor: `${st.color}40`, color: st.color }}>
-                        <SupportIcon size={9} strokeWidth={2.5} />
+                        <SupportIcon size={9} weight="bold" />
                         {st.short}
                       </span>
                       {item.requestNumber && (
@@ -1025,7 +1050,7 @@ export default function AdminDashboard() {
                           isNew ? 'badge-pulse-blue text-white' : 'text-blue-700 border'
                         }`}
                           style={isNew
-                            ? { background: 'linear-gradient(135deg, #3B82F6, #2563EB)' }
+                            ? { background: 'linear-gradient(135deg, #06B6D4, #0891B2)' }
                             : { background: '#EFF6FF', borderColor: '#BFDBFE' }}>
                           #{item.requestNumber}
                         </span>
@@ -1035,20 +1060,20 @@ export default function AdminDashboard() {
                         return (
                           <span className="inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-md text-white"
                             style={{ background: HOLY_SITE_COLOR[item.holySite] }}>
-                            <HSIcon size={9} strokeWidth={2.5} />
+                            <HSIcon size={9} weight="bold" />
                             {HOLY_SITE_LABEL[item.holySite]}
                           </span>
                         );
                       })()}
                     </div>
-                    <div className="flex items-center gap-2 text-[11px] text-[#6D6E71] flex-wrap">
+                    <div className="flex items-center gap-2 text-[11px] text-muted flex-wrap">
                       <span className="flex items-center gap-1">
-                        <User size={10} strokeWidth={2.25} className="text-[#A98159]" />
-                        <span className="font-bold text-[#2D2926] truncate max-w-[80px]">{item.observer || '—'}</span>
+                        <User size={10} weight="bold" className="text-primary" />
+                        <span className="font-bold text-ink truncate max-w-[80px]">{item.observer || '—'}</span>
                       </span>
                       <span className="flex items-center gap-1">
-                        <Building2 size={10} strokeWidth={2.25} className="text-[#A98159]" />
-                        <span className="font-bold text-[#2D2926] truncate max-w-[80px]">{item.center || '—'}</span>
+                        <Building2 size={10} weight="bold" className="text-primary" />
+                        <span className="font-bold text-ink truncate max-w-[80px]">{item.center || '—'}</span>
                       </span>
                     </div>
                     <div className="mt-1">
@@ -1056,7 +1081,7 @@ export default function AdminDashboard() {
                     </div>
                     {item.reportNumber && (
                       <div className="mt-1.5 inline-flex items-center gap-1 text-[9px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-1.5 py-0.5">
-                        <AlertTriangle size={9} strokeWidth={2.5} className="text-amber-600" />
+                        <AlertTriangle size={9} weight="bold" className="text-amber-600" />
                         بلاغ
                         <span className="tabular-nums bg-white border border-amber-300 rounded px-1 text-amber-700">#{item.reportNumber}</span>
                       </div>
@@ -1067,10 +1092,10 @@ export default function AdminDashboard() {
                   <div className="flex flex-col items-end gap-1 shrink-0">
                     <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-1 rounded-lg border-2"
                       style={{ background: sb.bg, borderColor: sb.border, color: sb.text }}>
-                      <SIcon size={10} strokeWidth={2.5} />
+                      <SIcon size={10} weight="bold" />
                       {sb.label}
                     </span>
-                    <ChevronRight size={12} className="text-[#C9B8A8] group-hover:text-blue-500 transition-colors" strokeWidth={2.25} />
+                    <ChevronRight size={12} className="text-muted group-hover:text-blue-500 transition-colors" weight="bold" />
                   </div>
                 </button>
               );
@@ -1083,19 +1108,19 @@ export default function AdminDashboard() {
       <MenuOverview navigate={navigate} />
 
       {/* Field activities */}
-      <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_10px_rgba(45,41,38,0.06)] overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#EDE5DC] gap-3">
+      <div className="bg-white rounded-2xl border border-line shadow-[0_2px_10px_rgb(var(--c-ink)/0.06)] overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-line gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="relative shrink-0">
-              <div className="absolute inset-0 rounded-xl blur-md opacity-50 bg-[#A98159]" />
+              <div className="absolute inset-0 rounded-xl blur-md opacity-50 bg-primary" />
               <div className="relative w-10 h-10 rounded-xl flex items-center justify-center shadow-md"
-                style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
-                <ClipboardList size={17} className="text-white" strokeWidth={2.25} />
+                style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
+                <ClipboardList size={17} className="text-white" weight="bold" />
               </div>
             </div>
             <div className="min-w-0">
-              <p className="font-black text-[#2D2926] text-sm truncate">النشاطات الميدانية</p>
-              <p className="text-[11px] text-[#9D8F85] mt-0.5 font-bold truncate">
+              <p className="font-black text-ink text-sm truncate">النشاطات الميدانية</p>
+              <p className="text-[11px] text-muted mt-0.5 font-bold truncate">
                 تقييمات الوجبات وجاهزية المشاعر
               </p>
             </div>
@@ -1103,18 +1128,18 @@ export default function AdminDashboard() {
 
           {centerOptions.length > 0 && (
             <div className="relative shrink-0">
-              <Filter size={11} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#A98159] pointer-events-none" strokeWidth={2.25} />
+              <Filter size={11} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-primary pointer-events-none" weight="bold" />
               <select
                 value={centerFilter}
                 onChange={e => setCenterFilter(e.target.value)}
-                className="appearance-none text-[11px] font-black border-2 border-[#E8DDD4] rounded-xl pl-7 pr-7 py-1.5 outline-none cursor-pointer transition-all bg-[#FDF8F0] text-[#2D2926] hover:border-[#A98159] focus:border-[#A98159]"
+                className="appearance-none text-[11px] font-black border-2 border-line rounded-xl pl-7 pr-7 py-1.5 outline-none cursor-pointer transition-all bg-background text-ink hover:border-primary focus:border-primary"
               >
                 <option value="">جميع المراكز</option>
                 {centerOptions.map(c => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
-              <ChevronDown size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-[#9D8F85] pointer-events-none" strokeWidth={2.25} />
+              <ChevronDown size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted pointer-events-none" weight="bold" />
             </div>
           )}
         </div>
@@ -1122,10 +1147,10 @@ export default function AdminDashboard() {
         {filteredActivity.length === 0 ? (
           <div className="py-12 text-center px-5">
             <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
-              style={{ background: 'linear-gradient(135deg, #FDF8F0, #F3EAE0)' }}>
-              <ClipboardList size={20} className="text-[#C4A46E]" strokeWidth={2} />
+              style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)), rgb(var(--c-primary-100)))' }}>
+              <ClipboardList size={20} className="text-primary-400" weight="regular" />
             </div>
-            <p className="text-[#9D8F85] text-sm font-bold">
+            <p className="text-muted text-sm font-bold">
               {centerFilter ? `لا توجد نشاطات لـ ${centerFilter}` : 'لا توجد نشاطات بعد'}
             </p>
           </div>
@@ -1146,35 +1171,35 @@ export default function AdminDashboard() {
               ? { Icon: Utensils,    color: '#F59E0B', label: 'تقييم جودة الوجبات', nav: '/admin/phases'    }
               : isMina
               ? { Icon: ShieldCheck, color: '#10B981', label: 'جاهزية مشعر منى',    nav: '/admin/analytics' }
-              : { Icon: ShieldCheck, color: '#1D6FA4', label: 'جاهزية مشعر عرفة',   nav: '/admin/analytics' };
+              : { Icon: ShieldCheck, color: '#0E7490', label: 'جاهزية مشعر عرفة',   nav: '/admin/analytics' };
 
             return (
               <button key={`${item._col}-${item.id}`}
                 onClick={() => navigate(meta.nav)}
-                className={`group w-full flex items-center gap-3 px-5 py-3.5 hover:bg-[#FDFAF7] transition-colors text-right ${!isLast ? 'border-b border-[#EDE5DC]' : ''}`}>
+                className={`group w-full flex items-center gap-3 px-5 py-3.5 hover:bg-[#FDFAF7] transition-colors text-right ${!isLast ? 'border-b border-line' : ''}`}>
                 {/* Icon */}
                 <div className="relative shrink-0">
                   <div className="absolute inset-0 rounded-xl blur-md opacity-0 group-hover:opacity-50 transition-opacity"
                     style={{ background: meta.color }} />
                   <div className="relative w-11 h-11 rounded-xl flex items-center justify-center shadow-sm"
                     style={{ background: `linear-gradient(135deg, ${meta.color}, ${meta.color}CC)` }}>
-                    <meta.Icon size={18} className="text-white" strokeWidth={2.25} />
+                    <meta.Icon size={18} className="text-white" weight="bold" />
                   </div>
                 </div>
                 {/* Body */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-black text-[#2D2926] truncate mb-1">{meta.label}</p>
-                  <div className="flex items-center gap-2 text-[11px] text-[#6D6E71] flex-wrap">
+                  <p className="text-sm font-black text-ink truncate mb-1">{meta.label}</p>
+                  <div className="flex items-center gap-2 text-[11px] text-muted flex-wrap">
                     <span className="flex items-center gap-1">
-                      <User size={10} strokeWidth={2.25} className="text-[#A98159]" />
-                      <span className="font-bold text-[#2D2926] truncate max-w-[120px]">{observer}</span>
+                      <User size={10} weight="bold" className="text-primary" />
+                      <span className="font-bold text-ink truncate max-w-[120px]">{observer}</span>
                     </span>
                     <span className="flex items-center gap-1">
-                      <Building2 size={10} strokeWidth={2.25} className="text-[#A98159]" />
-                      <span className="font-bold text-[#2D2926] truncate max-w-[120px]">{center}</span>
+                      <Building2 size={10} weight="bold" className="text-primary" />
+                      <span className="font-bold text-ink truncate max-w-[120px]">{center}</span>
                     </span>
                     <span className="flex items-center gap-1">
-                      <Clock size={10} strokeWidth={2.25} className="text-[#A98159]" />
+                      <Clock size={10} weight="bold" className="text-primary" />
                       <span className="font-bold">{timeAgo(item.timestamp)}</span>
                     </span>
                   </div>
@@ -1182,12 +1207,12 @@ export default function AdminDashboard() {
                 {scoreSt && score != null && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-black border-2 tabular-nums shrink-0"
                     style={{ background: scoreSt.bg, color: scoreSt.text, borderColor: scoreSt.border }}>
-                    <Sparkles size={10} strokeWidth={2.5} />
+                    <Sparkles size={10} weight="bold" />
                     {score.toFixed(1)}
                     <span className="text-[9px] opacity-70">/10</span>
                   </span>
                 )}
-                <ChevronRight size={12} className="text-[#C9B8A8] group-hover:text-[#A98159] transition-colors shrink-0" strokeWidth={2.25} />
+                <ChevronRight size={12} className="text-muted group-hover:text-primary transition-colors shrink-0" weight="bold" />
               </button>
             );
           })
@@ -1219,19 +1244,19 @@ export default function AdminDashboard() {
 
 function MenuOverview({ navigate }) {
   return (
-    <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_10px_rgba(45,41,38,0.06)] overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#EDE5DC]">
+    <div className="bg-white rounded-2xl border border-line shadow-[0_2px_10px_rgb(var(--c-ink)/0.06)] overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-line">
         <div className="flex items-center gap-3 min-w-0">
           <div className="relative shrink-0">
             <div className="absolute inset-0 rounded-xl blur-md opacity-50 bg-amber-500" />
             <div className="relative w-10 h-10 rounded-xl flex items-center justify-center shadow-md"
               style={{ background: 'linear-gradient(135deg, #F59E0B, #D97706)' }}>
-              <Utensils size={17} className="text-white" strokeWidth={2.25} />
+              <Utensils size={17} className="text-white" weight="bold" />
             </div>
           </div>
           <div className="min-w-0">
-            <p className="font-black text-[#2D2926] text-sm truncate">منيو الجنسيات</p>
-            <p className="text-[11px] text-[#9D8F85] mt-0.5 font-bold truncate">
+            <p className="font-black text-ink text-sm truncate">منيو الجنسيات</p>
+            <p className="text-[11px] text-muted mt-0.5 font-bold truncate">
               تغطية المنيو حسب الجنسية ليوم ذو الحجة والوجبة
             </p>
           </div>
@@ -1240,7 +1265,7 @@ function MenuOverview({ navigate }) {
           className="flex items-center gap-1.5 text-[11px] font-black transition-all px-3 py-1.5 rounded-xl shrink-0"
           style={{ color: '#D97706', background: '#FFFBEB', border: '1px solid #FDE68A' }}>
           إدارة المنيو
-          <ArrowLeft size={11} strokeWidth={2.25} />
+          <ArrowLeft size={11} weight="bold" />
         </button>
       </div>
 
@@ -1248,7 +1273,7 @@ function MenuOverview({ navigate }) {
         {NATIONALITIES.map(s => (
           <button key={s.key}
             onClick={() => navigate('/admin/menu')}
-            className="group text-right bg-white rounded-xl border-2 border-[#EDE5DC] p-3 hover:shadow-md hover:border-[#D9CEBC] hover:-translate-y-0.5 transition-all">
+            className="group text-right bg-white rounded-xl border-2 border-line p-3 hover:shadow-md hover:border-line hover:-translate-y-0.5 transition-all">
             <div className="flex items-center gap-2.5">
               <div className="relative shrink-0">
                 <div className="absolute inset-0 rounded-lg blur-sm opacity-40"
@@ -1259,8 +1284,8 @@ function MenuOverview({ navigate }) {
                 </div>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-black text-[#2D2926] truncate">{s.label}</p>
-                <p className="text-[9px] text-[#9D8F85] font-bold mt-0.5">{s.centers.length} مركز</p>
+                <p className="text-xs font-black text-ink truncate">{s.label}</p>
+                <p className="text-[9px] text-muted font-bold mt-0.5">{s.centers.length} مركز</p>
               </div>
             </div>
           </button>

@@ -21,15 +21,26 @@ import {
 }                                                from '../../lib/statusTracking.js';
 import { CENTERS }                               from '../../config/centers.js';
 import { cairoBase64 }                           from '../../assets/fonts/CairoFont.js';
-import logoSrc                                   from '../../assets/logo-color.svg';
+const logoSrc = BRAND.logo.color;
 import { MEAL_QUESTIONS }                        from '../../config/mealQuestions.js';
 import { MINA_ALL_CRITERIA }                     from '../../config/minaQuestions.js';
 import { ARAFAT_ALL_CRITERIA }                   from '../../config/arafatQuestions.js';
+import { BRAND } from '../../config/brand.js';
 import {
-  FileText, X, ChevronDown, Loader2,
-  CheckCircle2, Building2, Calendar, ClipboardList,
-  ListChecks, Eye, Info, Search, Check,
-} from 'lucide-react';
+  FileText,
+  X,
+  CaretDown as ChevronDown,
+  CircleNotch as Loader2,
+  CheckCircle as CheckCircle2,
+  Buildings as Building2,
+  CalendarBlank as Calendar,
+  ClipboardText as ClipboardList,
+  ListChecks,
+  Eye,
+  Info,
+  MagnifyingGlass as Search,
+  Check,
+} from '@phosphor-icons/react';
 
 /* Map each report-type key to its question list (for detail mode) */
 const QUESTION_BANK = {
@@ -73,11 +84,11 @@ const DHU_DAYS = [
 ];
 
 const REPORT_TYPES = [
-  { key: 'meal_evaluations',   label: 'تقييم جودة الوجبات', color: '#A98159' },
-  { key: 'mina_readiness',     label: 'جاهزية مشعر منى',    color: '#2F855A' },
-  { key: 'arafat_readiness',   label: 'جاهزية مشعر عرفة',   color: '#0987A0' },
+  { key: 'meal_evaluations',   label: 'تقييم جودة الوجبات', color: '#7C3AED' },
+  { key: 'mina_readiness',     label: 'جاهزية مشعر منى',    color: '#16A34A' },
+  { key: 'arafat_readiness',   label: 'جاهزية مشعر عرفة',   color: '#0891B2' },
   { key: 'reports',            label: 'البلاغات الميدانية', color: '#DC2626' },
-  { key: 'logistics_requests', label: 'طلبات الإسناد',      color: '#3B82F6' },
+  { key: 'logistics_requests', label: 'طلبات الإسناد',      color: '#06B6D4' },
 ];
 
 const MEAL_LABELS = { breakfast: 'الإفطار', lunch: 'الغداء', dinner: 'العشاء' };
@@ -464,12 +475,12 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
   const logoDataUrl = await getLogoDataUrl();
 
   /* ── Palette ── */
-  const C_GOLD  = hexToRgb('#A98159');
-  const C_DARK  = hexToRgb('#2D2926');
+  const C_GOLD  = hexToRgb('#7C3AED');
+  const C_DARK  = hexToRgb('#1E1B2E');
   const C_WHITE = [255, 255, 255];
-  const C_LIGHT = hexToRgb('#FDF8F0');
-  const C_GRAY  = hexToRgb('#9D8F85');
-  const C_LINE  = hexToRgb('#D1C4B9');
+  const C_LIGHT = hexToRgb('#F8FAFC');
+  const C_GRAY  = hexToRgb('#64748B');
+  const C_LINE  = hexToRgb('#E2E8F0');
 
   const nowStr = new Date().toLocaleString('ar-SA', {
     year: 'numeric', month: 'long', day: 'numeric',
@@ -561,7 +572,7 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
       doc.setFont('Cairo', 'normal');
       doc.setFontSize(30);
       doc.setTextColor(...C_GOLD);
-      doc.text(fixArabic('ضيوف البيت'), PW / 2, 56, { align: 'center' });
+      doc.text(fixArabic(BRAND.companyName), PW / 2, 56, { align: 'center' });
 
       /* ── Small decorative dots flanking the title divider ── */
       doc.setFillColor(...C_GOLD);
@@ -577,7 +588,7 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
       /* ── Season line ── */
       doc.setFontSize(10);
       doc.setTextColor(...C_GRAY);
-      doc.text(fixArabic('موسم الحج ١٤٤٧ هـ'), PW / 2, 77, { align: 'center' });
+      doc.text(fixArabic(BRAND.tagline), PW / 2, 77, { align: 'center' });
 
       /* ── Double-line divider (thicker + thinner under it) ── */
       doc.setDrawColor(...C_GOLD);
@@ -599,7 +610,7 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
       doc.setFont('Cairo', 'normal');
       doc.setFontSize(11);
       doc.setTextColor(...C_GOLD);
-      doc.text(fixArabic('ضيوف البيت'), PW - ML - 4, 10, { align: 'right' });
+      doc.text(fixArabic(BRAND.companyName), PW - ML - 4, 10, { align: 'right' });
 
       /* Title centered */
       doc.setFontSize(9.5);
@@ -638,13 +649,13 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
     /* Brand label on the right */
     doc.setFontSize(8);
     doc.setTextColor(...C_GOLD);
-    doc.text(fixArabic('ضيوف البيت'), PW - MR, PH - 8, { align: 'right' });
+    doc.text(fixArabic(BRAND.companyName), PW - MR, PH - 8, { align: 'right' });
 
     /* Centered tagline */
     doc.setFontSize(8);
     doc.setTextColor(...C_GRAY);
     doc.text(
-      fixArabic('منظومة المراقبة الميدانية'),
+      fixArabic(BRAND.tagline),
       PW / 2, PH - 8, { align: 'center' }
     );
 
@@ -735,7 +746,7 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
     if (!records?.length) return;
     const allQs   = QUESTION_BANK[typeKey] || [];
     const qsById  = new Map(allQs.map(q => [String(q.id), q]));
-    const tRgb    = hexToRgb(typeMeta?.color ?? '#A98159');
+    const tRgb    = hexToRgb(typeMeta?.color ?? '#7C3AED');
 
     /* Section header */
     autoTable(doc, {
@@ -1102,7 +1113,7 @@ async function buildPDF({ data, centerFilter, dateFilter, types, detailed = fals
       }
 
       /* ── Report-type tag (pill with bg color) ── */
-      const tRgb = hexToRgb(typeMeta?.color ?? '#A98159');
+      const tRgb = hexToRgb(typeMeta?.color ?? '#7C3AED');
       doc.setFont('Cairo', 'normal');
       doc.setFontSize(9.5);
       const tagText = fixArabic(typeMeta?.label ?? type);
@@ -1248,10 +1259,10 @@ function CenterMultiSelect({ value, onChange, onToggle, search, onSearchChange, 
     <div>
       <div className="flex items-center justify-between gap-2 mb-2.5">
         <div className="flex items-center gap-2">
-          <Building2 size={13} className="text-[#A98159]" />
-          <label className="text-xs font-black text-[#2D2926] uppercase tracking-wide">المركز</label>
+          <Building2 size={13} className="text-primary" />
+          <label className="text-xs font-black text-ink uppercase tracking-wide">المركز</label>
         </div>
-        <span className="text-[10px] font-bold text-[#9D8F85] tabular-nums">{summary}</span>
+        <span className="text-[10px] font-bold text-muted tabular-nums">{summary}</span>
       </div>
 
       {/* Action row: select all / clear */}
@@ -1260,7 +1271,7 @@ function CenterMultiSelect({ value, onChange, onToggle, search, onSearchChange, 
           type="button"
           onClick={() => onChange(allSelected ? [] : CENTERS.map(c => c.id))}
           disabled={disabled}
-          className="text-[11px] font-black px-2.5 py-1.5 rounded-lg border border-[#A98159]/30 bg-[#FDF8F0] text-[#A98159] hover:bg-[#A98159] hover:text-white transition-colors disabled:opacity-60"
+          className="text-[11px] font-black px-2.5 py-1.5 rounded-lg border border-primary/30 bg-background text-primary hover:bg-primary hover:text-white transition-colors disabled:opacity-60"
         >
           {allSelected ? 'إلغاء التحديد' : 'تحديد الكل'}
         </button>
@@ -1269,33 +1280,33 @@ function CenterMultiSelect({ value, onChange, onToggle, search, onSearchChange, 
             type="button"
             onClick={() => onChange([])}
             disabled={disabled}
-            className="text-[11px] font-black px-2.5 py-1.5 rounded-lg border border-[#EDE5DC] text-[#6D6E71] hover:bg-[#F5F0EB] transition-colors disabled:opacity-60"
+            className="text-[11px] font-black px-2.5 py-1.5 rounded-lg border border-[#E3E8EF] text-muted hover:bg-[#EEF2FF] transition-colors disabled:opacity-60"
           >
             مسح
           </button>
         )}
-        <span className="ml-auto text-[10px] font-bold text-[#9D8F85] tabular-nums">
+        <span className="ml-auto text-[10px] font-bold text-muted tabular-nums">
           {value.length === 0 ? 'لا تحديد = الكل' : `${value.length} / ${CENTERS.length}`}
         </span>
       </div>
 
       {/* Search */}
       <div className="relative mb-2">
-        <Search size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9D8F85]" strokeWidth={2.25} />
+        <Search size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted" weight="bold" />
         <input
           type="text"
           value={search}
           onChange={e => onSearchChange(e.target.value)}
           disabled={disabled}
           placeholder="ابحث برقم المركز أو المتعهد..."
-          className="w-full pr-9 pl-3 py-2 rounded-xl border border-[#EDE5DC] bg-[#FAFAF8] text-xs font-bold text-[#2D2926] placeholder:text-[#C9B8A8] focus:border-[#A98159] focus:outline-none transition-colors disabled:opacity-60"
+          className="w-full pr-9 pl-3 py-2 rounded-xl border border-[#E3E8EF] bg-[#F6F8FB] text-xs font-bold text-ink placeholder:text-[#64748B] focus:border-primary focus:outline-none transition-colors disabled:opacity-60"
         />
       </div>
 
       {/* Chips grid */}
-      <div className="max-h-[180px] overflow-y-auto bg-[#FAFAF8] border border-[#EDE5DC] rounded-2xl p-2">
+      <div className="max-h-[180px] overflow-y-auto bg-[#F6F8FB] border border-[#E3E8EF] rounded-2xl p-2">
         {filtered.length === 0 ? (
-          <p className="text-[11px] text-center text-[#9D8F85] py-6 font-bold">لا يوجد مركز مطابق</p>
+          <p className="text-[11px] text-center text-muted py-6 font-bold">لا يوجد مركز مطابق</p>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
             {filtered.map(c => {
@@ -1309,11 +1320,11 @@ function CenterMultiSelect({ value, onChange, onToggle, search, onSearchChange, 
                   title={c.caterer || c.id}
                   className={`relative flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-black border-2 transition-all disabled:opacity-60 ${
                     active
-                      ? 'bg-[#A98159] text-white border-[#A98159] shadow-sm'
-                      : 'bg-white text-[#2D2926] border-[#EDE5DC] hover:border-[#A98159]/40'
+                      ? 'bg-primary text-white border-primary shadow-sm'
+                      : 'bg-white text-ink border-[#E3E8EF] hover:border-primary/40'
                   }`}
                 >
-                  {active && <Check size={10} strokeWidth={3} />}
+                  {active && <Check size={10} weight="bold" />}
                   <span className="truncate">{c.id}</span>
                 </button>
               );
@@ -1376,39 +1387,39 @@ function ReportModal({ onClose }) {
 
       {/* Panel */}
       <div
-        className="relative w-full max-w-lg bg-white rounded-3xl shadow-[0_24px_80px_rgba(45,41,38,0.25)] border border-[#EDE5DC] overflow-hidden"
+        className="relative w-full max-w-lg bg-white rounded-3xl shadow-[0_24px_80px_rgba(30,27,46, 0.25)] border border-[#E3E8EF] overflow-hidden"
         style={{ animation: 'rg-slideUp 0.25s cubic-bezier(0.16,1,0.3,1) forwards' }}
       >
         {/* ── Modal header ── */}
         <div
-          className="px-6 py-5 border-b border-[#EDE5DC]"
-          style={{ background: 'linear-gradient(135deg,#FDF8F0 0%,#fff 60%)' }}
+          className="px-6 py-5 border-b border-[#E3E8EF]"
+          style={{ background: 'linear-gradient(135deg,#F8FAFC 0%,#fff 60%)' }}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="relative">
                 <div
                   className="absolute inset-0 rounded-2xl blur-lg opacity-50"
-                  style={{ background: 'linear-gradient(135deg,#C4A46E,#A98159)' }}
+                  style={{ background: 'linear-gradient(135deg,#A78BFA,#7C3AED)' }}
                 />
                 <div
                   className="relative w-10 h-10 rounded-2xl flex items-center justify-center shadow-md"
-                  style={{ background: 'linear-gradient(135deg,#C4A46E,#A98159)' }}
+                  style={{ background: 'rgb(var(--c-accent))' }}
                 >
-                  <Eye size={18} className="text-white" strokeWidth={2.25} />
+                  <Eye size={18} className="text-primary" weight="bold" />
                 </div>
               </div>
               <div>
-                <h2 className="font-bold text-[#2D2926] text-base">عرض تقرير</h2>
-                <p className="text-[11px] text-[#9D8F85] mt-0.5">حدّد الفلاتر ثم اعرض المعاينة</p>
+                <h2 className="font-bold text-ink text-base">عرض تقرير</h2>
+                <p className="text-[11px] text-muted mt-0.5">حدّد الفلاتر ثم اعرض المعاينة</p>
               </div>
             </div>
             <button
               onClick={!generating ? onClose : undefined}
               disabled={generating}
-              className="w-9 h-9 rounded-xl border border-[#EDE5DC] flex items-center justify-center hover:bg-[#F5F0EB] transition-colors disabled:opacity-40"
+              className="w-9 h-9 rounded-xl border border-[#E3E8EF] flex items-center justify-center hover:bg-[#EEF2FF] transition-colors disabled:opacity-40"
             >
-              <X size={16} className="text-[#6D6E71]" />
+              <X size={16} className="text-muted" />
             </button>
           </div>
         </div>
@@ -1429,8 +1440,8 @@ function ReportModal({ onClose }) {
           {/* 2. Day */}
           <div>
             <div className="flex items-center gap-2 mb-2.5">
-              <Calendar size={13} className="text-[#A98159]" />
-              <label className="text-xs font-black text-[#2D2926] uppercase tracking-wide">
+              <Calendar size={13} className="text-primary" />
+              <label className="text-xs font-black text-ink uppercase tracking-wide">
                 اليوم
               </label>
             </div>
@@ -1440,8 +1451,8 @@ function ReportModal({ onClose }) {
                 disabled={generating}
                 className={`py-2.5 rounded-xl text-xs font-bold border transition-all disabled:opacity-60 ${
                   !dateFilter
-                    ? 'bg-[#A98159] text-white border-transparent shadow-md'
-                    : 'bg-[#FAFAF8] text-[#6D6E71] border-[#EDE5DC] hover:border-[#A98159]/50'
+                    ? 'bg-primary text-white border-transparent shadow-md'
+                    : 'bg-[#F6F8FB] text-muted border-[#E3E8EF] hover:border-primary/50'
                 }`}
               >
                 الكل
@@ -1456,8 +1467,8 @@ function ReportModal({ onClose }) {
                     disabled={generating}
                     className={`py-2.5 rounded-xl text-xs font-bold border transition-all disabled:opacity-60 ${
                       active
-                        ? 'bg-[#A98159] text-white border-transparent shadow-md'
-                        : 'bg-[#FAFAF8] text-[#6D6E71] border-[#EDE5DC] hover:border-[#A98159]/50'
+                        ? 'bg-primary text-white border-transparent shadow-md'
+                        : 'bg-[#F6F8FB] text-muted border-[#E3E8EF] hover:border-primary/50'
                     }`}
                   >
                     {dayNum}
@@ -1466,7 +1477,7 @@ function ReportModal({ onClose }) {
               })}
             </div>
             {dateFilter && (
-              <p className="text-[11px] text-[#A98159] font-bold mt-2 text-center">
+              <p className="text-[11px] text-primary font-bold mt-2 text-center">
                 {dateFilter}
               </p>
             )}
@@ -1475,8 +1486,8 @@ function ReportModal({ onClose }) {
           {/* 3. Report type */}
           <div>
             <div className="flex items-center gap-2 mb-2.5">
-              <ClipboardList size={13} className="text-[#A98159]" />
-              <label className="text-xs font-black text-[#2D2926] uppercase tracking-wide">
+              <ClipboardList size={13} className="text-primary" />
+              <label className="text-xs font-black text-ink uppercase tracking-wide">
                 نوع التقرير
               </label>
             </div>
@@ -1496,29 +1507,29 @@ function ReportModal({ onClose }) {
                             borderColor: `${rt.color}50`,
                             boxShadow:   `0 2px 10px ${rt.color}1A`,
                           }
-                        : { background: '#FAFAF8', borderColor: '#EDE5DC' }
+                        : { background: '#F6F8FB', borderColor: '#E3E8EF' }
                     }
                   >
                     <div className="flex items-center gap-3">
                       <div
                         className="w-2.5 h-2.5 rounded-full transition-colors"
-                        style={{ background: active ? rt.color : '#D9CEBC' }}
+                        style={{ background: active ? rt.color : '#E3E8EF' }}
                       />
                       <span
                         className="text-sm font-bold"
-                        style={{ color: active ? rt.color : '#4A3B35' }}
+                        style={{ color: active ? rt.color : '#2C3E63' }}
                       >
                         {rt.label}
                       </span>
                     </div>
                     <div
                       className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
-                        active ? 'border-transparent' : 'border-[#D9CEBC]'
+                        active ? 'border-transparent' : 'border-[#E3E8EF]'
                       }`}
                       style={active ? { background: rt.color } : {}}
                     >
                       {active && (
-                        <CheckCircle2 size={11} className="text-white" strokeWidth={2.5} />
+                        <CheckCircle2 size={11} className="text-white" weight="bold" />
                       )}
                     </div>
                   </button>
@@ -1537,19 +1548,19 @@ function ReportModal({ onClose }) {
         </div>
 
         {/* ── Generate buttons ── */}
-        <div className="px-6 py-4 border-t border-[#EDE5DC] bg-[#FDFCFB]">
+        <div className="px-6 py-4 border-t border-[#E3E8EF] bg-background">
           {progress && (
-            <div className="flex items-center gap-2 mb-3 bg-[#FDF8F0] border border-[#D1C4B9] rounded-xl px-3 py-2">
-              <Loader2 size={13} className="animate-spin text-[#A98159] shrink-0" />
-              <span className="text-[11px] font-bold text-[#A98159]">{progress}</span>
+            <div className="flex items-center gap-2 mb-3 bg-background border border-line rounded-xl px-3 py-2">
+              <Loader2 size={13} className="animate-spin text-primary shrink-0" />
+              <span className="text-[11px] font-bold text-primary">{progress}</span>
             </div>
           )}
 
           {/* Info hint: opens preview in a new tab */}
-          <div className="flex items-start gap-2 mb-3 bg-[#FDF8F0] border border-[#E8DDD4] rounded-xl px-3 py-2.5">
-            <Info size={14} className="text-[#A98159] shrink-0 mt-0.5" />
-            <p className="text-[11px] text-[#6D6E71] leading-relaxed">
-              التقرير راح يفتح في <span className="font-bold text-[#A98159]">تبويب جديد</span> للمعاينة.
+          <div className="flex items-start gap-2 mb-3 bg-background border border-line rounded-xl px-3 py-2.5">
+            <Info size={14} className="text-primary shrink-0 mt-0.5" />
+            <p className="text-[11px] text-muted leading-relaxed">
+              التقرير راح يفتح في <span className="font-bold text-primary">تبويب جديد</span> للمعاينة.
               تقدر تحفظه أو تطبعه من زر <span className="font-bold">«حفظ كـ PDF»</span> في المتصفح.
             </p>
           </div>
@@ -1558,7 +1569,7 @@ function ReportModal({ onClose }) {
             <button
               onClick={() => handleGenerate(true)}
               disabled={generating || !types.length}
-              className="w-full flex items-center justify-center gap-2.5 py-3 rounded-2xl text-[#2D2926] font-bold text-sm transition-all disabled:opacity-50 active:scale-[0.98] bg-white border-2 border-[#2D2926] hover:bg-[#FDF8F0]"
+              className="w-full flex items-center justify-center gap-2.5 py-3 rounded-2xl text-ink font-bold text-sm transition-all disabled:opacity-50 active:scale-[0.98] bg-white border-2 border-ink hover:bg-background"
             >
               {generating
                 ? <><Loader2 size={16} className="animate-spin" /> جارٍ التحضير...</>
@@ -1567,12 +1578,12 @@ function ReportModal({ onClose }) {
             <button
               onClick={() => handleGenerate(false)}
               disabled={generating || !types.length}
-              className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl text-white font-bold text-sm transition-all disabled:opacity-50 active:scale-[0.98] shadow-[0_4px_20px_rgba(169,129,89,0.35)] hover:shadow-[0_6px_28px_rgba(169,129,89,0.45)]"
-              style={{ background: 'linear-gradient(135deg,#C4A46E 0%,#A98159 50%,#8B6840 100%)' }}
+              className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl text-white font-bold text-sm transition-all disabled:opacity-50 active:scale-[0.98] shadow-[0_4px_20px_rgba(79,70,229, 0.35)] hover:shadow-[0_6px_28px_rgba(79,70,229, 0.45)]"
+              style={{ background: 'linear-gradient(135deg,#A78BFA 0%,#7C3AED 50%,#6D28D9 100%)' }}
             >
               {generating
                 ? <><Loader2 size={16} className="animate-spin" /> جارٍ التحضير...</>
-                : <><Eye size={16} strokeWidth={2.25} /> عرض التقرير</>}
+                : <><Eye size={16} weight="bold" /> عرض التقرير</>}
             </button>
           </div>
         </div>
@@ -1594,10 +1605,12 @@ export default function AdminReportGenerator() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="group relative flex items-center gap-2 px-4 py-2.5 rounded-2xl text-white text-xs font-bold transition-all active:scale-95 shadow-[0_4px_16px_rgba(169,129,89,0.35)] hover:shadow-[0_6px_24px_rgba(169,129,89,0.45)] hover:opacity-90"
-        style={{ background: 'linear-gradient(135deg,#C4A46E 0%,#A98159 50%,#8B6840 100%)' }}
+        /* Navy text, not white: #30D9CB is light enough that white sits at
+           ~1.7:1 against it, while the brand navy clears 8:1. */
+        className="group relative flex items-center gap-2 px-4 py-2.5 rounded-2xl text-primary text-xs font-bold transition-all active:scale-95 shadow-[0_4px_16px_rgb(var(--c-accent)/0.40)] hover:shadow-[0_6px_24px_rgb(var(--c-accent)/0.55)] hover:opacity-90"
+        style={{ background: 'rgb(var(--c-accent))' }}
       >
-        <Eye size={14} strokeWidth={2.5} className="group-hover:scale-110 transition-transform duration-300" />
+        <Eye size={14} weight="bold" className="group-hover:scale-110 transition-transform duration-300" />
         عرض تقرير
       </button>
 

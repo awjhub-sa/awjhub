@@ -20,6 +20,7 @@ CREATE TABLE public.users (
   auth_uid           uuid UNIQUE,
   name               text,
   name_ar            text NOT NULL,
+  phone              text,
   role               text NOT NULL CHECK (role IN ('admin','staff','observer','supervisor')),
   center             text,
   assigned_centers   text[] DEFAULT '{}',

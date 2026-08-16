@@ -1,9 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Utensils, ChevronRight, Save, CheckCircle2, AlertCircle,
-  Camera, Lock, ArrowLeft, RotateCcw, Ban, Sparkles, Loader2, X,
-} from 'lucide-react';
+  ForkKnife as Utensils,
+  CaretRight as ChevronRight,
+  FloppyDisk as Save,
+  CheckCircle as CheckCircle2,
+  WarningCircle as AlertCircle,
+  Camera,
+  Lock,
+  ArrowLeft,
+  ArrowCounterClockwise as RotateCcw,
+  Prohibit as Ban,
+  Sparkle as Sparkles,
+  CircleNotch as Loader2,
+  X,
+} from '@phosphor-icons/react';
 import { db, serverTimestamp, uploadFile, STORAGE_BUCKETS } from '../../lib/db.js';
 import { compressImage } from '../../lib/imageCompression.js';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -34,8 +45,8 @@ const STORAGE_KEY = (uid, taskId, mealType) => `sup_mealcheck_${uid}_${taskId}_$
 function TaskGate({ profile, centerId, catererName, tasks, completions, loading, onSelect }) {
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FDFCFB] flex items-center justify-center font-arabic">
-        <div className="w-8 h-8 border-2 border-[#A98159]/30 border-t-[#A98159] rounded-full animate-spin" />
+      <div className="min-h-screen bg-canvas flex items-center justify-center font-arabic">
+        <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
       </div>
     );
   }
@@ -52,36 +63,36 @@ function TaskGate({ profile, centerId, catererName, tasks, completions, loading,
   const completed = items.filter(i => i.done);
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-10 font-arabic">
-      <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 py-3 mb-6 shadow-sm">
+    <div dir="rtl" className="min-h-screen bg-canvas pb-10 font-arabic">
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-line w-full px-4 py-3 mb-6 shadow-sm">
         <div className="max-w-xl mx-auto flex items-center justify-between">
           <button onClick={() => window.history.back()} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition">
-            <ChevronRight className="text-[#A98159]" size={22} strokeWidth={2.5} />
+            <ChevronRight className="text-primary" size={22} weight="bold" />
           </button>
-          <h1 className="text-base font-bold text-[#2D2926] absolute left-1/2 -translate-x-1/2 whitespace-nowrap">تقييم جودة الوجبات</h1>
+          <h1 className="text-base font-bold text-ink absolute left-1/2 -translate-x-1/2 whitespace-nowrap">تقييم جودة الوجبات</h1>
           <div className="w-10" />
         </div>
       </header>
 
       <div className="max-w-xl mx-auto px-4 space-y-5">
-        <div className="group rounded-[2rem] p-5 text-white bg-[#2D2926] shadow-lg">
+        <div className="group rounded-[2rem] p-5 text-white bg-ink shadow-lg">
           <div className="flex items-center gap-3 mb-4">
             <div className="relative">
-              <div className="absolute inset-0 rounded-xl blur-md bg-[#A98159] opacity-40 group-hover:opacity-70 transition-opacity" />
+              <div className="absolute inset-0 rounded-xl blur-md bg-primary opacity-40 group-hover:opacity-70 transition-opacity" />
               <div className="relative bg-white/10 p-2.5 rounded-xl transition-transform duration-300 group-hover:scale-110">
-                <Utensils className="text-[#A98159]" size={22} />
+                <Utensils className="text-primary" size={22} />
                 <Sparkles size={9} className="absolute -top-0.5 -right-0.5 text-yellow-200 drop-shadow" />
               </div>
             </div>
             <div>
-              <p className="text-[#A98159] text-[10px] font-black uppercase tracking-widest">مهام التقييم — مشرف</p>
+              <p className="text-primary text-[10px] font-black uppercase tracking-widest">مهام التقييم — مشرف</p>
               <h2 className="text-base font-bold">اختر الوجبة للتقييم</h2>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2">
             {[
               { lbl: 'المشرف', val: profile?.nameAr || profile?.name, cls: 'text-white' },
-              { lbl: 'المركز', val: centerId,                          cls: 'text-[#A98159]' },
+              { lbl: 'المركز', val: centerId,                          cls: 'text-primary' },
               { lbl: 'المتعهد', val: catererName,                     cls: 'text-white' },
             ].map(c => (
               <div key={c.lbl} className="bg-white/5 rounded-xl px-2 py-2.5 border border-white/10 text-center min-w-0">
@@ -93,19 +104,19 @@ function TaskGate({ profile, centerId, catererName, tasks, completions, loading,
         </div>
 
         {items.length === 0 && (
-          <div className="bg-white border border-[#EDE5DC] rounded-2xl py-14 text-center shadow-sm">
-            <Ban size={36} className="mx-auto text-gray-300 mb-3" strokeWidth={1.2} />
-            <p className="text-[#2D2926] font-bold text-base mb-1">لا توجد مهام حالياً</p>
-            <p className="text-[#9D8F85] text-sm">لم تُسند مهام تقييم لهذا المركز بعد</p>
+          <div className="bg-white border border-line rounded-2xl py-14 text-center shadow-sm">
+            <Ban size={36} className="mx-auto text-gray-300 mb-3" weight="thin" />
+            <p className="text-ink font-bold text-base mb-1">لا توجد مهام حالياً</p>
+            <p className="text-muted text-sm">لم تُسند مهام تقييم لهذا المركز بعد</p>
           </div>
         )}
 
         {pending.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center gap-2 px-1">
-              <span className="w-1.5 h-4 rounded-full bg-[#A98159]" />
-              <p className="text-xs font-black text-[#A98159] uppercase tracking-wider">مهام معلقة</p>
-              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#A98159]/10 text-[#A98159] border border-[#A98159]/20 tabular-nums">
+              <span className="w-1.5 h-4 rounded-full bg-primary" />
+              <p className="text-xs font-black text-primary uppercase tracking-wider">مهام معلقة</p>
+              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 tabular-nums">
                 {pending.length}
               </span>
             </div>
@@ -114,7 +125,7 @@ function TaskGate({ profile, centerId, catererName, tasks, completions, loading,
               return (
                 <button key={`${task.id}_${mealType}`}
                   onClick={() => onSelect({ taskId: task.id, mealType, scheduledDate: task.scheduledDate, day: extractDay(task.scheduledDate), categories: task.mealCategories || [] })}
-                  className="group/task relative w-full bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 border-2 border-[#EDE5DC] hover:border-[#A98159]/60 rounded-2xl p-4 flex items-center gap-4 text-right transition-all duration-300 active:scale-[0.98] hover:shadow-[0_8px_24px_rgba(169,129,89,0.18)] hover:-translate-y-0.5 overflow-hidden"
+                  className="group/task relative w-full bg-gradient-to-br from-white via-white to-background/40 border-2 border-line hover:border-primary/60 rounded-2xl p-4 flex items-center gap-4 text-right transition-all duration-300 active:scale-[0.98] hover:shadow-[0_8px_24px_rgb(var(--c-primary)/0.18)] hover:-translate-y-0.5 overflow-hidden"
                 >
                   <div className="absolute top-0 bottom-0 right-0 w-1"
                     style={{ background: meta.color }} />
@@ -123,24 +134,24 @@ function TaskGate({ profile, centerId, catererName, tasks, completions, loading,
                       style={{ background: meta.color }} />
                     <div className="relative w-14 h-14 rounded-2xl flex items-center justify-center border-2 group-hover/task:scale-110 group-hover/task:rotate-3 transition-transform duration-300"
                       style={{ background: `linear-gradient(135deg, ${meta.bg}, ${meta.bg}AA)`, borderColor: meta.border }}>
-                      <meta.icon size={28} weight="duotone" style={{ color: meta.color }} />
+                      <meta.icon size={28} weight="regular" style={{ color: meta.color }} />
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-bold text-base text-[#2D2926]">{meta.label}</p>
-                      <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-[#A98159] bg-[#FDF8F0] border border-[#A98159]/30 px-2 py-0.5 rounded-full">
-                        <span className="w-1 h-1 rounded-full bg-[#A98159] animate-pulse" />
+                      <p className="font-bold text-base text-ink">{meta.label}</p>
+                      <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-primary bg-background border border-primary/30 px-2 py-0.5 rounded-full">
+                        <span className="w-1 h-1 rounded-full bg-primary animate-pulse" />
                         معلقة
                       </span>
                     </div>
-                    <p className="text-[11px] text-[#9D8F85] mt-0.5 flex items-center gap-1">
-                      <span className="w-1 h-1 rounded-full bg-[#A98159]" />
+                    <p className="text-[11px] text-muted mt-0.5 flex items-center gap-1">
+                      <span className="w-1 h-1 rounded-full bg-primary" />
                       {task.scheduledDate}
                     </p>
                   </div>
-                  <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-[#FDF8F0] flex items-center justify-center group-hover/task:bg-[#A98159] group-hover/task:-translate-x-1 transition-all duration-300">
-                    <ArrowLeft size={16} className="text-[#A98159] group-hover/task:text-white transition-colors" strokeWidth={2.5} />
+                  <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-background flex items-center justify-center group-hover/task:bg-primary group-hover/task:-translate-x-1 transition-all duration-300">
+                    <ArrowLeft size={16} className="text-primary group-hover/task:text-white transition-colors" weight="bold" />
                   </div>
                 </button>
               );
@@ -150,7 +161,7 @@ function TaskGate({ profile, centerId, catererName, tasks, completions, loading,
 
         {items.length > 0 && pending.length === 0 && (
           <div className="bg-green-50 border border-green-200 rounded-2xl py-10 text-center">
-            <CheckCircle2 size={32} className="mx-auto text-green-400 mb-2" strokeWidth={1.5} />
+            <CheckCircle2 size={32} className="mx-auto text-green-400 mb-2" weight="light" />
             <p className="text-green-700 font-bold text-sm">جميع مهام هذا المركز مكتملة</p>
             <p className="text-green-600 text-xs mt-1">تحقق من سجل نشاط المراقبين في الصفحة الرئيسية</p>
           </div>
@@ -394,13 +405,13 @@ export default function SupMealcheck() {
     const completedCount = phases.filter(p => phaseDone[p.id]).length;
     const totalPhases    = phases.length;
     return (
-      <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-32 font-arabic">
-        <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 py-3 mb-6 shadow-sm">
+      <div dir="rtl" className="min-h-screen bg-canvas pb-32 font-arabic">
+        <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-line w-full px-4 py-3 mb-6 shadow-sm">
           <div className="max-w-xl mx-auto flex items-center justify-between">
             <button onClick={() => setSelectedTask(null)} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition">
-              <ChevronRight className="text-[#A98159]" size={22} strokeWidth={2.5} />
+              <ChevronRight className="text-primary" size={22} weight="bold" />
             </button>
-            <h1 className="text-base font-bold text-[#2D2926] absolute left-1/2 -translate-x-1/2 whitespace-nowrap">مراحل تقييم الوجبة</h1>
+            <h1 className="text-base font-bold text-ink absolute left-1/2 -translate-x-1/2 whitespace-nowrap">مراحل تقييم الوجبة</h1>
             <div className="w-10" />
           </div>
         </header>
@@ -408,16 +419,16 @@ export default function SupMealcheck() {
         <div className="max-w-xl mx-auto px-4 space-y-4">
           {restored && (
             <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3">
-              <RotateCcw size={14} className="text-blue-500 flex-shrink-0" strokeWidth={2} />
+              <RotateCcw size={14} className="text-blue-500 flex-shrink-0" weight="regular" />
               <p className="text-blue-700 text-[12px] font-bold flex-1">تم استعادة تقدمك من الجلسة السابقة</p>
               <button onClick={clearProgress} className="text-blue-400 hover:text-blue-600 text-[11px] font-bold underline flex-shrink-0">مسح</button>
             </div>
           )}
 
-          <div className="rounded-[2rem] p-6 text-white bg-[#2D2926] shadow-lg">
+          <div className="rounded-[2rem] p-6 text-white bg-ink shadow-lg">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: `${meta.color}22` }}>
-                <meta.icon size={22} weight="duotone" style={{ color: meta.color }} />
+                <meta.icon size={22} weight="regular" style={{ color: meta.color }} />
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: meta.color }}>{meta.label} — {selectedTask.scheduledDate}</p>
@@ -430,14 +441,14 @@ export default function SupMealcheck() {
                 <p className="text-white/70 text-[11px] font-bold">{completedCount} / {totalPhases}</p>
               </div>
               <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full bg-[#A98159] rounded-full transition-all duration-500"
+                <div className="h-full bg-primary rounded-full transition-all duration-500"
                   style={{ width: `${(completedCount / totalPhases) * 100}%` }} />
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2">
               {[
                 { lbl: 'المشرف',  val: profile?.nameAr || profile?.name, cls: 'text-white' },
-                { lbl: 'المركز',  val: centerId,                          cls: 'text-[#A98159]' },
+                { lbl: 'المركز',  val: centerId,                          cls: 'text-primary' },
                 { lbl: 'المتعهد', val: catererName,                       cls: 'text-white' },
               ].map(c => (
                 <div key={c.lbl} className="bg-white/5 rounded-xl px-2 py-2 border border-white/10 text-center">
@@ -461,21 +472,21 @@ export default function SupMealcheck() {
                   isDone
                     ? 'bg-gradient-to-br from-green-50 via-white to-emerald-50/40 border-green-300 shadow-[0_6px_20px_rgba(34,197,94,0.18)]'
                     : isUnlocked
-                      ? 'bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 border-[#EDE5DC] hover:border-[#A98159]/40 hover:shadow-[0_6px_20px_rgba(169,129,89,0.15)]'
+                      ? 'bg-gradient-to-br from-white via-white to-background/40 border-line hover:border-primary/40 hover:shadow-[0_6px_20px_rgb(var(--c-primary)/0.15)]'
                       : 'bg-gradient-to-br from-gray-50 to-gray-100/40 border-gray-200 opacity-60'
                 }`}>
                   {(isDone || isUnlocked) && (
                     <div className="absolute top-0 right-0 left-0 h-1"
                       style={{ background: isDone
                         ? 'linear-gradient(90deg, #16A34A, #22C55E, #16A34A)'
-                        : 'linear-gradient(90deg, transparent, #A98159, transparent)' }} />
+                        : 'linear-gradient(90deg, transparent, rgb(var(--c-primary)), transparent)' }} />
                   )}
                   <input ref={ref} type="file" accept="image/*" capture="environment" className="hidden"
                     disabled={!isUnlocked} onChange={e => handlePhotoChange(phase.id, e.target.files[0])} />
                   <div className="flex items-center gap-4">
                     <div className="relative flex-shrink-0">
                       {isUnlocked && !isDone && (
-                        <div className="absolute inset-0 rounded-2xl blur-md bg-[#A98159] opacity-0 group-hover/phase:opacity-50 transition-opacity" />
+                        <div className="absolute inset-0 rounded-2xl blur-md bg-primary opacity-0 group-hover/phase:opacity-50 transition-opacity" />
                       )}
                       {isDone && (
                         <div className="absolute inset-0 rounded-2xl blur-md bg-green-400 opacity-40" />
@@ -484,26 +495,26 @@ export default function SupMealcheck() {
                         isDone
                           ? 'bg-gradient-to-br from-green-500 to-emerald-600 shadow-md group-hover/phase:scale-110'
                           : isUnlocked
-                            ? 'bg-gradient-to-br from-[#FDF8F0] to-[#F3EAE0] border-2 border-[#A98159]/25 group-hover/phase:scale-110 group-hover/phase:rotate-3'
+                            ? 'bg-gradient-to-br from-background to-primary-100 border-2 border-primary/25 group-hover/phase:scale-110 group-hover/phase:rotate-3'
                             : 'bg-gray-100 border border-gray-200'
                       }`}>
                         {isDone
-                          ? <CheckCircle2 size={26} className="text-white" strokeWidth={2.5} />
+                          ? <CheckCircle2 size={26} className="text-white" weight="bold" />
                           : isUnlocked
-                            ? <span className="text-[#A98159] font-black text-xl tabular-nums">{stepNum}</span>
-                            : <Lock size={20} className="text-gray-300" strokeWidth={1.5} />}
+                            ? <span className="text-primary font-black text-xl tabular-nums">{stepNum}</span>
+                            : <Lock size={20} className="text-gray-300" weight="light" />}
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`font-bold text-base ${isDone ? 'text-green-700' : isUnlocked ? 'text-[#2D2926]' : 'text-gray-400'}`}>
+                      <p className={`font-bold text-base ${isDone ? 'text-green-700' : isUnlocked ? 'text-ink' : 'text-gray-400'}`}>
                         {phase.label}
                       </p>
                       {isDone
                         ? <p className="text-[11px] text-green-600 font-semibold mt-1 flex items-center gap-1.5">
-                            <CheckCircle2 size={12} strokeWidth={2.5} />
+                            <CheckCircle2 size={12} weight="bold" />
                             {isRestored ? 'تم توثيق هذه المرحلة في جلسة سابقة' : `تم رفع الصورة — ${phasePhotos[phase.id]?.name}`}
                           </p>
-                        : <p className="text-[11px] text-[#9D8F85] mt-1 flex items-center gap-1.5">
+                        : <p className="text-[11px] text-muted mt-1 flex items-center gap-1.5">
                             {!isUnlocked && <Lock size={10} className="text-gray-300" />}
                             {isUnlocked ? phase.desc : 'أكمل المرحلة السابقة أولاً'}
                           </p>
@@ -515,13 +526,13 @@ export default function SupMealcheck() {
                         className={`flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all disabled:opacity-70 disabled:cursor-wait ${
                           isDone
                             ? 'bg-white border-2 border-green-300 text-green-600 hover:bg-green-50 hover:border-green-400'
-                            : 'text-white shadow-[0_4px_14px_rgba(169,129,89,0.4)] active:scale-95 hover:shadow-[0_6px_20px_rgba(169,129,89,0.5)]'
+                            : 'text-white shadow-[0_4px_14px_rgb(var(--c-primary)/0.4)] active:scale-95 hover:shadow-[0_6px_20px_rgb(var(--c-primary)/0.5)]'
                         }`}
-                        style={isDone ? undefined : { background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}
+                        style={isDone ? undefined : { background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}
                       >
                         {isUploading
-                          ? <><Loader2 size={14} className="animate-spin" strokeWidth={2.5} /> جارٍ الرفع...</>
-                          : <><Camera size={14} strokeWidth={2.5} /> {isDone ? 'تغيير' : 'رفع صورة'}</>}
+                          ? <><Loader2 size={14} className="animate-spin" weight="bold" /> جارٍ الرفع...</>
+                          : <><Camera size={14} weight="bold" /> {isDone ? 'تغيير' : 'رفع صورة'}</>}
                       </button>
                     )}
                   </div>
@@ -531,22 +542,22 @@ export default function SupMealcheck() {
           </div>
         </div>
 
-        <div className="fixed bottom-0 left-0 right-0 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-white/90 backdrop-blur-md border-t border-[#D1C4B9] z-50">
+        <div className="fixed bottom-0 left-0 right-0 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-white/90 backdrop-blur-md border-t border-line z-50">
           <div className="max-w-xl mx-auto">
             {!allPhasesComplete && (
-              <p className="text-center text-[11px] text-[#9D8F85] font-semibold mb-2">
+              <p className="text-center text-[11px] text-muted font-semibold mb-2">
                 ارفع صورة لكل مرحلة لتتمكن من بدء التقييم
               </p>
             )}
             <button onClick={() => setScreen('questions')} disabled={!allPhasesComplete}
               className={`min-h-[56px] w-full py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-3 transition-all duration-300 ${
                 allPhasesComplete
-                  ? 'text-white shadow-[0_8px_28px_rgba(169,129,89,0.4)] hover:shadow-[0_10px_36px_rgba(169,129,89,0.5)] active:scale-95'
+                  ? 'text-white shadow-[0_8px_28px_rgb(var(--c-primary)/0.4)] hover:shadow-[0_10px_36px_rgb(var(--c-primary)/0.5)] active:scale-95'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
-              style={allPhasesComplete ? { background: 'linear-gradient(135deg, #C4A46E 0%, #A98159 50%, #8B6840 100%)' } : undefined}>
+              style={allPhasesComplete ? { background: 'linear-gradient(135deg, rgb(var(--c-primary-400)) 0%, rgb(var(--c-primary)) 50%, rgb(var(--c-primary-700)) 100%)' } : undefined}>
               {allPhasesComplete
-                ? <>بدء التقييم <ArrowLeft size={18} strokeWidth={2.5} /></>
+                ? <>بدء التقييم <ArrowLeft size={18} weight="bold" /></>
                 : <>{totalPhases - completedCount} مراحل متبقية</>}
             </button>
           </div>
@@ -557,13 +568,13 @@ export default function SupMealcheck() {
 
   const answeredCount = Object.keys(answers).length;
   return (
-    <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-32 font-arabic">
-      <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 py-3 mb-6 shadow-sm">
+    <div dir="rtl" className="min-h-screen bg-canvas pb-32 font-arabic">
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-line w-full px-4 py-3 mb-6 shadow-sm">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <button onClick={() => setScreen('phases')} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition">
-            <ChevronRight className="text-[#A98159]" size={22} strokeWidth={2.5} />
+            <ChevronRight className="text-primary" size={22} weight="bold" />
           </button>
-          <h1 className="text-base font-bold text-[#2D2926] absolute left-1/2 -translate-x-1/2 whitespace-nowrap">تقييم جودة الوجبات</h1>
+          <h1 className="text-base font-bold text-ink absolute left-1/2 -translate-x-1/2 whitespace-nowrap">تقييم جودة الوجبات</h1>
           <div className="w-10" />
         </div>
       </header>
@@ -571,15 +582,15 @@ export default function SupMealcheck() {
       <div className="max-w-4xl mx-auto px-4 space-y-6">
         {restored && answeredCount > 0 && (
           <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3">
-            <RotateCcw size={14} className="text-blue-500 flex-shrink-0" strokeWidth={2} />
+            <RotateCcw size={14} className="text-blue-500 flex-shrink-0" weight="regular" />
             <p className="text-blue-700 text-[12px] font-bold">تم استعادة {answeredCount} إجابة محفوظة</p>
           </div>
         )}
 
-        <div className="rounded-[2.5rem] p-6 text-white shadow-lg bg-[#2D2926]">
+        <div className="rounded-[2.5rem] p-6 text-white shadow-lg bg-ink">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: `${meta.color}22` }}>
-              <meta.icon size={22} weight="duotone" style={{ color: meta.color }} />
+              <meta.icon size={22} weight="regular" style={{ color: meta.color }} />
             </div>
             <div>
               <h2 className="text-xl font-bold">{QUESTIONS.length} معياراً للجودة</h2>
@@ -589,14 +600,14 @@ export default function SupMealcheck() {
           <div className="flex items-center gap-2 mb-4 flex-wrap">
             {phases.map(p => (
               <span key={p.id} className="flex items-center gap-1 bg-green-500/20 text-green-300 text-[10px] font-bold px-2.5 py-1 rounded-full border border-green-500/30">
-                <CheckCircle2 size={10} strokeWidth={2.5} /> {p.label}
+                <CheckCircle2 size={10} weight="bold" /> {p.label}
               </span>
             ))}
           </div>
           <div className="grid grid-cols-3 gap-2">
             {[
               { lbl: 'المشرف',  val: profile?.nameAr || '—', cls: 'text-white' },
-              { lbl: 'المركز',  val: centerId || '—',         cls: 'text-[#A98159]' },
+              { lbl: 'المركز',  val: centerId || '—',         cls: 'text-primary' },
               { lbl: 'المتعهد', val: catererName || '—',      cls: 'text-white' },
             ].map(c => (
               <div key={c.lbl} className="bg-white/5 rounded-xl px-2 py-2 border border-white/10 text-center">
@@ -620,18 +631,18 @@ export default function SupMealcheck() {
               <React.Fragment key={q.id}>
                 {isFirstInCategory && (
                   <div className="col-span-full pt-6 pb-3 flex items-center gap-3">
-                    <div className="flex-grow h-px bg-gradient-to-l from-transparent via-[#A98159]/40 to-transparent" />
-                    <span className="px-5 py-2 rounded-full text-white text-xs font-black shadow-[0_4px_14px_rgba(169,129,89,0.35)]"
-                      style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
+                    <div className="flex-grow h-px bg-gradient-to-l from-transparent via-primary/40 to-transparent" />
+                    <span className="px-5 py-2 rounded-full text-white text-xs font-black shadow-[0_4px_14px_rgb(var(--c-primary)/0.35)]"
+                      style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
                       {q.category}
                     </span>
-                    <div className="flex-grow h-px bg-gradient-to-r from-transparent via-[#A98159]/40 to-transparent" />
+                    <div className="flex-grow h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
                   </div>
                 )}
-                <div className={`group/q relative bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-3xl shadow-[0_2px_12px_rgba(45,41,38,0.05)] overflow-hidden transition-all duration-300 ${
+                <div className={`group/q relative bg-gradient-to-br from-white via-white to-background/40 rounded-3xl shadow-[0_2px_12px_rgb(var(--c-ink)/0.05)] overflow-hidden transition-all duration-300 ${
                   ans
-                    ? 'border-2 border-[#A98159]/40 shadow-[0_6px_24px_rgba(169,129,89,0.18)]'
-                    : 'border border-[#EDE5DC] hover:shadow-[0_4px_18px_rgba(45,41,38,0.08)]'
+                    ? 'border-2 border-primary/40 shadow-[0_6px_24px_rgb(var(--c-primary)/0.18)]'
+                    : 'border border-line hover:shadow-[0_4px_18px_rgb(var(--c-ink)/0.08)]'
                 }`}>
                   {ans && (
                     <div className="absolute top-0 right-0 left-0 h-1"
@@ -642,9 +653,9 @@ export default function SupMealcheck() {
                   <div className="p-5">
                     <div className="flex items-start gap-3 mb-3">
                       <div className="relative flex-shrink-0">
-                        <div className="absolute inset-0 rounded-2xl blur-md bg-[#A98159] opacity-30 group-hover/q:opacity-50 transition-opacity" />
+                        <div className="absolute inset-0 rounded-2xl blur-md bg-primary opacity-30 group-hover/q:opacity-50 transition-opacity" />
                         <div className="relative w-10 h-10 rounded-2xl flex items-center justify-center text-white font-black text-sm shadow-md tabular-nums"
-                          style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
+                          style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
                           {q.id}
                         </div>
                       </div>
@@ -652,12 +663,12 @@ export default function SupMealcheck() {
                         {ans && (
                           <div className="mb-1.5">
                             <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-green-50 border border-green-200 text-green-700">
-                              <CheckCircle2 size={9} strokeWidth={2.5} />
+                              <CheckCircle2 size={9} weight="bold" />
                               مُجاب
                             </span>
                           </div>
                         )}
-                        <p className="text-[#2D2926] font-bold text-[15px] leading-relaxed">{q.text}</p>
+                        <p className="text-ink font-bold text-[15px] leading-relaxed">{q.text}</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -665,8 +676,8 @@ export default function SupMealcheck() {
                         onClick={() => handleAnswer(q.id, 'نعم')}
                         className={`min-h-[52px] py-3.5 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-2.5 active:scale-[0.98] ${
                           isYes
-                            ? `text-white scale-[1.02] shadow-[0_6px_20px_${yesGood ? 'rgba(56,107,65,0.4)' : 'rgba(186,26,26,0.4)'}]`
-                            : 'bg-white text-[#6D6E71] border-2 border-[#E8DDD4] hover:border-[#A98159]/40 hover:bg-[#FDF8F0]'
+                            ? `text-white scale-[1.02] shadow-[0_6px_20px_${yesGood ? 'rgb(var(--c-success) / 0.4)' : 'rgb(var(--c-error) / 0.4)'}]`
+                            : 'bg-white text-muted border-2 border-line hover:border-primary/40 hover:bg-background'
                         }`}
                         style={isYes ? {
                           background: yesGood
@@ -674,8 +685,8 @@ export default function SupMealcheck() {
                             : 'linear-gradient(135deg, #DC2626, #B91C1C)'
                         } : undefined}
                       >
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-transform ${isYes ? 'bg-white/25 scale-110' : 'bg-[#386B41]/10'}`}>
-                          <CheckCircle2 size={16} strokeWidth={2.5} className={isYes ? 'text-white' : 'text-[#386B41]'} />
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-transform ${isYes ? 'bg-white/25 scale-110' : 'bg-success/10'}`}>
+                          <CheckCircle2 size={16} weight="bold" className={isYes ? 'text-white' : 'text-success'} />
                         </div>
                         <span className="text-[15px]">نعم</span>
                       </button>
@@ -683,8 +694,8 @@ export default function SupMealcheck() {
                         onClick={() => handleAnswer(q.id, 'لا')}
                         className={`min-h-[52px] py-3.5 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-2.5 active:scale-[0.98] ${
                           isNo
-                            ? `text-white scale-[1.02] shadow-[0_6px_20px_${noGood ? 'rgba(56,107,65,0.4)' : 'rgba(186,26,26,0.4)'}]`
-                            : 'bg-white text-[#6D6E71] border-2 border-[#E8DDD4] hover:border-red-300 hover:bg-red-50/30'
+                            ? `text-white scale-[1.02] shadow-[0_6px_20px_${noGood ? 'rgb(var(--c-success) / 0.4)' : 'rgb(var(--c-error) / 0.4)'}]`
+                            : 'bg-white text-muted border-2 border-line hover:border-red-300 hover:bg-red-50/30'
                         }`}
                         style={isNo ? {
                           background: noGood
@@ -692,8 +703,8 @@ export default function SupMealcheck() {
                             : 'linear-gradient(135deg, #DC2626, #B91C1C)'
                         } : undefined}
                       >
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-transform ${isNo ? 'bg-white/25 scale-110' : 'bg-[#BA1A1A]/10'}`}>
-                          <Ban size={16} strokeWidth={2.5} className={isNo ? 'text-white' : 'text-[#BA1A1A]'} />
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-transform ${isNo ? 'bg-white/25 scale-110' : 'bg-error/10'}`}>
+                          <Ban size={16} weight="bold" className={isNo ? 'text-white' : 'text-error'} />
                         </div>
                         <span className="text-[15px]">لا</span>
                       </button>
@@ -712,7 +723,7 @@ export default function SupMealcheck() {
                             <img src={qPhotos[q.id]} alt="" className="w-14 h-14 rounded-lg object-cover border border-green-300" />
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-black text-green-700 flex items-center gap-1.5">
-                                <CheckCircle2 size={13} strokeWidth={2.5} /> تم رفع الصورة
+                                <CheckCircle2 size={13} weight="bold" /> تم رفع الصورة
                               </p>
                               <p className="text-[10px] text-green-600 mt-0.5">اضغط للتغيير</p>
                             </div>
@@ -723,7 +734,7 @@ export default function SupMealcheck() {
                               </button>
                               <button onClick={() => removeQPhoto(q.id)}
                                 className="w-7 h-7 rounded-lg flex items-center justify-center text-red-500 bg-white border border-red-200 hover:bg-red-50">
-                                <X size={13} strokeWidth={2.5} />
+                                <X size={13} weight="bold" />
                               </button>
                             </div>
                           </div>
@@ -731,11 +742,11 @@ export default function SupMealcheck() {
                           <button
                             onClick={() => !qPhotoUploading[q.id] && qPhotoInputRefs.current[q.id]?.click()}
                             disabled={qPhotoUploading[q.id]}
-                            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-[#A98159]/40 bg-[#FDF8F0] text-[#A98159] font-bold text-sm hover:bg-[#FDF1E0] hover:border-[#A98159] transition-all disabled:opacity-60 disabled:cursor-wait"
+                            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-primary/40 bg-background text-primary font-bold text-sm hover:bg-primary-50 hover:border-primary transition-all disabled:opacity-60 disabled:cursor-wait"
                           >
                             {qPhotoUploading[q.id]
                               ? <><Loader2 size={16} className="animate-spin" /> جارٍ رفع الصورة...</>
-                              : <><Camera size={16} strokeWidth={2.25} /> رفع صورة مرفقة (مطلوبة)</>}
+                              : <><Camera size={16} weight="bold" /> رفع صورة مرفقة (مطلوبة)</>}
                           </button>
                         )}
                       </div>
@@ -748,18 +759,18 @@ export default function SupMealcheck() {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-white/90 backdrop-blur-md border-t border-[#D1C4B9] z-50">
+      <div className="fixed bottom-0 left-0 right-0 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-white/90 backdrop-blur-md border-t border-line z-50">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-2 px-1">
-            <span className="text-[11px] text-[#9D8F85] font-semibold">{answeredCount} / {QUESTIONS.length} سؤال</span>
-            <span className="text-[11px] text-[#A98159] font-bold">{Math.round((answeredCount / QUESTIONS.length) * 100)}%</span>
+            <span className="text-[11px] text-muted font-semibold">{answeredCount} / {QUESTIONS.length} سؤال</span>
+            <span className="text-[11px] text-primary font-bold">{Math.round((answeredCount / QUESTIONS.length) * 100)}%</span>
           </div>
           <div className="h-1.5 bg-gray-100 rounded-full mb-3 overflow-hidden">
-            <div className="h-full bg-[#A98159] rounded-full transition-all duration-300"
+            <div className="h-full bg-primary rounded-full transition-all duration-300"
               style={{ width: `${(answeredCount / QUESTIONS.length) * 100}%` }} />
           </div>
           <button onClick={handleSubmit} disabled={loadingSubmit}
-            className="w-full bg-[#A98159] text-white py-4 rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-3 active:scale-95 transition-all disabled:bg-gray-400">
+            className="w-full bg-primary text-white py-4 rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-3 active:scale-95 transition-all disabled:bg-gray-400">
             <Save size={20} />
             {loadingSubmit ? 'جاري الإرسال...' : 'حفظ وإرسال التقرير النهائي'}
           </button>

@@ -10,28 +10,39 @@ import { MEAL_QUESTIONS } from '../../config/mealQuestions.js';
 import { MINA_ALL_CRITERIA } from '../../config/minaQuestions.js';
 import { ARAFAT_ALL_CRITERIA } from '../../config/arafatQuestions.js';
 import {
-  Printer, X, FileText, Building2, Calendar, User, AlertCircle, CheckCircle2,
-  Utensils, Mountain, AlertTriangle, Truck,
-} from 'lucide-react';
-import logoSrc from '../../assets/logo-color.svg';
+  Printer,
+  X,
+  FileText,
+  Buildings as Building2,
+  CalendarBlank as Calendar,
+  User,
+  WarningCircle as AlertCircle,
+  CheckCircle as CheckCircle2,
+  ForkKnife as Utensils,
+  Mountains as Mountain,
+  Warning as AlertTriangle,
+  Truck,
+} from '@phosphor-icons/react';
+const logoSrc = BRAND.logo.color;
 import './report-view.css';
+import { BRAND } from '../../config/brand.js';
 
 const REPORT_TYPES = {
   meal_evaluations: {
     label: 'تقييم جودة الوجبات', short: 'الوجبات',
-    color: '#A98159', accent: '#FDF8F0', border: '#E8DDD4',
+    color: 'rgb(var(--c-primary))', accent: 'rgb(var(--c-bg))', border: 'rgb(var(--c-line))',
     Icon: Utensils,
     intro: 'جودة وسلامة الوجبات المُقدّمة في المراكز',
   },
   mina_readiness: {
     label: 'جاهزية مشعر منى', short: 'منى',
-    color: '#2F855A', accent: '#F0FDF4', border: '#BBF7D0',
+    color: '#16A34A', accent: '#F0FDF4', border: '#BBF7D0',
     Icon: Mountain,
     intro: 'جاهزية المطابخ والتجهيزات في مشعر منى',
   },
   arafat_readiness: {
     label: 'جاهزية مشعر عرفة', short: 'عرفة',
-    color: '#0987A0', accent: '#ECFEFF', border: '#A5F3FC',
+    color: '#0891B2', accent: '#ECFEFF', border: '#A5F3FC',
     Icon: Mountain,
     intro: 'جاهزية المطابخ والتجهيزات في مشعر عرفة',
   },
@@ -43,7 +54,7 @@ const REPORT_TYPES = {
   },
   logistics_requests: {
     label: 'طلبات الإسناد', short: 'الإسناد',
-    color: '#3B82F6', accent: '#EFF6FF', border: '#BFDBFE',
+    color: '#06B6D4', accent: '#EFF6FF', border: '#BFDBFE',
     Icon: Truck,
     intro: 'طلبات الدعم اللوجستي للوجبات والمياه',
   },
@@ -265,21 +276,21 @@ function Toolbar() {
     <div className="report-toolbar no-print">
       <button
         onClick={() => window.print()}
-        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-bold text-sm shadow-[0_4px_16px_rgba(169,129,89,0.35)] hover:shadow-[0_6px_24px_rgba(169,129,89,0.45)] transition-shadow"
-        style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}
+        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-bold text-sm shadow-[0_4px_16px_rgb(var(--c-primary)/0.35)] hover:shadow-[0_6px_24px_rgb(var(--c-primary)/0.45)] transition-shadow"
+        style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}
       >
-        <Printer size={16} strokeWidth={2.25} />
+        <Printer size={16} weight="bold" />
         اطبع / احفظ PDF
       </button>
       <button
         onClick={() => window.close()}
-        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#EDE5DC] bg-white text-[#6D6E71] font-bold text-sm hover:bg-[#FDF8F0] hover:border-[#A98159] transition-colors"
+        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-line bg-white text-muted font-bold text-sm hover:bg-background hover:border-primary transition-colors"
       >
-        <X size={14} strokeWidth={2.25} />
+        <X size={14} weight="bold" />
         إغلاق
       </button>
-      <div className="text-xs text-[#9D8F85] mr-auto leading-relaxed max-w-md">
-        💡 عند الطباعة، فعّل خيار <span className="font-bold text-[#A98159]">«Background graphics»</span> في إعدادات المتصفح ليطبع التنسيق الملوّن.
+      <div className="text-xs text-muted mr-auto leading-relaxed max-w-md">
+        💡 عند الطباعة، فعّل خيار <span className="font-bold text-primary">«Background graphics»</span> في إعدادات المتصفح ليطبع التنسيق الملوّن.
       </div>
     </div>
   );
@@ -289,8 +300,8 @@ function LoadingCard() {
   return (
     <article className="report-page-card flex items-center justify-center text-center">
       <div>
-        <div className="w-12 h-12 border-4 border-[#EDE5DC] border-t-[#A98159] rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-[#6D6E71] text-lg font-medium">جارٍ تحضير التقرير...</p>
+        <div className="w-12 h-12 border-4 border-line border-t-primary rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-muted text-lg font-medium">جارٍ تحضير التقرير...</p>
       </div>
     </article>
   );
@@ -302,9 +313,9 @@ function ErrorCard({ message }) {
       <div>
         <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3"
           style={{ background: 'linear-gradient(135deg, #FEE2E2, #FECACA)' }}>
-          <AlertCircle size={26} className="text-red-500" strokeWidth={2} />
+          <AlertCircle size={26} className="text-red-500" weight="regular" />
         </div>
-        <p className="text-[#6D6E71] text-base font-medium">{message}</p>
+        <p className="text-muted text-base font-medium">{message}</p>
       </div>
     </article>
   );
@@ -333,33 +344,33 @@ function CoverPage({ centerFilter, dateFilter, types, totals }) {
       {/* Top brand band */}
       <div
         className="rounded-2xl p-7 text-white shadow-md relative overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, #C4A46E 0%, #A98159 60%, #8B6840 100%)' }}
+        style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)) 0%, rgb(var(--c-primary)) 60%, rgb(var(--c-primary-700)) 100%)' }}
       >
         <div className="absolute top-0 right-0 w-48 h-48 rounded-full opacity-20"
           style={{ background: 'radial-gradient(circle, #fff 0%, transparent 70%)', transform: 'translate(40%, -50%)' }} />
         <div className="flex items-center gap-5 relative">
           <div className="bg-white rounded-2xl p-3 shadow-md flex-shrink-0">
-            <img src={logoSrc} alt="ضيوف البيت" className="w-20 h-auto" />
+            <img src={logoSrc} alt={BRAND.companyName} className="w-20 h-auto" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold mb-1">ضيوف البيت</h1>
-            <p className="text-white/85 text-sm font-medium">لجنة التغذية</p>
+            <h1 className="text-3xl font-bold mb-1">{BRAND.companyName}</h1>
+            <p className="text-white/85 text-sm font-medium"></p>
           </div>
         </div>
       </div>
 
       {/* Center title */}
       <div className="flex-1 flex flex-col items-center justify-center text-center py-10">
-        <p className="text-sm text-[#9D8F85] font-semibold mb-2">تقرير</p>
-        <h2 className="text-4xl font-bold text-[#2D2926] mb-3">الرقابة الميدانية</h2>
+        <p className="text-sm text-muted font-semibold mb-2">تقرير</p>
+        <h2 className="text-4xl font-bold text-ink mb-3">الرقابة الميدانية</h2>
         <div className="flex items-center gap-2 mb-8">
-          <span className="w-2 h-2 rounded-full bg-[#A98159]" />
-          <p className="text-base text-[#A98159] font-bold">موسم الحج ١٤٤٧ هـ</p>
-          <span className="w-2 h-2 rounded-full bg-[#A98159]" />
+          <span className="w-2 h-2 rounded-full bg-primary" />
+          <p className="text-base text-primary font-bold"></p>
+          <span className="w-2 h-2 rounded-full bg-primary" />
         </div>
 
         {/* Filters summary card */}
-        <div className="bg-[#FDF8F0] border-2 border-[#E8DDD4] rounded-2xl p-6 max-w-xl w-full text-right shadow-sm">
+        <div className="bg-background border-2 border-line rounded-2xl p-6 max-w-xl w-full text-right shadow-sm">
           <div className="space-y-3.5">
             <Row Icon={Building2} label="المركز" value={centerLabel} />
             <Row Icon={FileText}  label="اسم المتعهد" value={contractor} />
@@ -375,23 +386,23 @@ function CoverPage({ centerFilter, dateFilter, types, totals }) {
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-3 mb-6">
-        <StatBlock label="إجمالي السجلات" value={totals.total} accent="#A98159" />
+        <StatBlock label="إجمالي السجلات" value={totals.total} accent="rgb(var(--c-primary))" />
         {types.map(t => (
           <StatBlock
             key={t}
             label={REPORT_TYPES[t]?.label.replace('جاهزية ', '').replace('تقييم جودة الوجبات', 'الوجبات').replace('مشعر ', '')}
             value={totals.perType[t] ?? 0}
-            accent={REPORT_TYPES[t]?.color || '#A98159'}
+            accent={REPORT_TYPES[t]?.color || 'rgb(var(--c-primary))'}
           />
         ))}
       </div>
 
       {/* Footer */}
-      <div className="border-t border-[#EDE5DC] pt-4 text-xs text-[#9D8F85] flex justify-between">
+      <div className="border-t border-line pt-4 text-xs text-muted flex justify-between">
         <span>
-          <span className="font-bold text-[#2D2926]">تاريخ الإصدار:</span> {generatedAt}
+          <span className="font-bold text-ink">تاريخ الإصدار:</span> {generatedAt}
         </span>
-        <span className="font-bold text-[#A98159]">منظومة المراقبة الميدانية</span>
+        <span className="font-bold text-primary">{BRAND.tagline}</span>
       </div>
     </article>
   );
@@ -400,12 +411,12 @@ function CoverPage({ centerFilter, dateFilter, types, totals }) {
 function Row({ Icon, label, value }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="w-7 h-7 rounded-lg bg-[#A98159]/10 border border-[#A98159]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-        <Icon size={13} className="text-[#A98159]" strokeWidth={2} />
+      <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <Icon size={13} className="text-primary" weight="regular" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[11px] text-[#9D8F85] font-semibold">{label}</p>
-        <p className="text-sm text-[#2D2926] font-bold leading-snug">{value || '—'}</p>
+        <p className="text-[11px] text-muted font-semibold">{label}</p>
+        <p className="text-sm text-ink font-bold leading-snug">{value || '—'}</p>
       </div>
     </div>
   );
@@ -417,7 +428,7 @@ function StatBlock({ label, value, accent }) {
       className="rounded-xl p-3.5 text-center border"
       style={{ borderColor: `${accent}40`, background: `${accent}10` }}
     >
-      <p className="text-[11px] text-[#9D8F85] font-semibold mb-1">{label}</p>
+      <p className="text-[11px] text-muted font-semibold mb-1">{label}</p>
       <p className="text-3xl font-bold tabular-nums" style={{ color: accent }}>
         {value}
       </p>
@@ -457,7 +468,7 @@ function TypeCoverPage({ type, records, centers }) {
           style={{ background: 'radial-gradient(circle, #fff 0%, transparent 70%)', transform: 'translate(40%, -50%)' }} />
         <div className="flex items-center gap-4 relative">
           <div className="bg-white rounded-2xl p-2.5 shadow-md flex-shrink-0">
-            <img src={logoSrc} alt="ضيوف البيت" className="w-16 h-auto" />
+            <img src={logoSrc} alt={BRAND.companyName} className="w-16 h-auto" />
           </div>
           <div>
             <p className="text-white/85 text-xs font-bold uppercase tracking-widest">قسم التقارير</p>
@@ -476,36 +487,36 @@ function TypeCoverPage({ type, records, centers }) {
             className="relative w-28 h-28 rounded-3xl flex items-center justify-center shadow-lg"
             style={{ background: `linear-gradient(135deg, ${meta.color}, ${meta.color}DD)` }}
           >
-            <TypeIcon size={56} className="text-white" strokeWidth={1.75} />
+            <TypeIcon size={56} className="text-white" weight="regular" />
           </div>
         </div>
 
-        <p className="text-sm text-[#9D8F85] font-semibold mb-2">قسم</p>
+        <p className="text-sm text-muted font-semibold mb-2">قسم</p>
         <h1
           className="text-6xl md:text-7xl leading-none font-bold mb-3"
           style={{ color: meta.color }}
         >
           {meta.short}
         </h1>
-        <p className="text-base text-[#6D6E71] font-medium max-w-md">{meta.intro}</p>
+        <p className="text-base text-muted font-medium max-w-md">{meta.intro}</p>
 
         {/* Stats strip */}
         <div className="mt-10 bg-white border-2 rounded-2xl px-6 py-5 inline-flex gap-8 items-center shadow-sm"
           style={{ borderColor: `${meta.color}33` }}>
           <div className="text-center">
-            <p className="text-xs text-[#9D8F85] font-semibold mb-1">عدد السجلات</p>
+            <p className="text-xs text-muted font-semibold mb-1">عدد السجلات</p>
             <p className="text-3xl font-bold tabular-nums" style={{ color: meta.color }}>{totalRecs}</p>
           </div>
           <div className="w-px h-14" style={{ background: `${meta.color}22` }} />
           <div className="text-center">
-            <p className="text-xs text-[#9D8F85] font-semibold mb-1">عدد المراكز</p>
+            <p className="text-xs text-muted font-semibold mb-1">عدد المراكز</p>
             <p className="text-3xl font-bold tabular-nums" style={{ color: meta.color }}>{totalCenters}</p>
           </div>
           {avgScore != null && (
             <>
               <div className="w-px h-14" style={{ background: `${meta.color}22` }} />
               <div className="text-center">
-                <p className="text-xs text-[#9D8F85] font-semibold mb-1">متوسط الدرجة</p>
+                <p className="text-xs text-muted font-semibold mb-1">متوسط الدرجة</p>
                 <p className="text-3xl font-bold tabular-nums" style={{ color: meta.color }}>
                   {avgScore}<span className="text-base">/10</span>
                 </p>
@@ -532,15 +543,15 @@ function TypeCoverPage({ type, records, centers }) {
 
       {/* Centers chip list */}
       {centers.length > 0 && (
-        <div className="rounded-2xl border border-[#EDE5DC] bg-[#FDF8F0]/50 p-4 mb-4">
-          <p className="text-xs text-[#9D8F85] font-bold mb-2.5 flex items-center gap-1.5">
-            <Building2 size={12} className="text-[#A98159]" strokeWidth={2} />
+        <div className="rounded-2xl border border-line bg-background/50 p-4 mb-4">
+          <p className="text-xs text-muted font-bold mb-2.5 flex items-center gap-1.5">
+            <Building2 size={12} className="text-primary" weight="regular" />
             المراكز المشمولة في هذا القسم
           </p>
           <div className="flex flex-wrap gap-1.5">
             {centers.map(c => (
               <span key={c}
-                className="text-[11px] font-bold px-2.5 py-1 rounded-full border text-[#2D2926] bg-white"
+                className="text-[11px] font-bold px-2.5 py-1 rounded-full border text-ink bg-white"
                 style={{ borderColor: `${meta.color}40` }}>
                 {c}
               </span>
@@ -550,9 +561,9 @@ function TypeCoverPage({ type, records, centers }) {
       )}
 
       {/* Footer */}
-      <div className="border-t border-[#EDE5DC] pt-4 text-xs text-[#9D8F85] flex justify-between">
-        <span className="font-bold text-[#A98159]">لجنة التغذية | ضيوف البيت</span>
-        <span>موسم الحج ١٤٤٧ هـ</span>
+      <div className="border-t border-line pt-4 text-xs text-muted flex justify-between">
+        <span className="font-bold text-primary">{BRAND.productName}</span>
+        <span></span>
       </div>
     </article>
   );
@@ -633,7 +644,7 @@ function RecordsTable({ type, records, accent }) {
   const isMeal = type === 'meal_evaluations';
 
   return (
-    <div className="rounded-2xl border border-[#EDE5DC] overflow-hidden">
+    <div className="rounded-2xl border border-line overflow-hidden">
       <table className="w-full text-xs">
         <thead style={{ background: accent, color: '#fff' }}>
           <tr>
@@ -653,17 +664,17 @@ function RecordsTable({ type, records, accent }) {
             const no  = Object.values(ans).filter(v => v === 'لا').length;
             const s   = getRecordScore(rec);
             return (
-              <tr key={rec.id} style={{ background: i % 2 === 0 ? '#fff' : '#FDF8F0' }}
-                className="border-b border-[#EDE5DC] last:border-b-0">
-                <td className="px-4 py-2.5 font-bold text-[#2D2926]">{rec.observer ?? rec.observerName ?? '—'}</td>
-                <td className="px-4 py-2.5 text-[#6D6E71]">{rec.scheduled_date ?? rec.scheduledDate ?? '—'}</td>
-                {isMeal && <td className="px-4 py-2.5 text-[#6D6E71]">{MEAL_LABELS[rec.mealType] ?? rec.mealType ?? '—'}</td>}
-                <td className="px-4 py-2.5 text-center font-bold tabular-nums" style={{ color: '#386B41' }}>{yes}</td>
-                <td className="px-4 py-2.5 text-center font-bold tabular-nums" style={{ color: '#BA1A1A' }}>{no}</td>
+              <tr key={rec.id} style={{ background: i % 2 === 0 ? '#fff' : 'rgb(var(--c-bg))' }}
+                className="border-b border-line last:border-b-0">
+                <td className="px-4 py-2.5 font-bold text-ink">{rec.observer ?? rec.observerName ?? '—'}</td>
+                <td className="px-4 py-2.5 text-muted">{rec.scheduled_date ?? rec.scheduledDate ?? '—'}</td>
+                {isMeal && <td className="px-4 py-2.5 text-muted">{MEAL_LABELS[rec.mealType] ?? rec.mealType ?? '—'}</td>}
+                <td className="px-4 py-2.5 text-center font-bold tabular-nums" style={{ color: 'rgb(var(--c-success))' }}>{yes}</td>
+                <td className="px-4 py-2.5 text-center font-bold tabular-nums" style={{ color: 'rgb(var(--c-error))' }}>{no}</td>
                 <td className="px-4 py-2.5 text-center font-bold tabular-nums" style={{ color: accent }}>
                   {s == null ? '—' : `${s.toFixed(1)}/10`}
                 </td>
-                <td className="px-4 py-2.5 text-[#9D8F85] text-[11px]">{formatTime(rec.timestamp)}</td>
+                <td className="px-4 py-2.5 text-muted text-[11px]">{formatTime(rec.timestamp)}</td>
               </tr>
             );
           })}
@@ -676,8 +687,8 @@ function RecordsTable({ type, records, accent }) {
 function InfoRow({ label, value, mono = false }) {
   return (
     <div className="flex items-baseline gap-2 text-[11px]">
-      <span className="text-[#9D8F85] font-bold shrink-0">{label}:</span>
-      <span className={`text-[#2D2926] font-medium ${mono ? 'tabular-nums' : ''}`}>{value ?? '—'}</span>
+      <span className="text-muted font-bold shrink-0">{label}:</span>
+      <span className={`text-ink font-medium ${mono ? 'tabular-nums' : ''}`}>{value ?? '—'}</span>
     </div>
   );
 }
@@ -688,7 +699,7 @@ function ReportCard({ rec, accent }) {
   const elapsedMs = getTotalElapsedMs(rec, TERMINAL_REPORT_STATUSES);
 
   return (
-    <div className="rounded-2xl border border-[#EDE5DC] overflow-hidden bg-white"
+    <div className="rounded-2xl border border-line overflow-hidden bg-white"
       style={{ breakInside: 'avoid' }}>
       <div className="flex items-center justify-between px-4 py-2.5"
         style={{ background: `${accent}12`, borderBottom: `1px solid ${accent}25` }}>
@@ -716,8 +727,8 @@ function ReportCard({ rec, accent }) {
 
       {rec.description && (
         <div className="px-4 pb-4">
-          <p className="text-[10px] font-bold text-[#9D8F85] mb-1">الوصف</p>
-          <p className="text-[12px] text-[#2D2926] leading-relaxed whitespace-pre-wrap bg-[#FAFAF8] border border-[#EDE5DC] rounded-xl p-2.5">
+          <p className="text-[10px] font-bold text-muted mb-1">الوصف</p>
+          <p className="text-[12px] text-ink leading-relaxed whitespace-pre-wrap bg-bg border border-line rounded-xl p-2.5">
             {rec.description}
           </p>
         </div>
@@ -740,7 +751,7 @@ function LogisticsCard({ rec, accent }) {
   const elapsedMs = getTotalElapsedMs(rec, TERMINAL_LOGISTICS_STATUSES);
 
   return (
-    <div className="rounded-2xl border border-[#EDE5DC] overflow-hidden bg-white"
+    <div className="rounded-2xl border border-line overflow-hidden bg-white"
       style={{ breakInside: 'avoid' }}>
       <div className="flex items-center justify-between px-4 py-2.5"
         style={{ background: `${accent}12`, borderBottom: `1px solid ${accent}25` }}>
@@ -771,8 +782,8 @@ function LogisticsCard({ rec, accent }) {
 
       {rec.notes && (
         <div className="px-4 pb-4">
-          <p className="text-[10px] font-bold text-[#9D8F85] mb-1">ملاحظات</p>
-          <p className="text-[12px] text-[#2D2926] leading-relaxed whitespace-pre-wrap bg-[#FAFAF8] border border-[#EDE5DC] rounded-xl p-2.5">
+          <p className="text-[10px] font-bold text-muted mb-1">ملاحظات</p>
+          <p className="text-[12px] text-ink leading-relaxed whitespace-pre-wrap bg-bg border border-line rounded-xl p-2.5">
             {rec.notes}
           </p>
         </div>
@@ -804,19 +815,19 @@ function DetailCard({ record, type, accent }) {
   const noCount  = allQs.filter(q => ans[q.id] === 'لا').length;
 
   return (
-    <div className="rounded-2xl border border-[#EDE5DC] overflow-hidden bg-white"
+    <div className="rounded-2xl border border-line overflow-hidden bg-white"
       style={{ breakInside: 'avoid' }}>
       {/* Card head */}
-      <div className="px-4 py-3 flex items-center justify-between gap-3 border-b border-[#EDE5DC]"
-        style={{ background: '#FDF8F0' }}>
+      <div className="px-4 py-3 flex items-center justify-between gap-3 border-b border-line"
+        style={{ background: 'rgb(var(--c-bg))' }}>
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold"
             style={{ background: accent }}>
-            <User size={14} strokeWidth={2.25} />
+            <User size={14} weight="bold" />
           </div>
           <div>
-            <p className="text-sm font-bold text-[#2D2926]">{observer}</p>
-            <p className="text-[11px] text-[#9D8F85]">
+            <p className="text-sm font-bold text-ink">{observer}</p>
+            <p className="text-[11px] text-muted">
               {dateStr}{mealLbl ? ` • ${mealLbl}` : ''} • {formatTime(record.timestamp)}
             </p>
           </div>
@@ -850,7 +861,7 @@ function DetailCard({ record, type, accent }) {
               className={`rounded-lg px-3 py-2.5 border ${
                 isYes ? 'bg-green-50/40 border-green-200/60'
               : isNo  ? 'bg-red-50/40 border-red-200/60'
-              :         'bg-[#FAFAF8] border-[#EDE5DC]'
+              :         'bg-bg border-line'
               }`}
               style={{ breakInside: 'avoid' }}>
               <div className="flex items-start justify-between gap-3">
@@ -859,7 +870,7 @@ function DetailCard({ record, type, accent }) {
                     style={{ background: accent }}>
                     {q.id}
                   </span>
-                  <p className="text-[12px] text-[#2D2926] leading-relaxed">{q.text}</p>
+                  <p className="text-[12px] text-ink leading-relaxed">{q.text}</p>
                 </div>
                 {a && (
                   <span className={`inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-1 rounded-full shrink-0 ${
@@ -867,13 +878,13 @@ function DetailCard({ record, type, accent }) {
                   : isNo  ? 'bg-red-500 text-white'
                   :         'bg-gray-200 text-gray-700'
                   }`}>
-                    {isYes && <CheckCircle2 size={11} strokeWidth={2.5} />}
+                    {isYes && <CheckCircle2 size={11} weight="bold" />}
                     {a}
                   </span>
                 )}
               </div>
               {detail && (
-                <p className="mt-2 text-[11px] text-[#6D6E71] bg-white border border-[#EDE5DC] rounded px-2 py-1 leading-snug">
+                <p className="mt-2 text-[11px] text-muted bg-white border border-line rounded px-2 py-1 leading-snug">
                   {detail}
                 </p>
               )}
@@ -881,7 +892,7 @@ function DetailCard({ record, type, accent }) {
                 <a href={photoUrl} target="_blank" rel="noreferrer"
                   className="mt-2 block">
                   <img src={photoUrl} alt={`q${q.id}`}
-                    className="rounded-lg border border-[#EDE5DC] max-h-48 object-cover" />
+                    className="rounded-lg border border-line max-h-48 object-cover" />
                 </a>
               )}
             </div>

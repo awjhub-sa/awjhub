@@ -1,8 +1,17 @@
 import { useMemo, useState } from 'react';
 import {
-  UtensilsCrossed, ChevronRight, X, Search, Building2,
-  Sparkles, Coffee, Sun, Moon, MapPin, Clock as ClockIcon,
-} from 'lucide-react';
+  ForkKnife as UtensilsCrossed,
+  CaretRight as ChevronRight,
+  X,
+  MagnifyingGlass as Search,
+  Buildings as Building2,
+  Sparkle as Sparkles,
+  SunHorizon as Sunrise,
+  Sun as SunMedium,
+  MoonStars as MoonStar,
+  MapPin,
+  Clock as ClockIcon,
+} from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
 import { NATIONALITIES } from '../../config/nationalities.js';
 import {
@@ -11,9 +20,9 @@ import {
 } from '../../config/menus.js';
 
 const MEAL_META = {
-  breakfast: { label: 'الإفطار', Icon: Coffee, color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A' },
-  lunch:     { label: 'الغداء',  Icon: Sun,    color: '#EF4444', bg: '#FEF2F2', border: '#FCA5A5' },
-  dinner:    { label: 'العشاء',  Icon: Moon,   color: '#6366F1', bg: '#EEF2FF', border: '#C7D2FE' },
+  breakfast: { label: 'الإفطار', Icon: Sunrise,   color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A' },
+  lunch:     { label: 'الغداء',  Icon: SunMedium, color: '#06B6D4', bg: '#ECFEFF', border: '#A5F3FC' },
+  dinner:    { label: 'العشاء',  Icon: MoonStar,  color: '#8B5CF6', bg: '#F5F3FF', border: '#DDD6FE' },
 };
 const MEAL_ORDER = ['breakfast', 'lunch', 'dinner'];
 
@@ -45,18 +54,18 @@ export default function AdminMenu() {
         <>
           {/* Search */}
           <div className="relative">
-            <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9D8F85]" strokeWidth={2} />
+            <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted" weight="regular" />
             <input
               type="text"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               placeholder="بحث بالجنسية..."
-              className="w-full pr-11 pl-4 py-3 rounded-2xl border-2 border-[#EDE5DC] bg-white text-sm font-medium text-[#2D2926] placeholder:text-[#C9B8A8] focus:border-[#A98159] focus:outline-none transition-colors shadow-[0_2px_8px_rgba(45,41,38,0.05)]"
+              className="w-full pr-11 pl-4 py-3 rounded-2xl border-2 border-line bg-white text-sm font-medium text-ink placeholder:text-muted focus:border-primary focus:outline-none transition-colors shadow-[0_2px_8px_rgb(var(--c-ink)/0.05)]"
             />
             {searchTerm && (
               <button onClick={() => setSearchTerm('')}
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center text-[#9D8F85] hover:bg-[#F5F0EB] transition-colors">
-                <X size={14} strokeWidth={2.25} />
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:bg-[rgb(var(--c-primary-50))] transition-colors">
+                <X size={14} weight="bold" />
               </button>
             )}
           </div>
@@ -66,7 +75,7 @@ export default function AdminMenu() {
             {filteredNats.map(n => (
               <button key={n.key}
                 onClick={() => setSelectedNat(n.key)}
-                className="group text-right bg-white rounded-2xl border-2 border-[#EDE5DC] p-4 shadow-[0_2px_8px_rgba(45,41,38,0.07)] hover:shadow-[0_6px_24px_rgba(169,129,89,0.18)] hover:border-[#D9CEBC] hover:-translate-y-0.5 transition-all"
+                className="group text-right bg-white rounded-2xl border-2 border-line p-4 shadow-[0_2px_8px_rgb(var(--c-ink)/0.07)] hover:shadow-[0_6px_24px_rgb(var(--c-primary)/0.18)] hover:border-line hover:-translate-y-0.5 transition-all"
               >
                 <div className="flex items-center gap-3">
                   <div className="relative shrink-0">
@@ -78,28 +87,28 @@ export default function AdminMenu() {
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-base font-black text-[#2D2926] truncate">{n.label}</p>
-                    <p className="text-[10px] text-[#A98159] font-bold mt-0.5 flex items-center gap-1">
-                      <Building2 size={9} strokeWidth={2.5} />
+                    <p className="text-base font-black text-ink truncate">{n.label}</p>
+                    <p className="text-[10px] text-primary font-bold mt-0.5 flex items-center gap-1">
+                      <Building2 size={9} weight="bold" />
                       {n.centers.length} مركز
                     </p>
                   </div>
-                  <ChevronRight size={16} className="text-[#C9B8A8] group-hover:text-[#A98159] transition-colors shrink-0"
-                    strokeWidth={2.25} />
+                  <ChevronRight size={16} className="text-muted group-hover:text-primary transition-colors shrink-0"
+                    weight="bold" />
                 </div>
               </button>
             ))}
           </div>
 
-          <div className="bg-gradient-to-br from-[#FDF8F0] to-white border border-[#E8DDD4] rounded-2xl p-4 flex items-start gap-3">
+          <div className="bg-gradient-to-br from-background to-white border border-line rounded-2xl p-4 flex items-start gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-              style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
-              <Sparkles size={15} className="text-white" strokeWidth={2.25} />
+              style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
+              <Sparkles size={15} className="text-white" weight="bold" />
             </div>
-            <div className="flex-1 text-[11px] text-[#6D6E71] leading-relaxed">
-              <p className="font-black text-[#2D2926] mb-0.5 text-xs">تعديل المنيو</p>
+            <div className="flex-1 text-[11px] text-muted leading-relaxed">
+              <p className="font-black text-ink mb-0.5 text-xs">تعديل المنيو</p>
               <p>
-                المنيو مخزن في الملف <code className="bg-white border border-[#E8DDD4] px-1.5 py-0.5 rounded text-[10px] font-mono mx-0.5">src/config/menus.js</code>
+                المنيو مخزن في الملف <code className="bg-white border border-line px-1.5 py-0.5 rounded text-[10px] font-mono mx-0.5">src/config/menus.js</code>
                 {' '}— لتعديل أو إضافة أطباق، حدّث القيم في الملف ثم احفظ. يظهر التغيير فوراً للمراقب والمشرف.
               </p>
             </div>
@@ -122,11 +131,11 @@ function NationalityDetail({ nat, selectedDay, setSelectedDay, onBack }) {
   return (
     <div className="space-y-4">
       {/* Header bar */}
-      <div className="bg-gradient-to-br from-white to-[#FDF8F0] border border-[#E8DDD4] rounded-2xl p-4 flex items-center gap-3 shadow-[0_2px_8px_rgba(45,41,38,0.07)]">
+      <div className="bg-gradient-to-br from-white to-background border border-line rounded-2xl p-4 flex items-center gap-3 shadow-[0_2px_8px_rgb(var(--c-ink)/0.07)]">
         <button onClick={onBack}
-          className="min-w-[40px] min-h-[40px] rounded-xl border border-[#D9CEBC] bg-white text-[#A98159] flex items-center justify-center hover:bg-[#FDF8F0] hover:border-[#A98159] transition-all shrink-0"
+          className="min-w-[40px] min-h-[40px] rounded-xl border border-line bg-white text-primary flex items-center justify-center hover:bg-background hover:border-primary transition-all shrink-0"
           title="رجوع">
-          <X size={16} strokeWidth={2.25} />
+          <X size={16} weight="bold" />
         </button>
         <div className="relative shrink-0">
           <div className="absolute inset-0 rounded-2xl blur-md opacity-50" style={{ background: nat.color }} />
@@ -136,8 +145,8 @@ function NationalityDetail({ nat, selectedDay, setSelectedDay, onBack }) {
           </div>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-base font-black text-[#2D2926] truncate">منيو {nat.label}</p>
-          <p className="text-[11px] text-[#A98159] font-bold mt-0.5">
+          <p className="text-base font-black text-ink truncate">منيو {nat.label}</p>
+          <p className="text-[11px] text-primary font-bold mt-0.5">
             {nat.centers.length} مركز · {nat.centers.map(c => `مركز ${c}`).slice(0, 4).join('، ')}
             {nat.centers.length > 4 && ` +${nat.centers.length - 4}`}
           </p>
@@ -152,7 +161,7 @@ function NationalityDetail({ nat, selectedDay, setSelectedDay, onBack }) {
             className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-black transition-all border-2 ${
               selectedDay === d.value
                 ? 'text-white shadow-md'
-                : 'bg-white text-[#6D6E71] border-[#D9CEBC] hover:border-[#A98159] hover:text-[#A98159]'
+                : 'bg-white text-muted border-line hover:border-primary hover:text-primary'
             }`}
             style={selectedDay === d.value
               ? { background: `linear-gradient(135deg, ${nat.color}, ${nat.color}DD)`, borderColor: nat.color }
@@ -171,7 +180,7 @@ function NationalityDetail({ nat, selectedDay, setSelectedDay, onBack }) {
           const MIcon = meta.Icon;
           return (
             <div key={mealKey}
-              className="bg-white rounded-2xl border-2 overflow-hidden shadow-[0_2px_12px_rgba(45,41,38,0.07)]"
+              className="bg-white rounded-2xl border-2 overflow-hidden shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)]"
               style={{ borderColor: meta.border }}>
               {/* Meal header */}
               <div className="px-4 py-3 border-b"
@@ -179,11 +188,11 @@ function NationalityDetail({ nat, selectedDay, setSelectedDay, onBack }) {
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-sm"
                     style={{ border: `1.5px solid ${meta.border}` }}>
-                    <MIcon size={18} style={{ color: meta.color }} strokeWidth={2.25} />
+                    <MIcon size={18} style={{ color: meta.color }} weight="bold" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-black" style={{ color: meta.color }}>{meta.label}</p>
-                    <p className="text-[10px] font-bold text-[#6D6E71] mt-0.5">
+                    <p className="text-[10px] font-bold text-muted mt-0.5">
                       {total > 0 ? `${total} صنف` : 'لم يُضف بعد'}
                     </p>
                   </div>
@@ -193,14 +202,14 @@ function NationalityDetail({ nat, selectedDay, setSelectedDay, onBack }) {
                     {meal.location && (
                       <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/80 border"
                         style={{ borderColor: meta.border, color: meta.color }}>
-                        <MapPin size={10} strokeWidth={2.5} />
+                        <MapPin size={10} weight="bold" />
                         {meal.location}
                       </span>
                     )}
                     {meal.time && (
                       <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/80 border"
                         style={{ borderColor: meta.border, color: meta.color }}>
-                        <ClockIcon size={10} strokeWidth={2.5} />
+                        <ClockIcon size={10} weight="bold" />
                         {meal.time}
                       </span>
                     )}
@@ -212,10 +221,10 @@ function NationalityDetail({ nat, selectedDay, setSelectedDay, onBack }) {
               <div className="p-4 space-y-3">
                 {total === 0 ? (
                   <div className="text-center py-8">
-                    <div className="w-10 h-10 rounded-xl bg-[#F5F0EB] border border-[#E8DDD4] flex items-center justify-center mx-auto mb-2">
-                      <UtensilsCrossed size={16} className="text-[#C9B8A8]" strokeWidth={2} />
+                    <div className="w-10 h-10 rounded-xl bg-[rgb(var(--c-primary-50))] border border-line flex items-center justify-center mx-auto mb-2">
+                      <UtensilsCrossed size={16} className="text-muted" weight="regular" />
                     </div>
-                    <p className="text-[11px] font-bold text-[#9D8F85]">لم يتم إضافة المنيو بعد</p>
+                    <p className="text-[11px] font-bold text-muted">لم يتم إضافة المنيو بعد</p>
                   </div>
                 ) : (
                   CATEGORY_KEYS.map(catKey => {
@@ -243,7 +252,7 @@ function NationalityDetail({ nat, selectedDay, setSelectedDay, onBack }) {
                                 style={{ background: cMeta.color }}>
                                 {i + 1}
                               </span>
-                              <p className="text-[12px] text-[#2D2926] font-medium leading-relaxed flex-1">{dish}</p>
+                              <p className="text-[12px] text-ink font-medium leading-relaxed flex-1">{dish}</p>
                             </li>
                           ))}
                         </ul>
