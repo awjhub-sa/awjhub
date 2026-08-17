@@ -39,6 +39,7 @@ import {
   Mountains as Mountain,
 } from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
+import DetailDrawer, { Section, Facts, HeroChip } from '../../components/DetailDrawer.jsx';
 import NotificationBadge from '../../components/NotificationBadge.jsx';
 import { getCaterer, getShakhis, getLocation } from '../../config/centers.js';
 import {
@@ -305,15 +306,20 @@ export default function AdminReports() {
             key={r.id}
             report={r}
             isOpen={expanded === r.id}
-            onToggle={() => setExpanded(expanded === r.id ? null : r.id)}
-            onStatus={handleStatus}
-            onEdit={() => setEditingReport(r)}
-            onDelete={() => handleDelete(r.id)}
-            onMedia={(m) => setLightbox(m)}
-            onSaveNotes={handleSaveNotes}
+            onToggle={() => setExpanded(r.id)}
           />
         ))}
       </div>
+
+      <ReportDrawer
+        report={filtered.find(x => x.id === expanded) || null}
+        onClose={() => setExpanded(null)}
+        onStatus={handleStatus}
+        onEdit={() => { const r = reports.find(x => x.id === expanded); setExpanded(null); setEditingReport(r); }}
+        onDelete={() => { handleDelete(expanded); setExpanded(null); }}
+        onMedia={(m) => setLightbox(m)}
+        onSaveNotes={handleSaveNotes}
+      />
 
       {/* Edit Modal */}
       {editingReport && (
@@ -338,22 +344,7 @@ export default function AdminReports() {
   );
 }
 
-function ReportCard({ report: r, isOpen, onToggle, onStatus, onEdit, onDelete, onMedia, onSaveNotes }) {
-  const [notes, setNotes]             = useState(r.adminNotes || '');
-  const [savingNotes, setSavingNotes] = useState(false);
-  const [savedNotes,  setSavedNotes]  = useState(false);
-  useEffect(() => { setNotes(r.adminNotes || ''); setSavedNotes(false); }, [r.id]);
-  const handleSaveNotes = async (e) => {
-    e.stopPropagation();
-    if (savingNotes) return;
-    setSavingNotes(true);
-    try {
-      await onSaveNotes?.(r.id, notes);
-      setSavedNotes(true);
-      setTimeout(() => setSavedNotes(false), 4000);
-    } catch (err) { alert(`فشل حفظ الملاحظات: ${err?.message || err}`); }
-    setSavingNotes(false);
-  };
+function ReportCard({ report: r, isOpen, onToggle }) {
   const rt = getRT(r);
   const sv = getSV(r);
   const b  = getSB(r);
@@ -521,218 +512,172 @@ function ReportCard({ report: r, isOpen, onToggle, onStatus, onEdit, onDelete, o
         </div>
       </button>
 
-      {/* Expanded panel */}
-      {isOpen && (
-        <div className="border-t-2 border-line/60 bg-background px-4 sm:px-5 py-5 space-y-4">
-
-          {/* Center-specific operations notes */}
-          <CenterNotesPanel centerId={r.center} variant="card" />
-
-          {/* Status timeline */}
-          <StatusTimeline
-            doc={r}
-            terminalStatuses={TERMINAL_REPORT_STATUSES}
-            statusOrder={['pending', 'in_progress', 'resolved']}
-            statusMeta={STATUS_LOOKUP}
-            accentColor={rt.color}
-          />
-
-          {/* Quick status changer */}
-          <div className="bg-white rounded-2xl border border-line p-3">
-            <p className="text-[10px] font-bold text-muted mb-2 flex items-center gap-1">
-              <Activity size={11} weight="bold" className="text-primary" />
-              تغيير الحالة
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              {STATUS_OPTIONS.map(s => {
-                const SIcon = s.Icon;
-                const active = (r.status || 'pending') === s.value;
-                return (
-                  <button key={s.value}
-                    onClick={(e) => { e.stopPropagation(); onStatus(r.id, s.value); }}
-                    className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-bold border-2 transition-all ${
-                      active ? 'shadow-md scale-[1.02]' : 'bg-white border-line text-muted hover:border-line'
-                    }`}
-                    style={active
-                      ? { background: s.bg, borderColor: s.color, color: s.color }
-                      : undefined}>
-                    <SIcon size={12} weight="bold" />
-                    {s.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Info grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-            {[
-              { label: 'المراقب', val: r.observer, Icon: User,     color: 'rgb(var(--c-primary))' },
-              { label: 'المركز',  val: r.center,   Icon: Building2,color: rt.color   },
-              { label: 'الوقت',   val: fullDate(r.timestamp), Icon: Calendar, color: 'rgb(var(--c-muted))' },
-            ].map(c => (
-              <div key={c.label} className="bg-white rounded-xl border border-line p-2.5 flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: `${c.color}15` }}>
-                  <c.Icon size={13} style={{ color: c.color }} weight="bold" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[9px] text-muted font-bold">{c.label}</p>
-                  <p className="text-[11px] font-bold text-ink truncate">{c.val || '—'}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Caterer + Shakhis + Location */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <div className="bg-gradient-to-br from-background to-white rounded-xl border border-line p-3 flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-                style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
-                <Factory size={15} className="text-white" weight="bold" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[9px] text-muted font-bold">المتعهد</p>
-                <p className="text-xs font-black text-primary truncate leading-tight">
-                  {r.caterer || getCaterer(r.center) || '—'}
-                </p>
-              </div>
-            </div>
-            {getShakhis(r.center) && (
-              <div className="rounded-xl border p-3 flex items-center gap-2.5"
-                style={{ background: 'linear-gradient(135deg, #FBF3EF, #F6E7E0)', borderColor: '#9E574140' }}>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-                  style={{ background: 'linear-gradient(135deg, #B4674E, #9E5741)' }}>
-                  <Hash size={15} className="text-white" weight="bold" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[9px] text-muted font-bold">رقم الشاخص</p>
-                  <p className="text-sm font-black tracking-widest leading-tight" style={{ color: '#9E5741' }}>
-                    {getShakhis(r.center)}
-                  </p>
-                </div>
-              </div>
-            )}
-            {getLocation(r.center) && (
-              <a href={getLocation(r.center)} target="_blank" rel="noopener noreferrer"
-                onClick={e => e.stopPropagation()}
-                className="rounded-xl border p-3 flex items-center gap-2.5 group/map hover:shadow-[0_4px_16px_rgba(34,197,94,0.18)] hover:-translate-y-0.5 transition-all"
-                style={{ background: 'linear-gradient(135deg, #F0FDF4, #DCFCE7)', borderColor: '#22C55E40', textDecoration: 'none' }}>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm group-hover/map:scale-110 transition-transform"
-                  style={{ background: 'linear-gradient(135deg, #22C55E, #16A34A)' }}>
-                  <MapPin size={15} className="text-white" weight="bold" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[9px] text-muted font-bold">الموقع</p>
-                  <p className="text-xs font-black group-hover/map:underline" style={{ color: '#16A34A' }}>
-                    فتح في خرائط Google ↗
-                  </p>
-                </div>
-              </a>
-            )}
-          </div>
-
-          {/* Description */}
-          {r.description && (
-            <div className="bg-white rounded-2xl border border-line p-4">
-              <p className="text-[10px] text-muted font-bold mb-2 flex items-center gap-1.5">
-                <span className="w-1.5 h-4 rounded-full" style={{ background: rt.color }} />
-                <ShieldAlert size={11} className="text-primary" weight="bold" />
-                وصف المشكلة
-              </p>
-              <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap">{r.description}</p>
-            </div>
-          )}
-
-          {/* Images */}
-          {httpImages.length > 0 && (
-            <div>
-              <p className="text-[10px] text-muted font-bold mb-2 flex items-center gap-1.5">
-                <span className="w-1.5 h-4 rounded-full bg-primary" />
-                <ImageIcon size={11} className="text-primary" weight="bold" />
-                الصور المرفقة ({httpImages.length})
-              </p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {httpImages.map((src, i) => (
-                  <button key={i}
-                    onClick={(e) => { e.stopPropagation(); onMedia({ src, type: 'image' }); }}
-                    className="group/img relative block rounded-xl overflow-hidden border-2 border-line hover:border-primary transition-colors">
-                    <img src={src} alt="" className="w-full h-32 object-cover transition-transform group-hover/img:scale-105" />
-                    <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition bg-black/30">
-                      <div className="bg-white/95 rounded-lg px-2.5 py-1 flex items-center gap-1 text-[10px] font-black text-ink shadow-lg">
-                        <ImageIcon size={11} weight="bold" /> عرض
-                      </div>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Video */}
-          {r.videoUrl && (
-            <div>
-              <p className="text-[10px] text-muted font-bold mb-2 flex items-center gap-1.5">
-                <span className="w-1.5 h-4 rounded-full bg-indigo-500" />
-                <Video size={11} className="text-indigo-500" weight="bold" />
-                الفيديو المرفق
-              </p>
-              <button
-                onClick={(e) => { e.stopPropagation(); onMedia({ src: r.videoUrl, type: 'video' }); }}
-                className="group/vid flex items-center gap-3 w-full bg-gradient-to-br from-[#1A1A2E] to-[#16213E] text-white rounded-2xl px-4 py-3.5 hover:shadow-lg transition-all">
-                <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center shrink-0 group-hover/vid:bg-white/25 transition-colors">
-                  <Play size={20} weight="regular" className="text-white ml-0.5" fill="white" />
-                </div>
-                <div className="flex-1 text-right">
-                  <p className="text-sm font-black">تشغيل الفيديو</p>
-                  <p className="text-[10px] text-white/60 mt-0.5">اضغط للمشاهدة بالحجم الكامل</p>
-                </div>
-                <ExternalLink size={14} weight="regular" className="text-white/40 shrink-0" />
-              </button>
-            </div>
-          )}
-
-          {/* Operations room notes */}
-          <div className="bg-gradient-to-br from-background to-white border border-line rounded-2xl p-4"
-            onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-[11px] text-muted font-bold flex items-center gap-1.5">
-                <span className="w-1.5 h-4 rounded-full bg-primary" />
-                ملاحظات غرفة العمليات
-              </p>
-              {savedNotes && (
-                <span className="text-[10px] font-black text-green-700 bg-green-50 border border-green-200 rounded-md px-2 py-0.5">
-                  ✓ تم الحفظ
-                </span>
-              )}
-            </div>
-            <textarea
-              value={notes}
-              onChange={e => { setNotes(e.target.value); setSavedNotes(false); }}
-              rows={3}
-              placeholder="اكتب ملاحظات تظهر للمراقب/المشرف الذي رفع البلاغ..."
-              className="w-full px-3 py-2.5 border border-line rounded-xl text-sm text-ink placeholder-muted focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none transition-all bg-white resize-none"
-            />
-            <button onClick={handleSaveNotes} disabled={savingNotes || notes === (r.adminNotes || '')}
-              className="mt-2 w-full py-2.5 rounded-xl bg-gradient-to-br from-primary-400 to-primary text-white text-sm font-black shadow-sm active:scale-[0.98] transition-all disabled:opacity-50">
-              {savingNotes ? 'جارٍ الحفظ...' : 'حفظ الملاحظات'}
-            </button>
-          </div>
-
-          {/* Action toolbar */}
-          <div className="flex items-center gap-2 pt-2 border-t border-line">
-            <button onClick={(e) => { e.stopPropagation(); onEdit(); }}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-black bg-background text-primary border-2 border-line hover:bg-primary hover:text-white hover:border-primary transition-all">
-              <Pencil size={13} weight="bold" /> تعديل البلاغ
-            </button>
-            <button onClick={(e) => { e.stopPropagation(); onDelete(); }}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-black bg-red-50 text-red-600 border-2 border-red-200 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all">
-              <Trash2 size={13} weight="bold" /> حذف
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Details open in a drawer of their own — see ReportDrawer. */}
     </div>
+  );
+}
+
+/* ── The record, on its own surface ────────────────────────
+   Same facts as the old fold-out panel, ordered by what someone opening a
+   report actually wants: where it stands, what happened, what it looks like,
+   and only then the plumbing. */
+function ReportDrawer({ report: r, onClose, onStatus, onEdit, onDelete, onMedia, onSaveNotes }) {
+  const [notes, setNotes]             = useState(r?.adminNotes || '');
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [savedNotes,  setSavedNotes]  = useState(false);
+
+  useEffect(() => { setNotes(r?.adminNotes || ''); setSavedNotes(false); }, [r?.id]);
+
+  if (!r) return null;
+
+  const rt = getRT(r);
+  const sv = getSV(r);
+  const b  = getSB(r);
+  const StatusIcon = b.Icon;
+  const allImages = r.images?.length ? r.images : (r.photos?.length ? r.photos : []);
+  const httpImages = allImages.filter(s => typeof s === 'string' && (s.startsWith('http') || s.startsWith('data:')));
+
+  const saveNotes = async () => {
+    if (savingNotes) return;
+    setSavingNotes(true);
+    try {
+      await onSaveNotes?.(r.id, notes);
+      setSavedNotes(true);
+      setTimeout(() => setSavedNotes(false), 4000);
+    } catch (err) { alert(`فشل حفظ الملاحظات: ${err?.message || err}`); }
+    setSavingNotes(false);
+  };
+
+  return (
+    <DetailDrawer
+      open={!!r}
+      onClose={onClose}
+      Icon={rt.Icon}
+      accent={rt.color}
+      kicker="بلاغ ميداني"
+      title={rt.label}
+      subtitle={`${r.center || '—'} · ${timeAgo(r.timestamp)}`}
+      chips={
+        <>
+          {r.reportNumber && <HeroChip color={rt.color}>#{r.reportNumber}</HeroChip>}
+          <HeroChip solid color={b.color === 'rgb(var(--c-muted))' ? '#CBD5E1' : b.color}>
+            <StatusIcon size={11} weight="bold" /> {b.label}
+          </HeroChip>
+          {sv && <HeroChip color={sv.bar}>خطورة {sv.label}</HeroChip>}
+          {r.mealType && MEAL_LABEL[r.mealType] && <HeroChip>{MEAL_LABEL[r.mealType]}</HeroChip>}
+          {r.holySite && HOLY_SITE_LABEL[r.holySite] && <HeroChip>{HOLY_SITE_LABEL[r.holySite]}</HeroChip>}
+        </>
+      }
+      footer={
+        <>
+          <button onClick={onEdit}
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-black bg-background text-primary border border-line hover:bg-primary hover:text-white hover:border-primary transition-all">
+            <Pencil size={13} weight="bold" /> تعديل
+          </button>
+          <button onClick={onDelete}
+            className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black bg-red-50 text-red-600 border border-red-200 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all">
+            <Trash2 size={13} weight="bold" /> حذف
+          </button>
+        </>
+      }
+    >
+      {/* Where it stands, and how to move it */}
+      <Section title="الحالة" Icon={Activity} tone={b.color}>
+        <StatusTimeline
+          doc={r}
+          terminalStatuses={TERMINAL_REPORT_STATUSES}
+          statusOrder={['pending', 'in_progress', 'resolved']}
+          statusMeta={STATUS_LOOKUP}
+          accentColor={rt.color}
+        />
+        <div className="grid grid-cols-3 gap-2 mt-3">
+          {STATUS_OPTIONS.map(s => {
+            const SIcon = s.Icon;
+            const active = (r.status || 'pending') === s.value;
+            return (
+              <button key={s.value} onClick={() => onStatus(r.id, s.value)}
+                className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[11px] font-black border transition-all ${
+                  active ? 'shadow-sm' : 'bg-white border-line text-muted hover:border-primary/40'
+                }`}
+                style={active ? { background: s.bg, borderColor: s.color, color: s.color } : undefined}>
+                <SIcon size={12} weight="bold" />
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
+      </Section>
+
+      {/* What happened */}
+      {r.description && (
+        <Section title="وصف المشكلة" Icon={ShieldAlert} tone={rt.color}>
+          <p className="text-[13px] text-ink leading-relaxed whitespace-pre-wrap">{r.description}</p>
+        </Section>
+      )}
+
+      <Section title="بيانات البلاغ" Icon={Building2}>
+        <Facts items={[
+          { label: 'المركز',    value: r.center,   Icon: Building2, color: rt.color },
+          { label: 'المراقب',   value: r.observer, Icon: User,      color: 'rgb(var(--c-primary))' },
+          { label: 'المتعهد',   value: r.caterer || getCaterer(r.center), Icon: Factory, color: 'rgb(var(--c-primary))', wide: true },
+          { label: 'رقم الشاخص', value: getShakhis(r.center), Icon: Hash, color: '#9E5741' },
+          { label: 'وقت البلاغ', value: fullDate(r.timestamp), Icon: Calendar },
+          getLocation(r.center) && {
+            label: 'الموقع', value: 'فتح في خرائط Google ↗',
+            href: getLocation(r.center), Icon: MapPin, color: '#16A34A', wide: true,
+          },
+        ]} />
+      </Section>
+
+      {/* What it looks like */}
+      {(httpImages.length > 0 || r.videoUrl) && (
+        <Section title={`المرفقات (${httpImages.length + (r.videoUrl ? 1 : 0)})`} Icon={ImageIcon}>
+          {httpImages.length > 0 && (
+            <div className="grid grid-cols-3 gap-2">
+              {httpImages.map((src, i) => (
+                <button key={i} onClick={() => onMedia({ src, type: 'image' })}
+                  className="group/img relative rounded-xl overflow-hidden border border-line hover:border-primary transition-colors">
+                  <img src={src} alt="" className="w-full h-24 object-cover transition-transform group-hover/img:scale-105" />
+                </button>
+              ))}
+            </div>
+          )}
+          {r.videoUrl && (
+            <button onClick={() => onMedia({ src: r.videoUrl, type: 'video' })}
+              className="mt-2 flex items-center gap-3 w-full rounded-xl px-3.5 py-3 text-white transition-all hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary)), rgb(var(--c-primary-700)))' }}>
+              <span className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
+                <Play size={17} weight="fill" className="text-white" />
+              </span>
+              <span className="flex-1 text-right text-[12px] font-black">تشغيل الفيديو المرفق</span>
+              <ExternalLink size={13} className="text-white/50" />
+            </button>
+          )}
+        </Section>
+      )}
+
+      {/* The plumbing */}
+      <Section title="ملاحظات غرفة العمليات" Icon={Pencil}
+        right={savedNotes && (
+          <span className="text-[10px] font-black text-green-700 bg-green-50 border border-green-200 rounded-md px-2 py-0.5">
+            ✓ حُفظت
+          </span>
+        )}>
+        <textarea
+          value={notes} rows={3}
+          onChange={e => { setNotes(e.target.value); setSavedNotes(false); }}
+          placeholder="اكتب ملاحظات تظهر للمراقب/المشرف الذي رفع البلاغ..."
+          className="w-full px-3 py-2.5 border border-line rounded-xl text-[13px] text-ink placeholder-muted/60 focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none transition-all bg-white resize-none"
+        />
+        <button onClick={saveNotes} disabled={savingNotes || notes === (r.adminNotes || '')}
+          className="mt-2 w-full py-2.5 rounded-xl text-white text-[12px] font-black transition-all disabled:opacity-40"
+          style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}>
+          {savingNotes ? 'جارٍ الحفظ…' : 'حفظ الملاحظات'}
+        </button>
+      </Section>
+
+      <CenterNotesPanel centerId={r.center} variant="card" />
+    </DetailDrawer>
   );
 }
 
