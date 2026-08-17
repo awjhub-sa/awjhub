@@ -56,12 +56,12 @@ const TABS = [
     label: 'مشعر عرفة',
     short: 'عرفة',
     col:  'arafat_readiness',
-    color: '#0E7490',
+    color: '#2F5580',
     bg:    '#EFF6FF',
     border:'#BFDBFE',
     icon:  Mountain,
     allQs: ARAFAT_Qs,
-    gradient: 'linear-gradient(135deg, #22D3EE, #0E7490)',
+    gradient: 'linear-gradient(135deg, #6595C4, #2F5580)',
   },
 ];
 
@@ -442,7 +442,7 @@ export default function AdminAnalytics({ site }) {
             {[
               { key: 'all',       label: 'الكل',      Icon: ListChecks,  count: CENTERS.length, color: 'rgb(var(--c-muted))' },
               { key: 'uploaded',  label: 'تم رفعها',  Icon: CheckCircle2, count: uploadedCount,  color: '#15803D' },
-              { key: 'today',     label: 'اليوم',     Icon: Sun,         count: todayCount,     color: '#10B981' },
+              { key: 'today',     label: 'اليوم',     Icon: Sun,         count: todayCount,     color: '#5E9070' },
               { key: 'remaining', label: 'المتبقي',   Icon: Hourglass,   count: remainingCount, color: '#B91C1C' },
             ].map(f => {
               const active = dateFilter === f.key;
@@ -568,7 +568,7 @@ function CenterCard({ summary, tab, onSelect, isRecent }) {
             {summary.supervisorCount > 0 && (
               <span className="inline-flex items-center gap-1 text-[8.5px] font-black px-1.5 py-0.5 rounded-md text-white"
                 title={`${summary.supervisorCount} تقييم من المشرف`}
-                style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}>
+                style={{ background: 'linear-gradient(135deg, #9E5741, #7F4534)' }}>
                 <UserCog size={9} weight="bold" />
                 مشرف
                 {summary.supervisorCount > 1 && (
@@ -846,7 +846,7 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
             </span>
             {isSupervisorDoc(evalDoc) && (
               <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md text-white"
-                style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}>
+                style={{ background: 'linear-gradient(135deg, #9E5741, #7F4534)' }}>
                 <UserCog size={10} weight="bold" />
                 مشرف
               </span>

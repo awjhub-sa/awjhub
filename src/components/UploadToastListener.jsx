@@ -23,7 +23,7 @@ import { db } from '../lib/db.js';
 
 const SITE_META = {
   mina:   { label: 'مشعر منى',  Icon: ShieldCheck, color: 'rgb(var(--c-success))', gradient: 'linear-gradient(135deg, #4F8856, rgb(var(--c-success)))' },
-  arafat: { label: 'مشعر عرفة', Icon: Mountain,    color: '#0E7490', gradient: 'linear-gradient(135deg, #22D3EE, #0E7490)' },
+  arafat: { label: 'مشعر عرفة', Icon: Mountain,    color: '#2F5580', gradient: 'linear-gradient(135deg, #6595C4, #2F5580)' },
 };
 
 const TOAST_TTL_MS = 8000;

@@ -215,11 +215,11 @@ export default function SupArafatReadiness() {
 
         <div className="max-w-3xl mx-auto space-y-4">
           <div className="bg-gradient-to-br from-ink-800 via-ink to-[#1F1A17] rounded-3xl p-5 shadow-lg flex items-center gap-3">
-            <div className="bg-gradient-to-br from-[#10B981] to-[#065F4E] p-3 rounded-2xl shadow-md">
+            <div className="bg-gradient-to-br from-[#5E9070] to-[#3D6349] p-3 rounded-2xl shadow-md">
               <Mountain size={22} className="text-white" weight="bold" />
             </div>
             <div>
-              <p className="text-[#10B981] text-[10px] font-black uppercase tracking-widest mb-0.5">جاهزية عرفة</p>
+              <p className="text-[#5E9070] text-[10px] font-black uppercase tracking-widest mb-0.5">جاهزية عرفة</p>
               <h2 className="text-white text-lg font-bold leading-snug">اختر المركز لرفع تقييم الجاهزية</h2>
               <p className="text-white/60 text-xs mt-1">تقدر تختار أي مركز بدون الحاجة لإسناد مسبق.</p>
             </div>
@@ -254,7 +254,7 @@ export default function SupArafatReadiness() {
                     className={`group/ctr relative rounded-2xl p-3 text-right border-2 transition-all active:scale-[0.98] ${
                       done
                         ? 'bg-gradient-to-br from-green-50 to-white border-green-300 hover:border-green-500 hover:shadow-[0_6px_18px_rgba(34,197,94,0.20)]'
-                        : 'bg-gradient-to-br from-white to-background/60 border-line hover:border-[#10B981] hover:shadow-[0_6px_18px_rgba(14,124,102,0.18)]'
+                        : 'bg-gradient-to-br from-white to-background/60 border-line hover:border-[#5E9070] hover:shadow-[0_6px_18px_rgba(14,124,102,0.18)]'
                     }`}>
                     {done && (
                       <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-green-500 border-2 border-white flex items-center justify-center shadow-md">
@@ -263,9 +263,9 @@ export default function SupArafatReadiness() {
                     )}
                     <div className="flex items-center gap-2.5">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
-                        done ? 'bg-green-50 border-green-200' : 'bg-[#F0FDF4] border-[#10B981]/20'
+                        done ? 'bg-green-50 border-green-200' : 'bg-[#F0FDF4] border-[#5E9070]/20'
                       }`}>
-                        <span className={`text-[12px] font-black tabular-nums ${done ? 'text-green-700' : 'text-[#10B981]'}`}>
+                        <span className={`text-[12px] font-black tabular-nums ${done ? 'text-green-700' : 'text-[#5E9070]'}`}>
                           {(c.id.match(/\d+/) || ['—'])[0]}
                         </span>
                       </div>

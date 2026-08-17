@@ -56,7 +56,7 @@ export const COLORS = {
   success: '#16A34A',
   warning: '#F59E0B',
   error:   '#DC2626',
-  info:    '#0891B2',
+  info:    '#3D6795',
 };
 
 export default BRAND;

@@ -21,8 +21,8 @@ import {
 
 const MEAL_META = {
   breakfast: { label: 'الإفطار', Icon: Sunrise,   color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A' },
-  lunch:     { label: 'الغداء',  Icon: SunMedium, color: '#06B6D4', bg: '#ECFEFF', border: '#A5F3FC' },
-  dinner:    { label: 'العشاء',  Icon: MoonStar,  color: '#8B5CF6', bg: '#F5F3FF', border: '#DDD6FE' },
+  lunch:     { label: 'الغداء',  Icon: SunMedium, color: '#4E7CB0', bg: '#EEF4FB', border: '#C4D8ED' },
+  dinner:    { label: 'العشاء',  Icon: MoonStar,  color: '#B4674E', bg: '#FBF3EF', border: '#EBCFC3' },
 };
 const MEAL_ORDER = ['breakfast', 'lunch', 'dinner'];
 

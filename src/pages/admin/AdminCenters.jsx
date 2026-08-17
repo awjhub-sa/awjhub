@@ -28,8 +28,8 @@ import PageHeader from '../../components/PageHeader.jsx';
 const CATEGORIES = [
   { value: 'A',  color: '#15803D' },
   { value: 'A+', color: '#16A34A' },
-  { value: 'B',  color: '#0D9488' },
-  { value: 'B+', color: '#0891B2' },
+  { value: 'B',  color: '#4D7C0F' },
+  { value: 'B+', color: '#65A30D' },
   { value: 'C',  color: '#CA8A04' },
   { value: 'C+', color: '#F59E0B' },
   { value: 'D',  color: '#EA580C' },

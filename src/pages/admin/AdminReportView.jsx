@@ -42,7 +42,7 @@ const REPORT_TYPES = {
   },
   arafat_readiness: {
     label: 'جاهزية مشعر عرفة', short: 'عرفة',
-    color: '#0891B2', accent: '#ECFEFF', border: '#A5F3FC',
+    color: '#3D6795', accent: '#EEF4FB', border: '#C4D8ED',
     Icon: Mountain,
     intro: 'جاهزية المطابخ والتجهيزات في مشعر عرفة',
   },
@@ -54,7 +54,7 @@ const REPORT_TYPES = {
   },
   logistics_requests: {
     label: 'طلبات الإسناد', short: 'الإسناد',
-    color: '#06B6D4', accent: '#EFF6FF', border: '#BFDBFE',
+    color: '#4E7CB0', accent: '#EFF6FF', border: '#BFDBFE',
     Icon: Truck,
     intro: 'طلبات الدعم اللوجستي للوجبات والمياه',
   },

@@ -36,7 +36,7 @@ const SUPPORT_TYPES = [
 
 const HOLY_SITES = [
   { key: 'mina',   label: 'منى',   Icon: MapPin,   color: 'rgb(var(--c-primary))' },
-  { key: 'arafat', label: 'عرفات', Icon: Mountain, color: '#10B981' },
+  { key: 'arafat', label: 'عرفات', Icon: Mountain, color: '#5E9070' },
 ];
 
 /* Same report-type map used in AdminReports — keep labels short here */
@@ -183,7 +183,7 @@ export default function LogisticsRequest() {
             <p className="text-white/40 text-[10px] mt-2">احتفظ بهذا الرقم للمتابعة</p>
           </div>
           <button onClick={() => navigate('/home')}
-            className="w-full py-4 rounded-2xl bg-[#0891B2] text-white font-bold text-base shadow-lg active:scale-95 transition-all">
+            className="w-full py-4 rounded-2xl bg-[#3D6795] text-white font-bold text-base shadow-lg active:scale-95 transition-all">
             العودة للرئيسية
           </button>
         </div>
@@ -485,7 +485,7 @@ export default function LogisticsRequest() {
 
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-lg border-t border-line z-50 text-center">
         <button onClick={handleSubmit} disabled={!isFormValid || loading}
-          className={`w-full max-w-md mx-auto py-4 rounded-2xl font-bold text-lg shadow-xl flex items-center justify-center gap-3 transition-all duration-300 ${!isFormValid || loading ? 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-70 shadow-none' : 'bg-[#0891B2] text-white hover:bg-[#0E7490] active:scale-95'}`}>
+          className={`w-full max-w-md mx-auto py-4 rounded-2xl font-bold text-lg shadow-xl flex items-center justify-center gap-3 transition-all duration-300 ${!isFormValid || loading ? 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-70 shadow-none' : 'bg-[#3D6795] text-white hover:bg-[#2F5580] active:scale-95'}`}>
           {loading ? 'جاري الإرسال...' : <><Send size={20} /> <span>إرسال طلب الإسناد</span></>}
         </button>
         {!isFormValid && category && supportType && (

@@ -41,7 +41,7 @@ import { BRAND } from '../../config/brand.js';
 
 const TABS = [
   { key: 'mina',   label: 'مشعر منى',  short: 'منى',   col: 'mina_readiness',   color: 'rgb(var(--c-success))', gradient: 'linear-gradient(135deg, #4F8856, rgb(var(--c-success)))', Icon: ShieldCheck, sections: MINA_SECTIONS,   allCriteria: MINA_ALL_CRITERIA   },
-  { key: 'arafat', label: 'مشعر عرفة', short: 'عرفة',  col: 'arafat_readiness', color: '#0E7490', gradient: 'linear-gradient(135deg, #22D3EE, #0E7490)', Icon: Mountain,    sections: ARAFAT_SECTIONS, allCriteria: ARAFAT_ALL_CRITERIA },
+  { key: 'arafat', label: 'مشعر عرفة', short: 'عرفة',  col: 'arafat_readiness', color: '#2F5580', gradient: 'linear-gradient(135deg, #6595C4, #2F5580)', Icon: Mountain,    sections: ARAFAT_SECTIONS, allCriteria: ARAFAT_ALL_CRITERIA },
 ];
 
 /* Current eval score → /100 (matches baseline scale). */

@@ -19,7 +19,7 @@
 
   /* The accent is a highlight colour — too light to read as text, so a darkened
      mix of it carries the numbers that want to be accent-coloured. */
-  --rv-accent-ink: color-mix(in srgb, var(--rv-accent) 55%, #0B3B44);
+  --rv-accent-ink: color-mix(in srgb, var(--rv-accent) 55%, #3B2A10);
   --rv-ink:   #16233D;
   --rv-mute:  #64748B;
   --rv-line:  #E4E9F0;

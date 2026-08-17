@@ -102,9 +102,9 @@ const MenuCard = ({ icon: Icon, title, subtitle, badge, doneBadge, onClick, vari
 const ACTIVITY_CFG = {
   reports:           { label: 'بلاغ طارئ',      Icon: AlertTriangle,  color: '#DC2626', bg: '#FEF2F2', border: '#FECACA' },
   meal_evaluations:  { label: 'تقييم وجبات',      Icon: Utensils,       color: 'rgb(var(--c-primary))', bg: 'rgb(var(--c-bg))', border: 'rgb(var(--c-line))' },
-  mina_readiness:    { label: 'جاهزية منى',        Icon: HomeIcon,       color: '#0891B2', bg: '#F0F9FF', border: '#BAE6FD' },
-  arafat_readiness:  { label: 'جاهزية عرفة',      Icon: Mountain,       color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE' },
-  logistics_requests:{ label: 'طلب إسناد',         Icon: Package,        color: '#06B6D4', bg: '#EFF6FF', border: '#BFDBFE' },
+  mina_readiness:    { label: 'جاهزية منى',        Icon: HomeIcon,       color: '#3D6795', bg: '#EEF4FB', border: '#C4D8ED' },
+  arafat_readiness:  { label: 'جاهزية عرفة',      Icon: Mountain,       color: '#9E5741', bg: '#FBF3EF', border: '#EBCFC3' },
+  logistics_requests:{ label: 'طلب إسناد',         Icon: Package,        color: '#4E7CB0', bg: '#EFF6FF', border: '#BFDBFE' },
   task_completions:  { label: 'مهمة مكتملة',      Icon: ClipboardCheck, color: 'rgb(var(--c-success))', bg: '#DCFCE7', border: '#86EFAC' },
 };
 
@@ -115,8 +115,8 @@ const TASK_TYPE_LABELS = {
 };
 const TASK_TYPE_META = {
   meal_evaluation:  { Icon: Utensils,   color: 'rgb(var(--c-primary))', bg: 'rgb(var(--c-bg))', border: 'rgb(var(--c-line))' },
-  mina_readiness:   { Icon: HomeIcon,   color: '#0891B2', bg: '#F0F9FF', border: '#BAE6FD' },
-  arafat_readiness: { Icon: Mountain,   color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE' },
+  mina_readiness:   { Icon: HomeIcon,   color: '#3D6795', bg: '#EEF4FB', border: '#C4D8ED' },
+  arafat_readiness: { Icon: Mountain,   color: '#9E5741', bg: '#FBF3EF', border: '#EBCFC3' },
 };
 const MEAL_LABELS = { breakfast: 'الإفطار', lunch: 'الغداء', dinner: 'العشاء' };
 
@@ -185,11 +185,11 @@ function PendingTaskRow({ task, onClick }) {
 
 const REPORT_STATUS_LBL = {
   pending:     { label: 'قيد الانتظار', bg: '#FEF9C3', text: '#854D0E' },
-  in_progress: { label: 'جارٍ التنفيذ', bg: '#DBEAFE', text: '#155E75' },
+  in_progress: { label: 'جارٍ التنفيذ', bg: '#DBEAFE', text: '#26456A' },
 };
 const LOGISTICS_STATUS_LBL = {
   pending:  { label: 'قيد الانتظار', bg: '#FEF9C3', text: '#854D0E' },
-  approved: { label: 'معتمد',        bg: '#DBEAFE', text: '#155E75' },
+  approved: { label: 'معتمد',        bg: '#DBEAFE', text: '#26456A' },
 };
 
 function ReportRow({ report, onClick }) {
@@ -298,7 +298,7 @@ function CenterCard({ centerId, stats, onClick }) {
             <div className="h-full rounded-full transition-all duration-500"
               style={{
                 width: `${pct}%`,
-                background: pct === 100 ? '#10B981' : pct > 0 ? '#F59E0B' : 'rgb(var(--c-primary))',
+                background: pct === 100 ? '#5E9070' : pct > 0 ? '#F59E0B' : 'rgb(var(--c-primary))',
               }} />
           </div>
           <div className="flex items-center justify-between mt-2 text-[10px]">
@@ -319,7 +319,7 @@ function CenterCard({ centerId, stats, onClick }) {
 
 const STATUS_DATA = {
   pending: { label: 'قيد الانتظار', bg: '#FEF9C3', text: '#854D0E' },
-  in_progress: { label: 'جارٍ التنفيذ', bg: '#DBEAFE', text: '#155E75' },
+  in_progress: { label: 'جارٍ التنفيذ', bg: '#DBEAFE', text: '#26456A' },
   resolved: { label: 'تم الحل', bg: '#DCFCE7', text: '#166534' },
 };
 
@@ -739,7 +739,7 @@ export default function SupervisorHome() {
             <StatMini
               label="مراكز مُسندة"
               value={assignedCenters.length}
-              accent="#06B6D4"
+              accent="#4E7CB0"
               Icon={Building2}
             />
             <StatMini
@@ -777,14 +777,14 @@ export default function SupervisorHome() {
 
             <button
               onClick={() => navigate('/sup-arafat-readiness', { state: { sweepMode: true } })}
-              className="group relative overflow-hidden rounded-3xl border-2 border-[#10B981]/30 text-right transition-all hover:border-[#10B981] hover:shadow-[0_10px_28px_rgba(14,124,102,0.25)] active:scale-[0.98]"
+              className="group relative overflow-hidden rounded-3xl border-2 border-[#5E9070]/30 text-right transition-all hover:border-[#5E9070] hover:shadow-[0_10px_28px_rgba(14,124,102,0.25)] active:scale-[0.98]"
               style={{ background: 'linear-gradient(135deg, #F0FDF4 0%, #fff 60%)' }}
             >
               <div className="p-5 flex items-center gap-3">
                 <div className="relative shrink-0">
-                  <div className="absolute inset-0 rounded-2xl blur-md bg-[#10B981] opacity-30 group-hover:opacity-60 transition-opacity" />
+                  <div className="absolute inset-0 rounded-2xl blur-md bg-[#5E9070] opacity-30 group-hover:opacity-60 transition-opacity" />
                   <div className="relative w-12 h-12 rounded-2xl flex items-center justify-center shadow-md"
-                    style={{ background: 'linear-gradient(135deg, #10B981, #065F4E)' }}>
+                    style={{ background: 'linear-gradient(135deg, #5E9070, #3D6349)' }}>
                     <Mountain size={22} className="text-white" weight="bold" />
                   </div>
                 </div>
@@ -792,7 +792,7 @@ export default function SupervisorHome() {
                   <p className="text-base font-black text-ink leading-tight">جاهزية عرفة</p>
                   <p className="text-[11px] text-muted mt-0.5">رفع جاهزية لأي مركز بدون إسناد مسبق</p>
                 </div>
-                <ChevronLeft size={18} className="text-[#10B981] shrink-0 group-hover:-translate-x-1 transition-transform" />
+                <ChevronLeft size={18} className="text-[#5E9070] shrink-0 group-hover:-translate-x-1 transition-transform" />
               </div>
             </button>
           </section>

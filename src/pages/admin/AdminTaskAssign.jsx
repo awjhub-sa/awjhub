@@ -45,19 +45,19 @@ function fullDate(ts) {
 const TASKS = [
   { key: 'meal_evaluation',  label: 'تقييم الوجبات', icon: ChefHat,  color: 'rgb(var(--c-primary))', hasMeals: true  },
   { key: 'mina_readiness',   label: 'جاهزية منى',    icon: Tent,     color: '#16A34A', hasMeals: false },
-  { key: 'arafat_readiness', label: 'جاهزية عرفة',   icon: Compass,  color: '#0891B2', hasMeals: false },
+  { key: 'arafat_readiness', label: 'جاهزية عرفة',   icon: Compass,  color: '#3D6795', hasMeals: false },
 ];
 
 const MEALS = [
   { key: 'breakfast', label: 'الإفطار', icon: Sunrise,   color: '#F59E0B' },
-  { key: 'lunch',     label: 'الغداء',  icon: SunMedium, color: '#06B6D4' },
-  { key: 'dinner',    label: 'العشاء',  icon: MoonStar,  color: '#8B5CF6' },
+  { key: 'lunch',     label: 'الغداء',  icon: SunMedium, color: '#4E7CB0' },
+  { key: 'dinner',    label: 'العشاء',  icon: MoonStar,  color: '#B4674E' },
 ];
 
 const MEAL_CATEGORIES = [
   { key: 'cooked',     label: 'وجبة مطبوخة', icon: Flame,       color: '#DC2626' },
   { key: 'dry',        label: 'وجبة جافة',   icon: Package,     color: 'rgb(var(--c-primary))' },
-  { key: 'sterilized', label: 'وجبة معقمة',  icon: ShieldCheck, color: '#0891B2' },
+  { key: 'sterilized', label: 'وجبة معقمة',  icon: ShieldCheck, color: '#3D6795' },
 ];
 
 const DHU_HIJJAH_DAYS = [
@@ -479,7 +479,7 @@ export default function AdminTaskAssign() {
             <div className="flex items-center gap-3 px-5 py-3.5 border-b border-line"
               style={{ background: 'linear-gradient(135deg, #EFF6FF, #fff 60%)' }}>
               <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg, #93C5FD, #06B6D4)' }}>
+                style={{ background: 'linear-gradient(135deg, #93C5FD, #4E7CB0)' }}>
                 {selMode === 'nationality' ? <Earth size={15} className="text-white" weight="regular" /> : <Building2 size={15} className="text-white" weight="regular" />}
               </div>
               <p className="font-bold text-ink text-sm">تحديد الجهة المستهدفة</p>
@@ -840,7 +840,7 @@ export default function AdminTaskAssign() {
                     المراكز المستهدفة
                     {targetCenters.length > 0 && (
                       <span className="mr-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                        style={{ background: '#7C3AED18', color: '#7C3AED', border: '1px solid #7C3AED30' }}>
+                        style={{ background: '#9E574118', color: '#9E5741', border: '1px solid #9E574130' }}>
                         {targetCenters.length}
                       </span>
                     )}
@@ -850,7 +850,7 @@ export default function AdminTaskAssign() {
                     : <div className="flex flex-wrap gap-1 max-h-40 overflow-y-auto">
                         {targetCenters.map(c => (
                           <span key={c} className="text-[10px] font-bold px-2 py-0.5 rounded-lg"
-                            style={{ background: '#7C3AED0D', border: '1px solid #7C3AED25', color: '#7C3AED' }}>
+                            style={{ background: '#9E57410D', border: '1px solid #9E574125', color: '#9E5741' }}>
                             {c}
                           </span>
                         ))}

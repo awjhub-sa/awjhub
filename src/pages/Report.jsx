@@ -53,13 +53,13 @@ const REPORT_TYPES = [
 
 const MEAL_OPTIONS = [
   { key: 'breakfast', label: 'الإفطار', Icon: Sunrise,   color: '#F59E0B' },
-  { key: 'lunch',     label: 'الغداء',  Icon: SunMedium, color: '#06B6D4' },
-  { key: 'dinner',    label: 'العشاء',  Icon: MoonStar,  color: '#8B5CF6' },
+  { key: 'lunch',     label: 'الغداء',  Icon: SunMedium, color: '#4E7CB0' },
+  { key: 'dinner',    label: 'العشاء',  Icon: MoonStar,  color: '#B4674E' },
 ];
 
 const HOLY_SITES = [
   { key: 'mina',   label: 'منى',   Icon: Tent,   color: 'rgb(var(--c-primary))' },
-  { key: 'arafat', label: 'عرفات', Icon: MapPin, color: '#10B981' },
+  { key: 'arafat', label: 'عرفات', Icon: MapPin, color: '#5E9070' },
 ];
 
 const SEVERITY_MAP = {

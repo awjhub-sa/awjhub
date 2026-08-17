@@ -51,7 +51,7 @@
   --c-success: 22 163 74;
   --c-warning: 245 158 11;
   --c-error:   220 38 38;
-  --c-info:     37 99 235;
+  --c-info:     78 124 176;       /* #4E7CB0 — steel blue, light enough to read as its own thing beside the navy */
 }
 
 @layer base {

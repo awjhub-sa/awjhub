@@ -88,8 +88,8 @@ function fullDate(ts) {
 /* ── constants ── */
 const STATUS_OPTIONS = [
   { value: 'pending',     label: 'قيد الانتظار', color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A', Icon: Clock        },
-  { value: 'in_progress', label: 'جارٍ التنفيذ',  color: '#06B6D4', bg: '#EFF6FF', border: '#BFDBFE', Icon: Activity     },
-  { value: 'resolved',    label: 'تم الحل',       color: '#10B981', bg: '#F0FDF4', border: '#86EFAC', Icon: CheckCircle2 },
+  { value: 'in_progress', label: 'جارٍ التنفيذ',  color: '#4E7CB0', bg: '#EFF6FF', border: '#BFDBFE', Icon: Activity     },
+  { value: 'resolved',    label: 'تم الحل',       color: '#5E9070', bg: '#F0FDF4', border: '#86EFAC', Icon: CheckCircle2 },
 ];
 const STATUS_LOOKUP = Object.fromEntries(STATUS_OPTIONS.map(s => [s.value, s]));
 
@@ -97,27 +97,27 @@ const SEVERITY_MAP = {
   high:   { label: 'عالية',   bg: '#FEF2F2', border: '#FECACA', text: '#991B1B', bar: '#EF4444' },
   urgent: { label: 'عاجل',    bg: '#FEF2F2', border: '#FECACA', text: '#991B1B', bar: '#DC2626' },
   medium: { label: 'متوسطة',  bg: '#FFFBEB', border: '#FDE68A', text: '#92400E', bar: '#F59E0B' },
-  low:    { label: 'منخفضة',  bg: '#EFF6FF', border: '#BFDBFE', text: '#155E75', bar: '#06B6D4' },
+  low:    { label: 'منخفضة',  bg: '#EFF6FF', border: '#BFDBFE', text: '#26456A', bar: '#4E7CB0' },
 };
 
 const REPORT_TYPE_MAP = {
-  water:    { label: 'تسرب مياه',        Icon: Droplets,    color: '#06B6D4' },
+  water:    { label: 'تسرب مياه',        Icon: Droplets,    color: '#4E7CB0' },
   electric: { label: 'عطل كهربائي',       Icon: Zap,         color: '#F59E0B' },
-  crowd:    { label: 'ازدحام حرج',        Icon: UsersIcon,   color: '#8B5CF6' },
+  crowd:    { label: 'ازدحام حرج',        Icon: UsersIcon,   color: '#B4674E' },
   food:     { label: 'مشكلة غذائية',      Icon: Utensils,    color: 'rgb(var(--c-primary))' },
   medical:  { label: 'حالة طبية طارئة',   Icon: HeartPulse,  color: '#EF4444' },
   security: { label: 'بلاغ أمني',         Icon: Shield,      color: '#1F2937' },
   fire:     { label: 'حريق / دخان',       Icon: Flame,       color: '#DC2626' },
   other:    { label: 'بلاغ آخر',          Icon: FileText,    color: 'rgb(var(--c-muted))' },
   shortage: { label: 'نقص في الكميات',    Icon: Package,     color: '#EA580C' },
-  delay:    { label: 'تأخر في التوزيع',   Icon: Hourglass,   color: '#0891B2' },
+  delay:    { label: 'تأخر في التوزيع',   Icon: Hourglass,   color: '#3D6795' },
   quality:  { label: 'مشكلة في الجودة',   Icon: Star,        color: '#EAB308' },
-  hygiene:  { label: 'مخالفة صحية',       Icon: Thermometer, color: '#10B981' },
+  hygiene:  { label: 'مخالفة صحية',       Icon: Thermometer, color: '#5E9070' },
 };
 const MEAL_LABEL = { breakfast: 'الإفطار', lunch: 'الغداء', dinner: 'العشاء' };
-const MEAL_COLOR = { breakfast: '#F59E0B', lunch: '#EF4444', dinner: '#8B5CF6' };
+const MEAL_COLOR = { breakfast: '#F59E0B', lunch: '#EF4444', dinner: '#B4674E' };
 const HOLY_SITE_LABEL = { mina: 'منى', arafat: 'عرفات' };
-const HOLY_SITE_COLOR = { mina: 'rgb(var(--c-primary))', arafat: '#10B981' };
+const HOLY_SITE_COLOR = { mina: 'rgb(var(--c-primary))', arafat: '#5E9070' };
 const HOLY_SITE_ICON  = { mina: MapPin,  arafat: Mountain };
 
 const getRT = r => REPORT_TYPE_MAP[r.reportType] || REPORT_TYPE_MAP[r.type] || { label: r.reportType || 'بلاغ', Icon: FileText, color: 'rgb(var(--c-muted))' };
@@ -217,8 +217,8 @@ export default function AdminReports() {
         {[
           { label: 'إجمالي البلاغات', value: reports.length,         color: 'rgb(var(--c-primary))', Icon: AlertTriangle },
           { label: 'قيد الانتظار',     value: countOf('pending'),     color: '#F59E0B', Icon: Clock         },
-          { label: 'جارٍ التنفيذ',      value: countOf('in_progress'), color: '#06B6D4', Icon: Activity      },
-          { label: 'تم الحل',           value: countOf('resolved'),    color: '#10B981', Icon: CheckCircle2  },
+          { label: 'جارٍ التنفيذ',      value: countOf('in_progress'), color: '#4E7CB0', Icon: Activity      },
+          { label: 'تم الحل',           value: countOf('resolved'),    color: '#5E9070', Icon: CheckCircle2  },
         ].map(c => (
           <div key={c.label}
             className="bg-white rounded-2xl p-4 border border-line shadow-[0_2px_8px_rgb(var(--c-ink)/0.07)] flex items-center gap-3"
@@ -240,8 +240,8 @@ export default function AdminReports() {
         {[
           { value: 'all',         label: 'الكل',         count: reports.length,         Icon: Filter,        color: 'rgb(var(--c-muted))' },
           { value: 'pending',     label: 'قيد الانتظار', count: countOf('pending'),     Icon: Clock,         color: '#F59E0B' },
-          { value: 'in_progress', label: 'جارٍ التنفيذ',  count: countOf('in_progress'), Icon: Activity,      color: '#06B6D4' },
-          { value: 'resolved',    label: 'تم الحل',       count: countOf('resolved'),    Icon: CheckCircle2,  color: '#10B981' },
+          { value: 'in_progress', label: 'جارٍ التنفيذ',  count: countOf('in_progress'), Icon: Activity,      color: '#4E7CB0' },
+          { value: 'resolved',    label: 'تم الحل',       count: countOf('resolved'),    Icon: CheckCircle2,  color: '#5E9070' },
         ].map(opt => {
           const active = filter === opt.value;
           const OIcon = opt.Icon;
@@ -599,14 +599,14 @@ function ReportCard({ report: r, isOpen, onToggle, onStatus, onEdit, onDelete, o
             </div>
             {getShakhis(r.center) && (
               <div className="rounded-xl border p-3 flex items-center gap-2.5"
-                style={{ background: 'linear-gradient(135deg, #F5F3FF, #EDE9FE)', borderColor: '#7C3AED40' }}>
+                style={{ background: 'linear-gradient(135deg, #FBF3EF, #F6E7E0)', borderColor: '#9E574140' }}>
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-                  style={{ background: 'linear-gradient(135deg, #8B5CF6, #7C3AED)' }}>
+                  style={{ background: 'linear-gradient(135deg, #B4674E, #9E5741)' }}>
                   <Hash size={15} className="text-white" weight="bold" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-[9px] text-muted font-bold">رقم الشاخص</p>
-                  <p className="text-sm font-black tracking-widest leading-tight" style={{ color: '#7C3AED' }}>
+                  <p className="text-sm font-black tracking-widest leading-tight" style={{ color: '#9E5741' }}>
                     {getShakhis(r.center)}
                   </p>
                 </div>

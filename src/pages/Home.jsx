@@ -96,22 +96,22 @@ const MenuCard = ({ icon: Icon, title, badge, onClick, variant = 'default' }) =>
 const ACTIVITY_CFG = {
   reports: { label: 'بلاغ طارئ', Icon: Siren, color: '#DC2626', bg: '#FEF2F2', border: '#FECACA' },
   meal_evaluations: { label: 'تقييم وجبات', Icon: ChefHat, color: 'rgb(var(--c-primary))', bg: 'rgb(var(--c-bg))', border: 'rgb(var(--c-line))' },
-  mina_readiness: { label: 'جاهزية منى', Icon: Tent, color: '#0891B2', bg: '#F0F9FF', border: '#BAE6FD' },
-  arafat_readiness: { label: 'جاهزية عرفة', Icon: Mountain, color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE' },
-  logistics_requests: { label: 'طلب إسناد', Icon: Boxes, color: '#06B6D4', bg: '#EFF6FF', border: '#BFDBFE' },
+  mina_readiness: { label: 'جاهزية منى', Icon: Tent, color: '#3D6795', bg: '#EEF4FB', border: '#C4D8ED' },
+  arafat_readiness: { label: 'جاهزية عرفة', Icon: Mountain, color: '#9E5741', bg: '#FBF3EF', border: '#EBCFC3' },
+  logistics_requests: { label: 'طلب إسناد', Icon: Boxes, color: '#4E7CB0', bg: '#EFF6FF', border: '#BFDBFE' },
 };
 
 const STATUS_DATA = {
   pending:     { label: 'قيد الانتظار', bg: '#FEF9C3', text: '#854D0E' },
-  in_progress: { label: 'جارٍ التنفيذ', bg: '#DBEAFE', text: '#155E75' },
+  in_progress: { label: 'جارٍ التنفيذ', bg: '#DBEAFE', text: '#26456A' },
   resolved:    { label: 'تم الحل',      bg: '#DCFCE7', text: '#166534' },
-  approved:    { label: 'موافق عليه',   bg: '#DBEAFE', text: '#155E75' },
+  approved:    { label: 'موافق عليه',   bg: '#DBEAFE', text: '#26456A' },
   delivered:   { label: 'تم التسليم',   bg: '#DCFCE7', text: '#166534' },
   rejected:    { label: 'مرفوض',        bg: '#FEE2E2', text: '#991B1B' },
 };
 
 const SEVERITY_LABEL = { high: 'عالي', medium: 'متوسط', low: 'منخفض' };
-const SEVERITY_COLOR = { high: '#DC2626', medium: '#D97706', low: '#06B6D4' };
+const SEVERITY_COLOR = { high: '#DC2626', medium: '#D97706', low: '#4E7CB0' };
 
 const toMs = doc => doc.timestamp?.toMillis?.() ?? doc.createdAt?.toMillis?.() ?? 0;
 const fmtTime = ms => ms ? new Date(ms).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';

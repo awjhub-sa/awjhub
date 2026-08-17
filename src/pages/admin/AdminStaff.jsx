@@ -74,7 +74,7 @@ async function createStaffRow(email, password, userData) {
 }
 
 const ROLES = [
-  { value: 'admin', label: 'مسؤول', Icon: Crown,       color: '#7C3AED' },
+  { value: 'admin', label: 'مسؤول', Icon: Crown,       color: '#9E5741' },
   { value: 'staff', label: 'موظف',  Icon: ShieldCheck, color: 'rgb(var(--c-primary))' },
 ];
 const ROLE_META = Object.fromEntries(ROLES.map(r => [r.value, r]));
@@ -454,7 +454,7 @@ export default function AdminStaff() {
               <Chip active={filter === 'all'} onClick={() => setFilter('all')} count={counts.all} Icon={Filter} color="rgb(var(--c-muted))">
                 الكل
               </Chip>
-              <Chip active={filter === 'admin'} onClick={() => setFilter('admin')} count={counts.admin} Icon={Crown} color="#7C3AED">
+              <Chip active={filter === 'admin'} onClick={() => setFilter('admin')} count={counts.admin} Icon={Crown} color="#9E5741">
                 المسؤولون
               </Chip>
               <Chip active={filter === 'staff'} onClick={() => setFilter('staff')} count={counts.staff} Icon={ShieldCheck} color="rgb(var(--c-primary))">

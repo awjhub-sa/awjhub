@@ -20,10 +20,10 @@ import {
 
 const SOURCES = [
   { key: 'reports',           col: 'reports',            label: 'بلاغ ميداني',   icon: AlertTriangle, color: '#E53E3E' },
-  { key: 'logistics_requests',col: 'logistics_requests', label: 'طلب إسناد',     icon: Truck,         color: '#06B6D4' },
+  { key: 'logistics_requests',col: 'logistics_requests', label: 'طلب إسناد',     icon: Truck,         color: '#4E7CB0' },
   { key: 'meal_evaluations',  col: 'meal_evaluations',   label: 'تقييم وجبات',   icon: Utensils,      color: 'rgb(var(--c-primary))' },
   { key: 'mina_readiness',    col: 'mina_readiness',     label: 'جاهزية منى',    icon: Mountain,      color: '#16A34A' },
-  { key: 'arafat_readiness',  col: 'arafat_readiness',   label: 'جاهزية عرفة',   icon: Mountain,      color: '#0891B2' },
+  { key: 'arafat_readiness',  col: 'arafat_readiness',   label: 'جاهزية عرفة',   icon: Mountain,      color: '#3D6795' },
 ];
 
 const FILTERS = [

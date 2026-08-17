@@ -38,7 +38,7 @@ import { StatusTimerChip, StatusTimeline } from '../../components/StatusTimeline
 import CenterNotesPanel from '../../components/CenterNotesPanel.jsx';
 
 const HOLY_SITE_LABEL = { mina: 'منى', arafat: 'عرفات' };
-const HOLY_SITE_COLOR = { mina: 'rgb(var(--c-primary))', arafat: '#10B981' };
+const HOLY_SITE_COLOR = { mina: 'rgb(var(--c-primary))', arafat: '#5E9070' };
 const HOLY_SITE_ICON  = { mina: MapPin,   arafat: Mountain };
 
 /* A request is "new" when pending AND submitted within the last 10 minutes */
@@ -59,17 +59,17 @@ const REPORT_TYPE_LABEL = {
 /* ── constants ── */
 const STATUS_OPTIONS = [
   { value: 'pending',   label: 'قيد الانتظار', color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A', Icon: Clock        },
-  { value: 'approved',  label: 'موافق عليه',   color: '#06B6D4', bg: '#EFF6FF', border: '#BFDBFE', Icon: ThumbsUp     },
-  { value: 'delivered', label: 'تم التسليم',   color: '#10B981', bg: '#F0FDF4', border: '#86EFAC', Icon: CheckCircle2 },
+  { value: 'approved',  label: 'موافق عليه',   color: '#4E7CB0', bg: '#EFF6FF', border: '#BFDBFE', Icon: ThumbsUp     },
+  { value: 'delivered', label: 'تم التسليم',   color: '#5E9070', bg: '#F0FDF4', border: '#86EFAC', Icon: CheckCircle2 },
   { value: 'rejected',  label: 'مرفوض',        color: '#EF4444', bg: '#FEF2F2', border: '#FECACA', Icon: XCircle      },
 ];
 const STATUS_LOOKUP = Object.fromEntries(STATUS_OPTIONS.map(s => [s.value, s]));
 const getSB = r => STATUS_LOOKUP[r.status] || STATUS_OPTIONS[0];
 
 const SUPPORT_TYPES = [
-  { value: 'internal', label: 'داخلي',            short: 'داخلي',         Icon: ArrowRight, color: '#06B6D4' },
-  { value: 'external', label: 'خارجي',            short: 'خارجي',         Icon: ArrowLeft,  color: '#8B5CF6' },
-  { value: 'both',     label: 'داخلي وخارجي',     short: 'داخلي وخارجي',  Icon: Layers,     color: '#0E7490' },
+  { value: 'internal', label: 'داخلي',            short: 'داخلي',         Icon: ArrowRight, color: '#4E7CB0' },
+  { value: 'external', label: 'خارجي',            short: 'خارجي',         Icon: ArrowLeft,  color: '#B4674E' },
+  { value: 'both',     label: 'داخلي وخارجي',     short: 'داخلي وخارجي',  Icon: Layers,     color: '#2F5580' },
 ];
 const SUPPORT_LOOKUP = Object.fromEntries(SUPPORT_TYPES.map(t => [t.value, t]));
 
@@ -165,7 +165,7 @@ export default function AdminLogistics() {
         Icon={Truck}
         title="الإسناد اللوجستي"
         subtitle={`${requests.length} طلب إجمالاً · تحديث فوري`}
-        gradient={{ from: '#93C5FD', to: '#06B6D4' }}
+        gradient={{ from: '#93C5FD', to: '#4E7CB0' }}
         glowColor="rgba(49,130,206,0.4)"
         right={
           countOf('pending') > 0 ? (
@@ -185,8 +185,8 @@ export default function AdminLogistics() {
         {[
           { label: 'إجمالي الطلبات', value: requests.length,       color: 'rgb(var(--c-primary))', Icon: Truck        },
           { label: 'قيد الانتظار',    value: countOf('pending'),    color: '#F59E0B', Icon: Clock        },
-          { label: 'موافق عليه',      value: countOf('approved'),   color: '#06B6D4', Icon: ThumbsUp     },
-          { label: 'تم التسليم',      value: countOf('delivered'),  color: '#10B981', Icon: CheckCircle2 },
+          { label: 'موافق عليه',      value: countOf('approved'),   color: '#4E7CB0', Icon: ThumbsUp     },
+          { label: 'تم التسليم',      value: countOf('delivered'),  color: '#5E9070', Icon: CheckCircle2 },
         ].map(c => (
           <div key={c.label}
             className="bg-white rounded-2xl p-4 border border-line shadow-[0_2px_8px_rgb(var(--c-ink)/0.07)] flex items-center gap-3"
@@ -208,8 +208,8 @@ export default function AdminLogistics() {
         {[
           { value: 'all',       label: 'الكل',         count: requests.length,        Icon: Filter,        color: 'rgb(var(--c-muted))' },
           { value: 'pending',   label: 'قيد الانتظار', count: countOf('pending'),     Icon: Clock,         color: '#F59E0B' },
-          { value: 'approved',  label: 'موافق عليه',   count: countOf('approved'),    Icon: ThumbsUp,      color: '#06B6D4' },
-          { value: 'delivered', label: 'تم التسليم',   count: countOf('delivered'),   Icon: CheckCircle2,  color: '#10B981' },
+          { value: 'approved',  label: 'موافق عليه',   count: countOf('approved'),    Icon: ThumbsUp,      color: '#4E7CB0' },
+          { value: 'delivered', label: 'تم التسليم',   count: countOf('delivered'),   Icon: CheckCircle2,  color: '#5E9070' },
           { value: 'rejected',  label: 'مرفوض',         count: countOf('rejected'),    Icon: XCircle,       color: '#EF4444' },
         ].map(opt => {
           const active = filter === opt.value;
@@ -244,7 +244,7 @@ export default function AdminLogistics() {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="بحث برقم الطلب، البلاغ، المركز، المراقب..."
-          className="w-full pr-11 pl-4 py-3 rounded-2xl border-2 border-line bg-white text-sm font-medium text-ink placeholder:text-muted focus:border-[#06B6D4] focus:outline-none transition-colors shadow-[0_2px_8px_rgb(var(--c-ink)/0.05)]"
+          className="w-full pr-11 pl-4 py-3 rounded-2xl border-2 border-line bg-white text-sm font-medium text-ink placeholder:text-muted focus:border-[#4E7CB0] focus:outline-none transition-colors shadow-[0_2px_8px_rgb(var(--c-ink)/0.05)]"
         />
         {searchTerm && (
           <button onClick={() => setSearchTerm('')}
@@ -335,7 +335,7 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
       {/* "جديد" floating pill */}
       {isNew && !isOpen && (
         <span className="absolute top-2 left-2 z-10 inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md text-white shadow-md tabular-nums tracking-wide"
-          style={{ background: 'linear-gradient(135deg, #06B6D4, #0891B2)' }}>
+          style={{ background: 'linear-gradient(135deg, #4E7CB0, #3D6795)' }}>
           <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
           جديد
         </span>
@@ -380,7 +380,7 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
                 isNew ? 'badge-pulse-blue text-white' : 'text-ink border'
               }`}
                 style={isNew
-                  ? { background: 'linear-gradient(135deg, #06B6D4, #0891B2)' }
+                  ? { background: 'linear-gradient(135deg, #4E7CB0, #3D6795)' }
                   : { background: '#EFF6FF', borderColor: '#BFDBFE' }}>
                 #{r.requestNumber}
               </span>
@@ -520,7 +520,7 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
           {/* Quick status changer */}
           <div className="bg-white rounded-2xl border border-line p-3">
             <p className="text-[10px] font-bold text-muted mb-2 flex items-center gap-1">
-              <Activity size={11} weight="bold" className="text-[#06B6D4]" />
+              <Activity size={11} weight="bold" className="text-[#4E7CB0]" />
               تغيير الحالة
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -550,7 +550,7 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
               {hasInternal && (
                 <div className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4 flex items-center gap-3">
                   <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-                    style={{ background: 'linear-gradient(135deg, #67E8F9, #06B6D4)' }}>
+                    style={{ background: 'linear-gradient(135deg, #84AAD4, #4E7CB0)' }}>
                     <ArrowRight size={18} className="text-white" weight="bold" />
                   </div>
                   <div>
@@ -562,7 +562,7 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
               {hasExternal && (
                 <div className="rounded-2xl border-2 border-violet-200 bg-gradient-to-br from-violet-50 to-white p-4 flex items-center gap-3">
                   <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-                    style={{ background: 'linear-gradient(135deg, #A78BFA, #8B5CF6)' }}>
+                    style={{ background: 'linear-gradient(135deg, #C98D74, #B4674E)' }}>
                     <ArrowLeft size={18} className="text-white" weight="bold" />
                   </div>
                   <div>
@@ -611,14 +611,14 @@ function RequestCard({ request: r, isOpen, onToggle, onStatus, onEdit, onDelete,
             </div>
             {getShakhis(r.center) && (
               <div className="rounded-xl border p-3 flex items-center gap-2.5"
-                style={{ background: 'linear-gradient(135deg, #F5F3FF, #EDE9FE)', borderColor: '#7C3AED40' }}>
+                style={{ background: 'linear-gradient(135deg, #FBF3EF, #F6E7E0)', borderColor: '#9E574140' }}>
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-                  style={{ background: 'linear-gradient(135deg, #8B5CF6, #7C3AED)' }}>
+                  style={{ background: 'linear-gradient(135deg, #B4674E, #9E5741)' }}>
                   <Hash size={15} className="text-white" weight="bold" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-[9px] text-muted font-bold">رقم الشاخص</p>
-                  <p className="text-sm font-black tracking-widest leading-tight" style={{ color: '#7C3AED' }}>
+                  <p className="text-sm font-black tracking-widest leading-tight" style={{ color: '#9E5741' }}>
                     {getShakhis(r.center)}
                   </p>
                 </div>
@@ -730,7 +730,7 @@ function EditModal({ req, onClose, onSave }) {
             <div className="relative shrink-0">
               <div className="absolute inset-0 rounded-xl blur-md opacity-40 bg-blue-500" />
               <div className="relative w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
-                style={{ background: 'linear-gradient(135deg, #67E8F9, #06B6D4)' }}>
+                style={{ background: 'linear-gradient(135deg, #84AAD4, #4E7CB0)' }}>
                 <Package size={18} className="text-white" weight="regular" />
               </div>
             </div>
@@ -750,7 +750,7 @@ function EditModal({ req, onClose, onSave }) {
           <div className="grid grid-cols-2 gap-2.5">
             {[
               { label: 'المراقب', val: req.observer, Icon: User,     color: 'rgb(var(--c-primary))' },
-              { label: 'المركز',  val: req.center,   Icon: Building2,color: '#06B6D4' },
+              { label: 'المركز',  val: req.center,   Icon: Building2,color: '#4E7CB0' },
             ].map(c => (
               <div key={c.label} className="bg-white rounded-xl border border-line p-2.5 flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
@@ -868,7 +868,7 @@ function EditModal({ req, onClose, onSave }) {
           </button>
           <button onClick={handleSave} disabled={saving}
             className="flex-1 py-3 rounded-xl text-sm font-black text-white flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-60 shadow-md"
-            style={{ background: 'linear-gradient(135deg, #67E8F9, #06B6D4)' }}>
+            style={{ background: 'linear-gradient(135deg, #84AAD4, #4E7CB0)' }}>
             {saving
               ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               : <Save size={15} weight="bold" />}

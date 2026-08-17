@@ -41,7 +41,7 @@ function centerHasMealInMenu(centerId, day, mealKey) {
 const MEAL_CATEGORY_META = {
   cooked:     { label: 'مطبوخة', Icon: Flame,       color: '#DC2626', bg: '#FEF2F2', border: '#FECACA' },
   dry:        { label: 'جافة',   Icon: Package,     color: 'rgb(var(--c-primary))', bg: 'rgb(var(--c-bg))', border: 'rgb(var(--c-line))' },
-  sterilized: { label: 'معقمة',  Icon: ShieldCheck, color: '#0891B2', bg: '#EFF6FF', border: '#BFDBFE' },
+  sterilized: { label: 'معقمة',  Icon: ShieldCheck, color: '#3D6795', bg: '#EFF6FF', border: '#BFDBFE' },
 };
 
 /* Normalize a meal_evaluation record's score to /10 — same 3-way fallback
@@ -65,14 +65,14 @@ function scoreStyle(score) {
 
 const PHASES = [
   { id: 1, label: 'التجهيز',  short: 'تجهيز', color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A', glow: 'rgba(245,158,11,0.45)' },
-  { id: 2, label: 'الطبخ',    short: 'طبخ',   color: '#06B6D4', bg: '#ECFEFF', border: '#A5F3FC', glow: 'rgba(239,68,68,0.45)'  },
-  { id: 3, label: 'التوزيع',  short: 'توزيع', color: '#10B981', bg: '#F0FDF4', border: '#6EE7B7', glow: 'rgba(16,185,129,0.45)' },
+  { id: 2, label: 'الطبخ',    short: 'طبخ',   color: '#4E7CB0', bg: '#EEF4FB', border: '#C4D8ED', glow: 'rgba(239,68,68,0.45)'  },
+  { id: 3, label: 'التوزيع',  short: 'توزيع', color: '#5E9070', bg: '#F1F6F2', border: '#CADFD1', glow: 'rgba(94,144,112,0.45)' },
 ];
 
 const MEALS = [
   { id: 'breakfast', label: 'الإفطار', icon: Sunrise,   color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A' },
-  { id: 'lunch',     label: 'الغداء',  icon: SunMedium, color: '#06B6D4', bg: '#ECFEFF', border: '#A5F3FC' },
-  { id: 'dinner',    label: 'العشاء',  icon: MoonStar,  color: '#8B5CF6', bg: '#F5F3FF', border: '#DDD6FE' },
+  { id: 'lunch',     label: 'الغداء',  icon: SunMedium, color: '#4E7CB0', bg: '#EEF4FB', border: '#C4D8ED' },
+  { id: 'dinner',    label: 'العشاء',  icon: MoonStar,  color: '#B4674E', bg: '#FBF3EF', border: '#EBCFC3' },
 ];
 
 const DAYS = [
@@ -438,8 +438,8 @@ export default function AdminPhases() {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'مراكز هذه الوجبة', value: totalEligible, color: '#8B5CF6', icon: Layers       },
-          { label: 'مكتمل الوجبات',   value: fullyDone,    color: '#10B981', icon: CheckCircle2 },
+          { label: 'مراكز هذه الوجبة', value: totalEligible, color: '#B4674E', icon: Layers       },
+          { label: 'مكتمل الوجبات',   value: fullyDone,    color: '#5E9070', icon: CheckCircle2 },
           { label: 'قيد التنفيذ',     value: inProgress,   color: '#F59E0B', icon: Activity     },
           { label: 'لم يبدأ',         value: notStarted,   color: 'rgb(var(--c-muted))', icon: Clock        },
         ].map(c => (
@@ -478,7 +478,7 @@ export default function AdminPhases() {
             className="h-full rounded-full transition-all duration-700"
             style={{
               width: `${overallPct}%`,
-              background: overallPct === 100 ? '#10B981' : overallPct > 50 ? '#F59E0B' : mealMeta.color,
+              background: overallPct === 100 ? '#5E9070' : overallPct > 50 ? '#F59E0B' : mealMeta.color,
             }}
           />
         </div>
@@ -601,7 +601,7 @@ export default function AdminPhases() {
               {/* Progress */}
               <div className="text-center">
                 <p className="text-base font-black tabular-nums"
-                  style={{ color: pct === 100 ? '#10B981' : pct > 0 ? '#F59E0B' : '#D1D5DB' }}>
+                  style={{ color: pct === 100 ? '#5E9070' : pct > 0 ? '#F59E0B' : '#D1D5DB' }}>
                   {pct}%
                 </p>
                 <p className="text-[9px] text-muted mt-0.5">{row.total}/{maxDone}</p>
@@ -1086,7 +1086,7 @@ function ReportsCenterList({ centers, selectedDay, phasesData, evalLookup, cente
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[9px] font-bold text-muted">إجمالي المراحل</span>
                   <span className="text-[10px] font-black tabular-nums"
-                    style={{ color: pct === 100 ? '#10B981' : pct > 0 ? '#F59E0B' : 'rgb(var(--c-muted))' }}>
+                    style={{ color: pct === 100 ? '#5E9070' : pct > 0 ? '#F59E0B' : 'rgb(var(--c-muted))' }}>
                     {s.phasesDone}/{s.maxPhases} · {pct}%
                   </span>
                 </div>
@@ -1094,7 +1094,7 @@ function ReportsCenterList({ centers, selectedDay, phasesData, evalLookup, cente
                   <div className="h-full rounded-full transition-all"
                     style={{
                       width: `${pct}%`,
-                      background: pct === 100 ? '#10B981' : pct > 0 ? '#F59E0B' : 'rgb(var(--c-line))',
+                      background: pct === 100 ? '#5E9070' : pct > 0 ? '#F59E0B' : 'rgb(var(--c-line))',
                     }} />
                 </div>
               </div>

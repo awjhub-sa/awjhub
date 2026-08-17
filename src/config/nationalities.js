@@ -4,17 +4,20 @@ function range(s, e) {
 
 export const NATIONALITIES = [
   /* Eight hues spread evenly round the wheel. None fall inside the navy band
-     (204–235) or near the #D8A15C accent, so a nationality chip can never be
-     mistaken for a brand element or an active state. The previous set had two
-     blues (#3182CE, #1E40AF) sitting directly on the brand hue. */
-  { key: 'indonesia',   label: 'إندونيسيا', flag: '🇮🇩', centers: range(60, 90),             color: '#E11D48' },
-  { key: 'iraq',        label: 'العراق',     flag: '🇮🇶', centers: range(40, 51),             color: '#EA580C' },
-  { key: 'yemen',       label: 'اليمن',      flag: '🇾🇪', centers: range(20, 25),             color: '#CA8A04' },
-  { key: 'bangladesh1', label: 'بنغلاديش (٧-٨)',     flag: '🇧🇩', centers: [7, 8],       color: '#65A30D' },
-  { key: 'bangladesh2', label: 'بنغلاديش (١٠١-١٠٢)', flag: '🇧🇩', centers: [101, 102],   color: '#16A34A' },
-  { key: 'afghanistan', label: 'أفغانستان',  flag: '🇦🇫', centers: [26, ...range(30, 35)],    color: '#7C3AED' },
-  { key: 'comoros',     label: 'جزر القمر',  flag: '🇰🇲', centers: [26],                      color: '#0891B2' },
-  { key: 'bahrain',     label: 'البحرين',    flag: '🇧🇭', centers: [99],                      color: '#C026D3' },
+     (204–235) or near the #B99A64 accent, so a nationality chip can never be
+     mistaken for a brand element or an active state.
+     They are deliberately muted — around 55% saturation rather than the 80–90%
+     they carried before. A dozen chips at full chroma shouted over a brand
+     built on a quiet navy and a quiet gold; the hues still separate cleanly,
+     they just no longer compete with the page. */
+  { key: 'indonesia',   label: 'إندونيسيا', flag: '🇮🇩', centers: range(60, 90),             color: '#B84A5E' },
+  { key: 'iraq',        label: 'العراق',     flag: '🇮🇶', centers: range(40, 51),             color: '#B96438' },
+  { key: 'yemen',       label: 'اليمن',      flag: '🇾🇪', centers: range(20, 25),             color: '#9C7C2A' },
+  { key: 'bangladesh1', label: 'بنغلاديش (٧-٨)',     flag: '🇧🇩', centers: [7, 8],       color: '#6E8C3A' },
+  { key: 'bangladesh2', label: 'بنغلاديش (١٠١-١٠٢)', flag: '🇧🇩', centers: [101, 102],   color: '#3F8B57' },
+  { key: 'afghanistan', label: 'أفغانستان',  flag: '🇦🇫', centers: [26, ...range(30, 35)],    color: '#6F5B96' },
+  { key: 'comoros',     label: 'جزر القمر',  flag: '🇰🇲', centers: [26],                      color: '#3D6795' },
+  { key: 'bahrain',     label: 'البحرين',    flag: '🇧🇭', centers: [99],                      color: '#96528F' },
   { key: 'bohra',       label: 'البهرة',     flag: '🕌',  centers: [5],                       color: 'rgb(var(--c-primary))' },
 ];
 

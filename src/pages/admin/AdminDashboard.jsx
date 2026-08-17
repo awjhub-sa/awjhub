@@ -48,33 +48,33 @@ const REPORT_TYPE = {
 };
 
 const MEAL_LABEL = { breakfast: 'الإفطار', lunch: 'الغداء', dinner: 'العشاء' };
-const MEAL_COLOR = { breakfast: '#F59E0B', lunch: '#EF4444', dinner: '#8B5CF6' };
+const MEAL_COLOR = { breakfast: '#F59E0B', lunch: '#EF4444', dinner: '#B4674E' };
 const HOLY_SITE_LABEL = { mina: 'منى', arafat: 'عرفات' };
-const HOLY_SITE_COLOR = { mina: 'rgb(var(--c-primary))', arafat: '#10B981' };
+const HOLY_SITE_COLOR = { mina: 'rgb(var(--c-primary))', arafat: '#5E9070' };
 const HOLY_SITE_ICON  = { mina: MapPin,   arafat: Mountain };
 
 const SEV = {
   high:   { label: 'عالية',   bg: '#FEF2F2', text: '#DC2626', border: '#FCA5A5', bar: '#EF4444' },
   urgent: { label: 'عاجل',    bg: '#FEF2F2', text: '#DC2626', border: '#FCA5A5', bar: '#DC2626' },
   medium: { label: 'متوسطة',  bg: '#FFFBEB', text: '#B45309', border: '#FCD34D', bar: '#F59E0B' },
-  low:    { label: 'منخفضة',  bg: '#EFF6FF', text: '#0E7490', border: '#93C5FD', bar: '#06B6D4' },
+  low:    { label: 'منخفضة',  bg: '#EFF6FF', text: '#2F5580', border: '#93C5FD', bar: '#4E7CB0' },
 };
 
 const STATUS = {
   pending:     { label: 'قيد الانتظار', bg: '#FFFBEB', text: '#B45309', color: '#B45309', border: '#FDE68A', Icon: Clock        },
-  in_progress: { label: 'جارٍ التنفيذ', bg: '#EFF6FF', text: '#0E7490', color: '#0E7490', border: '#BFDBFE', Icon: Activity     },
+  in_progress: { label: 'جارٍ التنفيذ', bg: '#EFF6FF', text: '#2F5580', color: '#2F5580', border: '#BFDBFE', Icon: Activity     },
   resolved:    { label: 'تم الحل',      bg: '#F0FDF4', text: '#15803D', color: '#15803D', border: '#86EFAC', Icon: CheckCircle2 },
 };
 
 const SUPPORT = {
-  internal: { label: 'داخلي',            short: 'داخلي',        Icon: ArrowRight, color: '#06B6D4' },
-  external: { label: 'خارجي',            short: 'خارجي',        Icon: ArrowLeft,  color: '#8B5CF6' },
-  both:     { label: 'داخلي وخارجي',     short: 'مشترك',         Icon: Layers,     color: '#0E7490' },
+  internal: { label: 'داخلي',            short: 'داخلي',        Icon: ArrowRight, color: '#4E7CB0' },
+  external: { label: 'خارجي',            short: 'خارجي',        Icon: ArrowLeft,  color: '#B4674E' },
+  both:     { label: 'داخلي وخارجي',     short: 'مشترك',         Icon: Layers,     color: '#2F5580' },
 };
 
 const LOGISTICS_STATUS = {
   pending:   { label: 'قيد الانتظار', bg: '#FFFBEB', text: '#B45309', color: '#B45309', border: '#FDE68A', Icon: Clock        },
-  approved:  { label: 'موافق عليه',   bg: '#EFF6FF', text: '#0E7490', color: '#0E7490', border: '#BFDBFE', Icon: ThumbsUp     },
+  approved:  { label: 'موافق عليه',   bg: '#EFF6FF', text: '#2F5580', color: '#2F5580', border: '#BFDBFE', Icon: ThumbsUp     },
   delivered: { label: 'تم التسليم',   bg: '#F0FDF4', text: '#15803D', color: '#15803D', border: '#86EFAC', Icon: CheckCircle2 },
   rejected:  { label: 'مرفوض',        bg: '#FEF2F2', text: '#DC2626', color: '#DC2626', border: '#FECACA', Icon: XCircle      },
 };
@@ -429,7 +429,7 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange, onSaveN
                 </span>
                 {item.requestNumber && (
                   <span className="text-[10px] font-black px-2 py-0.5 rounded-md tabular-nums"
-                    style={{ background: '#EFF6FF', color: '#06B6D4', border: '1px solid #BFDBFE' }}>
+                    style={{ background: '#EFF6FF', color: '#4E7CB0', border: '1px solid #BFDBFE' }}>
                     #{item.requestNumber}
                   </span>
                 )}
@@ -491,7 +491,7 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange, onSaveN
             terminalStatuses={TERMINAL_LOGISTICS_STATUSES}
             statusOrder={['pending', 'approved', 'delivered', 'rejected']}
             statusMeta={LOGISTICS_STATUS}
-            accentColor="#0891B2"
+            accentColor="#3D6795"
           />
 
           {/* Status changer */}
@@ -527,7 +527,7 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange, onSaveN
               {item.qtyInternal != null && (
                 <div className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-3.5 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-                    style={{ background: 'linear-gradient(135deg, #67E8F9, #06B6D4)' }}>
+                    style={{ background: 'linear-gradient(135deg, #84AAD4, #4E7CB0)' }}>
                     <ArrowRight size={16} className="text-white" weight="bold" />
                   </div>
                   <div>
@@ -539,7 +539,7 @@ function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange, onSaveN
               {item.qtyExternal != null && (
                 <div className="rounded-2xl border-2 border-violet-200 bg-gradient-to-br from-violet-50 to-white p-3.5 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-                    style={{ background: 'linear-gradient(135deg, #A78BFA, #8B5CF6)' }}>
+                    style={{ background: 'linear-gradient(135deg, #C98D74, #B4674E)' }}>
                     <ArrowLeft size={16} className="text-white" weight="bold" />
                   </div>
                   <div>
@@ -761,9 +761,9 @@ export default function AdminDashboard() {
   const STATS = [
     { label: 'البلاغات الميدانية', value: counts.reports,   Icon: AlertTriangle,  color: '#EF4444', sub: 'بلاغات نشطة',    nav: '/admin/reports'   },
     { label: 'تقييم الوجبات',       value: counts.evals,     Icon: Utensils,       color: 'rgb(var(--c-primary))', sub: 'جودة الوجبات',   nav: '/admin/phases'    },
-    { label: 'طلبات الإسناد',       value: counts.logistics, Icon: Truck,          color: '#06B6D4', sub: 'طلبات لوجستية',  nav: '/admin/logistics' },
-    { label: 'جاهزية منى',          value: counts.mina,      Icon: ShieldCheck,    color: '#10B981', sub: 'تقييمات منى',    nav: '/admin/analytics' },
-    { label: 'جاهزية عرفة',         value: counts.arafat,    Icon: ShieldCheck,    color: '#0E7490', sub: 'تقييمات عرفة',   nav: '/admin/analytics' },
+    { label: 'طلبات الإسناد',       value: counts.logistics, Icon: Truck,          color: '#4E7CB0', sub: 'طلبات لوجستية',  nav: '/admin/logistics' },
+    { label: 'جاهزية منى',          value: counts.mina,      Icon: ShieldCheck,    color: '#5E9070', sub: 'تقييمات منى',    nav: '/admin/analytics' },
+    { label: 'جاهزية عرفة',         value: counts.arafat,    Icon: ShieldCheck,    color: '#2F5580', sub: 'تقييمات عرفة',   nav: '/admin/analytics' },
   ];
 
   return (
@@ -937,10 +937,10 @@ export default function AdminDashboard() {
           <PanelHeader
             title="طلبات الإسناد"
             subtitle={`${counts.logistics} طلب ${pendingLogistics > 0 ? `· ${pendingLogistics} قيد الانتظار` : ''}`}
-            gradient={{ from: '#67E8F9', to: '#0891B2' }}
+            gradient={{ from: '#84AAD4', to: '#3D6795' }}
             Icon={Truck}
             onViewAll={() => navigate('/admin/logistics')}
-            viewAllColor="#0891B2"
+            viewAllColor="#3D6795"
             badge={pendingLogistics}
             badgeVariant="blue"
           />
@@ -979,7 +979,7 @@ export default function AdminDashboard() {
                   {/* "جديد" pill on new rows */}
                   {isNew && (
                     <span className="absolute top-2 left-2 inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-md text-white shadow-md tabular-nums tracking-wide"
-                      style={{ background: 'linear-gradient(135deg, #06B6D4, #0891B2)' }}>
+                      style={{ background: 'linear-gradient(135deg, #4E7CB0, #3D6795)' }}>
                       <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                       جديد
                     </span>
@@ -1010,7 +1010,7 @@ export default function AdminDashboard() {
                           isNew ? 'badge-pulse-blue text-white' : 'text-blue-700 border'
                         }`}
                           style={isNew
-                            ? { background: 'linear-gradient(135deg, #06B6D4, #0891B2)' }
+                            ? { background: 'linear-gradient(135deg, #4E7CB0, #3D6795)' }
                             : { background: '#EFF6FF', borderColor: '#BFDBFE' }}>
                           #{item.requestNumber}
                         </span>
@@ -1130,8 +1130,8 @@ export default function AdminDashboard() {
             const meta = isMeal
               ? { Icon: Utensils,    color: '#F59E0B', label: 'تقييم جودة الوجبات', nav: '/admin/phases'    }
               : isMina
-              ? { Icon: ShieldCheck, color: '#10B981', label: 'جاهزية مشعر منى',    nav: '/admin/analytics' }
-              : { Icon: ShieldCheck, color: '#0E7490', label: 'جاهزية مشعر عرفة',   nav: '/admin/analytics' };
+              ? { Icon: ShieldCheck, color: '#5E9070', label: 'جاهزية مشعر منى',    nav: '/admin/analytics' }
+              : { Icon: ShieldCheck, color: '#2F5580', label: 'جاهزية مشعر عرفة',   nav: '/admin/analytics' };
 
             return (
               <button key={`${item._col}-${item.id}`}

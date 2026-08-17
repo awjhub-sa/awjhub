@@ -263,8 +263,8 @@ export function visibleFieldKeys(definition) {
 /* ── Assignment status ────────────────────────────────────── */
 export const FORM_STATUSES = [
   { value: 'pending',   label: 'في الانتظار', color: '#64748B' },
-  { value: 'draft',     label: 'مسودة',       color: '#0891B2' },
-  { value: 'submitted', label: 'مُسلَّم',      color: '#0D9488' },
+  { value: 'draft',     label: 'مسودة',       color: '#3D6795' },
+  { value: 'submitted', label: 'مُسلَّم',      color: '#3D6795' },
   { value: 'accepted',  label: 'مقبول',       color: '#16A34A' },
   { value: 'returned',  label: 'مُعاد للتعديل', color: '#F59E0B' },
 ];
