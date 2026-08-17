@@ -21,6 +21,7 @@ import {
   Users as UsersRound,
   UserGear as UserRoundCog,
   BellRinging as BellRing,
+  MoonStars,
   Palette,
   SidebarSimple as PanelLeft,
   X,
@@ -154,49 +155,68 @@ function HeaderClock() {
     return () => clearInterval(id);
   }, []);
 
+  /* No box. Three facts set as one line of type, parted by hairlines rather
+     than by punctuation — a boxed chip beside a boxed chip beside a boxed chip
+     was what made the old bar read as a toolbar instead of a masthead. */
   return (
-    <div className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-lg shadow-[0_2px_8px_rgb(var(--c-primary-900)/0.28)]"
-      style={{ background: 'rgb(var(--c-primary))' }}>
-      <CalendarBlank size={13} className="text-accent flex-shrink-0" weight="bold" />
-      <div className="flex items-center gap-2 whitespace-nowrap">
-        <span className="text-[11px] font-black text-white">{formatHijri(now)}</span>
-        <span className="text-white/25">·</span>
-        <span className="text-[11px] font-black text-white" dir="ltr">
+    <div className="hidden sm:flex items-stretch gap-3 pl-1 whitespace-nowrap">
+      <CalendarBlank size={15} weight="light" className="text-accent/70 self-center flex-shrink-0" />
+
+      <div className="flex flex-col justify-center leading-none">
+        <span className="text-[12px] font-black text-white">{formatHijri(now)}</span>
+        <span className="text-[9.5px] font-bold text-white/45 mt-1" dir="ltr">
           {now.toISOString().slice(0, 10)}
         </span>
-        <span className="text-white/25">·</span>
-        <span className="text-[11px] font-black text-accent tabular-nums">
-          {now.toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit', hour12: true })}
-        </span>
       </div>
+
+      <span className="w-px bg-white/15 my-1" />
+
+      <span className="self-center text-[15px] font-black text-accent tabular-nums tracking-tight">
+        {now.toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit', hour12: true })}
+      </span>
     </div>
   );
 }
 
-/* Solid navy, not a navy tint. A translucent chip over the teal bar picks up
-   the teal underneath and washes out; filling it outright is what makes it read
-   as a control sitting on the bar rather than a smudge in it.
-
-   Zero is shown, not hidden: "0 بلاغ معلّق" is information, and a chip that
-   disappears when clear makes the header jump every time one is resolved. */
+/* Quiet by default, lit when it matters.
+ *
+ * The old chip looked identical whether it held nothing or held nine — same
+ * fill, same weight, only the number changed — so an operations lead had to
+ * read both chips to learn what the bar already knew. Now an empty count is a
+ * hairline ghost and a live one fills with the brand gold, so the header is
+ * scannable from across a desk.
+ *
+ * Zero is shown, not hidden: "٠ بلاغ معلّق" is information, and a chip that
+ * vanishes when clear makes the header jump every time one is resolved. */
 function HeaderStat({ count, label, Icon, onClick }) {
   const live = count > 0;
   return (
     <motion.button
       onClick={onClick}
-      whileHover={{ scale: 1.04 }}
+      whileHover={{ scale: 1.04, y: -1 }}
       whileTap={{ scale: 0.96 }}
-      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-shadow shadow-[0_2px_8px_rgb(var(--c-primary-900)/0.28)] hover:shadow-[0_4px_14px_rgb(var(--c-primary-900)/0.4)]"
-      style={{ background: 'rgb(var(--c-primary))' }}
+      className={`group relative flex items-center gap-2 pr-2 pl-3.5 py-1.5 rounded-full border transition-colors ${
+        live
+          ? 'border-transparent shadow-[0_3px_14px_rgb(var(--c-accent)/0.45)]'
+          : 'border-white/18 hover:border-white/35 hover:bg-white/5'
+      }`}
+      style={live ? { background: 'linear-gradient(135deg, rgb(var(--c-accent)), rgb(var(--c-accent-600)))' } : undefined}
     >
-      {/* White text throughout, matching the season chip. The accent marks the
-          count when there is something to act on, so the live chip is found
-          without reading either label. */}
-      <Icon size={13} weight="bold" className={live ? 'text-accent' : 'text-white/70'} />
-      <span className={`text-[11px] font-black tabular-nums ${live ? 'text-accent' : 'text-white'}`}>
+      <span className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+        live ? 'bg-white/25' : 'bg-white/10'
+      }`}>
+        <Icon size={13} weight="bold" className={live ? 'text-white' : 'text-white/60'} />
+      </span>
+      <span className={`text-[13px] font-black tabular-nums leading-none ${live ? 'text-white' : 'text-white/85'}`}>
         {count}
       </span>
-      <span className="text-[11px] font-black text-white whitespace-nowrap">{label}</span>
+      <span className={`text-[11px] font-bold whitespace-nowrap ${live ? 'text-white/85' : 'text-white/50'}`}>
+        {label}
+      </span>
+      {live && (
+        <span className="absolute -top-0.5 -left-0.5 w-2 h-2 rounded-full bg-white"
+          style={{ animation: 'badgePulse 2s ease-in-out infinite' }} />
+      )}
     </motion.button>
   );
 }
@@ -474,42 +494,58 @@ export default function AdminLayout() {
             destination, and buried in a list of fourteen it was neither. It now
             has one place on every screen at both sizes, and announces itself
             when something is waiting. */}
-        {/* The accent, not the navy. It is light, so everything on it is drawn
-            in the deep brand colour rather than white — white on the accent is
-            about 1.9:1 and unreadable. Both colours come from the tenant's
-            palette, so a customer changing either keeps the pairing. */}
-        <header className="px-3 py-2 flex items-center gap-3 flex-shrink-0 shadow-[0_2px_10px_rgb(var(--c-primary-900)/0.22)] border-b border-[rgb(var(--c-accent-600)/0.35)]"
-          style={{ background: 'rgb(var(--c-header))' }}>
+        {/* A masthead, not a toolbar.
+            The bar carries the deep navy so it and the sidebar close around the
+            canvas as one frame, and the gold arrives where an accent belongs —
+            a hairline along the edge, the season crest, the clock, a live
+            count. A full-width field of the accent made every control on it
+            need its own navy box to stay legible, and eight boxes in a row is
+            what the bar had become. */}
+        <header className="relative px-3 sm:px-4 h-14 flex items-center gap-3 flex-shrink-0 overflow-hidden shadow-[0_4px_20px_rgb(var(--c-primary-900)/0.35)]"
+          style={{ background: 'linear-gradient(90deg, rgb(var(--c-primary-700)) 0%, rgb(var(--c-primary)) 55%, rgb(var(--c-primary-700)) 100%)' }}>
 
-          <div className="flex items-center gap-2 min-w-0">
+          {/* A slow warm bloom behind the crest, and the gold rule that closes
+              the bar. Both decorative, both out of the way of the text. */}
+          <span aria-hidden className="pointer-events-none absolute -top-16 -right-10 w-56 h-40 rounded-full opacity-[0.16]"
+            style={{ background: 'radial-gradient(circle, rgb(var(--c-accent)) 0%, transparent 68%)' }} />
+          <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px]"
+            style={{ background: 'linear-gradient(90deg, transparent, rgb(var(--c-accent)), rgb(var(--c-accent-600)), transparent)' }} />
+
+          <div className="relative flex items-center gap-2.5 min-w-0">
             <motion.button
               onClick={() => setOpen(true)}
               whileHover={{ scale: 1.08 }}
               whileTap={{ scale: 0.92 }}
-              className="lg:hidden p-2 rounded-xl text-primary hover:bg-primary/10 transition-colors flex-shrink-0"
+              className="lg:hidden p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors flex-shrink-0"
               aria-label="فتح القائمة"
             >
               <PanelLeft size={22} weight="bold" />
             </motion.button>
 
-            {/* Derived from today's Hijri date rather than from the season row:
+            {/* The season as a crest rather than a chip: a ringed mark and two
+                lines of type. It is the one fixed fact on the bar, so it reads
+                as a title instead of another button.
+                Derived from today's Hijri date rather than from the season row:
                 a label that says which Hajj season we are in must follow the
                 calendar, not a record someone forgot to roll over. */}
-            <span className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg flex-shrink-0 shadow-[0_2px_8px_rgb(var(--c-primary-900)/0.28)]"
-              style={{ background: 'rgb(var(--c-primary))' }}>
-              <CalendarBlank size={13} className="text-accent" weight="bold" />
-              <span className="text-[11px] font-black text-white whitespace-nowrap">
-                موسم حج {hijriYear}هـ
+            <span className="flex items-center gap-2.5 flex-shrink-0">
+              <span className="w-9 h-9 rounded-full flex items-center justify-center border border-accent/45 bg-accent/10 flex-shrink-0">
+                <MoonStars size={17} weight="fill" className="text-accent" />
+              </span>
+              <span className="flex flex-col leading-none">
+                <span className="text-[9px] font-bold text-accent/85 tracking-[0.18em]">موسم حج</span>
+                <span className="text-[15px] font-black text-white mt-1 tabular-nums">{hijriYear}هـ</span>
               </span>
             </span>
 
+            <span className="hidden lg:block w-px h-7 bg-white/12 mr-1" />
           </div>
 
           {/* Centred, and given the slack so the two counts sit in the middle
               of the bar rather than drifting with the width of what flanks
               them. Two counts an operations lead checks first thing, each a
               shortcut to the screen that clears it. */}
-          <div className="flex-1 hidden md:flex items-center justify-center gap-2">
+          <div className="relative flex-1 hidden md:flex items-center justify-center gap-2.5">
             <HeaderStat count={pendingCount}   label="بلاغ معلّق"  Icon={Siren}
               onClick={() => navigate('/admin/reports')} />
             <HeaderStat count={logisticsCount} label="إسناد معلّق" Icon={Boxes}
@@ -518,39 +554,37 @@ export default function AdminLayout() {
           <div className="flex-1 md:hidden" />
 
           {/* Clock and bell travel together at the far end. */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="relative flex items-center gap-3 flex-shrink-0">
           <HeaderClock />
 
-          {/* Always solid navy so it is legible on the light bar. Quiet, it is
-              a bare icon; waiting, it widens to carry the count, the bell
-              swings, and a red dot rides the corner — the state reads from
-              shape, not from a colour change alone. */}
+          {/* Quiet, it is a bare ring holding an icon; waiting, it fills with
+              gold, widens to carry the count, the bell swings, and a red dot
+              rides the corner — the state reads from shape, not from a colour
+              change alone. */}
           <motion.button
             onClick={() => navigate('/admin/notifications')}
             whileHover={{ scale: 1.06 }}
             whileTap={{ scale: 0.94 }}
-            className={`relative flex items-center gap-2 rounded-xl transition-shadow px-3 py-2 text-white ${
+            className={`relative flex items-center gap-2 rounded-full transition-colors ${
               newCount > 0
-                ? 'shadow-[0_4px_18px_rgb(var(--c-primary-900)/0.45)]'
-                : 'shadow-[0_2px_8px_rgb(var(--c-primary-900)/0.28)] hover:shadow-[0_4px_14px_rgb(var(--c-primary-900)/0.4)]'
+                ? 'px-3.5 py-2 shadow-[0_4px_18px_rgb(var(--c-accent)/0.5)]'
+                : 'w-10 h-10 justify-center border border-white/20 hover:border-white/40 hover:bg-white/5'
             }`}
-            style={{
-              background: newCount > 0
-                ? 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))'
-                : 'rgb(var(--c-primary))',
-            }}
+            style={newCount > 0
+              ? { background: 'linear-gradient(135deg, rgb(var(--c-accent)), rgb(var(--c-accent-600)))' }
+              : undefined}
             aria-label="التنبيهات"
           >
-            <BellRing size={18} weight={newCount > 0 ? 'fill' : 'bold'}
-              className={newCount > 0 ? 'text-accent' : 'text-white/85'}
+            <BellRing size={19} weight={newCount > 0 ? 'fill' : 'regular'}
+              className={newCount > 0 ? 'text-white' : 'text-white/70'}
               style={newCount > 0 ? { animation: 'bellSwing 2.4s ease-in-out infinite' } : undefined} />
             {newCount > 0 && (
-              <span className="text-xs font-black">
+              <span className="text-xs font-black text-white">
                 {newCount > 99 ? '99+' : newCount} تنبيه جديد
               </span>
             )}
             {newCount > 0 && (
-              <span className="absolute -top-1 -left-1 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-[rgb(var(--c-header))]"
+              <span className="absolute -top-0.5 -left-0.5 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-[rgb(var(--c-primary))]"
                 style={{ animation: 'badgePulse 2s ease-in-out infinite' }} />
             )}
           </motion.button>
