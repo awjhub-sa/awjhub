@@ -360,6 +360,11 @@ export default function AdminTaskAssign() {
         Icon={Target}
         title="إسناد المهام"
         subtitle="توزيع المهام الميدانية على المراقبين حسب الجنسية والمركز"
+        stats={[
+          { value: selCenters.length, label: 'مركز محدَّد', tone: selCenters.length ? 'gold' : undefined },
+          { value: selTasks.length, label: 'نوع مهمة' },
+          { value: history.length, label: 'إسناد سابق' },
+        ]}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">

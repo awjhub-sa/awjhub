@@ -46,9 +46,11 @@ export default function AdminMenu() {
         kicker="متابعة الوجبات"
         Icon={UtensilsCrossed}
         title="المنيو"
-        subtitle="منيو الوجبات حسب الجنسية ويوم ذو الحجة والوجبة"
-        gradient={{ from: '#F59E0B', to: '#D97706' }}
-        glowColor="rgba(245,158,11,0.4)"
+        subtitle={activeNat ? `منيو ${activeNat.label} — حسب اليوم والوجبة` : 'اختر جنسية لعرض منيو أيامها'}
+        stats={[
+          { value: NATIONALITIES.length, label: 'جنسية' },
+          { value: NATIONALITIES.reduce((n, x) => n + x.centers.length, 0), label: 'مركز مغطّى', tone: 'gold' },
+        ]}
       />
 
       {!activeNat ? (

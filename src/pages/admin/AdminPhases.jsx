@@ -308,7 +308,12 @@ export default function AdminPhases() {
         kicker="متابعة الوجبات"
         Icon={Activity}
         title="المراحل الميدانية"
-        subtitle="متابعة مراحل تجهيز وطبخ وتوزيع الوجبات — تحديث فوري"
+        subtitle="تجهيز ثم طبخ ثم توزيع — تحديث فوري"
+        stats={[
+          { value: `${fullyDone}/${totalEligible}`, label: 'مركز مكتمل', tone: 'gold' },
+          { value: inProgress, label: 'قيد التنفيذ' },
+          { value: notStarted, label: 'لم يبدأ', tone: notStarted > 0 ? 'alert' : undefined },
+        ]}
         right={
           <div className="flex items-center gap-2">
             <button
@@ -442,18 +447,21 @@ export default function AdminPhases() {
           { label: 'مراكز هذه الوجبة', value: totalEligible, color: '#B4674E', icon: Layers       },
           { label: 'مكتمل الوجبات',   value: fullyDone,    color: '#5E9070', icon: CheckCircle2 },
           { label: 'قيد التنفيذ',     value: inProgress,   color: '#F59E0B', icon: Activity     },
-          { label: 'لم يبدأ',         value: notStarted,   color: 'rgb(var(--c-muted))', icon: Clock        },
+          { label: 'لم يبدأ',         value: notStarted,   color: '#64748B', icon: Clock        },
         ].map(c => (
+          /* The accent runs along the top edge, as it does on every other
+             section — three takes on one card is what made the app read as
+             three apps. */
           <div key={c.label}
-            className="bg-white rounded-2xl p-4 border border-line shadow-[0_2px_8px_rgb(var(--c-ink)/0.07)] flex items-center gap-3"
-            style={{ borderRight: `3px solid ${c.color}` }}>
+            className="relative bg-white rounded-2xl p-4 pt-5 border border-line overflow-hidden flex items-center gap-3">
+            <span className="absolute inset-x-0 top-0 h-1" style={{ background: c.color }} />
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-semibold text-muted mb-0.5">{c.label}</p>
-              <p className="text-2xl font-bold tabular-nums" style={{ color: c.color }}>{c.value}</p>
+              <p className="text-[10px] font-bold text-muted mb-1 truncate">{c.label}</p>
+              <p className="text-2xl font-black tabular-nums leading-none" style={{ color: c.color }}>{c.value}</p>
             </div>
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: `${c.color}18` }}>
-              <c.icon size={18} style={{ color: c.color }} weight="regular" />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: `color-mix(in srgb, ${c.color} 12%, #fff)` }}>
+              <c.icon size={19} style={{ color: c.color }} weight="bold" />
             </div>
           </div>
         ))}
