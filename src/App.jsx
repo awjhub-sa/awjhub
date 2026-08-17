@@ -38,6 +38,7 @@ import AdminNotifications  from './pages/admin/AdminNotifications';
 import AdminTaskAssign     from './pages/admin/AdminTaskAssign';
 import AdminPhases         from './pages/admin/AdminPhases';
 import AdminReportView     from './pages/admin/AdminReportView';
+import ReportsViewer       from './pages/admin/ReportsViewer';
 import AdminStaff          from './pages/admin/AdminStaff';
 import AdminMenu           from './pages/admin/AdminMenu';
 import StagesReport        from './pages/admin/StagesReport';
@@ -98,6 +99,10 @@ export default function App() {
         <Route
           path="/admin/stages-report"
           element={<RequireAdmin><StagesReport /></RequireAdmin>}
+        />
+        <Route
+          path="/admin/reports-view"
+          element={<RequireAdmin><ReportsViewer /></RequireAdmin>}
         />
 
         {/* Admin Routes */}

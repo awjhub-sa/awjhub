@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { db } from '../../lib/db.js';
-import { useBrand } from '../../context/BrandContext.jsx';
 import {
-  REPORT_SOURCES, SOURCE_GROUPS, cellValue, DHU_DAYS, dhuDayOf,
+  REPORT_SOURCES, SOURCE_GROUPS, DHU_DAYS,
 } from '../../config/reportSources.js';
-import { exportTablePdf, exportCsv } from '../../lib/pdfReport.js';
-import { exportReadinessDossier, compareCenters } from '../../lib/pdfDossier.js';
+import {
+  AR_NUM, buildLookups, buildTable, describeFilters,
+  stashReportRequest, pruneReportRequests,
+} from '../../lib/reportQuery.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import {
-  FileArrowDown, FilePdf, FileCsv, MagnifyingGlass as Search, X, Warning,
-  Columns, Funnel, CircleNotch, Table as TableIcon, CalendarBlank, ListChecks,
-  Certificate,
+  FileArrowDown, ArrowSquareOut, MagnifyingGlass as Search, X, Warning,
+  Columns, Funnel, Table as TableIcon, CalendarBlank, ListChecks,
 } from '@phosphor-icons/react';
 
 const inputCls =
@@ -23,14 +23,10 @@ const Field = ({ label, children }) => (
   </div>
 );
 
-const AR_NUM = (n) => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
-
 /* Rows are read on demand rather than kept subscribed: a report is a snapshot
    someone asked for, and holding realtime channels open on a dozen tables so a
    preview can twitch would cost more than it is worth. */
 export default function AdminReportsCenter() {
-  const { brand } = useBrand();
-
   /* Several sections at once — a season report is one document covering
      evaluations, reports and logistics, not three separate files. */
   const [picked, setPicked] = useState([REPORT_SOURCES[0].key]);
@@ -45,13 +41,11 @@ export default function AdminReportsCenter() {
   const [data,    setData]    = useState({});   // sourceKey → rows
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState(null);
-  const [busy,    setBusy]    = useState(null);
 
   const [cols,     setCols]     = useState({}); // sourceKey → column keys
   const [search,   setSearch]   = useState('');
   const [detailed, setDetailed] = useState(false);
   const [photos,   setPhotos]   = useState(true);
-  const [progress, setProgress] = useState(null);
   const [filters,  setFilters]  = useState({
     from: '', to: '', dhuDay: '', center: '', caterer: '', status: '', role: '', season: '',
   });
@@ -76,11 +70,10 @@ export default function AdminReportsCenter() {
     })();
   }, []);
 
-  const lookups = useMemo(() => ({
-    caterer:  Object.fromEntries(caterers.map(c => [c.id, c.name])),
-    center:   Object.fromEntries(centers.map(c => [c.id, c.code])),
-    template: Object.fromEntries(templates.map(t => [t.id, t.title])),
-  }), [caterers, centers, templates]);
+  const lookups = useMemo(
+    () => buildLookups({ caterers, centers, templates }),
+    [caterers, centers, templates],
+  );
 
   /* Load only what is newly picked; already-loaded sections are kept. */
   useEffect(() => {
@@ -116,151 +109,42 @@ export default function AdminReportsCenter() {
 
   const has = (s, f) => s.filters?.includes(f);
 
-  const filterRows = (s, rows) => {
-    const q = search.trim();
-    const fromMs = filters.from ? new Date(`${filters.from}T00:00:00`).getTime() : null;
-    const toMs   = filters.to   ? new Date(`${filters.to}T23:59:59`).getTime()   : null;
-
-    return rows.filter(r => {
-      if (has(s, 'date') && (fromMs || toMs)) {
-        const raw = r[s.dateField];
-        const ms = raw?.toMillis?.() ?? (raw ? new Date(raw).getTime() : null);
-        if (ms == null) return false;
-        if (fromMs && ms < fromMs) return false;
-        if (toMs   && ms > toMs)   return false;
-      }
-      if (has(s, 'dhuDay') && filters.dhuDay) {
-        if (dhuDayOf(r[s.dateField]) !== Number(filters.dhuDay)) return false;
-      }
-      if (has(s, 'season')  && filters.season  && r.seasonId !== filters.season) return false;
-      if (has(s, 'center')  && filters.center  && (r.center ?? lookups.center[r.centerId]) !== filters.center) return false;
-      if (has(s, 'caterer') && filters.caterer) {
-        const name = r.caterer ?? r.catererName ?? lookups.caterer[r.catererId] ?? r.name;
-        if (name !== filters.caterer) return false;
-      }
-      if ((has(s, 'status') || has(s, 'formStatus') || has(s, 'catererStatus')) && filters.status
-          && r.status !== filters.status) return false;
-      if (has(s, 'role') && filters.role && r.role !== filters.role) return false;
-
-      if (q && !s.columns.map(c => cellValue(c, r, lookups)).join(' ').includes(q)) return false;
-      return true;
-    });
-  };
-
-  /* Detailed mode turns each evaluation into one row per question, which is
-     what makes a report usable as evidence: the score alone does not say which
-     criterion failed. */
-  const buildTable = (s) => {
-    let rows = filterRows(s, data[s.key] || []);
-    /* Anything keyed by centre reads in centre order — and by number, since a
-       string sort files مركز 102 between مركز 10 and مركز 11. */
-    if (rows.some(r => r.center || r.code)) {
-      rows = [...rows].sort((a, b) => compareCenters(a.center ?? a.code, b.center ?? b.code));
-    }
-    const active = s.columns.filter(c => (cols[s.key] || s.defaultColumns).includes(c.key));
-
-    if (detailed && s.questions?.length) {
-      const idCols = active.filter(c => ['center', 'caterer', 'observer', 'mealType'].includes(c.key));
-      const columns = [...idCols.map(c => c.label), 'المعيار', 'الإجابة'];
-      const body = [];
-      for (const r of rows) {
-        const answers = r.answers || {};
-        for (const q of s.questions) {
-          const a = answers[q.id] ?? answers[String(q.id)];
-          if (a === undefined || a === null || a === '') continue;
-          body.push([
-            ...idCols.map(c => String(cellValue(c, r, lookups) ?? '')),
-            q.text ?? q.label ?? String(q.id),
-            a === true ? 'نعم' : a === false ? 'لا' : String(a),
-          ]);
-        }
-      }
-      return { columns, rows: body, count: rows.length };
-    }
-
-    return {
-      columns: active.map(c => c.label),
-      rows: rows.map(r => active.map(c => String(cellValue(c, r, lookups) ?? ''))),
-      count: rows.length,
-    };
-  };
-
   const tables = useMemo(
-    () => Object.fromEntries(sources.map(s => [s.key, buildTable(s)])),
+    () => Object.fromEntries(sources.map(s => [
+      s.key,
+      buildTable(s, data[s.key] || [], { filters, search, lookups, cols, detailed }),
+    ])),
     [sources, data, cols, filters, search, detailed, lookups],
   );
 
   const current = tables[source.key] || { columns: [], rows: [], count: 0 };
   const totalRows = sources.reduce((n, s) => n + (tables[s.key]?.rows.length || 0), 0);
 
-  const filterSummary = useMemo(() => {
-    const bits = [];
-    if (filters.from || filters.to) bits.push(`من ${filters.from || '—'} إلى ${filters.to || '—'}`);
-    if (filters.dhuDay) bits.push(`${AR_NUM(filters.dhuDay)} ذو الحجة`);
-    if (filters.season) bits.push(`موسم ${seasons.find(s => s.id === filters.season)?.name || ''}`);
-    if (filters.center)  bits.push(filters.center);
-    if (filters.caterer) bits.push(filters.caterer);
-    if (detailed) bits.push('عرض مفصّل');
-    bits.push(`${AR_NUM(totalRows)} سجل`);
-    return bits.join(' · ');
-  }, [filters, totalRows, seasons, detailed]);
+  const filterSummary = useMemo(
+    () => describeFilters({ filters, detailed, seasons, totalRows }),
+    [filters, totalRows, seasons, detailed],
+  );
 
-  const docTitle = sources.length === 1 ? sources[0].label : 'تقرير مجمّع';
+  const docTitle = sources.length === 1
+    ? (detailed && sources[0].criteriaSections ? sources[0].dossierTitle : sources[0].label)
+    : 'تقرير مجمّع';
 
-  const downloadPdf = async () => {
-    const parts = sources
-      .map(s => ({ title: s.label, ...tables[s.key] }))
-      .filter(p => p.rows.length);
-    if (!parts.length) return setError('لا توجد سجلات مطابقة — عدّل الفلاتر أولاً.');
-
-    setBusy('pdf'); setError(null);
-    try {
-      await exportTablePdf({
-        title: docTitle,
-        subtitle: filterSummary,
-        sections: parts,
-        summary: parts.map(p => ({ label: p.title, value: AR_NUM(p.rows.length) })).slice(0, 4),
-        brand,
-        /* Wide selections need the long edge or the columns crush. */
-        orientation: Math.max(...parts.map(p => p.columns.length)) > 6 ? 'landscape' : 'portrait',
-        fileName: `${docTitle}.pdf`,
-      });
-    } catch (ex) { setError(`تعذّر إنشاء الملف: ${ex.message}`); }
-    setBusy(null);
+  /* One button, one destination. The report opens as a document in its own tab
+     — laid out on A4 in the company's identity — and every way of taking it
+     away (print to PDF, download Excel) lives there, next to what it exports. */
+  const openReport = () => {
+    if (!totalRows) return setError('لا توجد سجلات مطابقة — عدّل الفلاتر أولاً.');
+    const id = stashReportRequest({
+      title: docTitle, picked, cols, filters, search, detailed, photos,
+    });
+    pruneReportRequests(id);
+    window.open(`/admin/reports-view?k=${id}`, '_blank', 'noopener');
   };
 
-  const downloadCsv = () => {
-    if (!current.rows.length) return setError('لا توجد سجلات في القسم المعروض.');
-    exportCsv({ columns: current.columns, rows: current.rows, fileName: `${source.label}.csv` });
-  };
-
-  /* A readiness inspection is a record, not a row: each centre gets a page
-     carrying its data, every criterion with the answer given, the inspector's
-     notes and the photographs taken on site. */
+  /* A readiness inspection is a record, not a row: in detailed mode each centre
+     gets a page carrying its data, every criterion with the answer given, the
+     inspector's notes and the photographs taken on site. */
   const canDossier = !!source.criteriaSections;
-
-  const downloadDossier = async () => {
-    const records = filterRows(source, data[source.key] || []);
-    if (!records.length) return setError('لا توجد تقييمات مطابقة للفلاتر.');
-
-    setBusy('dossier'); setError(null);
-    try {
-      await exportReadinessDossier({
-        title: source.dossierTitle || source.label,
-        subtitle: filterSummary,
-        records,
-        sections: source.criteriaSections,
-        brand,
-        withPhotos: photos,
-        onProgress: (n, total) => setProgress({ n, total }),
-        fileName: `${source.dossierTitle || source.label}.pdf`,
-      });
-    } catch (ex) {
-      setError(`تعذّر إنشاء المحضر: ${ex.message}`);
-    }
-    setBusy(null);
-    setProgress(null);
-  };
 
   const anyHas = (f) => sources.some(s => has(s, f));
 
@@ -409,10 +293,15 @@ export default function AdminReportsCenter() {
               className="accent-primary w-4 h-4 mt-0.5" />
             <span className="text-xs">
               <span className="text-ink font-medium flex items-center gap-1.5">
-                <ListChecks size={13} /> عرض مفصّل — إجابة كل معيار
+                <ListChecks size={13} />
+                {sources.some(s => s.criteriaSections)
+                  ? 'محضر مفصّل — صفحة لكل مركز'
+                  : 'عرض مفصّل — إجابة كل معيار'}
               </span>
               <span className="text-muted">
-                يفكّ كل تقييم إلى سطر لكل سؤال. الدرجة وحدها لا تقول أي معيار سقط.
+                {sources.some(s => s.criteriaSections)
+                  ? 'صفحة كاملة لكل مركز: بياناته وتاريخه وإجابة كل معيار وصوره وخانات التوقيع.'
+                  : 'يفكّ كل تقييم إلى سطر لكل سؤال. الدرجة وحدها لا تقول أي معيار سقط.'}
               </span>
             </span>
           </label>
@@ -481,43 +370,26 @@ export default function AdminReportsCenter() {
               <CalendarBlank size={11} /> {filterSummary}
             </p>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            <button onClick={downloadCsv} disabled={!!busy}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-line text-xs font-bold text-muted hover:text-primary hover:border-primary/40 transition-colors disabled:opacity-50">
-              <FileCsv size={14} /> Excel / CSV
-            </button>
-            <button onClick={downloadPdf} disabled={!!busy}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-line text-xs font-bold text-muted hover:text-primary hover:border-primary/40 transition-colors disabled:opacity-50">
-              {busy === 'pdf' ? <CircleNotch size={14} className="animate-spin" /> : <FilePdf size={14} />}
-              جدول PDF
-            </button>
-            {canDossier && (
-              <button onClick={downloadDossier} disabled={!!busy}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-xs font-bold hover:opacity-90 transition disabled:opacity-60 shadow-[0_4px_16px_rgb(var(--c-primary)/0.35)]"
-                style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}>
-                {busy === 'dossier'
-                  ? <CircleNotch size={14} className="animate-spin" />
-                  : <Certificate size={14} />}
-                {progress
-                  ? `محضر رسمي · ${AR_NUM(progress.n)} من ${AR_NUM(progress.total)}`
-                  : 'محضر رسمي — صفحة لكل مركز'}
-              </button>
-            )}
-          </div>
+          <button onClick={openReport}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-xs font-bold hover:opacity-90 transition shadow-[0_4px_16px_rgb(var(--c-primary)/0.35)]"
+            style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}>
+            <ArrowSquareOut size={15} weight="bold" />
+            عرض التقرير
+          </button>
         </div>
 
-        {canDossier && (
-          <div className="px-4 pb-1 -mt-1 flex items-center gap-4 flex-wrap">
+        <div className="px-4 pb-1 -mt-1 flex items-center gap-4 flex-wrap">
+          {canDossier && detailed && (
             <label className="flex items-center gap-2 text-[11px] text-muted cursor-pointer">
               <input type="checkbox" checked={photos} onChange={e => setPhotos(e.target.checked)}
                 className="accent-primary w-3.5 h-3.5" />
               تضمين الصور الميدانية
             </label>
-            <span className="text-[11px] text-muted">
-              المراكز مرتّبة تصاعدياً · صفحة كاملة لكل مركز · ورقة ملخّص في المقدمة
-            </span>
-          </div>
-        )}
+          )}
+          <span className="text-[11px] text-muted">
+            يفتح في تبويب مستقل بمقاس A4 وهوية الشركة — ومنه تحفظه PDF أو تنزّله Excel.
+          </span>
+        </div>
 
         {/* Section tabs — the PDF carries them all; the preview shows one. */}
         {sources.length > 1 && (

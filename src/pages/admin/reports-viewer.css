@@ -1,0 +1,218 @@
+/* Layout for /admin/reports-view — a document, not a screen.
+
+   Everything is sized in millimetres against A4 so what the browser paints and
+   what it prints are the same object. The toolbar is the only part that knows
+   it is on a screen. */
+
+@page {
+  size: A4 portrait;
+  margin: 12mm;
+}
+
+.rv {
+  direction: rtl;
+  font-family: 'Cairo', Tahoma, sans-serif;
+  background: #EEF1F6;
+  min-height: 100vh;
+  padding-bottom: 3rem;
+  color: #16233D;
+}
+
+/* ── Toolbar ─────────────────────────────────────────── */
+.rv-bar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: #fff;
+  border-bottom: 1px solid #E2E8F0;
+  box-shadow: 0 2px 14px rgb(22 35 61 / 0.07);
+  padding: 0.7rem 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.rv-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.05rem;
+  border-radius: 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 1px solid #E2E8F0;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.rv-btn:hover { color: var(--rv-primary); border-color: var(--rv-primary); }
+.rv-btn-main {
+  border: 0;
+  color: #fff;
+  background: var(--rv-primary);
+  box-shadow: 0 4px 14px rgb(22 35 61 / 0.25);
+}
+.rv-btn-main:hover { color: #fff; opacity: 0.92; }
+.rv-hint { font-size: 0.68rem; color: #64748B; margin-inline-start: auto; max-width: 30rem; line-height: 1.6; }
+
+/* ── The sheet ───────────────────────────────────────── */
+.rv-page {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 1.4rem auto;
+  padding: 12mm 12mm 16mm;
+  background: #fff;
+  box-shadow: 0 8px 30px rgb(22 35 61 / 0.1);
+  border-radius: 3px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  break-after: page;
+  page-break-after: always;
+}
+.rv-page:last-child { break-after: auto; page-break-after: auto; }
+
+/* Colours must survive Save-as-PDF. */
+.rv-page, .rv-page * {
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+/* ── Letterhead ──────────────────────────────────────── */
+.rv-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 3.5mm;
+  border-bottom: 2px solid var(--rv-primary);
+}
+.rv-head img { height: 11mm; width: auto; }
+.rv-head-meta { text-align: left; font-size: 0.62rem; color: #64748B; line-height: 1.8; }
+
+.rv-title { text-align: center; margin: 5mm 0 4mm; }
+.rv-title h1 { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.01em; }
+.rv-title p  { font-size: 0.72rem; color: #64748B; margin-top: 1.5mm; font-weight: 600; }
+
+.rv-foot {
+  margin-top: auto;
+  padding-top: 4mm;
+  border-top: 1px solid var(--rv-accent);
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.6rem;
+  color: #64748B;
+}
+
+/* ── Stat tiles ──────────────────────────────────────── */
+.rv-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3mm; margin-bottom: 6mm; }
+.rv-stat {
+  border: 1px solid #E2E8F0;
+  border-radius: 4mm;
+  background: #F8FAFC;
+  padding: 3mm 3.5mm;
+}
+.rv-stat span { display: block; font-size: 0.6rem; color: #64748B; font-weight: 600; }
+.rv-stat strong { display: block; font-size: 1.35rem; font-weight: 800; margin-top: 0.5mm; }
+
+/* ── Tables ──────────────────────────────────────────── */
+/* `auto` rather than `fixed`: a criterion is a sentence and an answer is a
+   word, and equal columns would wrap the sentence to five lines while the
+   answer sat in a third of the page. */
+.rv-table { width: 100%; border-collapse: collapse; table-layout: auto; }
+.rv-table th, .rv-table td {
+  border: 0.2mm solid #E2E8F0;
+  padding: 1.05mm 2mm;
+  text-align: right;
+  vertical-align: middle;
+  font-size: 0.61rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.rv-table thead th {
+  background: var(--rv-primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.64rem;
+  border-color: var(--rv-primary);
+}
+.rv-table tbody tr:nth-child(even) td { background: #F8FAFC; }
+.rv-table .rv-idx { width: 9mm; color: #94A3B8; text-align: center; }
+.rv-table thead { display: table-header-group; }
+.rv-table tr { break-inside: avoid; page-break-inside: avoid; }
+
+.rv-band {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  background: #F1F5F9;
+  border-inline-start: 1.2mm solid var(--rv-primary);
+  border-radius: 2mm;
+  padding: 2.5mm 3.5mm;
+  margin-bottom: 4mm;
+}
+.rv-band h2 { font-size: 0.86rem; font-weight: 800; }
+.rv-band span { font-size: 0.64rem; color: #64748B; font-weight: 700; }
+
+/* ── Per-centre record ───────────────────────────────── */
+.rv-id {
+  display: flex; align-items: stretch; gap: 3mm;
+  border: 1px solid #E2E8F0; border-radius: 4mm;
+  background: #F8FAFC; padding: 2.4mm; margin-bottom: 4mm;
+}
+.rv-id-grid { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 2mm 3mm; }
+.rv-id-grid div { min-width: 0; }
+.rv-id-grid span { display: block; font-size: 0.58rem; color: #64748B; font-weight: 600; }
+.rv-id-grid strong {
+  display: block; font-size: 0.7rem; font-weight: 700; margin-top: 0.4mm;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.rv-badge {
+  width: 26mm; flex: 0 0 26mm;
+  border-radius: 3mm; color: #fff;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 2mm 1mm;
+}
+.rv-badge b   { font-size: 1.5rem; font-weight: 800; line-height: 1.1; }
+.rv-badge i   { font-style: normal; font-size: 0.55rem; opacity: 0.85; }
+.rv-badge em  { font-style: normal; font-size: 0.62rem; font-weight: 700; margin-top: 1mm; }
+
+.rv-sec-row td {
+  background: #EEF2F7 !important;
+  font-weight: 800;
+  color: var(--rv-primary);
+  font-size: 0.66rem;
+}
+.rv-yes { color: #15803D; font-weight: 800; }
+.rv-no  { color: #B91C1C; font-weight: 800; }
+.rv-note { display: block; color: #64748B; font-size: 0.57rem; margin-top: 0.8mm; }
+
+.rv-shots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; margin-top: 5mm; }
+.rv-shot { break-inside: avoid; page-break-inside: avoid; }
+.rv-shot img {
+  width: 100%; height: 38mm; object-fit: cover;
+  border: 1px solid #E2E8F0; border-radius: 2mm; background: #F1F5F9;
+}
+.rv-shot span {
+  display: block; font-size: 0.55rem; color: #64748B; margin-top: 1.2mm; line-height: 1.5;
+}
+
+.rv-sign { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; margin-top: 5mm; padding-top: 3mm; border-top: 1px solid #E2E8F0; }
+.rv-sign div span   { display: block; font-size: 0.6rem; color: #64748B; }
+.rv-sign div strong { display: block; font-size: 0.72rem; margin-top: 5mm; border-top: 0.2mm dashed #94A3B8; padding-top: 1.5mm; }
+
+.rv-empty { text-align: center; color: #94A3B8; padding: 12mm 0; font-size: 0.8rem; }
+
+/* ── Print ───────────────────────────────────────────── */
+@media print {
+  .rv { background: #fff; padding: 0; }
+  .rv-bar, .rv-noprint { display: none !important; }
+  .rv-page {
+    width: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+    border-radius: 0;
+  }
+}
