@@ -13,26 +13,25 @@
    Rebranding for a new tenant = editing this block + brand.js.
    ────────────────────────────────────────────────────────────── */
 :root {
-  --c-primary:      27 42 74;     /* #1B2A4A — brand navy */
-  --c-primary-50:  241 244 249;
-  --c-primary-100: 226 232 241;
-  --c-primary-200: 197 208 227;
-  --c-primary-400:  61 90 138;    /* #3D5A8A — hover / gradient head */
-  --c-primary-700:  16 27 49;     /* #101B31 — pressed / gradient tail */
-  --c-primary-900:  10 17 31;
+  --c-primary:      30  58  95;   /* #1E3A5F — the navy of the نصاب wordmark */
+  --c-primary-50:  242 245 249;
+  --c-primary-100: 225 232 241;
+  --c-primary-200: 196 210 227;
+  --c-primary-400:  62 102 153;   /* #3E6699 — hover / gradient head */
+  --c-primary-700:  22  48  78;   /* #16304E — pressed / gradient tail */
+  --c-primary-900:  13  30  51;
 
   /* Accent carries the energy the navy cannot: highlights, active states,
-     data emphasis. The gold of the نصاب wordmark — warm against the navy, and
+     data emphasis. The gold of the NSAB wordmark — warm against the navy, and
      far enough from success-green and error-red that a status badge is never
      mistaken for a brand element. */
-  --c-accent:    216 161  92;     /* #D8A15C */
-  --c-accent-50: 253 246 236;
-  --c-accent-600: 169 118  47;    /* #A9762F — the accent as readable text */
+  --c-accent:    185 154 100;     /* #B99A64 */
+  --c-accent-50: 250 246 238;
+  --c-accent-600: 140 112  56;    /* #8C7038 — the accent as readable text */
 
-  /* The top bar. Its own token rather than the accent: the bar is a large flat
-     field while the accent is used in small marks, and a shade that sings as a
-     4px indicator is a degree too bright across the full width. */
-  --c-header:    204 148  80;     /* #CC9450 */
+  /* The top bar. Its own token rather than the accent so a tenant can part the
+     two, but the brand gold is muted enough to carry a full-width field. */
+  --c-header:    185 154 100;     /* #B99A64 */
 
   --c-ink:      22 35 61;         /* headings, primary text */
   --c-ink-800:  44 62 99;

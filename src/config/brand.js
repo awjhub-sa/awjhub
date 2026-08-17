@@ -17,9 +17,9 @@ export const BRAND = {
   companyName: 'نصاب',
   companyNameEn: 'NSAB',
   /* Full names, spelled exactly as they appear in the logo lockup. */
-  companyFullAr: 'نصاب — نظام الإعاشة',
+  companyFullAr: 'نصاب | لحلول الإعاشة',
   companyFullEn: 'NSAB Catering System',
-  tagline: 'نظام الإعاشة',
+  tagline: 'لحلول الإعاشة',
 
   /* Swap these files to rebrand.
      `full` is the horizontal lockup (444×180) — use it wherever there is
@@ -36,16 +36,16 @@ export const BRAND = {
 
 /* Mirrors the --c-* variables in src/index.css. */
 export const COLORS = {
-  primary:    '#1B2A4A',
-  primary400: '#3D5A8A',
-  primary700: '#101B31',
-  primary900: '#0A111F',
-  primary50:  '#F1F4F9',
-  primary100: '#E2E8F1',
+  primary:    '#1E3A5F',
+  primary400: '#3E6699',
+  primary700: '#16304E',
+  primary900: '#0D1E33',
+  primary50:  '#F2F5F9',
+  primary100: '#E1E8F1',
 
-  accent:     '#D8A15C',
-  accent600:  '#A9762F',
-  header:     '#CC9450',
+  accent:     '#B99A64',
+  accent600:  '#8C7038',
+  header:     '#B99A64',
 
   ink:     '#16233D',
   muted:   '#64748B',
