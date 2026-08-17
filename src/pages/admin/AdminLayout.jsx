@@ -375,10 +375,14 @@ export default function AdminLayout() {
           transition={{ duration: 0.4, ease: 'easeOut' }}
           className="relative flex flex-col items-center gap-1 cursor-default"
         >
+          {/* The sidebar is 240px wide with 20px of padding, so 200 is all
+              there is. The new lockup is a fifth wider than the old for the
+              same height, and cannot regain that height in this slot — so it
+              takes every pixel available. */}
           <img
             src={brand.logo.fullOnDark}
             alt={brand.companyName}
-            className="w-full max-w-[186px] h-auto"
+            className="w-full max-w-[200px] h-auto"
           />
           <p className="text-[9px] font-semibold tracking-widest uppercase opacity-40 text-white">لوحة الإدارة</p>
         </motion.div>

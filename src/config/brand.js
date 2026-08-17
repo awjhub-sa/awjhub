@@ -18,14 +18,16 @@ export const BRAND = {
   companyNameEn: 'NSAB',
   /* Full names, spelled exactly as they appear in the logo lockup. */
   companyFullAr: 'نصاب | لحلول الإعاشة',
-  companyFullEn: 'NSAB Catering System',
+  companyFullEn: 'NSAB Catering Solutions',
   tagline: 'لحلول الإعاشة',
 
   /* Swap these files to rebrand.
-     `full` is the horizontal lockup (444×180) — use it wherever there is
-     width: the login card, the sidebar header. `color`/`mono` stay square for
-     the tight 40×40 slots in the observer and supervisor headers, where the
-     lockup would be squashed. */
+     `full` is the horizontal lockup (592×163, so 3.62:1) — use it wherever
+     there is width: the login card, the sidebar header, document letterheads.
+     `color` is the same lockup stacked into a square, for the 40×40 slots in
+     the observer and supervisor headers where the horizontal one would be
+     squashed to nothing. `icon` is the tab badge: the Arabic word alone on a
+     navy field, legible at 16px and on either tab theme. */
   logo: {
     full:       '/brand/logo.svg',          // lockup, navy text — light surfaces
     fullOnDark: '/brand/logo-on-dark.svg',  // lockup, white text — navy surfaces

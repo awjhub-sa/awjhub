@@ -7,11 +7,14 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>نصاب | لحلول الإعاشة</title>
-    <!-- Tab icon renders at 16–32 px, where the tagline would be under three
-         pixels tall, so it uses the letters alone. The home-screen icon is
-         large enough to carry the full lockup. -->
+    <!-- Tab icon renders at 16 px, where anything but the Arabic word is a
+         smudge — so NSAB and the tagline are dropped rather than shrunk into
+         noise. It carries its own navy field because a tab strip follows the
+         reader's system theme, and navy ink on transparency would disappear
+         against a dark one. The same badge serves the home screen, where an
+         opaque icon is what iOS expects. -->
     <link rel="icon" type="image/svg+xml" href="/brand/icon-mark.svg" />
-    <link rel="apple-touch-icon" href="/brand/icon.svg" />
+    <link rel="apple-touch-icon" href="/brand/icon-mark.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <!-- Variable axis 200..1000: the UI reaches for font-black (900) in 61

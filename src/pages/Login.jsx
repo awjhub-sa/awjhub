@@ -111,11 +111,12 @@ export default function Login() {
       {/* الشعار والهوية */}
       <div className="mb-8 text-center" style={{ animation: 'fadeUp 0.5s ease forwards' }}>
         {/* The lockup already carries the name and tagline, so the separate
-            heading underneath it would just repeat them. */}
+            heading underneath it would just repeat them. 340px keeps the
+            wordmark at the height 280 gave the older, narrower lockup. */}
         <img
           src={BRAND.logo.full}
           alt={BRAND.companyName}
-          className="w-[280px] max-w-[80vw] h-auto mx-auto"
+          className="w-[340px] max-w-[80vw] h-auto mx-auto"
         />
         <div className="mt-3"><GoldOrnament /></div>
       </div>
