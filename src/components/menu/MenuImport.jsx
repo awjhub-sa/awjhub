@@ -23,6 +23,7 @@ import {
 } from '@phosphor-icons/react';
 import { HAJJ_DAYS, MEAL_KEYS, MEAL_LABEL, CATEGORY_KEYS, CATEGORY_META } from '../../config/menus.js';
 import { parseMenuSheet, parseMenuPdf } from '../../lib/menuImport.js';
+import { TEMPLATE_HEAD, templateRows, downloadWordTemplate } from '../../lib/menuTemplate.js';
 
 const AR = (n) => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
 
@@ -91,23 +92,17 @@ export default function MenuImport({
     }
   };
 
-  /* A file the customer can fill in and import back without guessing at
-     headings — the fastest way to make the import "just work". */
-  const downloadTemplate = async () => {
+  /* Both templates are laid out in lib/menuTemplate.js, from one definition of
+     the headings and one row per day per meal. The customer fills cells; they
+     never have to work out what to call a column, which is most of what makes
+     an import succeed. */
+  const downloadExcelTemplate = async () => {
     const XLSX = await import('xlsx');
-    const head = ['اليوم', 'الوجبة', 'الموقع', 'الوقت',
-      ...CATEGORY_KEYS.map(k => CATEGORY_META[k].label)];
-    const sample = [
-      ['8', 'الإفطار', 'منى', '06:00 ص — 09:00 ص',
-        'فول مدمس — 150 جم\nبيض مسلوق', 'خبز عربي\nجبن', 'شاي\nمياه معدنية', 'تمر'],
-      ['8', 'الغداء', 'منى', '12:00 م — 03:00 م',
-        'أرز بخاري\nدجاج مشوي — 200 جم', 'سلطة خضراء', 'عصير برتقال', ''],
-    ];
-    const ws = XLSX.utils.aoa_to_sheet([head, ...sample]);
-    ws['!cols'] = head.map(() => ({ wch: 22 }));
+    const ws = XLSX.utils.aoa_to_sheet([TEMPLATE_HEAD, ...templateRows()]);
+    ws['!cols'] = TEMPLATE_HEAD.map(() => ({ wch: 22 }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'المنيو');
-    XLSX.writeFile(wb, 'قالب-المنيو.xlsx');
+    XLSX.writeFile(wb, `قالب-المنيو${natLabel ? `-${natLabel}` : ''}.xlsx`);
   };
 
   const accept = tab === 'excel' ? '.xlsx,.xls,.csv' : '.pdf,application/pdf';
@@ -211,7 +206,7 @@ export default function MenuImport({
               )}
 
               {tab === 'excel' ? (
-                <button type="button" onClick={downloadTemplate}
+                <button type="button" onClick={downloadExcelTemplate}
                   className="w-full h-9 rounded-xl border border-line bg-white text-[11.5px] font-bold text-primary
                              flex items-center justify-center gap-1.5 hover:bg-primary/5">
                   <DownloadSimple size={13} weight="bold" />
@@ -228,6 +223,20 @@ export default function MenuImport({
                     الملفات الممسوحة ضوئياً (صور داخل PDF) لا تُقرأ.
                   </p>
                 </div>
+              )}
+
+              {tab === 'pdf' && (
+                <button type="button" onClick={() => downloadWordTemplate(natLabel)}
+                  className="w-full rounded-xl border border-line bg-white px-3 py-2.5 text-right
+                             hover:bg-primary/5 transition-colors">
+                  <span className="flex items-center gap-1.5 text-[11.5px] font-bold text-primary">
+                    <DownloadSimple size={13} weight="bold" />
+                    تنزيل قالب Word — املأه ثم احفظه PDF وارفعه
+                  </span>
+                  <span className="block text-[10px] font-bold text-muted mt-0.5 pr-[18px]">
+                    يفتح في Word بجدول جاهز لكل يوم ووجبة، بالعناوين التي يعرفها القارئ
+                  </span>
+                </button>
               )}
             </>
           )}
