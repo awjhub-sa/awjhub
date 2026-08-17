@@ -12,8 +12,8 @@
 
 import { STATUS_META as FORM_STATUS } from './formSchema.js';
 import { MEAL_QUESTIONS } from './mealQuestions.js';
-import { MINA_ALL_CRITERIA } from './minaQuestions.js';
-import { ARAFAT_ALL_CRITERIA } from './arafatQuestions.js';
+import { MINA_ALL_CRITERIA, MINA_SECTIONS } from './minaQuestions.js';
+import { ARAFAT_ALL_CRITERIA, ARAFAT_SECTIONS } from './arafatQuestions.js';
 
 /* ── Day of Dhul-Hijjah ────────────────────────────────────
    The operational calendar during Hajj is 6–13 Dhul-Hijjah, not a range of
@@ -145,6 +145,10 @@ export const REPORT_SOURCES = [
     ],
     defaultColumns: ['center', 'caterer', 'observer', '__score', 'percentage', 'timestamp'],
     questions: MINA_ALL_CRITERIA,
+    /* Grouped exactly as the inspection form groups them, so the record reads
+       in the order it was filled. */
+    criteriaSections: MINA_SECTIONS,
+    dossierTitle: 'محضر جاهزية مشعر منى',
   },
 
   {
@@ -162,6 +166,8 @@ export const REPORT_SOURCES = [
     ],
     defaultColumns: ['center', 'caterer', 'observer', '__score', 'percentage', 'timestamp'],
     questions: ARAFAT_ALL_CRITERIA,
+    criteriaSections: ARAFAT_SECTIONS,
+    dossierTitle: 'محضر جاهزية مشعر عرفة',
   },
 
   {

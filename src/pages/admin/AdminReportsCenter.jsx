@@ -5,10 +5,12 @@ import {
   REPORT_SOURCES, SOURCE_GROUPS, cellValue, DHU_DAYS, dhuDayOf,
 } from '../../config/reportSources.js';
 import { exportTablePdf, exportCsv } from '../../lib/pdfReport.js';
+import { exportReadinessDossier, compareCenters } from '../../lib/pdfDossier.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import {
   FileArrowDown, FilePdf, FileCsv, MagnifyingGlass as Search, X, Warning,
   Columns, Funnel, CircleNotch, Table as TableIcon, CalendarBlank, ListChecks,
+  Certificate,
 } from '@phosphor-icons/react';
 
 const inputCls =
@@ -48,6 +50,8 @@ export default function AdminReportsCenter() {
   const [cols,     setCols]     = useState({}); // sourceKey → column keys
   const [search,   setSearch]   = useState('');
   const [detailed, setDetailed] = useState(false);
+  const [photos,   setPhotos]   = useState(true);
+  const [progress, setProgress] = useState(null);
   const [filters,  setFilters]  = useState({
     from: '', to: '', dhuDay: '', center: '', caterer: '', status: '', role: '', season: '',
   });
@@ -147,7 +151,12 @@ export default function AdminReportsCenter() {
      what makes a report usable as evidence: the score alone does not say which
      criterion failed. */
   const buildTable = (s) => {
-    const rows = filterRows(s, data[s.key] || []);
+    let rows = filterRows(s, data[s.key] || []);
+    /* Anything keyed by centre reads in centre order — and by number, since a
+       string sort files مركز 102 between مركز 10 and مركز 11. */
+    if (rows.some(r => r.center || r.code)) {
+      rows = [...rows].sort((a, b) => compareCenters(a.center ?? a.code, b.center ?? b.code));
+    }
     const active = s.columns.filter(c => (cols[s.key] || s.defaultColumns).includes(c.key));
 
     if (detailed && s.questions?.length) {
@@ -223,6 +232,34 @@ export default function AdminReportsCenter() {
   const downloadCsv = () => {
     if (!current.rows.length) return setError('لا توجد سجلات في القسم المعروض.');
     exportCsv({ columns: current.columns, rows: current.rows, fileName: `${source.label}.csv` });
+  };
+
+  /* A readiness inspection is a record, not a row: each centre gets a page
+     carrying its data, every criterion with the answer given, the inspector's
+     notes and the photographs taken on site. */
+  const canDossier = !!source.criteriaSections;
+
+  const downloadDossier = async () => {
+    const records = filterRows(source, data[source.key] || []);
+    if (!records.length) return setError('لا توجد تقييمات مطابقة للفلاتر.');
+
+    setBusy('dossier'); setError(null);
+    try {
+      await exportReadinessDossier({
+        title: source.dossierTitle || source.label,
+        subtitle: filterSummary,
+        records,
+        sections: source.criteriaSections,
+        brand,
+        withPhotos: photos,
+        onProgress: (n, total) => setProgress({ n, total }),
+        fileName: `${source.dossierTitle || source.label}.pdf`,
+      });
+    } catch (ex) {
+      setError(`تعذّر إنشاء المحضر: ${ex.message}`);
+    }
+    setBusy(null);
+    setProgress(null);
   };
 
   const anyHas = (f) => sources.some(s => has(s, f));
@@ -444,19 +481,43 @@ export default function AdminReportsCenter() {
               <CalendarBlank size={11} /> {filterSummary}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button onClick={downloadCsv} disabled={!!busy}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-line text-xs font-bold text-muted hover:text-primary hover:border-primary/40 transition-colors disabled:opacity-50">
               <FileCsv size={14} /> Excel / CSV
             </button>
             <button onClick={downloadPdf} disabled={!!busy}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-xs font-bold hover:opacity-90 transition disabled:opacity-60 shadow-[0_4px_16px_rgb(var(--c-primary)/0.35)]"
-              style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}>
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-line text-xs font-bold text-muted hover:text-primary hover:border-primary/40 transition-colors disabled:opacity-50">
               {busy === 'pdf' ? <CircleNotch size={14} className="animate-spin" /> : <FilePdf size={14} />}
-              تصدير PDF
+              جدول PDF
             </button>
+            {canDossier && (
+              <button onClick={downloadDossier} disabled={!!busy}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-xs font-bold hover:opacity-90 transition disabled:opacity-60 shadow-[0_4px_16px_rgb(var(--c-primary)/0.35)]"
+                style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}>
+                {busy === 'dossier'
+                  ? <CircleNotch size={14} className="animate-spin" />
+                  : <Certificate size={14} />}
+                {progress
+                  ? `محضر رسمي · ${AR_NUM(progress.n)} من ${AR_NUM(progress.total)}`
+                  : 'محضر رسمي — صفحة لكل مركز'}
+              </button>
+            )}
           </div>
         </div>
+
+        {canDossier && (
+          <div className="px-4 pb-1 -mt-1 flex items-center gap-4 flex-wrap">
+            <label className="flex items-center gap-2 text-[11px] text-muted cursor-pointer">
+              <input type="checkbox" checked={photos} onChange={e => setPhotos(e.target.checked)}
+                className="accent-primary w-3.5 h-3.5" />
+              تضمين الصور الميدانية
+            </label>
+            <span className="text-[11px] text-muted">
+              المراكز مرتّبة تصاعدياً · صفحة كاملة لكل مركز · ورقة ملخّص في المقدمة
+            </span>
+          </div>
+        )}
 
         {/* Section tabs — the PDF carries them all; the preview shows one. */}
         {sources.length > 1 && (
