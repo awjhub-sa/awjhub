@@ -16,13 +16,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ChartLineUp, Gauge, Buildings as Building2, Siren, Lightning,
-  WarningCircle, CheckCircle, Info, ArrowLeft, Sparkle, Stack as Boxes,
+  ChartLineUp, Gauge, Buildings as Building2,
+  WarningCircle, CheckCircle, Info, ArrowLeft, Sparkle,
 } from '@phosphor-icons/react';
 import { db } from '../../lib/db.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import { Panel, Empty, BarsH, Donut, Trend, HeatGrid, Kpi, arNum as AR } from '../../components/charts/Charts.jsx';
-import { readinessStats, catererScorecards, buildFindings } from '../../lib/analytics.js';
+import { Panel, Empty, BarsH, Donut, Trend, Kpi, arNum as AR } from '../../components/charts/Charts.jsx';
+import {
+  readinessStats, catererScorecards, buildFindings, roundComparison, operationsStats,
+} from '../../lib/analytics.js';
 import { compareCenters } from '../../lib/reportQuery.js';
 import { MINA_SECTIONS } from '../../config/minaQuestions.js';
 import { ARAFAT_SECTIONS } from '../../config/arafatQuestions.js';
@@ -41,12 +43,24 @@ const TONE = {
   good:  { color: GREEN, bg: '#F0FDF4', border: '#BBF7D0', Icon: CheckCircle },
 };
 
+/* The keys assigned_tasks stores; the screen that writes them keeps the same
+   list, and a raw key on an analytics page is a leak of the schema. */
+const TASK_LABEL = {
+  meal_evaluation: 'تقييم الوجبات',
+  mina_readiness: 'جاهزية منى',
+  arafat_readiness: 'جاهزية عرفة',
+};
+
 const SOURCES = [
   ['mina',      'mina_readiness'],
   ['arafat',    'arafat_readiness'],
   ['meals',     'meal_evaluations'],
   ['reports',   'reports'],
   ['logistics', 'logistics_requests'],
+  ['phases',    'meal_phases'],
+  ['tasks',     'assigned_tasks'],
+  ['done',      'task_completions'],
+  ['forms',     'form_assignments'],
   ['centers',   'centers'],
   ['caterers',  'caterers'],
 ];
@@ -72,15 +86,23 @@ export default function AdminInsights() {
     if (!data) return null;
     const minaStats   = readinessStats(data.mina,   MINA_SECTIONS);
     const arafatStats = readinessStats(data.arafat, ARAFAT_SECTIONS);
+    const rounds = {
+      mina:   roundComparison(data.mina),
+      arafat: roundComparison(data.arafat),
+    };
+    const ops = operationsStats({
+      phases: data.phases, tasks: data.tasks, completions: data.done,
+      forms: data.forms, centers: data.centers, caterers: data.caterers,
+    });
     const scorecards  = catererScorecards({
       caterers: data.caterers, centers: data.centers,
       mina: data.mina, arafat: data.arafat,
       reports: data.reports, logistics: data.logistics,
     });
     return {
-      minaStats, arafatStats, scorecards,
+      minaStats, arafatStats, rounds, ops, scorecards,
       findings: buildFindings({
-        minaStats, arafatStats, scorecards,
+        minaStats, arafatStats, rounds, ops, scorecards,
         centers: data.centers, reports: data.reports, logistics: data.logistics,
       }),
     };
@@ -103,7 +125,7 @@ export default function AdminInsights() {
     );
   }
 
-  const { minaStats, arafatStats, scorecards, findings } = model;
+  const { minaStats, arafatStats, rounds, ops, scorecards, findings } = model;
   const stats = site === 'mina' ? minaStats : arafatStats;
   const bothEvals = minaStats.evaluations + arafatStats.evaluations;
   const overall = [minaStats.average, arafatStats.average].filter(v => v != null);
@@ -257,13 +279,126 @@ export default function AdminInsights() {
         </Panel>
       </div>
 
-      {/* ── The matrix ── */}
+      {/* ── Where every centre stands, in one look ── */}
       <Panel
-        title="خريطة المخالفات"
-        subtitle="المركز × المعيار — كل مربع كثافته بعدد مرات السقوط"
-        right={<span className="text-[10px] font-bold text-muted">أول ٢٠ مركزاً · أعلى ١٢ معياراً</span>}
+        title="خريطة الجاهزية"
+        subtitle="كل مركز بآخر درجة سجّلها — الأحمر يحتاج زيارة قبل غيره"
+        right={
+          <div className="flex items-center gap-3">
+            {[['ممتاز ٨+', GREEN], ['مقبول ٦–٨', AMBER], ['ضعيف <٦', RED], ['بلا تقييم', '#CBD5E1']].map(([l, c]) => (
+              <span key={l} className="flex items-center gap-1.5 text-[10px] font-bold text-muted whitespace-nowrap">
+                <span className="w-2.5 h-2.5 rounded" style={{ background: c }} /> {l}
+              </span>
+            ))}
+          </div>
+        }
       >
-        <HeatMatrix stats={stats} />
+        <ReadinessMap stats={stats} allCenters={data.centers} onPick={() => navigate(
+          site === 'mina' ? '/admin/readiness/mina' : '/admin/readiness/arafat')} />
+      </Panel>
+
+      {/* ── Did the follow-up work ── */}
+      <RoundPanel cmp={site === 'mina' ? rounds.mina : rounds.arafat} label={site === 'mina' ? 'منى' : 'عرفة'} />
+
+      {/* ── The rest of the system ──
+          Readiness is the loudest section, not the only one. These four say
+          where the season stands outside the two inspections — and say plainly
+          when a section has not started, because a decision-maker cannot tell
+          an empty chart from an all-clear. */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Panel title="متابعة المراحل" subtitle="التجهيز ثم الطبخ ثم التوزيع"
+          right={<Link to="/admin/phases" nav={navigate} />}>
+          {!ops.phases.active ? (
+            <NotStarted
+              what="لم تُسجَّل أي مرحلة بعد"
+              why="اللوحة تمتلئ أول ما يبدأ الميدان بتسجيل التجهيز والطبخ والتوزيع." />
+          ) : (
+            <>
+              <BarsH
+                max={ops.phases.total}
+                items={ops.phases.steps.map((s, i) => ({
+                  label: s.label, value: s.n, color: [NAVY, AMBER, GREEN][i],
+                }))}
+              />
+              <p className="text-[10px] font-bold text-muted mt-3">
+                من {AR(ops.phases.total)} سجل على {AR(ops.phases.centers)} مركز
+              </p>
+            </>
+          )}
+        </Panel>
+
+        <Panel title="المهام المسندة" subtitle="ما أُسند للمراقبين وما رجع منه"
+          right={<Link to="/admin/tasks" nav={navigate} />}>
+          {!ops.tasks.active ? (
+            <NotStarted what="لا توجد مهام مسنَدة" why="أسند مهمة من شاشة إسناد المهام لتظهر هنا." />
+          ) : (
+            <>
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <MiniStat label="إسناد" value={AR(ops.tasks.assignments)} color={NAVY} />
+                <MiniStat label="مركز مستهدف" value={AR(ops.tasks.targeted)} color={STEEL} />
+                <MiniStat label="إنجاز مسجّل" value={AR(ops.tasks.completions)}
+                  color={ops.tasks.completions ? GREEN : RED} />
+              </div>
+              {ops.tasks.byType.length > 0 && (
+                <BarsH items={ops.tasks.byType.slice(0, 5).map(t => ({
+                  label: TASK_LABEL[t.label] || t.label, value: t.n, color: STEEL, wide: true,
+                }))} />
+              )}
+              {ops.tasks.completions === 0 && (
+                <p className="text-[11px] font-bold mt-3" style={{ color: RED }}>
+                  لا إنجاز مسجّل مقابل هذه المهام حتى الآن.
+                </p>
+              )}
+            </>
+          )}
+        </Panel>
+
+        <Panel title="التزام المتعهدين بالنماذج" subtitle="ما سُلِّم في وقته وما تأخّر"
+          right={<Link to="/admin/forms" nav={navigate} />}>
+          {!ops.forms.active ? (
+            <NotStarted what="لا توجد نماذج مُسنَدة" why="أسند نموذجاً لمتعهد ليبدأ قياس الالتزام." />
+          ) : (
+            <Donut
+              total={ops.forms.onTime} caption="٪ التزام"
+              segments={[
+                { label: 'مقبول',            value: ops.forms.accepted, color: GREEN },
+                { label: 'مُسلَّم قيد المراجعة', value: Math.max(0, ops.forms.submitted - ops.forms.accepted), color: STEEL },
+                { label: 'مُعاد للتعديل',      value: ops.forms.returned, color: AMBER },
+                { label: 'متأخر',            value: ops.forms.overdue,  color: RED },
+                { label: 'بانتظار المتعهد',   value: Math.max(0, ops.forms.total - ops.forms.submitted - ops.forms.overdue - ops.forms.returned), color: '#CBD5E1' },
+              ].filter(s => s.value > 0)}
+            />
+          )}
+        </Panel>
+
+        <Panel title="تغطية المراكز بالمتعهدين" subtitle="كل مركز بلا متعهد هو مركز خارج كل قياس"
+          right={<Link to="/admin/centers" nav={navigate} />}>
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <MiniStat label="مركز" value={AR(ops.coverage.total)} color={NAVY} />
+            <MiniStat label="مُسنَد" value={AR(ops.coverage.assigned)} color={GREEN} />
+            <MiniStat label="بلا متعهد" value={AR(ops.coverage.unassigned)}
+              color={ops.coverage.unassigned ? RED : GREEN} />
+          </div>
+          <BarsH
+            max={ops.coverage.total}
+            items={[
+              { label: 'مراكز مُسنَدة', value: ops.coverage.assigned, color: GREEN },
+              { label: 'بلا متعهد',    value: ops.coverage.unassigned, color: RED },
+            ]}
+          />
+          <p className="text-[10px] font-bold text-muted mt-3">
+            {AR(ops.coverage.caterers)} متعهد مسجّل في النظام
+          </p>
+        </Panel>
+      </div>
+
+      {/* فرضية الوزارة has no store behind it yet; saying so is more use than
+          leaving the reader to wonder why it is missing. */}
+      <Panel title="فرضية الوزارة" subtitle="تمارين المحاكاة والفرضيات الميدانية"
+        right={<Link to="/admin/readiness/drill" nav={navigate} />}>
+        <NotStarted
+          what="القسم لم يُفعَّل بعد"
+          why="لا يوجد مصدر بيانات للفرضيات حتى الآن — ما إن تُسجَّل أول فرضية حتى تدخل هنا مع بقية الأقسام." />
       </Panel>
 
       {/* ── The join nothing else makes ── */}
@@ -283,32 +418,148 @@ export default function AdminInsights() {
   );
 }
 
-/* ── Centre × criterion ─────────────────────────────────────
-   Twenty centres and twelve criteria is two hundred and forty numbers. As a
-   grid of tints it is one glance: a dark column is a criterion the season
-   fails, a dark row is a centre in trouble. */
-function HeatMatrix({ stats }) {
-  const cols = stats.failures.slice(0, 12).map(f => ({
-    key: String(f.q.id), label: AR(f.q.id), title: f.q.text, id: f.q.id,
-  }));
+/* ── Small parts ────────────────────────────────────────── */
+const Link = ({ to, nav }) => (
+  <button onClick={() => nav(to)} className="text-[11px] font-bold text-primary hover:underline">
+    افتح القسم
+  </button>
+);
 
-  const centers = [...new Set(stats.records.map(r => r.center).filter(Boolean))]
-    .sort(compareCenters).slice(0, 20)
-    .map(c => ({ key: String(c), label: String(c) }));
+const MiniStat = ({ label, value, color }) => (
+  <div className="rounded-xl border border-line bg-background/60 p-2.5 text-center">
+    <p className="text-lg font-black tabular-nums leading-none" style={{ color }}>{value}</p>
+    <p className="text-[10px] font-bold text-muted mt-1.5">{label}</p>
+  </div>
+);
 
-  const count = (row, col) => stats.records.filter(r => {
-    if (r.center !== row.key) return false;
-    const a = (r.answers || {})[col.id] ?? (r.answers || {})[col.key];
-    return a === 'لا';
-  }).length;
+/* An empty panel and an all-clear panel look identical, and they mean opposite
+   things. This says which one it is. */
+const NotStarted = ({ what, why }) => (
+  <div className="py-6 text-center">
+    <p className="text-[12px] font-black text-muted">{what}</p>
+    <p className="text-[11px] font-bold text-muted/70 mt-1.5 max-w-md mx-auto leading-relaxed">{why}</p>
+  </div>
+);
+
+/* ── Every centre as a tile ─────────────────────────────────
+   Sixty-six numbers in a table is a list to read. The same sixty-six as
+   coloured tiles is a picture: where the red clusters is where the day goes. */
+function ReadinessMap({ stats, allCenters, onPick }) {
+  const score = new Map(stats.ranked.map(x => [String(x.center), x.score]));
+
+  /* Centres with no inspection are shown grey rather than omitted — a centre
+     missing from the map is the one most likely to be forgotten. */
+  const codes = [...new Set([
+    ...stats.ranked.map(x => String(x.center)),
+    ...(allCenters || []).map(c => c.code).filter(Boolean).map(String),
+  ])].sort(compareCenters);
+
+  if (!codes.length) return <Empty />;
 
   return (
-    <HeatMatrixGrid cols={cols} rows={centers} valueOf={count} />
+    <div className="flex flex-wrap gap-1.5">
+      {codes.map(code => {
+        const v = score.get(code);
+        const color = v == null ? '#CBD5E1' : v >= 8 ? GREEN : v >= 6 ? AMBER : RED;
+        return (
+          <button key={code} onClick={onPick}
+            title={v == null ? `${code} — بلا تقييم` : `${code} — ${v.toFixed(1)} من ١٠`}
+            className="w-[70px] rounded-lg px-1.5 py-1.5 text-center transition-transform hover:-translate-y-0.5"
+            style={{
+              background: v == null ? '#F1F5F9' : `color-mix(in srgb, ${color} 16%, #fff)`,
+              border: `1px solid ${v == null ? '#E2E8F0' : `color-mix(in srgb, ${color} 40%, #fff)`}`,
+            }}>
+            <span className="block text-[10px] font-bold truncate" style={{ color: v == null ? '#94A3B8' : color }}>
+              {code}
+            </span>
+            <span className="block text-[13px] font-black tabular-nums leading-tight mt-0.5"
+              style={{ color: v == null ? '#94A3B8' : color }}>
+              {v == null ? '—' : AR(v.toFixed(1))}
+            </span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
-const HeatMatrixGrid = (props) => (
-  <HeatGrid {...props} legend="الأرقام أعلى الأعمدة هي أرقام المعايير — مرّر على أي مربع لقراءته" />
-);
+
+/* ── First round against the latest ─────────────────────── */
+function RoundPanel({ cmp, label }) {
+  if (!cmp || !cmp.moved.length) {
+    return (
+      <Panel title={`مقارنة الجولات — ${label}`} subtitle="الفرق بين الجولة الأولى وآخر جولة لكل مركز">
+        <Empty label={`لم تُنفَّذ جولة ثانية في ${label} بعد — المقارنة تظهر تلقائياً بعدها`} />
+      </Panel>
+    );
+  }
+
+  const arrow = (d) => (d > 0 ? '▲' : d < 0 ? '▼' : '—');
+
+  return (
+    <Panel
+      title={`مقارنة الجولات — ${label}`}
+      subtitle={`${AR(cmp.moved.length)} مركز له جولتان أو أكثر${cmp.single ? ` · ${AR(cmp.single)} بجولة واحدة` : ''}`}
+      right={
+        <span className="text-[12px] font-black px-2.5 py-1 rounded-full"
+          style={{
+            color: cmp.avgDelta >= 0 ? GREEN : RED,
+            background: cmp.avgDelta >= 0 ? '#F0FDF4' : '#FEF2F2',
+          }}>
+          {arrow(cmp.avgDelta)} {AR(Math.abs(cmp.avgDelta).toFixed(2))} نقطة في المتوسط
+        </span>
+      }
+    >
+      <div className="grid sm:grid-cols-3 gap-3 mb-5">
+        {[
+          ['تحسّن', cmp.improved, GREEN],
+          ['ثبات',  cmp.same,     STEEL],
+          ['تراجع', cmp.declined, RED],
+        ].map(([l, n, c]) => (
+          <div key={l} className="rounded-xl border p-3 text-center"
+            style={{ borderColor: `color-mix(in srgb, ${c} 30%, #fff)`, background: `color-mix(in srgb, ${c} 6%, #fff)` }}>
+            <p className="text-2xl font-black tabular-nums" style={{ color: c }}>{AR(n)}</p>
+            <p className="text-[11px] font-bold text-muted mt-1">{l}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-5">
+        <MoveList title="الأكثر تحسّناً" rows={cmp.top} tone={GREEN} />
+        <MoveList title="الأكثر تراجعاً" rows={cmp.bottom} tone={RED} />
+      </div>
+
+      <p className="text-[10px] font-bold text-muted mt-4">
+        الفرق يُحسب بين أول تقييم وآخر تقييم لكل مركز — وتغيّر أقل من ٠٫١٥ نقطة يُعدّ ثباتاً لا حركة.
+      </p>
+    </Panel>
+  );
+}
+
+function MoveList({ title, rows, tone }) {
+  return (
+    <div>
+      <p className="text-[11px] font-black mb-2" style={{ color: tone }}>{title}</p>
+      {!rows.length ? (
+        <p className="text-[11px] font-bold text-muted/70 py-3">لا شيء في هذا الاتجاه</p>
+      ) : (
+        <ul className="space-y-1.5">
+          {rows.map(m => (
+            <li key={m.center} className="flex items-center gap-2 text-[11px] rounded-lg px-2.5 py-2"
+              style={{ background: `color-mix(in srgb, ${tone} 5%, #fff)` }}>
+              <span className="font-black text-ink flex-1 truncate">{m.center}</span>
+              <span className="font-bold tabular-nums text-muted">{AR(m.first.toFixed(1))}</span>
+              <ArrowLeft size={11} className="text-muted/60" />
+              <span className="font-black tabular-nums text-ink">{AR(m.last.toFixed(1))}</span>
+              <span className="font-black tabular-nums w-12 text-left" style={{ color: tone }}>
+                {m.delta > 0 ? '▲' : '▼'} {AR(Math.abs(m.delta).toFixed(1))}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 /* ── Caterer table ──────────────────────────────────────── */
 function Scorecards({ rows }) {
