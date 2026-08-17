@@ -178,16 +178,23 @@ function HeaderClock() {
   );
 }
 
-/* Quiet by default, lit when it matters.
+/* The gold card. Every control on the bar is cut from it, so the header reads
+   as one set of objects rather than a row of unrelated chips.
+
+   Text on it is the deep navy, not white: white on the brand gold is about
+   2.3:1 and unreadable, while the navy is 6:1 and looks like ink on brass. */
+const goldCard = {
+  background: 'linear-gradient(135deg, rgb(var(--c-accent)) 0%, rgb(var(--c-accent-600)) 100%)',
+  boxShadow: '0 4px 16px rgb(var(--c-accent) / 0.32), inset 0 1px 0 rgb(255 255 255 / 0.28)',
+};
+
+/* Zero is shown, not hidden: "٠ بلاغ معلّق" is information, and a chip that
+   vanishes when clear makes the header jump every time one is resolved.
  *
- * The old chip looked identical whether it held nothing or held nine — same
- * fill, same weight, only the number changed — so an operations lead had to
- * read both chips to learn what the bar already knew. Now an empty count is a
- * hairline ghost and a live one fills with the brand gold, so the header is
- * scannable from across a desk.
- *
- * Zero is shown, not hidden: "٠ بلاغ معلّق" is information, and a chip that
- * vanishes when clear makes the header jump every time one is resolved. */
+ * The card is gold either way — that is the identity, not a state. What the
+ * state changes is the bubble holding the icon: hollow while the queue is
+ * clear, filled navy with a pulsing dot the moment something is waiting. So
+ * the bar is scannable without reading a single digit. */
 function HeaderStat({ count, label, Icon, onClick }) {
   const live = count > 0;
   return (
@@ -195,26 +202,26 @@ function HeaderStat({ count, label, Icon, onClick }) {
       onClick={onClick}
       whileHover={{ scale: 1.04, y: -1 }}
       whileTap={{ scale: 0.96 }}
-      className={`group relative flex items-center gap-2 pr-2 pl-3.5 py-1.5 rounded-full border transition-colors ${
-        live
-          ? 'border-transparent shadow-[0_3px_14px_rgb(var(--c-accent)/0.45)]'
-          : 'border-white/18 hover:border-white/35 hover:bg-white/5'
-      }`}
-      style={live ? { background: 'linear-gradient(135deg, rgb(var(--c-accent)), rgb(var(--c-accent-600)))' } : undefined}
+      className="group relative flex items-center gap-2 pr-1.5 pl-3.5 py-1.5 rounded-full"
+      style={goldCard}
     >
-      <span className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
-        live ? 'bg-white/25' : 'bg-white/10'
-      }`}>
-        <Icon size={13} weight="bold" className={live ? 'text-white' : 'text-white/60'} />
+      <span className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
+        live ? 'shadow-[0_2px_6px_rgb(var(--c-primary-900)/0.35)]' : ''
+      }`}
+        style={{ background: live ? 'rgb(var(--c-primary))' : 'rgb(255 255 255 / 0.3)' }}>
+        <Icon size={14} weight="bold"
+          style={{ color: live ? 'rgb(var(--c-accent))' : 'rgb(var(--c-primary-900))' }} />
       </span>
-      <span className={`text-[13px] font-black tabular-nums leading-none ${live ? 'text-white' : 'text-white/85'}`}>
+      <span className="text-[14px] font-black tabular-nums leading-none"
+        style={{ color: 'rgb(var(--c-primary-900))' }}>
         {count}
       </span>
-      <span className={`text-[11px] font-bold whitespace-nowrap ${live ? 'text-white/85' : 'text-white/50'}`}>
+      <span className="text-[11px] font-bold whitespace-nowrap"
+        style={{ color: 'rgb(var(--c-primary-900) / 0.72)' }}>
         {label}
       </span>
       {live && (
-        <span className="absolute -top-0.5 -left-0.5 w-2 h-2 rounded-full bg-white"
+        <span className="absolute -top-0.5 -left-0.5 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-[rgb(var(--c-primary))]"
           style={{ animation: 'badgePulse 2s ease-in-out infinite' }} />
       )}
     </motion.button>
@@ -501,13 +508,13 @@ export default function AdminLayout() {
             count. A full-width field of the accent made every control on it
             need its own navy box to stay legible, and eight boxes in a row is
             what the bar had become. */}
-        <header className="relative px-3 sm:px-4 h-14 flex items-center gap-3 flex-shrink-0 overflow-hidden shadow-[0_4px_20px_rgb(var(--c-primary-900)/0.35)]"
-          style={{ background: 'linear-gradient(90deg, rgb(var(--c-primary-700)) 0%, rgb(var(--c-primary)) 55%, rgb(var(--c-primary-700)) 100%)' }}>
+        <header className="relative px-3 sm:px-4 h-16 flex items-center gap-3 flex-shrink-0 overflow-hidden shadow-[0_4px_20px_rgb(var(--c-primary-900)/0.35)]"
+          style={{ background: 'rgb(var(--c-primary))' }}>
 
-          {/* A slow warm bloom behind the crest, and the gold rule that closes
-              the bar. Both decorative, both out of the way of the text. */}
-          <span aria-hidden className="pointer-events-none absolute -top-16 -right-10 w-56 h-40 rounded-full opacity-[0.16]"
-            style={{ background: 'radial-gradient(circle, rgb(var(--c-accent)) 0%, transparent 68%)' }} />
+          {/* The gold rule that closes the bar. The field itself is one flat
+              navy — the same one the sidebar starts on, so the two meet at the
+              corner without a seam; a second navy laid over the first only ever
+              looked like one colour dropped on another. */}
           <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px]"
             style={{ background: 'linear-gradient(90deg, transparent, rgb(var(--c-accent)), rgb(var(--c-accent-600)), transparent)' }} />
 
@@ -528,17 +535,18 @@ export default function AdminLayout() {
                 Derived from today's Hijri date rather than from the season row:
                 a label that says which Hajj season we are in must follow the
                 calendar, not a record someone forgot to roll over. */}
-            <span className="flex items-center gap-2.5 flex-shrink-0">
-              <span className="w-9 h-9 rounded-full flex items-center justify-center border border-accent/45 bg-accent/10 flex-shrink-0">
-                <MoonStars size={17} weight="fill" className="text-accent" />
+            <span className="flex items-center gap-2.5 flex-shrink-0 pr-1.5 pl-4 py-1.5 rounded-full"
+              style={goldCard}>
+              <span className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 bg-white/30">
+                <MoonStars size={15} weight="fill" style={{ color: 'rgb(var(--c-primary-900))' }} />
               </span>
               <span className="flex flex-col leading-none">
-                <span className="text-[9px] font-bold text-accent/85 tracking-[0.18em]">موسم حج</span>
-                <span className="text-[15px] font-black text-white mt-1 tabular-nums">{hijriYear}هـ</span>
+                <span className="text-[8.5px] font-bold tracking-[0.2em]"
+                  style={{ color: 'rgb(var(--c-primary-900) / 0.68)' }}>موسم حج</span>
+                <span className="text-[14px] font-black mt-1 tabular-nums"
+                  style={{ color: 'rgb(var(--c-primary-900))' }}>{hijriYear}هـ</span>
               </span>
             </span>
-
-            <span className="hidden lg:block w-px h-7 bg-white/12 mr-1" />
           </div>
 
           {/* Centred, and given the slack so the two counts sit in the middle
@@ -557,32 +565,36 @@ export default function AdminLayout() {
           <div className="relative flex items-center gap-3 flex-shrink-0">
           <HeaderClock />
 
-          {/* Quiet, it is a bare ring holding an icon; waiting, it fills with
-              gold, widens to carry the count, the bell swings, and a red dot
-              rides the corner — the state reads from shape, not from a colour
-              change alone. */}
+          {/* The same gold card as the rest. Quiet it carries the word alone;
+              waiting, the bubble fills navy, the bell swings, the count takes
+              the label's place and a red dot rides the corner — the state
+              reads from shape, not from a colour change alone. */}
           <motion.button
             onClick={() => navigate('/admin/notifications')}
-            whileHover={{ scale: 1.06 }}
+            whileHover={{ scale: 1.04, y: -1 }}
             whileTap={{ scale: 0.94 }}
-            className={`relative flex items-center gap-2 rounded-full transition-colors ${
-              newCount > 0
-                ? 'px-3.5 py-2 shadow-[0_4px_18px_rgb(var(--c-accent)/0.5)]'
-                : 'w-10 h-10 justify-center border border-white/20 hover:border-white/40 hover:bg-white/5'
-            }`}
-            style={newCount > 0
-              ? { background: 'linear-gradient(135deg, rgb(var(--c-accent)), rgb(var(--c-accent-600)))' }
-              : undefined}
+            className="relative flex items-center gap-2 pr-1.5 pl-3.5 py-1.5 rounded-full"
+            style={goldCard}
             aria-label="التنبيهات"
           >
-            <BellRing size={19} weight={newCount > 0 ? 'fill' : 'regular'}
-              className={newCount > 0 ? 'text-white' : 'text-white/70'}
-              style={newCount > 0 ? { animation: 'bellSwing 2.4s ease-in-out infinite' } : undefined} />
+            <span className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ background: newCount > 0 ? 'rgb(var(--c-primary))' : 'rgb(255 255 255 / 0.3)' }}>
+              <BellRing size={15} weight="fill"
+                style={{
+                  color: newCount > 0 ? 'rgb(var(--c-accent))' : 'rgb(var(--c-primary-900))',
+                  animation: newCount > 0 ? 'bellSwing 2.4s ease-in-out infinite' : undefined,
+                }} />
+            </span>
             {newCount > 0 && (
-              <span className="text-xs font-black text-white">
-                {newCount > 99 ? '99+' : newCount} تنبيه جديد
+              <span className="text-[14px] font-black tabular-nums leading-none"
+                style={{ color: 'rgb(var(--c-primary-900))' }}>
+                {newCount > 99 ? '99+' : newCount}
               </span>
             )}
+            <span className="text-[11px] font-bold whitespace-nowrap"
+              style={{ color: 'rgb(var(--c-primary-900) / 0.72)' }}>
+              {newCount > 0 ? 'تنبيه جديد' : 'التنبيهات'}
+            </span>
             {newCount > 0 && (
               <span className="absolute -top-0.5 -left-0.5 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-[rgb(var(--c-primary))]"
                 style={{ animation: 'badgePulse 2s ease-in-out infinite' }} />
