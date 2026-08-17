@@ -3,6 +3,7 @@ import { useAuth } from './context/AuthContext.jsx';
 import { RequireAuth, RequireAdmin } from './components/PrivateRoute.jsx';
 import React, { useEffect } from 'react';
 import { loadMenus } from './lib/menuStore.js';
+import { loadNationalities } from './lib/nationalityStore.js';
 
 // صفحات المراقب (Observer)
 import Login           from './pages/Login';
@@ -30,6 +31,7 @@ import AdminLogistics      from './pages/admin/AdminLogistics';
 import AdminAnalytics      from './pages/admin/AdminAnalytics';
 import AdminCaterers       from './pages/admin/AdminCaterers';
 import AdminCenters        from './pages/admin/AdminCenters';
+import AdminNationalities  from './pages/admin/AdminNationalities';
 import AdminForms          from './pages/admin/AdminForms';
 import AdminBrand          from './pages/admin/AdminBrand';
 import AdminDrill          from './pages/admin/AdminDrill';
@@ -74,7 +76,7 @@ export default function App() {
   /* Saved menus are read synchronously all over the app, so they are fetched
      once here and laid over the built-in ones. Until they land, the built-in
      menu shows — never a blank card. */
-  useEffect(() => { loadMenus(); }, []);
+  useEffect(() => { loadNationalities().then(() => loadMenus()); }, []);
 
   return (
     <BrowserRouter>
@@ -130,6 +132,7 @@ export default function App() {
           <Route path="readiness/arafat"   element={<AdminAnalytics site="arafat" />} />
           <Route path="readiness/drill"    element={<AdminDrill />} />
           <Route path="centers"       element={<AdminCenters />} />
+          <Route path="nationalities" element={<AdminNationalities />} />
           <Route path="caterers"      element={<AdminCaterers />} />
           <Route path="forms"         element={<AdminForms />} />
           <Route path="users"         element={<AdminUsers />} />

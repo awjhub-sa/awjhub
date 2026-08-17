@@ -1,4 +1,4 @@
-import { NATIONALITIES } from './nationalities.js';
+import { NATIONALITIES, NAT_LOOKUP } from './nationalities.js';
 
 export const HAJJ_DAYS = [
   { value: '7',  dayAr: '٧',  label: '٧ ذو الحجة ١٤٤٧'  },
@@ -1458,12 +1458,13 @@ MENUS.bangladesh2['13'] = {
    half-entered season is never half-blank. */
 let OVERLAY = {};
 
-/** @param {Array<{nationality,day,meal,main,side,drinks,snacks,location,time}>} rows */
+/** @param {Array<{nationalityId,day,meal,main,side,drinks,snacks,location,time}>} rows */
 export function setMenuOverlay(rows) {
   const next = {};
   for (const r of rows || []) {
-    if (!r?.nationality || r.day == null || !r.meal) continue;
-    const nat = (next[r.nationality] ||= {});
+    const natKey = r?.nationalityId ?? r?.nationality;
+    if (!natKey || r.day == null || !r.meal) continue;
+    const nat = (next[natKey] ||= {});
     const day = (nat[String(r.day)] ||= {});
     day[r.meal] = {
       main:     r.main   || [],
@@ -1485,7 +1486,12 @@ export function isSavedMeal(nationalityKey, day, mealKey) {
 /** Returns the meal object for (nationality, day, meal) — always a defined shape */
 export function getMeal(nationalityKey, day, mealKey) {
   const saved = OVERLAY?.[nationalityKey]?.[String(day)]?.[mealKey];
-  const raw = saved || MENUS?.[nationalityKey]?.[String(day)]?.[mealKey] || {};
+  /* Once a season's roster is loaded, the key is a row id rather than a name
+     like 'indonesia'. legacyKey is what still points that row at a menu
+     compiled in above; a group the customer created has none, and correctly
+     falls through to an empty meal rather than borrowing someone else's food. */
+  const builtinKey = NAT_LOOKUP?.[nationalityKey]?.legacyKey || nationalityKey;
+  const raw = saved || MENUS?.[builtinKey]?.[String(day)]?.[mealKey] || {};
   return {
     main:     raw.main     || [],
     side:     raw.side     || [],

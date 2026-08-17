@@ -13,6 +13,7 @@ import {
   ListChecks as ListTodo,
   Buildings as Building2,
   MapPinArea,
+  Globe as Earth,
   FileText,
   ClipboardText,
   CaretDown,
@@ -64,6 +65,7 @@ const NAV = [
   { key: 'caterers', label: 'إدارة المتعهدين', icon: Building2, children: [
     { to: '/admin/caterers', label: 'المتعهدين', icon: Building2  },
     { to: '/admin/centers',  label: 'المراكز',    icon: MapPinArea },
+    { to: '/admin/nationalities', label: 'جنسيات الحجاج', icon: Earth },
     { to: '/admin/forms',    label: 'النماذج',    icon: FileText   },
   ]},
 

@@ -2,7 +2,16 @@ function range(s, e) {
   return Array.from({ length: e - s + 1 }, (_, i) => s + i);
 }
 
-export const NATIONALITIES = [
+/**
+ * The roster that ships in the box.
+ *
+ * These nine are one operator's pilgrims, with their centre numbers written in
+ * by hand. They stay as the fallback — what a fresh install shows, and what
+ * paints the first frame before the season's own rows arrive from the database
+ * (see lib/nationalityStore.js). A customer's roster replaces this list at
+ * runtime; nothing here is edited to add a nationality any more.
+ */
+export const DEFAULT_NATIONALITIES = [
   /* Eight hues spread evenly round the wheel. None fall inside the navy band
      (204–235) or near the #B99A64 accent, so a nationality chip can never be
      mistaken for a brand element or an active state.
@@ -21,16 +30,74 @@ export const NATIONALITIES = [
   { key: 'bohra',       label: 'البهرة',     flag: '🕌',  centers: [5],                       color: 'rgb(var(--c-primary))' },
 ];
 
-export const NAT_LABEL = Object.fromEntries(NATIONALITIES.map(n => [n.key, n.label]));
-export const NAT_LOOKUP = Object.fromEntries(NATIONALITIES.map(n => [n.key, n]));
+/* The live roster.
+ *
+ * Deliberately mutated in place rather than reassigned: nineteen call sites
+ * across eight files hold this binding, and an array that is swapped out would
+ * leave every one of them pointing at the shipped defaults for ever. Rebuilding
+ * its contents keeps one source of truth without rewriting those files —
+ * components re-render off useNationalityVersion(). */
+export const NATIONALITIES = [...DEFAULT_NATIONALITIES];
+
+export const NAT_LABEL  = {};
+export const NAT_LOOKUP = {};
 
 const _centerToNats = new Map();
-NATIONALITIES.forEach(n => n.centers.forEach(c => {
-  const key = Number(c);
-  const list = _centerToNats.get(key) || [];
-  list.push(n.key);
-  _centerToNats.set(key, list);
-}));
+
+/* Derives everything that hangs off the roster. Called once at module load and
+   again whenever the season's rows land. */
+function reindex() {
+  for (const k of Object.keys(NAT_LABEL))  delete NAT_LABEL[k];
+  for (const k of Object.keys(NAT_LOOKUP)) delete NAT_LOOKUP[k];
+  _centerToNats.clear();
+
+  NATIONALITIES.forEach(n => {
+    NAT_LABEL[n.key]  = n.label;
+    NAT_LOOKUP[n.key] = n;
+    (n.centers || []).forEach(c => {
+      const key = Number(c);
+      if (Number.isNaN(key)) return;
+      const list = _centerToNats.get(key) || [];
+      list.push(n.key);
+      _centerToNats.set(key, list);
+    });
+  });
+}
+reindex();
+
+/**
+ * Installs the season's roster.
+ *
+ * @param {Array<{id,name,flag,color,legacyKey,centers:number[]}>} rows
+ *   Passing an empty list is a no-op, not a wipe: a customer who has not
+ *   entered their own nationalities yet keeps seeing the shipped ones instead
+ *   of an empty system.
+ */
+export function setNationalityOverlay(rows) {
+  const next = (rows || [])
+    .filter(r => r?.id && r?.name)
+    .map(r => ({
+      key: r.id,                        // the row's id is the key everything else uses
+      label: r.name,
+      flag: r.flag || '🏳️',
+      color: r.color || '#6F5B96',
+      centers: (r.centers || []).map(Number).filter(n => !Number.isNaN(n)),
+      /* Points at a menu compiled into config/menus.js. Null for a nationality
+         the customer created, which simply starts with no menu. */
+      legacyKey: r.legacyKey || null,
+    }));
+
+  if (!next.length) return false;
+
+  NATIONALITIES.length = 0;
+  NATIONALITIES.push(...next);
+  reindex();
+  return true;
+}
+
+/** True once a customer's own roster is in place. */
+export const usingCustomRoster = () =>
+  NATIONALITIES.some(n => n.legacyKey !== undefined && n.key?.length > 20);
 
 export function extractCenterNum(centerId) {
   if (centerId == null) return null;

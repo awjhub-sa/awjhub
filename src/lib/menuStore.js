@@ -23,9 +23,12 @@ const listeners = new Set();
 const notify = () => { version++; listeners.forEach(fn => fn(version)); };
 
 /**
- * Fetch the saved menus for a season and install them.
- * Repeated calls for the same season are collapsed unless `force` is set —
- * several screens mount at once and none of them should trigger its own fetch.
+ * Fetch the saved menus and install them.
+ *
+ * Every menu hangs off a nationality row, and that row already carries its
+ * season, so there is nothing to filter on here — the whole table is one small
+ * read. The seasonId argument is kept only to collapse repeat calls while a
+ * season is being switched, and to keep one signature across both stores.
  */
 export async function loadMenus(seasonId = null, { force = false } = {}) {
   if (!force && loadedSeason === seasonId) return version;
@@ -33,7 +36,7 @@ export async function loadMenus(seasonId = null, { force = false } = {}) {
 
   loading = (async () => {
     try {
-      const rows = await db.menus.list(seasonId ? { filter: { seasonId } } : {});
+      const rows = await db.menus.list();
       setMenuOverlay(rows);
       loadedSeason = seasonId;
       notify();

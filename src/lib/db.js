@@ -158,6 +158,20 @@ function createTableApi(table, { pk = 'id' } = {}) {
       if (error) throw error;
     },
 
+    /* Deletes by column match rather than by primary key. A join table has no
+       id of its own — its key is the pair of columns — so removing one link
+       has to be expressed as a where clause. */
+    async deleteWhere(filter) {
+      if (!filter || !Object.keys(filter).length) {
+        throw new Error(`db.${table}.deleteWhere needs a filter`);
+      }
+      let q = supabase.from(table).delete();
+      for (const [k, v] of Object.entries(filter)) q = q.eq(toSnake(k), v);
+      const { error } = await q;
+      logErr(`${table}.deleteWhere`, error);
+      if (error) throw error;
+    },
+
     async deleteMany(ids) {
       if (!ids?.length) return;
       const { error } = await supabase.from(table).delete().in(pk, ids);
@@ -228,6 +242,10 @@ export const db = {
   /* One row per nationality × day × meal. See 008_menus.sql — the menu used
      to be compiled in, which only works for one customer. */
   menus:              createTableApi('menus'),
+  /* The season's pilgrim groups, and which centres feed each. See
+     009_nationalities.sql — centre 26 serves two, so the link is its own row. */
+  nationalities:        createTableApi('nationalities'),
+  center_nationalities: createTableApi('center_nationalities'),
   /* Forms are three layers: what a form is, who owes it, and what happened.
      See docs/FORMS_MODULE.md. */
   form_templates:     createTableApi('form_templates'),

@@ -20,6 +20,7 @@ import MenuImport from '../../components/menu/MenuImport.jsx';
 import { NATIONALITIES } from '../../config/nationalities.js';
 import { db } from '../../lib/db.js';
 import { refreshMenus, useMenuVersion } from '../../lib/menuStore.js';
+import { refreshNationalities, useNationalityVersion } from '../../lib/nationalityStore.js';
 import {
   HAJJ_DAYS, CATEGORY_KEYS, CATEGORY_META, getMeal, getMealItems, isSavedMeal,
 } from '../../config/menus.js';
@@ -68,6 +69,8 @@ export default function AdminMenu() {
   /* Re-renders when the overlay changes, so the cards below follow a save
      without this screen having to thread the new values through by hand. */
   useMenuVersion();
+  /* And when the season's roster does — the rail below is drawn from it. */
+  useNationalityVersion();
 
   const nat = useMemo(() => NATIONALITIES.find(n => n.key === natKey) || null, [natKey]);
   const dayMeta = useMemo(() => HAJJ_DAYS.find(d => d.value === day) || null, [day]);
@@ -80,7 +83,8 @@ export default function AdminMenu() {
   }, []);
 
   const reload = useCallback(async () => {
-    const list = await db.menus.list(seasonId ? { filter: { seasonId } } : {});
+    await refreshNationalities(seasonId);
+    const list = await db.menus.list();
     setRows(list);
     await refreshMenus(seasonId);
   }, [seasonId]);
@@ -97,7 +101,7 @@ export default function AdminMenu() {
 
   const rowFor = useCallback(
     (mealKey) => rows.find(r =>
-      r.nationality === natKey && String(r.day) === String(day) && r.meal === mealKey) || null,
+      r.nationalityId === natKey && String(r.day) === String(day) && r.meal === mealKey) || null,
     [rows, natKey, day],
   );
 
@@ -109,7 +113,7 @@ export default function AdminMenu() {
     const existing = rowFor(mealKey);
     const body = {
       ...payload,
-      seasonId, nationality: natKey, day, meal: mealKey,
+      nationalityId: natKey, day, meal: mealKey,
       source, sourceFile, updatedAt: new Date(),
     };
     try {
@@ -140,9 +144,9 @@ export default function AdminMenu() {
 
     for (const r of bySlot.values()) {
       const existing = rows.find(x =>
-        x.nationality === natKey && String(x.day) === String(r.day) && x.meal === r.meal);
+        x.nationalityId === natKey && String(x.day) === String(r.day) && x.meal === r.meal);
       const body = {
-        seasonId, nationality: natKey, day: String(r.day), meal: r.meal,
+        nationalityId: natKey, day: String(r.day), meal: r.meal,
         location: r.location, time: r.time,
         ...Object.fromEntries(CATEGORY_KEYS.map(k => [k, r[k] || []])),
         source: 'excel', sourceFile: fileName || null, updatedAt: new Date(),
@@ -162,7 +166,7 @@ export default function AdminMenu() {
   }, [nat, day, rows]);
 
   const savedCount = useMemo(
-    () => rows.filter(r => r.nationality === natKey).length,
+    () => rows.filter(r => r.nationalityId === natKey).length,
     [rows, natKey],
   );
 
@@ -210,7 +214,7 @@ export default function AdminMenu() {
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
           {NATIONALITIES.map(n => {
             const on = n.key === natKey;
-            const saved = rows.filter(r => r.nationality === n.key).length;
+            const saved = rows.filter(r => r.nationalityId === n.key).length;
             return (
               <button key={n.key} onClick={() => setNatKey(n.key)}
                 className={`relative flex-shrink-0 flex items-center gap-2.5 pr-2 pl-3.5 py-2 rounded-xl border transition-all ${
