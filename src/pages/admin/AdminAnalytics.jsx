@@ -44,7 +44,7 @@ const TABS = [
     label: 'مشعر منى',
     short: 'منى',
     col:  'mina_readiness',
-    color: 'rgb(var(--c-success))',
+    color: '#16A34A',
     bg:    '#F0FDF4',
     border:'#86EFAC',
     icon:  Mountain,
@@ -326,8 +326,12 @@ export default function AdminAnalytics({ site }) {
         kicker="جاهزية المشاعر"
         Icon={ShieldCheck}
         title={site ? `جاهزية ${tab?.short}` : 'الجاهزية'}
-        subtitle={site ? `تقييمات مشعر ${tab?.short}` : 'جاهزية مشعر منى ومشعر عرفة'}
-        gradient={site ? { from: tab?.color, to: tab?.color } : undefined}
+        subtitle={site ? `تقييمات مشعر ${tab?.short} — آخر درجة لكل مركز` : 'جاهزية مشعر منى ومشعر عرفة'}
+        stats={[
+          { value: `${evaluated}/${CENTERS.length}`, label: 'مركز مقيّم' },
+          { value: overallAvg ? `${overallAvg}` : '—', label: 'متوسط الجاهزية', tone: 'gold' },
+          { value: totalViols, label: 'مخالفة', tone: totalViols > 0 ? 'alert' : undefined },
+        ]}
       />
 
       {/* Hidden when the route already names the mash'ar — a selector with one
@@ -412,16 +416,19 @@ export default function AdminAnalytics({ site }) {
               { label: 'تقييمات ممتازة', value: perfectCnt,                      color: '#15803D', icon: Award },
               { label: 'إجمالي مخالفات', value: totalViols,                      color: totalViols > 0 ? '#B91C1C' : '#15803D', icon: AlertCircle },
             ].map(c => (
+              /* Same tile as the dashboard and the analytics section: the
+                 accent is a bar on the top edge, so the three screens read as
+                 one system rather than three takes on a card. */
               <div key={c.label}
-                className="bg-white rounded-2xl p-4 border border-line shadow-[0_2px_8px_rgb(var(--c-ink)/0.07)] flex items-center gap-3"
-                style={{ borderRight: `3px solid ${c.color}` }}>
+                className="relative bg-white rounded-2xl p-4 pt-5 border border-line overflow-hidden flex items-center gap-3">
+                <span className="absolute inset-x-0 top-0 h-1" style={{ background: c.color }} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-semibold text-muted mb-0.5">{c.label}</p>
-                  <p className="text-xl font-bold tabular-nums" style={{ color: c.color }}>{c.value}</p>
+                  <p className="text-[10px] font-bold text-muted mb-1 truncate">{c.label}</p>
+                  <p className="text-2xl font-black tabular-nums leading-none" style={{ color: c.color }}>{c.value}</p>
                 </div>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: `${c.color}18` }}>
-                  <c.icon size={18} style={{ color: c.color }} weight="regular" />
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: `color-mix(in srgb, ${c.color} 12%, #fff)` }}>
+                  <c.icon size={19} style={{ color: c.color }} weight="bold" />
                 </div>
               </div>
             ))}
@@ -441,7 +448,7 @@ export default function AdminAnalytics({ site }) {
           {/* ── Date filter chips ── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {[
-              { key: 'all',       label: 'الكل',      Icon: ListChecks,  count: CENTERS.length, color: 'rgb(var(--c-muted))' },
+              { key: 'all',       label: 'الكل',      Icon: ListChecks,  count: CENTERS.length, color: '#2F5580' },
               { key: 'uploaded',  label: 'تم رفعها',  Icon: CheckCircle2, count: uploadedCount,  color: '#15803D' },
               { key: 'today',     label: 'اليوم',     Icon: Sun,         count: todayCount,     color: '#5E9070' },
               { key: 'remaining', label: 'المتبقي',   Icon: Hourglass,   count: remainingCount, color: '#B91C1C' },
@@ -455,7 +462,7 @@ export default function AdminAnalytics({ site }) {
                     active ? 'shadow-md scale-[1.02] text-white' : 'bg-white text-muted border-line hover:border-primary/50'
                   }`}
                   style={active
-                    ? { background: `linear-gradient(135deg, ${f.color}, ${f.color}D0)`, borderColor: f.color }
+                    ? { background: `linear-gradient(135deg, ${f.color}, color-mix(in srgb, ${f.color} 78%, #000))`, borderColor: f.color }
                     : undefined}
                 >
                   <FIcon size={13} weight="bold" />
@@ -463,7 +470,7 @@ export default function AdminAnalytics({ site }) {
                   <span className={`tabular-nums text-[10px] px-1.5 py-0.5 rounded-md ${
                     active ? 'bg-white/25' : 'text-muted'
                   }`}
-                    style={!active ? { background: `${f.color}15` } : undefined}>
+                    style={!active ? { background: `color-mix(in srgb, ${f.color} 12%, #fff)`, color: f.color } : undefined}>
                     {f.count}
                   </span>
                 </button>
@@ -527,132 +534,105 @@ export default function AdminAnalytics({ site }) {
   );
 }
 
+/* A centre, led by its score.
+ *
+ * The card used to give the score a two-tone chip, the centre number a glowing
+ * gradient tile, and the observer and the violations a tile each — four boxes
+ * for four facts, and the one that decides whether anyone visits the centre was
+ * no louder than the rest. Now the band colour runs along the top edge, the
+ * score is the largest thing on the card, and everything else is a line of
+ * quiet meta beneath it. */
 function CenterCard({ summary, tab, onSelect, isRecent }) {
   const sst = scoreStyle(summary.avgScore);
   const hasData = summary.count > 0;
   const centerNum = (summary.center.match(/\d+\S*/) || ['—'])[0];
+  const tone = hasData ? sst.color : 'rgb(var(--c-muted))';
 
   return (
     <button
       onClick={onSelect}
       disabled={!hasData}
-      className={`relative text-right group bg-white rounded-2xl border-2 p-4 transition-all ${
+      className={`relative text-right group bg-white rounded-2xl border overflow-hidden p-4 pt-5 transition-all ${
         hasData
-          ? 'border-line shadow-[0_2px_8px_rgb(var(--c-ink)/0.07)] hover:shadow-[0_6px_24px_rgb(var(--c-primary)/0.18)] hover:border-line hover:-translate-y-0.5 cursor-pointer'
+          ? 'border-line hover:shadow-[0_8px_24px_rgb(var(--c-ink)/0.10)] hover:-translate-y-0.5 cursor-pointer'
           : 'border-dashed border-line bg-bg opacity-70 cursor-not-allowed'
       }`}
     >
-      {/* Pulsing red dot for newly-arrived evaluations */}
+      {hasData && <span className="absolute inset-x-0 top-0 h-1" style={{ background: tone }} />}
+
       {isRecent && (
-        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 border-2 border-white badge-pulse-red z-10" />
+        <span className="absolute top-2.5 left-2.5 w-2.5 h-2.5 rounded-full bg-red-500 badge-pulse-red z-10" />
       )}
-      {/* Header */}
-      <div className="flex items-start gap-3 mb-3">
-        <div className="relative shrink-0">
-          {hasData && (
-            <div className="absolute inset-0 rounded-xl blur-md opacity-40 group-hover:opacity-60 transition-opacity"
-              style={{ background: tab.color }} />
-          )}
-          <div className="relative w-11 h-11 rounded-xl flex items-center justify-center shadow-md"
-            style={hasData
-              ? { background: tab.gradient }
-              : { background: 'rgb(var(--c-primary-50))', border: '1px dashed rgb(var(--c-line))' }}>
-            <span className="text-sm font-black tabular-nums"
-              style={{ color: hasData ? '#fff' : 'rgb(var(--c-muted))' }}>
-              {centerNum}
-            </span>
-          </div>
-        </div>
+
+      <div className="flex items-start gap-3">
+        <span className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 border"
+          style={hasData
+            ? { background: `color-mix(in srgb, ${tone} 12%, #fff)`, borderColor: `color-mix(in srgb, ${tone} 30%, #fff)` }
+            : { background: 'rgb(var(--c-primary-50))', borderStyle: 'dashed', borderColor: 'rgb(var(--c-line))' }}>
+          <span className="text-sm font-black tabular-nums" style={{ color: tone }}>{centerNum}</span>
+        </span>
+
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <p className="text-sm font-black text-ink truncate">{summary.center}</p>
+            <p className="text-[13px] font-black text-ink truncate">{summary.center}</p>
             {summary.supervisorCount > 0 && (
-              <span className="inline-flex items-center gap-1 text-[8.5px] font-black px-1.5 py-0.5 rounded-md text-white"
+              <span className="inline-flex items-center gap-1 text-[8.5px] font-black px-1.5 py-0.5 rounded-md"
                 title={`${summary.supervisorCount} تقييم من المشرف`}
-                style={{ background: 'linear-gradient(135deg, #9E5741, #7F4534)' }}>
+                style={{ background: '#FBF3EF', color: '#9E5741', border: '1px solid #EBCFC3' }}>
                 <UserCog size={9} weight="bold" />
                 مشرف
                 {summary.supervisorCount > 1 && (
-                  <span className="bg-white/20 rounded px-1 tabular-nums">{summary.supervisorCount}</span>
+                  <span className="tabular-nums">{summary.supervisorCount}</span>
                 )}
               </span>
             )}
           </div>
           <p className="text-[10px] text-primary font-bold truncate mt-0.5">{summary.caterer || '—'}</p>
-          {hasData && summary.latestDoc?.timestamp && (
-            <p className="text-[9px] text-muted font-bold mt-1 flex items-center gap-1">
-              <Calendar size={9} weight="bold" />
-              {timeAgo(summary.latestDoc.timestamp)}
-            </p>
-          )}
         </div>
-        {hasData && (
-          <ChevronRight size={16} className="text-muted group-hover:text-primary transition-colors shrink-0 mt-1"
-            weight="bold" />
+
+        {/* The score, and nothing competing with it. */}
+        {hasData ? (
+          <div className="text-left flex-shrink-0">
+            <p className="text-2xl font-black tabular-nums leading-none" style={{ color: tone }}>
+              {summary.avgScore != null ? summary.avgScore.toFixed(1) : '—'}
+            </p>
+            <p className="text-[9px] font-bold text-muted mt-1">من ١٠</p>
+          </div>
+        ) : (
+          <ClipboardList size={16} className="text-muted flex-shrink-0" weight="regular" />
         )}
       </div>
 
-      {/* Body */}
       {hasData ? (
-        <>
-          {/* Score chip */}
-          <div className="rounded-xl p-3 border-2 flex items-center justify-between mb-2.5"
-            style={{ background: sst.bg, borderColor: sst.border }}>
-            <div className="flex items-center gap-2">
-              <Sparkles size={13} style={{ color: sst.color }} weight="bold" />
-              <div>
-                <p className="text-[9px] font-bold" style={{ color: sst.color, opacity: 0.85 }}>متوسط الدرجة</p>
-                <p className="text-xl font-black tabular-nums leading-tight" style={{ color: sst.color }}>
-                  {summary.avgScore != null ? summary.avgScore.toFixed(1) : '—'}
-                  <span className="text-[10px] opacity-70">/10</span>
-                </p>
-              </div>
-            </div>
-            <div className="text-left">
-              <p className="text-[9px] font-bold" style={{ color: sst.color, opacity: 0.85 }}>تقييمات</p>
-              <p className="text-xl font-black tabular-nums leading-tight" style={{ color: sst.color }}>{summary.count}</p>
-            </div>
-          </div>
-
-          {/* Sub stats */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-lg border border-line bg-bg p-2">
-              <div className="flex items-center gap-1 text-primary mb-0.5">
-                <User size={9} weight="bold" />
-                <span className="text-[9px] font-bold">المراقب</span>
-              </div>
-              <p className="text-[10px] font-bold text-ink truncate">
-                {getObserver(summary.latestDoc)}
-              </p>
-            </div>
-            <div className="rounded-lg border p-2"
-              style={summary.totalViolations > 0
-                ? { background: '#FEF2F2', borderColor: '#FCA5A5' }
-                : { background: '#F0FDF4', borderColor: '#86EFAC' }}>
-              <div className="flex items-center gap-1 mb-0.5"
-                style={{ color: summary.totalViolations > 0 ? '#B91C1C' : '#15803D' }}>
-                <AlertCircle size={9} weight="bold" />
-                <span className="text-[9px] font-bold">مخالفات</span>
-              </div>
-              <p className="text-[10px] font-black tabular-nums"
-                style={{ color: summary.totalViolations > 0 ? '#B91C1C' : '#15803D' }}>
-                {summary.totalViolations}
-              </p>
-            </div>
-          </div>
-        </>
-      ) : (
-        <div className="rounded-xl border border-dashed border-line bg-white p-3 text-center">
-          <div className="w-8 h-8 rounded-full bg-[rgb(var(--c-primary-50))] flex items-center justify-center mx-auto mb-1.5">
-            <ClipboardList size={14} className="text-muted" weight="regular" />
-          </div>
-          <p className="text-[10px] font-bold text-muted">لم يُقيَّم بعد</p>
+        <div className="mt-3 pt-3 border-t border-line flex items-center gap-3 flex-wrap text-[10px] font-bold">
+          <span className="flex items-center gap-1 text-muted">
+            <Sparkles size={10} weight="bold" style={{ color: tone }} />
+            {summary.count} تقييم
+          </span>
+          <span className="flex items-center gap-1 text-muted min-w-0">
+            <User size={10} weight="bold" className="text-primary flex-shrink-0" />
+            <span className="truncate max-w-[7rem] text-ink">{getObserver(summary.latestDoc)}</span>
+          </span>
+          <span className="flex items-center gap-1"
+            style={{ color: summary.totalViolations > 0 ? '#B91C1C' : '#15803D' }}>
+            <AlertCircle size={10} weight="bold" />
+            {summary.totalViolations} مخالفة
+          </span>
+          {summary.latestDoc?.timestamp && (
+            <span className="flex items-center gap-1 text-muted/70 mr-auto">
+              <Calendar size={10} weight="bold" />
+              {timeAgo(summary.latestDoc.timestamp)}
+            </span>
+          )}
         </div>
+      ) : (
+        <p className="mt-3 pt-3 border-t border-dashed border-line text-[10px] font-bold text-muted text-center">
+          لم يُقيَّم بعد
+        </p>
       )}
     </button>
   );
 }
-
 function CenterDetail({ tab, summary, onBack, onDelete, recentDocIds }) {
   const [openEval, setOpenEval] = useState(summary.evaluations[0]?.id || null);
   const centerNum = (summary.center.match(/\d+\S*/) || ['—'])[0];
