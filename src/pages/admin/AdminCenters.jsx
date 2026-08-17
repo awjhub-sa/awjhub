@@ -289,6 +289,7 @@ export default function AdminCenters() {
   return (
     <div className="space-y-5" dir="rtl">
       <PageHeader
+        kicker="إدارة المتعهدين"
         Icon={MapPinArea}
         title="المراكز"
         subtitle="مراكز منى وعرفة الممنوحة للشركة في كل موسم"

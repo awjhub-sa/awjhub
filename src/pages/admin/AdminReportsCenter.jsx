@@ -7,6 +7,7 @@ import {
   AR_NUM, buildLookups, buildTable, describeFilters,
   stashReportRequest, pruneReportRequests,
 } from '../../lib/reportQuery.js';
+import PageHeader from '../../components/PageHeader.jsx';
 import {
   FileArrowDown, ArrowSquareOut, MagnifyingGlass as Search, X, Warning,
   Columns, Funnel, Table as TableIcon, CalendarBlank, ListChecks,
@@ -37,13 +38,6 @@ const StepNo = ({ n }) => (
     style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}>
     {n}
   </span>
-);
-
-const Metric = ({ value, label, gold }) => (
-  <div className="text-center px-1">
-    <p className={`text-xl font-black tabular-nums leading-none ${gold ? 'text-accent' : 'text-white'}`}>{value}</p>
-    <p className="text-[10px] font-bold text-white/50 mt-1">{label}</p>
-  </div>
 );
 
 /* Rows are read on demand rather than kept subscribed: a report is a snapshot
@@ -199,25 +193,19 @@ export default function AdminReportsCenter() {
 
   return (
     <div className="space-y-5 pb-6" dir="rtl">
-      {/* ── The bar that says what you have and what you can do with it ──
-          It was at the bottom, under four sections of form, so the two things
-          the screen exists for were the last things you found. */}
-      <section className="rounded-2xl overflow-hidden shadow-[0_6px_24px_rgb(var(--c-primary-900)/0.2)]"
-        style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary)) 0%, rgb(var(--c-primary-700)) 100%)' }}>
-        <div className="p-4 sm:p-5 flex items-center justify-between gap-4 flex-wrap">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 text-accent">
-              <FileArrowDown size={16} weight="bold" />
-              <span className="text-[10px] font-black tracking-[0.2em]">مركز التقارير</span>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-black text-white mt-1.5 truncate">{docTitle}</h1>
-            <p className="text-[11px] font-bold text-white/55 mt-1">{filterSummary}</p>
-          </div>
-
-          <div className="flex items-center gap-3 flex-wrap">
-            <Metric value={AR_NUM(picked.length)} label="قسم" />
-            <Metric value={AR_NUM(totalRows)} label="سجل" gold />
-            <div className="w-px h-10 bg-white/12" />
+      {/* The two things the screen exists for used to sit at the bottom, under
+          four sections of form, so they were the last things you found. */}
+      <PageHeader
+        kicker="مركز التقارير"
+        Icon={FileArrowDown}
+        title={docTitle}
+        subtitle={filterSummary}
+        stats={[
+          { value: AR_NUM(picked.length), label: 'قسم' },
+          { value: AR_NUM(totalRows), label: 'سجل', tone: 'gold' },
+        ]}
+        heroActions={
+          <>
             <button onClick={openReport}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-black transition hover:-translate-y-0.5"
               style={{
@@ -231,9 +219,9 @@ export default function AdminReportsCenter() {
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-black text-white border border-white/25 hover:border-white/50 hover:bg-white/10 transition">
               <ProjectorScreenChart size={16} weight="bold" /> عرض تقديمي
             </button>
-          </div>
-        </div>
-      </section>
+          </>
+        }
+      />
 
       {/* ── 1. Sections ── */}
       <section className="bg-white rounded-2xl border border-line p-4 space-y-4">

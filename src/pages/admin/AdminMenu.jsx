@@ -43,6 +43,7 @@ export default function AdminMenu() {
   return (
     <div className="space-y-5 pb-6" dir="rtl">
       <PageHeader
+        kicker="متابعة الوجبات"
         Icon={UtensilsCrossed}
         title="المنيو"
         subtitle="منيو الوجبات حسب الجنسية ويوم ذو الحجة والوجبة"

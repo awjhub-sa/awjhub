@@ -259,6 +259,7 @@ export default function AdminCaterers() {
   return (
     <div className="space-y-5" dir="rtl">
       <PageHeader
+        kicker="إدارة المتعهدين"
         Icon={Building2}
         title="بيانات المتعهدين"
         subtitle="سجل شركات الإعاشة وبيانات التواصل الرسمية"

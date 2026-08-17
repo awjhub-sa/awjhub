@@ -356,6 +356,7 @@ export default function AdminTaskAssign() {
 
       {}
       <PageHeader
+        kicker="متابعة الوجبات"
         Icon={Target}
         title="إسناد المهام"
         subtitle="توزيع المهام الميدانية على المراقبين حسب الجنسية والمركز"

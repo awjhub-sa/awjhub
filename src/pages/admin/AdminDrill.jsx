@@ -13,6 +13,7 @@ export default function AdminDrill() {
   return (
     <div className="space-y-5" dir="rtl">
       <PageHeader
+        kicker="جاهزية المشاعر"
         Icon={ClipboardText}
         title="فرضية الوزارة"
         subtitle="تمارين المحاكاة والفرضيات الميدانية"

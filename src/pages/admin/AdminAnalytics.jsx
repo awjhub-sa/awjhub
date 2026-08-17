@@ -323,6 +323,7 @@ export default function AdminAnalytics({ site }) {
   return (
     <div className="space-y-5 pb-6" dir="rtl">
       <PageHeader
+        kicker="جاهزية المشاعر"
         Icon={ShieldCheck}
         title={site ? `جاهزية ${tab?.short}` : 'الجاهزية'}
         subtitle={site ? `تقييمات مشعر ${tab?.short}` : 'جاهزية مشعر منى ومشعر عرفة'}

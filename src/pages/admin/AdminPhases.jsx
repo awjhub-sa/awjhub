@@ -305,6 +305,7 @@ export default function AdminPhases() {
     <div className="space-y-5 pb-6" dir="rtl">
       {/* Header */}
       <PageHeader
+        kicker="متابعة الوجبات"
         Icon={Activity}
         title="المراحل الميدانية"
         subtitle="متابعة مراحل تجهيز وطبخ وتوزيع الوجبات — تحديث فوري"

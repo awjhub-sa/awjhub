@@ -194,6 +194,7 @@ export default function AdminReports() {
 
       {/* Page header */}
       <PageHeader
+        kicker="الميدان"
         Icon={AlertTriangle}
         title="البلاغات الميدانية"
         subtitle={`${reports.length} بلاغ إجمالاً · تحديث فوري`}

@@ -102,18 +102,14 @@ export default function AdminNotifications() {
 
       {/* Page header */}
       <PageHeader
+        kicker="التنبيهات"
         Icon={Bell}
         title="الإشعارات"
-        subtitle={
-          <>
-            {items.length} إشعار إجمالاً
-            {newCount > 0 && (
-              <span className="mr-1.5 font-bold" style={{ color: '#E53E3E' }}>
-                · {newCount} جديد
-              </span>
-            )}
-          </>
-        }
+        subtitle="كل ما وصل من الميدان — تحديث فوري"
+        stats={[
+          { value: items.length, label: 'إشعار' },
+          { value: newCount, label: 'جديد', tone: newCount > 0 ? 'alert' : undefined },
+        ]}
         right={
           newCount === 0 && items.length > 0 ? (
             <div className="flex items-center gap-1.5 text-xs font-semibold text-[#16A34A]">

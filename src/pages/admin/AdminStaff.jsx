@@ -277,6 +277,7 @@ export default function AdminStaff() {
   return (
     <div className="space-y-5" dir="rtl">
       <PageHeader
+        kicker="المستخدمين"
         Icon={UserCog}
         title="الموظفين"
         subtitle="حسابات الإداريين والمراكز المخصَّصة لهم"

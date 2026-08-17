@@ -388,6 +388,7 @@ export default function AdminForms() {
   return (
     <div className="space-y-5" dir="rtl">
       <PageHeader
+        kicker="إدارة المتعهدين"
         Icon={FileText}
         title="النماذج"
         subtitle="قوالب المستندات المطلوبة من المتعهدين ومتابعة تسليمها"

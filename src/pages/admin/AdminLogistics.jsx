@@ -162,6 +162,7 @@ export default function AdminLogistics() {
 
       {/* Header */}
       <PageHeader
+        kicker="الميدان"
         Icon={Truck}
         title="الإسناد اللوجستي"
         subtitle={`${requests.length} طلب إجمالاً · تحديث فوري`}

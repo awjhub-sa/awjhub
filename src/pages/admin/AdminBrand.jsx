@@ -112,6 +112,7 @@ export default function AdminBrand() {
   return (
     <div className="space-y-5" dir="rtl">
       <PageHeader
+        kicker="الإعدادات"
         Icon={Palette}
         title="هوية الشركة"
         subtitle="الاسم والشعارات والألوان — تسري على النظام كله وعلى كل مستند يُطبع"
