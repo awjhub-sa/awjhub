@@ -263,6 +263,25 @@ function AssignmentCard({ item }) {
   );
 }
 
+/* The form is a sequence, so its panels are numbered. Three identical cards
+   with three different gradients said "three things" where the screen means
+   "first, then, then". */
+const Step = ({ n, title, hint, tone = 'rgb(var(--c-primary))' }) => (
+  <div className="flex items-center gap-2.5 px-4 sm:px-5 py-3 border-b border-line">
+    <span className="w-7 h-7 rounded-lg flex items-center justify-center text-[12px] font-black text-white flex-shrink-0"
+      style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}>
+      {n}
+    </span>
+    <p className="font-black text-ink text-[13px] flex-1 truncate">{title}</p>
+    {hint != null && (
+      <span className="text-[11px] font-black px-2 py-0.5 rounded-full flex-shrink-0"
+        style={{ color: tone, background: `color-mix(in srgb, ${tone} 12%, #fff)` }}>
+        {hint}
+      </span>
+    )}
+  </div>
+);
+
 export default function AdminTaskAssign() {
   const [selTasks,     setSelTasks]     = useState([]);
   const [selMeals,     setSelMeals]     = useState([]);
@@ -373,15 +392,9 @@ export default function AdminTaskAssign() {
         <div className="lg:col-span-3 space-y-4">
 
           {/* 1. Task selection */}
-          <div className="bg-gradient-to-br from-white via-white to-background/40 rounded-2xl border border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgb(var(--c-primary)/0.14)] overflow-hidden">
-            <div className="flex items-center gap-3 px-5 py-3.5 border-b border-line"
-              style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)), #fff 60%)' }}>
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
-                <Sparkles size={15} className="text-white" weight="regular" />
-              </div>
-              <p className="font-bold text-ink text-sm">اختيار المهام</p>
-            </div>
+          <div className="bg-white rounded-2xl border border-line overflow-hidden">
+            <Step n="١" title="ما المطلوب إنجازه"
+              hint={selTasks.length ? `${selTasks.length} مهمة` : null} />
             <div className="p-4 space-y-3">
               {TASKS.map(t => {
                 const Icon   = t.icon;
@@ -480,21 +493,11 @@ export default function AdminTaskAssign() {
           </div>
 
           {/* 2. Target selection (Nationality or Center) */}
-          <div className="bg-gradient-to-br from-white via-white to-background/40 rounded-2xl border border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgb(var(--c-primary)/0.14)] overflow-hidden">
+          <div className="bg-white rounded-2xl border border-line overflow-hidden">
             {/* Header */}
-            <div className="flex items-center gap-3 px-5 py-3.5 border-b border-line"
-              style={{ background: 'linear-gradient(135deg, #EFF6FF, #fff 60%)' }}>
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg, #93C5FD, #4E7CB0)' }}>
-                {selMode === 'nationality' ? <Earth size={15} className="text-white" weight="regular" /> : <Building2 size={15} className="text-white" weight="regular" />}
-              </div>
-              <p className="font-bold text-ink text-sm">تحديد الجهة المستهدفة</p>
-              {(selMode === 'nationality' ? selNats.length : selCenters.length) > 0 && (
-                <span className="mr-auto text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200">
-                  {selMode === 'nationality' ? selNats.length : selCenters.length} محدد
-                </span>
-              )}
-            </div>
+            <Step n="٢" title="على من يقع" tone="#4E7CB0"
+              hint={(selMode === 'nationality' ? selNats.length : selCenters.length) || null}
+            />
 
             {/* Mode toggle */}
             <div className="px-4 pt-3.5 pb-0">
@@ -621,20 +624,8 @@ export default function AdminTaskAssign() {
           </div>
 
           {/* 3. Date */}
-          <div className="bg-gradient-to-br from-white via-white to-background/40 rounded-2xl border border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgb(var(--c-primary)/0.14)] overflow-hidden">
-            <div className="flex items-center gap-3 px-5 py-3.5 border-b border-line"
-              style={{ background: 'linear-gradient(135deg, #F0FDF4, #fff 60%)' }}>
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg, #86EFAC, #16A34A)' }}>
-                <CalendarCheck size={15} className="text-white" weight="regular" />
-              </div>
-              <p className="font-bold text-ink text-sm">يوم التنفيذ</p>
-              {schedDay && (
-                <span className="mr-auto text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  {schedLabel}
-                </span>
-              )}
-            </div>
+          <div className="bg-white rounded-2xl border border-line overflow-hidden">
+            <Step n="٣" title="متى يُنفَّذ" tone="#5E9070" hint={schedDay ? schedLabel : null} />
             <div className="p-4 grid grid-cols-4 gap-2">
               {DHU_HIJJAH_DAYS.map(d => {
                 const active = schedDay === d.value;
@@ -687,11 +678,10 @@ export default function AdminTaskAssign() {
 
         {/* Preview */}
         <div className="lg:col-span-2">
-          <div className="bg-gradient-to-br from-white via-white to-background/40 rounded-2xl border border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgb(var(--c-primary)/0.14)] overflow-hidden sticky top-4">
-            <div className="px-5 py-3.5 border-b border-line"
-              style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)), #fff 60%)' }}>
-              <p className="font-bold text-ink text-sm">ملخص الإسناد</p>
-              <p className="text-[10px] text-muted mt-0.5">اضغط × لحذف أي خيار</p>
+          <div className="bg-white rounded-2xl border border-line overflow-hidden sticky top-4">
+            <div className="px-4 sm:px-5 py-3 border-b border-line">
+              <p className="font-black text-ink text-[13px]">ملخص الإسناد</p>
+              <p className="text-[10px] font-bold text-muted mt-0.5">اضغط × لحذف أي خيار</p>
             </div>
             <div className="p-4 space-y-4">
 
