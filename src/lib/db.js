@@ -106,6 +106,20 @@ function createTableApi(table, { pk = 'id' } = {}) {
       return rowFromDb(data);
     },
 
+    /* One round trip for a batch. Bulk-assigning a form to fifty caterers as
+       fifty inserts would be fifty requests, and a failure halfway would leave
+       the batch half-applied. */
+    async insertMany(rows) {
+      if (!rows?.length) return [];
+      const { data, error } = await supabase
+        .from(table)
+        .insert(rows.map(rowToDb))
+        .select();
+      logErr(`${table}.insertMany`, error);
+      if (error) throw error;
+      return (data || []).map(rowFromDb);
+    },
+
     async upsert(row, { onConflict = pk } = {}) {
       const { data, error } = await supabase
         .from(table)
@@ -185,6 +199,15 @@ function createTableApi(table, { pk = 'id' } = {}) {
 
 export const db = {
   users:              createTableApi('users', { pk: 'uid' }),
+  /* Tenant identity — one row, id = 1. See docs/ROADMAP.md and 005. */
+  org_settings:       createTableApi('org_settings'),
+  seasons:            createTableApi('seasons'),
+  caterers:           createTableApi('caterers'),
+  /* A center belongs to one season. Its `code` is the Arabic label
+     ('مركز 5') that every other table already stores in `center text`, so the
+     same label in two seasons is two different rows — which is the point. */
+  centers:            createTableApi('centers'),
+  center_officials:   createTableApi('center_officials'),
   reports:            createTableApi('reports'),
   logistics_requests: createTableApi('logistics_requests'),
   meal_evaluations:   createTableApi('meal_evaluations'),
@@ -193,6 +216,11 @@ export const db = {
   meal_phases:        createTableApi('meal_phases'),
   assigned_tasks:     createTableApi('assigned_tasks'),
   task_completions:   createTableApi('task_completions'),
+  /* Forms are three layers: what a form is, who owes it, and what happened.
+     See docs/FORMS_MODULE.md. */
+  form_templates:     createTableApi('form_templates'),
+  form_assignments:   createTableApi('form_assignments'),
+  form_events:        createTableApi('form_events'),
 };
 
 export { supabase } from '../config/supabase.js';

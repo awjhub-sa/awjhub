@@ -44,7 +44,7 @@ export default function AdminMenu() {
     <div className="space-y-5 pb-6" dir="rtl">
       <PageHeader
         Icon={UtensilsCrossed}
-        title="إدارة المنيو"
+        title="المنيو"
         subtitle="منيو الوجبات حسب الجنسية ويوم ذو الحجة والوجبة"
         gradient={{ from: '#F59E0B', to: '#D97706' }}
         glowColor="rgba(245,158,11,0.4)"

@@ -28,6 +28,11 @@
   --c-accent-50: 236 253 250;
   --c-accent-600: 13 148 136;
 
+  /* The top bar. Its own token rather than the accent: the bar is a large flat
+     field while the accent is used in small marks, and a shade that sings as a
+     4px indicator can be a degree too bright across the full width. */
+  --c-header:     41 212 187;     /* #29D4BB */
+
   --c-ink:      22 35 61;         /* headings, primary text */
   --c-ink-800:  44 62 99;
   --c-muted:   100 116 139;       /* secondary text */

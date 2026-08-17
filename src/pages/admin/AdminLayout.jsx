@@ -11,9 +11,17 @@ import {
   FlowArrow as Workflow,
   ChefHat,
   ListChecks as ListTodo,
+  Buildings as Building2,
+  MapPinArea,
+  FileText,
+  ClipboardText,
+  CaretDown,
+  CalendarBlank,
+  FileArrowDown,
   Users as UsersRound,
   UserGear as UserRoundCog,
   BellRinging as BellRing,
+  Palette,
   SidebarSimple as PanelLeft,
   X,
   CaretRight as ChevronRight,
@@ -22,19 +30,48 @@ import {
 } from '@phosphor-icons/react';
 import { getCaterer } from '../../config/centers.js';
 import UploadToastListener from '../../components/UploadToastListener.jsx';
-import { BRAND } from '../../config/brand.js';
+import { useBrand } from '../../context/BrandContext.jsx';
+import { formatHijri, toHijriParts } from '../../lib/hijri.js';
 
+/* Two levels. A `children` entry is a group: it has no destination of its own
+   and expands to its sections. Grouping is what keeps a sidebar that has grown
+   to fourteen destinations readable — flat, it reads as a list to search
+   rather than a structure to navigate.
+
+   Notifications are deliberately absent: they are an interruption, not a
+   place, and they live in the bell at the top of every screen. */
 const NAV = [
-  { to: '/admin/dashboard',  label: 'نظرة عامة',         icon: LayoutDashboard },
+  { to: '/admin/dashboard',  label: 'نظرة عامة',          icon: LayoutDashboard },
   { to: '/admin/reports',    label: 'البلاغات الميدانية', icon: Siren           },
-  { to: '/admin/logistics',  label: 'الإسناد اللوجستي',  icon: Boxes           },
-  { to: '/admin/analytics',  label: 'الجاهزية',            icon: Gauge           },
-  { to: '/admin/phases',     label: 'المراحل',             icon: Workflow        },
-  { to: '/admin/menu',       label: 'إدارة المنيو',        icon: ChefHat         },
-  { to: '/admin/tasks',      label: 'إسناد المهام',       icon: ListTodo        },
-  { to: '/admin/users',      label: 'إدارة المستخدمين',  icon: UsersRound      },
-  { to: '/admin/staff',      label: 'إدارة الموظفين',    icon: UserRoundCog    },
-  { to: '/admin/notifications', label: 'التنبيهات',       icon: BellRing        },
+  { to: '/admin/logistics',  label: 'الإسناد اللوجستي',   icon: Boxes           },
+
+  { key: 'readiness', label: 'جاهزية المشاعر', icon: Gauge, children: [
+    { to: '/admin/readiness/mina',   label: 'جاهزية منى',    icon: Gauge        },
+    { to: '/admin/readiness/arafat', label: 'جاهزية عرفة',   icon: Gauge        },
+    { to: '/admin/readiness/drill',  label: 'فرضية الوزارة', icon: ClipboardText },
+  ]},
+
+  { key: 'meals', label: 'متابعة الوجبات', icon: Workflow, children: [
+    { to: '/admin/phases', label: 'المراحل',      icon: Workflow },
+    { to: '/admin/menu',   label: 'المنيو',        icon: ChefHat  },
+    { to: '/admin/tasks',  label: 'إسناد المهام', icon: ListTodo },
+  ]},
+
+  /* Centers before caterers: a center exists first, then a caterer is assigned
+     to it, so the reading order matches the order of work. */
+  { key: 'caterers', label: 'إدارة المتعهدين', icon: Building2, children: [
+    { to: '/admin/caterers', label: 'المتعهدين', icon: Building2  },
+    { to: '/admin/centers',  label: 'المراكز',    icon: MapPinArea },
+    { to: '/admin/forms',    label: 'النماذج',    icon: FileText   },
+  ]},
+
+  { key: 'people', label: 'المستخدمين', icon: UsersRound, children: [
+    { to: '/admin/users', label: 'المراقبين والمشرفين', icon: UsersRound   },
+    { to: '/admin/staff', label: 'الموظفين',             icon: UserRoundCog },
+  ]},
+
+  { to: '/admin/reports-center', label: 'التقارير',      icon: FileArrowDown },
+  { to: '/admin/brand',          label: 'تصميم الهوية', icon: Palette       },
 ];
 
 const NOTIF_COLS = [
@@ -44,14 +81,204 @@ const NOTIF_COLS = [
 
 const spring = { type: 'spring', stiffness: 400, damping: 18 };
 
+/* ── Nav pieces ───────────────────────────────────────────── */
+
+const iconBox = (isActive) => ({
+  background:  isActive ? 'rgb(var(--c-accent) / 0.18)' : 'rgba(255,255,255,0.06)',
+  borderColor: isActive ? 'rgb(var(--c-accent) / 0.45)' : 'rgba(255,255,255,0.10)',
+});
+
+function NavItem({ item, idx, onNavigate, pendingCount, nested }) {
+  const { to, label, icon: Icon } = item;
+  return (
+    <NavLink
+      to={to}
+      onClick={onNavigate}
+      className={({ isActive }) =>
+        `group flex items-center gap-3 rounded-xl text-sm transition-colors duration-150 ${
+          nested ? 'px-2.5 py-2' : 'px-3 py-2.5'
+        } ${isActive ? 'text-white font-bold' : 'text-white/80 font-semibold hover:text-white'}`
+      }
+      style={({ isActive }) => isActive
+        ? { background: 'rgb(255 255 255 / 0.12)', borderRight: '3px solid rgb(var(--c-accent))' }
+        : { borderRight: '3px solid transparent' }}
+    >
+      {({ isActive }) => (
+        <>
+          <motion.div
+            initial={{ opacity: 0, x: 8 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.25, delay: Math.min(idx, 8) * 0.04 }}
+            whileHover={{ scale: 1.18 }}
+            whileTap={{ scale: 0.88 }}
+            className={`flex items-center justify-center rounded-xl flex-shrink-0 backdrop-blur-md border ${
+              nested ? 'w-7 h-7' : 'w-8 h-8'
+            }`}
+            style={iconBox(isActive)}
+          >
+            <Icon
+              size={nested ? 14 : 17}
+              weight={isActive ? 'bold' : 'regular'}
+              color={isActive ? 'rgb(var(--c-accent))' : 'rgba(255,255,255,0.75)'}
+            />
+          </motion.div>
+
+          <span className={`flex-1 ${nested ? 'text-[12px]' : 'text-[13px]'}`}>{label}</span>
+
+          {/* Reports carries what is still pending — the one count that belongs
+              beside a destination rather than in the bell. */}
+          {to === '/admin/reports' && pendingCount > 0 && (
+            <motion.span
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center"
+            >
+              {pendingCount > 99 ? '99+' : pendingCount}
+            </motion.span>
+          )}
+
+          {isActive && <ChevronRight size={12} weight="bold" className="opacity-40 flex-shrink-0" />}
+        </>
+      )}
+    </NavLink>
+  );
+}
+
+/* Its own component, and therefore its own re-render: a clock ticking once a
+   second inside the layout would re-render every screen under it once a second
+   for the sake of two digits. */
+function HeaderClock() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <div className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-lg shadow-[0_2px_8px_rgb(var(--c-primary-900)/0.28)]"
+      style={{ background: 'rgb(var(--c-primary))' }}>
+      <CalendarBlank size={13} className="text-accent flex-shrink-0" weight="bold" />
+      <div className="flex items-center gap-2 whitespace-nowrap">
+        <span className="text-[11px] font-black text-white">{formatHijri(now)}</span>
+        <span className="text-white/25">·</span>
+        <span className="text-[11px] font-black text-white" dir="ltr">
+          {now.toISOString().slice(0, 10)}
+        </span>
+        <span className="text-white/25">·</span>
+        <span className="text-[11px] font-black text-accent tabular-nums">
+          {now.toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit', hour12: true })}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* Solid navy, not a navy tint. A translucent chip over the teal bar picks up
+   the teal underneath and washes out; filling it outright is what makes it read
+   as a control sitting on the bar rather than a smudge in it.
+
+   Zero is shown, not hidden: "0 بلاغ معلّق" is information, and a chip that
+   disappears when clear makes the header jump every time one is resolved. */
+function HeaderStat({ count, label, Icon, onClick }) {
+  const live = count > 0;
+  return (
+    <motion.button
+      onClick={onClick}
+      whileHover={{ scale: 1.04 }}
+      whileTap={{ scale: 0.96 }}
+      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-shadow shadow-[0_2px_8px_rgb(var(--c-primary-900)/0.28)] hover:shadow-[0_4px_14px_rgb(var(--c-primary-900)/0.4)]"
+      style={{ background: 'rgb(var(--c-primary))' }}
+    >
+      {/* White text throughout, matching the season chip. The accent marks the
+          count when there is something to act on, so the live chip is found
+          without reading either label. */}
+      <Icon size={13} weight="bold" className={live ? 'text-accent' : 'text-white/70'} />
+      <span className={`text-[11px] font-black tabular-nums ${live ? 'text-accent' : 'text-white'}`}>
+        {count}
+      </span>
+      <span className="text-[11px] font-black text-white whitespace-nowrap">{label}</span>
+    </motion.button>
+  );
+}
+
+function NavGroup({ item, idx, openGroups, toggle, onNavigate, pendingCount }) {
+  const { key, label, icon: Icon, children } = item;
+  const location = useLocation();
+  /* A group holding the current page stays open regardless of what the admin
+     last collapsed — otherwise the sidebar hides where you are. */
+  const hasActive = children.some(c => location.pathname.startsWith(c.to));
+  const expanded  = hasActive || !!openGroups[key];
+
+  return (
+    <div>
+      <button
+        onClick={() => toggle(key)}
+        className={`w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors duration-150 ${
+          hasActive ? 'text-white font-bold' : 'text-white/80 font-semibold hover:text-white'
+        }`}
+        style={{ borderRight: '3px solid transparent' }}
+      >
+        <motion.div
+          initial={{ opacity: 0, x: 8 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.25, delay: Math.min(idx, 8) * 0.04 }}
+          whileHover={{ scale: 1.18 }}
+          className="w-8 h-8 flex items-center justify-center rounded-xl flex-shrink-0 backdrop-blur-md border"
+          style={iconBox(hasActive)}
+        >
+          <Icon size={17} weight={hasActive ? 'bold' : 'regular'}
+            color={hasActive ? 'rgb(var(--c-accent))' : 'rgba(255,255,255,0.75)'} />
+        </motion.div>
+
+        <span className="flex-1 text-[13px] text-right">{label}</span>
+        <CaretDown size={11} weight="bold"
+          className={`opacity-50 flex-shrink-0 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
+      </button>
+
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className="overflow-hidden"
+          >
+            {/* The rail makes the indent read as containment rather than as an
+                accidental margin. */}
+            <div className="mr-5 pr-3 my-0.5 space-y-0.5 border-r border-white/12">
+              {children.map((child, i) => (
+                <NavItem key={child.to} item={child} idx={i} nested
+                  onNavigate={onNavigate} pendingCount={pendingCount} />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export default function AdminLayout() {
   const navigate              = useNavigate();
   const location              = useLocation();
   const { profile, logout }   = useAuth();
+  const { brand }             = useBrand();
   const [open, setOpen]       = useState(false);
+  /* Which groups the admin has opened by hand. A group containing the current
+     page opens regardless, so this only records deliberate expansions. */
+  const [openGroups, setOpenGroups] = useState({});
+  const toggleGroup = (key) => setOpenGroups(p => ({ ...p, [key]: !p[key] }));
   const [loggingOut, setLoggingOut] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [newCount,     setNewCount]     = useState(0);
+  const [logisticsCount, setLogisticsCount] = useState(0);
+  const [today,        setToday]        = useState(() => new Date());
+
+  /* Arabic-Indic digits to match formatHijri beside it, and grouping off so
+     1448 does not render as ١٬٤٤٨. */
+  const hijriYear = toHijriParts(today).y
+    .toLocaleString('ar-SA', { useGrouping: false });
   const [lastSeen,     setLastSeen]     = useState(
     () => Number(localStorage.getItem('notif_last_seen') || 0)
   );
@@ -61,6 +288,18 @@ export default function AdminLayout() {
     return db.reports.subscribe(rows =>
       setPendingCount(rows.filter(r => (r.status || 'pending') === 'pending').length)
     );
+  }, []);
+
+  /* Header figures: what an operations lead checks without being asked. */
+  useEffect(() => db.logistics_requests.subscribe(rows =>
+    setLogisticsCount(rows.filter(r => (r.status || 'pending') === 'pending').length)
+  ), []);
+
+  /* The header prints today's date, so it has to notice midnight passing on a
+     screen left open overnight — which in an operations room is most of them. */
+  useEffect(() => {
+    const id = setInterval(() => setToday(new Date()), 10 * 60 * 1000);
+    return () => clearInterval(id);
   }, []);
 
   /* Bell badge */
@@ -106,8 +345,8 @@ export default function AdminLayout() {
           className="relative flex flex-col items-center gap-1 cursor-default"
         >
           <img
-            src={BRAND.logo.fullOnDark}
-            alt={BRAND.companyName}
+            src={brand.logo.fullOnDark}
+            alt={brand.companyName}
             className="w-full max-w-[186px] h-auto"
           />
           <p className="text-[9px] font-semibold tracking-widest uppercase opacity-40 text-white">لوحة الإدارة</p>
@@ -116,69 +355,13 @@ export default function AdminLayout() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {NAV.map(({ to, label, icon: Icon }, idx) => (
-          <NavLink
-            key={to}
-            to={to}
-            onClick={() => setOpen(false)}
-            className={({ isActive }) =>
-              `group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors duration-150 ${
-                isActive ? 'text-white font-bold' : 'text-white/80 font-semibold hover:text-white'
-              }`
-            }
-            style={({ isActive }) => isActive
-              ? { background: 'rgb(255 255 255 / 0.12)', borderRight: '3px solid rgb(var(--c-accent))' }
-              : { borderRight: '3px solid transparent' }
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <motion.div
-                  initial={{ opacity: 0, x: 8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.25, delay: idx * 0.04 }}
-                  whileHover={{ scale: 1.18 }}
-                  whileTap={{ scale: 0.88 }}
-                  className="w-8 h-8 flex items-center justify-center rounded-xl flex-shrink-0 backdrop-blur-md border"
-                  style={{
-                    background: isActive ? 'rgb(var(--c-accent) / 0.18)' : 'rgba(255,255,255,0.06)',
-                    borderColor: isActive ? 'rgb(var(--c-accent) / 0.45)' : 'rgba(255,255,255,0.10)',
-                  }}
-                >
-                  <Icon
-                    size={17}
-                    weight={isActive ? 'bold' : 'regular'}
-                    color={isActive ? 'rgb(var(--c-accent))' : 'rgba(255,255,255,0.75)'}
-                  />
-                </motion.div>
-
-                <span className="flex-1 text-[13px]">{label}</span>
-
-                {/* Reports counts what is still pending; notifications counts
-                    what arrived since the page was last opened. */}
-                {(() => {
-                  const badge = to === '/admin/reports'       ? pendingCount
-                              : to === '/admin/notifications' ? newCount
-                              : 0;
-                  if (!badge) return null;
-                  return (
-                    <motion.span
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center"
-                    >
-                      {badge > 99 ? '99+' : badge}
-                    </motion.span>
-                  );
-                })()}
-
-                {isActive && (
-                  <ChevronRight size={12} weight="bold" className="opacity-40 flex-shrink-0" />
-                )}
-              </>
-            )}
-          </NavLink>
-        ))}
+        {NAV.map((item, idx) =>
+          item.children
+            ? <NavGroup key={item.key} item={item} idx={idx} openGroups={openGroups}
+                toggle={toggleGroup} onNavigate={() => setOpen(false)} pendingCount={pendingCount} />
+            : <NavItem key={item.to} item={item} idx={idx}
+                onNavigate={() => setOpen(false)} pendingCount={pendingCount} />,
+        )}
       </nav>
 
       {/* Profile + Logout */}
@@ -287,40 +470,91 @@ export default function AdminLayout() {
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
-        {/* Mobile-only top bar. On desktop the sidebar is always visible and
-            carries both the brand and the notifications item, so a header here
-            would only repeat them — it held no unique content of its own. */}
-        <header className="lg:hidden border-b border-white/10 px-3 py-2 flex items-center justify-between flex-shrink-0 shadow-[0_1px_8px_rgb(var(--c-primary-900)/0.35)]"
-          style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary)) 0%, rgb(var(--c-primary-700)) 100%)' }}>
-          <motion.button
-            onClick={() => setOpen(true)}
-            whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.92 }}
-            className="p-2 rounded-xl hover:bg-white/10 transition-colors"
-            aria-label="فتح القائمة"
-          >
-            <PanelLeft size={22} weight="regular" className="text-white" />
-          </motion.button>
+        {/* Notifications left the sidebar: an alert is an interruption, not a
+            destination, and buried in a list of fourteen it was neither. It now
+            has one place on every screen at both sizes, and announces itself
+            when something is waiting. */}
+        {/* The accent, not the navy. It is light, so everything on it is drawn
+            in the deep brand colour rather than white — white on #30D9CB is
+            about 1.9:1 and unreadable. Both colours come from the tenant's
+            palette, so a customer changing either keeps the pairing. */}
+        <header className="px-3 py-2 flex items-center gap-3 flex-shrink-0 shadow-[0_2px_10px_rgb(var(--c-primary-900)/0.22)] border-b border-[rgb(var(--c-accent-600)/0.35)]"
+          style={{ background: 'rgb(var(--c-header))' }}>
 
-          {/* Bell */}
+          <div className="flex items-center gap-2 min-w-0">
+            <motion.button
+              onClick={() => setOpen(true)}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.92 }}
+              className="lg:hidden p-2 rounded-xl text-primary hover:bg-primary/10 transition-colors flex-shrink-0"
+              aria-label="فتح القائمة"
+            >
+              <PanelLeft size={22} weight="bold" />
+            </motion.button>
+
+            {/* Derived from today's Hijri date rather than from the season row:
+                a label that says which Hajj season we are in must follow the
+                calendar, not a record someone forgot to roll over. */}
+            <span className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg flex-shrink-0 shadow-[0_2px_8px_rgb(var(--c-primary-900)/0.28)]"
+              style={{ background: 'rgb(var(--c-primary))' }}>
+              <CalendarBlank size={13} className="text-accent" weight="bold" />
+              <span className="text-[11px] font-black text-white whitespace-nowrap">
+                موسم حج {hijriYear}هـ
+              </span>
+            </span>
+
+          </div>
+
+          {/* Centred, and given the slack so the two counts sit in the middle
+              of the bar rather than drifting with the width of what flanks
+              them. Two counts an operations lead checks first thing, each a
+              shortcut to the screen that clears it. */}
+          <div className="flex-1 hidden md:flex items-center justify-center gap-2">
+            <HeaderStat count={pendingCount}   label="بلاغ معلّق"  Icon={Siren}
+              onClick={() => navigate('/admin/reports')} />
+            <HeaderStat count={logisticsCount} label="إسناد معلّق" Icon={Boxes}
+              onClick={() => navigate('/admin/logistics')} />
+          </div>
+          <div className="flex-1 md:hidden" />
+
+          {/* Clock and bell travel together at the far end. */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+          <HeaderClock />
+
+          {/* Always solid navy so it is legible on the light bar. Quiet, it is
+              a bare icon; waiting, it widens to carry the count, the bell
+              swings, and a red dot rides the corner — the state reads from
+              shape, not from a colour change alone. */}
           <motion.button
             onClick={() => navigate('/admin/notifications')}
-            whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.92 }}
-            className="relative p-2.5 rounded-xl border border-white/15 bg-white/10 backdrop-blur-md hover:bg-white/20 hover:border-accent/50 transition-colors"
+            whileHover={{ scale: 1.06 }}
+            whileTap={{ scale: 0.94 }}
+            className={`relative flex items-center gap-2 rounded-xl transition-shadow px-3 py-2 text-white ${
+              newCount > 0
+                ? 'shadow-[0_4px_18px_rgb(var(--c-primary-900)/0.45)]'
+                : 'shadow-[0_2px_8px_rgb(var(--c-primary-900)/0.28)] hover:shadow-[0_4px_14px_rgb(var(--c-primary-900)/0.4)]'
+            }`}
+            style={{
+              background: newCount > 0
+                ? 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))'
+                : 'rgb(var(--c-primary))',
+            }}
+            aria-label="التنبيهات"
           >
-            <BellRing size={18} weight="regular" className="text-white/80" />
+            <BellRing size={18} weight={newCount > 0 ? 'fill' : 'bold'}
+              className={newCount > 0 ? 'text-accent' : 'text-white/85'}
+              style={newCount > 0 ? { animation: 'bellSwing 2.4s ease-in-out infinite' } : undefined} />
             {newCount > 0 && (
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-md"
-                style={{ animation: 'badgePulse 2s ease-in-out infinite' }}
-              >
-                {newCount > 99 ? '99+' : newCount}
-              </motion.span>
+              <span className="text-xs font-black">
+                {newCount > 99 ? '99+' : newCount} تنبيه جديد
+              </span>
+            )}
+            {newCount > 0 && (
+              <span className="absolute -top-1 -left-1 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-[rgb(var(--c-header))]"
+                style={{ animation: 'badgePulse 2s ease-in-out infinite' }} />
             )}
           </motion.button>
+          </div>
         </header>
 
         <main className="flex-1 overflow-y-auto bg-canvas p-3 sm:p-4 md:p-6">
@@ -335,6 +569,18 @@ export default function AdminLayout() {
         @keyframes badgePulse {
           0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
           50%       { transform: scale(1.08); box-shadow: 0 0 0 4px rgba(239,68,68,0); }
+        }
+        /* A short swing every few seconds — enough to catch the eye in
+           peripheral vision, not enough to nag. */
+        @keyframes bellSwing {
+          0%, 70%, 100% { transform: rotate(0deg); }
+          75%           { transform: rotate(-12deg); }
+          80%           { transform: rotate(10deg); }
+          85%           { transform: rotate(-6deg); }
+          90%           { transform: rotate(4deg); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          [style*="bellSwing"], [style*="badgePulse"] { animation: none !important; }
         }
       `}</style>
     </div>

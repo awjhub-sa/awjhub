@@ -424,9 +424,9 @@ export default function AdminUsers() {
               </div>
             </div>
             <div>
-              <h1 className="text-base font-bold text-ink">إدارة المستخدمين</h1>
+              <h1 className="text-base font-bold text-ink">المراقبين والمشرفين</h1>
               <p className="text-xs text-muted mt-0.5">
-                إضافة وإدارة المراقبين والمشرفين الميدانيين
+                حسابات الفرق الميدانية والمراكز المخصَّصة لها
               </p>
             </div>
           </div>

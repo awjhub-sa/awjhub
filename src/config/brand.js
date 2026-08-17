@@ -45,6 +45,7 @@ export const COLORS = {
 
   accent:     '#30D9CB',
   accent600:  '#0D9488',
+  header:     '#29D4BB',
 
   ink:     '#16233D',
   muted:   '#64748B',

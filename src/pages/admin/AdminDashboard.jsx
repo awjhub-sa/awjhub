@@ -1,7 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
 import { db } from '../../lib/db.js';
-import { formatHijri } from '../../lib/hijri.js';
-import AdminReportGenerator from './AdminReportGenerator.jsx';
 import {
   Warning as AlertTriangle,
   Truck,
@@ -15,7 +13,6 @@ import {
   CaretDown as ChevronDown,
   Funnel as Filter,
   MagnifyingGlass as Search,
-  SquaresFour as LayoutDashboard,
   Sparkle as Sparkles,
   User,
   Buildings as Building2,
@@ -34,7 +31,6 @@ import {
   MapPin,
 } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
-import PageHeader from '../../components/PageHeader.jsx';
 import NotificationBadge from '../../components/NotificationBadge.jsx';
 import { getCaterer } from '../../config/centers.js';
 import {
@@ -668,21 +664,9 @@ export default function AdminDashboard() {
   const [selectedLogistics, setSelectedLogistics] = useState(null);
   const [centerFilter,      setCenterFilter]      = useState('');
   const [searchQuery,       setSearchQuery]       = useState('');
-  const [clock,             setClock]             = useState({ hijri: '', time: '' });
-
-  /* Live clock */
-  useEffect(() => {
-    const tick = () => {
-      const now = new Date();
-      setClock({
-        hijri: formatHijri(now),
-        time:  now.toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }),
-      });
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, []);
+  /* The clock moved to the header, where it is visible on every screen rather
+     than only this one — and where its per-second tick no longer re-renders a
+     dashboard holding several live feeds. */
 
   const handleDeleteReport = async (id) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا البلاغ؟')) return;
@@ -785,34 +769,10 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-5 pb-6" dir="rtl">
 
-      {/* Page header */}
-      <PageHeader
-        Icon={LayoutDashboard}
-        title="نظرة عامة"
-        subtitle="مؤشرات الأداء"
-        right={
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
-            <AdminReportGenerator />
-            <div className="hidden md:flex items-stretch rounded-2xl overflow-hidden shadow-[0_4px_16px_rgb(var(--c-primary)/0.25)]"
-              style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)) 0%, rgb(var(--c-primary)) 50%, rgb(var(--c-primary-700)) 100%)' }}>
-              <div className="flex items-center gap-2.5 px-4 py-3">
-                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-                  <Calendar size={14} className="text-white" weight="bold" />
-                </div>
-                <div>
-                  <p className="text-white/70 text-[9px] font-bold leading-none">التاريخ الهجري</p>
-                  <p className="text-white text-[11px] font-black mt-1 leading-tight">{clock.hijri || '...'}</p>
-                </div>
-              </div>
-              <div className="w-px bg-white/20 my-3" />
-              <div className="px-4 py-3 flex flex-col justify-center">
-                <p className="text-white/70 text-[9px] font-bold leading-none">الوقت الآن</p>
-                <p className="text-white text-sm font-black mt-1 tabular-nums leading-tight">{clock.time || '...'}</p>
-              </div>
-            </div>
-          </div>
-        }
-      />
+      {/* Plain title. The card that used to sit here carried a clock and an
+          export button, both of which now live in the shell — leaving a banner
+          whose only content was its own name. */}
+      <h1 className="text-lg font-black text-ink">نظرة عامة</h1>
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">

@@ -27,6 +27,12 @@ import AdminDashboard      from './pages/admin/AdminDashboard';
 import AdminReports        from './pages/admin/AdminReports';
 import AdminLogistics      from './pages/admin/AdminLogistics';
 import AdminAnalytics      from './pages/admin/AdminAnalytics';
+import AdminCaterers       from './pages/admin/AdminCaterers';
+import AdminCenters        from './pages/admin/AdminCenters';
+import AdminForms          from './pages/admin/AdminForms';
+import AdminBrand          from './pages/admin/AdminBrand';
+import AdminDrill          from './pages/admin/AdminDrill';
+import AdminReportsCenter  from './pages/admin/AdminReportsCenter';
 import AdminUsers          from './pages/admin/AdminUsers';
 import AdminNotifications  from './pages/admin/AdminNotifications';
 import AdminTaskAssign     from './pages/admin/AdminTaskAssign';
@@ -100,10 +106,20 @@ export default function App() {
           <Route path="dashboard"     element={<AdminDashboard />} />
           <Route path="reports"       element={<AdminReports />} />
           <Route path="logistics"     element={<AdminLogistics />} />
-          <Route path="analytics"     element={<AdminAnalytics />} />
+          {/* One implementation, pinned to a mash'ar by prop. `analytics` is
+              kept so older links and bookmarks still resolve. */}
+          <Route path="analytics"          element={<Navigate to="/admin/readiness/mina" replace />} />
+          <Route path="readiness/mina"     element={<AdminAnalytics site="mina" />} />
+          <Route path="readiness/arafat"   element={<AdminAnalytics site="arafat" />} />
+          <Route path="readiness/drill"    element={<AdminDrill />} />
+          <Route path="centers"       element={<AdminCenters />} />
+          <Route path="caterers"      element={<AdminCaterers />} />
+          <Route path="forms"         element={<AdminForms />} />
           <Route path="users"         element={<AdminUsers />} />
           <Route path="staff"         element={<AdminStaff />} />
           <Route path="notifications" element={<AdminNotifications />} />
+          <Route path="reports-center" element={<AdminReportsCenter />} />
+          <Route path="brand"         element={<AdminBrand />} />
           <Route path="tasks"         element={<AdminTaskAssign />} />
           <Route path="phases"        element={<AdminPhases />} />
           <Route path="menu"          element={<AdminMenu />} />

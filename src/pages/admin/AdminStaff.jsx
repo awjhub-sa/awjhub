@@ -278,7 +278,7 @@ export default function AdminStaff() {
     <div className="space-y-5" dir="rtl">
       <PageHeader
         Icon={UserCog}
-        title="إدارة الموظفين"
+        title="الموظفين"
         subtitle="حسابات الإداريين والمراكز المخصَّصة لهم"
         gradient={{ from: 'rgb(var(--c-primary-400))', to: 'rgb(var(--c-primary))' }}
         sparkle

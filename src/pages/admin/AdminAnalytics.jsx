@@ -121,8 +121,16 @@ const docTimestampMs = d =>
   d?.timestamp?.toMillis?.()
     ?? (d?.timestamp ? new Date(d.timestamp).getTime() : 0);
 
-export default function AdminAnalytics() {
-  const [activeTab, setActiveTab] = useState('mina');
+/**
+ * `site` pins the page to one mash'ar, which is how the sidebar now presents
+ * it: جاهزية منى and جاهزية عرفة are separate destinations. Passing a prop
+ * rather than forking the file keeps one implementation of the loading,
+ * realtime and scoring logic — two copies would diverge on the first fix.
+ * Called with no prop, the two-tab view still works.
+ */
+export default function AdminAnalytics({ site }) {
+  const [activeTab, setActiveTab] = useState(site || 'mina');
+  useEffect(() => { if (site) setActiveTab(site); }, [site]);
   const [data,      setData]      = useState({ mina: null, arafat: null });
   const [selectedCenter, setSelectedCenter] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -316,12 +324,14 @@ export default function AdminAnalytics() {
     <div className="space-y-5 pb-6" dir="rtl">
       <PageHeader
         Icon={ShieldCheck}
-        title="الجاهزية"
-        subtitle="جاهزية مشعر منى ومشعر عرفة"
+        title={site ? `جاهزية ${tab?.short}` : 'الجاهزية'}
+        subtitle={site ? `تقييمات مشعر ${tab?.short}` : 'جاهزية مشعر منى ومشعر عرفة'}
+        gradient={site ? { from: tab?.color, to: tab?.color } : undefined}
       />
 
-      {/* ── Mash'ar tab selector ── */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* Hidden when the route already names the mash'ar — a selector with one
+          reachable option is just noise. */}
+      <div className={`grid grid-cols-2 gap-3 ${site ? 'hidden' : ''}`}>
         {TABS.map(t => {
           const Icon  = t.icon;
           const active = activeTab === t.key;
