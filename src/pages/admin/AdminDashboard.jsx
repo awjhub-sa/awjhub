@@ -1,6 +1,14 @@
 import { useEffect, useState, useMemo } from 'react';
 import { db } from '../../lib/db.js';
 import {
+  REPORT_STATUS_LOOKUP, LOGISTICS_STATUS_LOOKUP, SEVERITY_MAP, SUPPORT_LOOKUP,
+  MEAL_LABEL, MEAL_COLOR, HOLY_SITE_LABEL, HOLY_SITE_COLOR, HOLY_SITE_ICON,
+  reportType, isNewRecord,
+} from '../../config/fieldRecords.js';
+import ReportDrawer from '../../components/details/ReportDrawer.jsx';
+import LogisticsDrawer from '../../components/details/LogisticsDrawer.jsx';
+import MediaLightbox from '../../components/MediaLightbox.jsx';
+import {
   Warning as AlertTriangle,
   Truck,
   ClipboardText as ClipboardList,
@@ -40,45 +48,12 @@ import { StatusTimerChip, StatusTimeline } from '../../components/StatusTimeline
 import { NATIONALITIES } from '../../config/nationalities.js';
 import CenterNotesPanel from '../../components/CenterNotesPanel.jsx';
 
-/* ─── Lookup tables ─── */
-const REPORT_TYPE = {
-  water: 'تسرب مياه', electric: 'عطل كهربائي', crowd: 'ازدحام حرج', food: 'مشكلة غذائية',
-  medical: 'حالة طبية طارئة', security: 'بلاغ أمني', fire: 'حريق / دخان', other: 'بلاغ آخر',
-  shortage: 'نقص كميات', delay: 'تأخر توزيع', quality: 'مشكلة جودة', hygiene: 'مخالفة صحية',
-};
-
-const MEAL_LABEL = { breakfast: 'الإفطار', lunch: 'الغداء', dinner: 'العشاء' };
-const MEAL_COLOR = { breakfast: '#F59E0B', lunch: '#EF4444', dinner: '#B4674E' };
-const HOLY_SITE_LABEL = { mina: 'منى', arafat: 'عرفات' };
-const HOLY_SITE_COLOR = { mina: 'rgb(var(--c-primary))', arafat: '#5E9070' };
-const HOLY_SITE_ICON  = { mina: MapPin,   arafat: Mountain };
-
-const SEV = {
-  high:   { label: 'عالية',   bg: '#FEF2F2', text: '#DC2626', border: '#FCA5A5', bar: '#EF4444' },
-  urgent: { label: 'عاجل',    bg: '#FEF2F2', text: '#DC2626', border: '#FCA5A5', bar: '#DC2626' },
-  medium: { label: 'متوسطة',  bg: '#FFFBEB', text: '#B45309', border: '#FCD34D', bar: '#F59E0B' },
-  low:    { label: 'منخفضة',  bg: '#EFF6FF', text: '#2F5580', border: '#93C5FD', bar: '#4E7CB0' },
-};
-
-const STATUS = {
-  pending:     { label: 'قيد الانتظار', bg: '#FFFBEB', text: '#B45309', color: '#B45309', border: '#FDE68A', Icon: Clock        },
-  in_progress: { label: 'جارٍ التنفيذ', bg: '#EFF6FF', text: '#2F5580', color: '#2F5580', border: '#BFDBFE', Icon: Activity     },
-  resolved:    { label: 'تم الحل',      bg: '#F0FDF4', text: '#15803D', color: '#15803D', border: '#86EFAC', Icon: CheckCircle2 },
-};
-
-const SUPPORT = {
-  internal: { label: 'داخلي',            short: 'داخلي',        Icon: ArrowRight, color: '#4E7CB0' },
-  external: { label: 'خارجي',            short: 'خارجي',        Icon: ArrowLeft,  color: '#B4674E' },
-  both:     { label: 'داخلي وخارجي',     short: 'مشترك',         Icon: Layers,     color: '#2F5580' },
-};
-
-const LOGISTICS_STATUS = {
-  pending:   { label: 'قيد الانتظار', bg: '#FFFBEB', text: '#B45309', color: '#B45309', border: '#FDE68A', Icon: Clock        },
-  approved:  { label: 'موافق عليه',   bg: '#EFF6FF', text: '#2F5580', color: '#2F5580', border: '#BFDBFE', Icon: ThumbsUp     },
-  delivered: { label: 'تم التسليم',   bg: '#F0FDF4', text: '#15803D', color: '#15803D', border: '#86EFAC', Icon: CheckCircle2 },
-  rejected:  { label: 'مرفوض',        bg: '#FEF2F2', text: '#DC2626', color: '#DC2626', border: '#FECACA', Icon: XCircle      },
-};
-
+/* The vocabulary lives in config/fieldRecords — three copies of it had already
+   drifted, so the same report wore one colour in a list and another in a modal. */
+const STATUS = REPORT_STATUS_LOOKUP;
+const LOGISTICS_STATUS = LOGISTICS_STATUS_LOOKUP;
+const SEV = SEVERITY_MAP;
+const SUPPORT = SUPPORT_LOOKUP;
 /* Newly-arrived helpers */
 const NEW_THRESHOLD_MS = 10 * 60 * 1000;
 const isNewReport = r => {
@@ -156,473 +131,9 @@ function StatCard({ label, value, Icon, color, sub, onClick }) {
   );
 }
 
-/* ─── Report Detail Modal ─── */
-function ReportDetailModal({ report, onClose, onDelete, onStatusChange, onSaveNotes }) {
-  if (!report) return null;
-  const label = REPORT_TYPE[report.reportType || report.type] || report.reportType || report.type || 'بلاغ';
-  const sv    = SEV[report.severity];
-  const [notes, setNotes]       = useState(report.adminNotes || '');
-  const [savingNotes, setSavingNotes] = useState(false);
-  const [savedNotes,  setSavedNotes]  = useState(false);
-
-  /* Only re-sync from props when we open a different report — depending
-     on report.adminNotes too would clobber the saved-notes badge the
-     moment the parent's optimistic update echoes back. */
-  useEffect(() => {
-    setNotes(report.adminNotes || '');
-    setSavedNotes(false);
-  }, [report.id]);
-
-  const handleSaveNotes = async () => {
-    if (savingNotes) return;
-    setSavingNotes(true);
-    try {
-      await onSaveNotes?.(report.id, notes);
-      setSavedNotes(true);
-      setTimeout(() => setSavedNotes(false), 4000);
-    } catch (e) {
-      alert(`فشل حفظ الملاحظات: ${e?.message || e}`);
-    }
-    setSavingNotes(false);
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" dir="rtl">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl">
-
-        <div className="sticky top-0 bg-white border-b border-line px-5 py-4 flex items-center justify-between rounded-t-3xl z-10">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="relative shrink-0">
-              <div className="absolute inset-0 rounded-xl blur-md bg-red-500 opacity-40" />
-              <div className="relative w-11 h-11 rounded-xl flex items-center justify-center shadow-sm"
-                style={{ background: 'linear-gradient(135deg, #F87171, #DC2626)' }}>
-                <AlertTriangle size={18} className="text-white" weight="bold" />
-              </div>
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <p className="font-black text-ink text-sm truncate">{label}</p>
-                {report.reportNumber && (
-                  <span className="text-[10px] font-black px-2 py-0.5 rounded-md tabular-nums"
-                    style={{ background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA' }}>
-                    #{report.reportNumber}
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-primary font-bold mt-0.5">{timeAgo(report.timestamp)} · {clockTime(report.timestamp)}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button onClick={() => onDelete(report.id)}
-              className="w-9 h-9 rounded-xl border-2 border-red-200 flex items-center justify-center hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors text-red-500">
-              <Trash2 size={14} weight="bold" />
-            </button>
-            <button onClick={onClose}
-              className="w-9 h-9 rounded-xl border border-line flex items-center justify-center hover:bg-[rgb(var(--c-primary-50))] transition-colors">
-              <X size={15} className="text-muted" weight="bold" />
-            </button>
-          </div>
-        </div>
-
-        <div className="p-5 space-y-4">
-          {sv && (
-            <div className="flex gap-2 flex-wrap">
-              <span className="inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-lg border"
-                style={{ background: sv.bg, borderColor: sv.border, color: sv.text }}>
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: sv.bar }} />
-                خطورة {sv.label}
-              </span>
-            </div>
-          )}
-
-          {/* Center-specific operations-room notes */}
-          <CenterNotesPanel centerId={report.center} variant="modal" />
-
-          {/* Status timeline */}
-          <StatusTimeline
-            doc={report}
-            terminalStatuses={TERMINAL_REPORT_STATUSES}
-            statusOrder={['pending', 'in_progress', 'resolved']}
-            statusMeta={STATUS}
-            accentColor="#DC2626"
-          />
-
-          {/* Status changer */}
-          <div className="bg-white rounded-2xl border border-line p-3">
-            <p className="text-[10px] font-bold text-muted mb-2 flex items-center gap-1">
-              <Activity size={11} weight="bold" className="text-red-500" />
-              تغيير الحالة
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              {Object.entries(STATUS).map(([key, s]) => {
-                const SIcon = s.Icon;
-                const active = (report.status || 'pending') === key;
-                return (
-                  <button key={key}
-                    onClick={() => onStatusChange(report.id, key)}
-                    className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-black border-2 transition-all ${
-                      active ? 'shadow-md scale-[1.02]' : 'bg-white border-line text-muted'
-                    }`}
-                    style={active
-                      ? { background: s.bg, borderColor: s.text, color: s.text }
-                      : undefined}>
-                    <SIcon size={12} weight="bold" />
-                    {s.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Info grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-            {[
-              { lbl: 'المراقب', val: report.observer, Icon: User,     color: 'rgb(var(--c-primary))' },
-              { lbl: 'المركز',  val: report.center,   Icon: Building2,color: '#DC2626' },
-              { lbl: 'المشعر',  val: HOLY_SITE_LABEL[report.holySite] || '—', Icon: HOLY_SITE_ICON[report.holySite] || MapPin, color: HOLY_SITE_COLOR[report.holySite] || 'rgb(var(--c-muted))' },
-              { lbl: 'الوجبة',  val: MEAL_LABEL[report.mealType] || '—', Icon: Utensils, color: MEAL_COLOR[report.mealType] || 'rgb(var(--c-primary))' },
-              { lbl: 'الوقت',   val: clockTime(report.timestamp), Icon: Calendar, color: 'rgb(var(--c-muted))' },
-            ].map(c => (
-              <div key={c.lbl} className="bg-white rounded-xl border border-line p-2.5 flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: `${c.color}15` }}>
-                  <c.Icon size={13} style={{ color: c.color }} weight="bold" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[9px] text-muted font-bold">{c.lbl}</p>
-                  <p className="text-[11px] font-bold text-ink truncate">{c.val || '—'}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="bg-gradient-to-br from-background to-white rounded-xl border border-line p-2.5 flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm"
-              style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
-              <Factory size={13} className="text-white" weight="bold" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[9px] text-muted font-bold">المتعهد</p>
-              <p className="text-[11px] font-black text-primary truncate">{report.caterer || getCaterer(report.center) || '—'}</p>
-            </div>
-          </div>
-
-          {report.description && (
-            <div className="bg-white rounded-2xl border border-line p-4">
-              <p className="text-[10px] text-muted font-bold mb-2 flex items-center gap-1.5">
-                <span className="w-1.5 h-4 rounded-full bg-red-500" />
-                وصف المشكلة
-              </p>
-              <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap">{report.description}</p>
-            </div>
-          )}
-
-          {report.images?.length > 0 && (
-            <div>
-              <p className="text-[10px] text-muted font-bold mb-2 flex items-center gap-1.5">
-                <span className="w-1.5 h-4 rounded-full bg-primary" />
-                الصور المرفقة ({report.images.length})
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {report.images.map((src, i) => (
-                  <button key={i} onClick={() => openImageTab(src)} className="group relative block rounded-xl overflow-hidden border-2 border-line hover:border-primary transition-colors">
-                    <img src={src} alt="" className="w-full h-32 object-cover transition-transform group-hover:scale-105" />
-                    <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition bg-black/30 text-white text-xs font-black">
-                      فتح الصورة
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {report.videoUrl && (
-            <div>
-              <p className="text-[10px] text-muted font-bold mb-2 flex items-center gap-1.5">
-                <span className="w-1.5 h-4 rounded-full bg-indigo-500" />
-                الفيديو المرفق
-              </p>
-              <video src={report.videoUrl} controls
-                className="w-full rounded-xl border border-line bg-black max-h-72" />
-            </div>
-          )}
-
-          {/* Admin notes — operations room */}
-          <div className="bg-gradient-to-br from-background to-white border border-line rounded-2xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-[11px] text-muted font-bold flex items-center gap-1.5">
-                <span className="w-1.5 h-4 rounded-full bg-primary" />
-                ملاحظات غرفة العمليات
-              </p>
-              {savedNotes && (
-                <span className="text-[10px] font-black text-green-700 bg-green-50 border border-green-200 rounded-md px-2 py-0.5">
-                  ✓ تم الحفظ
-                </span>
-              )}
-            </div>
-            <textarea
-              value={notes}
-              onChange={e => { setNotes(e.target.value); setSavedNotes(false); }}
-              rows={3}
-              placeholder="اكتب ملاحظات تظهر للمراقب/المشرف الذي رفع البلاغ..."
-              className="w-full px-3 py-2.5 border border-line rounded-xl text-sm text-ink placeholder-muted focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none transition-all bg-white resize-none"
-            />
-            <button onClick={handleSaveNotes} disabled={savingNotes || notes === (report.adminNotes || '')}
-              className="mt-2 w-full py-2.5 rounded-xl bg-gradient-to-br from-primary-400 to-primary text-white text-sm font-black shadow-sm active:scale-[0.98] transition-all disabled:opacity-50">
-              {savingNotes ? 'جارٍ الحفظ...' : 'حفظ الملاحظات'}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Logistics Detail Modal ─── */
-function LogisticsDetailModal({ item, onClose, onDelete, onStatusChange, onSaveNotes }) {
-  if (!item) return null;
-  const st = SUPPORT[item.supportType] || SUPPORT.internal;
-  const [notes, setNotes]       = useState(item.adminNotes || '');
-  const [savingNotes, setSavingNotes] = useState(false);
-  const [savedNotes,  setSavedNotes]  = useState(false);
-
-  useEffect(() => {
-    setNotes(item.adminNotes || '');
-    setSavedNotes(false);
-  }, [item.id]);
-
-  const handleSaveNotes = async () => {
-    if (savingNotes) return;
-    setSavingNotes(true);
-    try {
-      await onSaveNotes?.(item.id, notes);
-      setSavedNotes(true);
-      setTimeout(() => setSavedNotes(false), 4000);
-    } catch (e) {
-      alert(`فشل حفظ الملاحظات: ${e?.message || e}`);
-    }
-    setSavingNotes(false);
-  };
-  const SupportIcon = st.Icon;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" dir="rtl">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl">
-
-        <div className="sticky top-0 bg-white border-b border-line px-5 py-4 flex items-center justify-between rounded-t-3xl z-10">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="relative shrink-0">
-              <div className="absolute inset-0 rounded-xl blur-md opacity-40" style={{ background: st.color }} />
-              <div className="relative w-11 h-11 rounded-xl flex items-center justify-center shadow-sm"
-                style={{ background: `linear-gradient(135deg, ${st.color}, ${st.color}CC)` }}>
-                <Package size={18} className="text-white" weight="bold" />
-              </div>
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <p className="font-black text-ink text-sm">طلب إسناد</p>
-                <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md border"
-                  style={{ background: `${st.color}15`, borderColor: `${st.color}40`, color: st.color }}>
-                  <SupportIcon size={10} weight="bold" />
-                  {st.short}
-                </span>
-                {item.requestNumber && (
-                  <span className="text-[10px] font-black px-2 py-0.5 rounded-md tabular-nums"
-                    style={{ background: '#EFF6FF', color: '#4E7CB0', border: '1px solid #BFDBFE' }}>
-                    #{item.requestNumber}
-                  </span>
-                )}
-                {item.holySite && HOLY_SITE_LABEL[item.holySite] && (() => {
-                  const HSIcon = HOLY_SITE_ICON[item.holySite];
-                  return (
-                    <span className="text-[10px] font-black px-2 py-0.5 rounded-md text-white inline-flex items-center gap-1"
-                      style={{ background: HOLY_SITE_COLOR[item.holySite] }}>
-                      <HSIcon size={10} weight="bold" />
-                      {HOLY_SITE_LABEL[item.holySite]}
-                    </span>
-                  );
-                })()}
-              </div>
-              <p className="text-[11px] text-primary font-bold mt-0.5">{timeAgo(item.timestamp)} · {clockTime(item.timestamp)}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button onClick={() => onDelete(item.id)}
-              className="w-9 h-9 rounded-xl border-2 border-red-200 flex items-center justify-center hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors text-red-500">
-              <Trash2 size={14} weight="bold" />
-            </button>
-            <button onClick={onClose}
-              className="w-9 h-9 rounded-xl border border-line flex items-center justify-center hover:bg-[rgb(var(--c-primary-50))] transition-colors">
-              <X size={15} className="text-muted" weight="bold" />
-            </button>
-          </div>
-        </div>
-
-        <div className="p-5 space-y-4">
-          {/* Linked report banner */}
-          {item.reportNumber && (
-            <div className="bg-gradient-to-br from-amber-50 via-white to-orange-50/40 rounded-2xl border-2 border-amber-200 p-3.5 flex items-center gap-3">
-              <div className="relative shrink-0">
-                <div className="absolute inset-0 rounded-xl blur-md bg-amber-400 opacity-40" />
-                <div className="relative w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
-                  style={{ background: 'linear-gradient(135deg, #F59E0B, #D97706)' }}>
-                  <AlertTriangle size={16} className="text-white" weight="bold" />
-                </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-black text-amber-700 uppercase tracking-wider mb-0.5">مرتبط ببلاغ</p>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <p className="text-xs font-black text-ink">{REPORT_TYPE[item.reportType] || item.reportType || 'بلاغ ميداني'}</p>
-                  <span className="text-[10px] font-black px-2 py-0.5 rounded-md tabular-nums bg-white border border-amber-300 text-amber-700">
-                    #{item.reportNumber}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Center-specific operations-room notes */}
-          <CenterNotesPanel centerId={item.center} variant="modal" />
-
-          {/* Status timeline */}
-          <StatusTimeline
-            doc={item}
-            terminalStatuses={TERMINAL_LOGISTICS_STATUSES}
-            statusOrder={['pending', 'approved', 'delivered', 'rejected']}
-            statusMeta={LOGISTICS_STATUS}
-            accentColor="#3D6795"
-          />
-
-          {/* Status changer */}
-          <div className="bg-white rounded-2xl border border-line p-3">
-            <p className="text-[10px] font-bold text-muted mb-2 flex items-center gap-1">
-              <Activity size={11} weight="bold" className="text-blue-500" />
-              تغيير الحالة
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {Object.entries(LOGISTICS_STATUS).map(([key, s]) => {
-                const SIcon = s.Icon;
-                const active = (item.status || 'pending') === key;
-                return (
-                  <button key={key}
-                    onClick={() => onStatusChange(item.id, key)}
-                    className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-black border-2 transition-all ${
-                      active ? 'shadow-md scale-[1.02]' : 'bg-white border-line text-muted'
-                    }`}
-                    style={active
-                      ? { background: s.bg, borderColor: s.text, color: s.text }
-                      : undefined}>
-                    <SIcon size={12} weight="bold" />
-                    {s.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Quantities */}
-          {(item.qtyInternal || item.qtyExternal) && (
-            <div className="grid grid-cols-2 gap-2.5">
-              {item.qtyInternal != null && (
-                <div className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-3.5 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-                    style={{ background: 'linear-gradient(135deg, #84AAD4, #4E7CB0)' }}>
-                    <ArrowRight size={16} className="text-white" weight="bold" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-blue-700">داخلي</p>
-                    <p className="text-xl font-black tabular-nums text-blue-700 leading-tight">{item.qtyInternal}</p>
-                  </div>
-                </div>
-              )}
-              {item.qtyExternal != null && (
-                <div className="rounded-2xl border-2 border-violet-200 bg-gradient-to-br from-violet-50 to-white p-3.5 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-                    style={{ background: 'linear-gradient(135deg, #C98D74, #B4674E)' }}>
-                    <ArrowLeft size={16} className="text-white" weight="bold" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-violet-700">خارجي</p>
-                    <p className="text-xl font-black tabular-nums text-violet-700 leading-tight">{item.qtyExternal}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Info grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-            {[
-              { lbl: 'المراقب', val: item.observer, Icon: User,     color: 'rgb(var(--c-primary))' },
-              { lbl: 'المركز',  val: item.center,   Icon: Building2,color: st.color  },
-              { lbl: 'الوقت',   val: clockTime(item.timestamp), Icon: Calendar, color: 'rgb(var(--c-muted))' },
-            ].map(c => (
-              <div key={c.lbl} className="bg-white rounded-xl border border-line p-2.5 flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: `${c.color}15` }}>
-                  <c.Icon size={13} style={{ color: c.color }} weight="bold" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[9px] text-muted font-bold">{c.lbl}</p>
-                  <p className="text-[11px] font-bold text-ink truncate">{c.val || '—'}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="bg-gradient-to-br from-background to-white rounded-xl border border-line p-2.5 flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm"
-              style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
-              <Factory size={13} className="text-white" weight="bold" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[9px] text-muted font-bold">المتعهد</p>
-              <p className="text-[11px] font-black text-primary truncate">{item.caterer || getCaterer(item.center) || '—'}</p>
-            </div>
-          </div>
-
-          {item.notes && (
-            <div className="bg-white rounded-2xl border border-line p-4">
-              <p className="text-[10px] text-muted font-bold mb-2 flex items-center gap-1.5">
-                <span className="w-1.5 h-4 rounded-full bg-blue-500" />
-                ملاحظات
-              </p>
-              <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap">{item.notes}</p>
-            </div>
-          )}
-
-          {/* Admin notes — operations room */}
-          <div className="bg-gradient-to-br from-background to-white border border-line rounded-2xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-[11px] text-muted font-bold flex items-center gap-1.5">
-                <span className="w-1.5 h-4 rounded-full bg-primary" />
-                ملاحظات غرفة العمليات
-              </p>
-              {savedNotes && (
-                <span className="text-[10px] font-black text-green-700 bg-green-50 border border-green-200 rounded-md px-2 py-0.5">
-                  ✓ تم الحفظ
-                </span>
-              )}
-            </div>
-            <textarea
-              value={notes}
-              onChange={e => { setNotes(e.target.value); setSavedNotes(false); }}
-              rows={3}
-              placeholder="اكتب ملاحظات تظهر للمراقب/المشرف الذي رفع الطلب..."
-              className="w-full px-3 py-2.5 border border-line rounded-xl text-sm text-ink placeholder-muted focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none transition-all bg-white resize-none"
-            />
-            <button onClick={handleSaveNotes} disabled={savingNotes || notes === (item.adminNotes || '')}
-              className="mt-2 w-full py-2.5 rounded-xl bg-gradient-to-br from-primary-400 to-primary text-white text-sm font-black shadow-sm active:scale-[0.98] transition-all disabled:opacity-50">
-              {savingNotes ? 'جارٍ الحفظ...' : 'حفظ الملاحظات'}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Section panel header ─── */
+/* Details open in the same drawers the reports and logistics screens use —
+   see components/details. A record should read the same wherever it is
+   opened from, and three copies of one modal had already drifted apart. */
 function PanelHeader({ title, subtitle, count, gradient, Icon, onViewAll, viewAllColor, badge, badgeVariant }) {
   return (
     <div className="flex items-center justify-between px-3 sm:px-5 py-3 sm:py-3.5 border-b border-line gap-2">
@@ -662,6 +173,7 @@ export default function AdminDashboard() {
   const [activityFeed,      setActivityFeed]      = useState([]);
   const [selectedReport,    setSelectedReport]    = useState(null);
   const [selectedLogistics, setSelectedLogistics] = useState(null);
+  const [lightbox,          setLightbox]          = useState(null);
   const [centerFilter,      setCenterFilter]      = useState('');
   const [searchQuery,       setSearchQuery]       = useState('');
   /* The clock moved to the header, where it is visible on every screen rather
@@ -835,7 +347,8 @@ export default function AdminDashboard() {
               </div>
             );
             return displayed.map((r, idx) => {
-              const label  = REPORT_TYPE[r.reportType || r.type] || r.reportType || r.type || 'بلاغ';
+              const rt     = reportType(r);
+              const label  = rt.label;
               const sv     = SEV[r.severity];
               const sb     = STATUS[r.status] || STATUS.pending;
               const SIcon  = sb.Icon;
@@ -844,7 +357,7 @@ export default function AdminDashboard() {
               return (
                 <button key={r.id}
                   onClick={() => setSelectedReport(r)}
-                  className={`group relative w-full text-right flex items-center gap-3 px-3 sm:px-5 py-3 sm:py-3.5 transition-colors ${!isLast ? 'border-b border-line' : ''} ${isNew ? 'row-pulse-red' : 'hover:bg-red-50/30'}`}>
+                  className={`group relative w-full text-right flex items-center gap-3 px-3 sm:px-5 py-3 sm:py-3.5 transition-colors ${!isLast ? 'border-b border-line' : ''} ${isNew ? 'row-pulse-red' : 'hover:bg-background'}`}>
                   {/* "جديد" pill on new rows */}
                   {isNew && (
                     <span className="absolute top-2 left-2 inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-md text-white shadow-md tabular-nums tracking-wide"
@@ -853,12 +366,16 @@ export default function AdminDashboard() {
                       جديد
                     </span>
                   )}
-                  {/* Icon */}
+                  {/* The tile carries the type: twelve kinds of report were
+                      wearing one red gradient, so the list said nothing until
+                      you had read every row. */}
                   <div className="relative shrink-0">
-                    <div className="absolute inset-0 rounded-xl blur-md bg-red-400 opacity-0 group-hover:opacity-50 transition-opacity" />
-                    <div className="relative w-11 h-11 rounded-xl flex items-center justify-center shadow-sm"
-                      style={{ background: 'linear-gradient(135deg, #F87171, #DC2626)' }}>
-                      <AlertTriangle size={18} className="text-white" weight="bold" />
+                    <div className="w-11 h-11 rounded-xl flex items-center justify-center border"
+                      style={{
+                        background: `color-mix(in srgb, ${rt.color} 12%, #fff)`,
+                        borderColor: `color-mix(in srgb, ${rt.color} 30%, #fff)`,
+                      }}>
+                      <rt.Icon size={19} weight="bold" style={{ color: rt.color }} />
                     </div>
                     {isNew && (
                       <div className="absolute -top-1 -right-1 badge-pulse-red w-4 h-4 rounded-full bg-red-500 border-2 border-white" />
@@ -870,11 +387,11 @@ export default function AdminDashboard() {
                       <p className="text-sm font-black text-ink truncate">{label}</p>
                       {r.reportNumber && (
                         <span className={`inline-flex items-center text-[10px] font-black px-1.5 py-0.5 rounded-md tabular-nums tracking-wide ${
-                          isNew ? 'badge-pulse-red text-white' : 'text-red-700 border'
+                          isNew ? 'badge-pulse-red text-white' : 'border'
                         }`}
                           style={isNew
                             ? { background: 'linear-gradient(135deg, #EF4444, #DC2626)' }
-                            : { background: '#FEF2F2', borderColor: '#FECACA' }}>
+                            : { background: 'rgb(var(--c-bg))', borderColor: 'rgb(var(--c-line))', color: 'rgb(var(--c-ink))' }}>
                           #{r.reportNumber}
                         </span>
                       )}
@@ -1179,25 +696,28 @@ export default function AdminDashboard() {
         )}
       </div>
 
-      {/* Modals */}
-      {selectedReport && (
-        <ReportDetailModal
-          report={selectedReport}
-          onClose={() => setSelectedReport(null)}
-          onDelete={handleDeleteReport}
-          onStatusChange={handleStatusChange}
-          onSaveNotes={handleSaveReportNotes}
-        />
+      {lightbox && (
+        <MediaLightbox src={lightbox.src} type={lightbox.type} onClose={() => setLightbox(null)} />
       )}
-      {selectedLogistics && (
-        <LogisticsDetailModal
-          item={selectedLogistics}
-          onClose={() => setSelectedLogistics(null)}
-          onDelete={handleDeleteLogistics}
-          onStatusChange={handleLogisticsStatusChange}
-          onSaveNotes={handleSaveLogisticsNotes}
-        />
-      )}
+
+      <ReportDrawer
+        report={selectedReport}
+        onClose={() => setSelectedReport(null)}
+        onStatus={handleStatusChange}
+        onEdit={() => navigate(`/admin/reports`)}
+        onDelete={() => { handleDeleteReport(selectedReport.id); setSelectedReport(null); }}
+        onMedia={(m) => setLightbox(m)}
+        onSaveNotes={handleSaveReportNotes}
+      />
+
+      <LogisticsDrawer
+        request={selectedLogistics}
+        onClose={() => setSelectedLogistics(null)}
+        onStatus={handleLogisticsStatusChange}
+        onEdit={() => navigate(`/admin/logistics`)}
+        onDelete={() => { handleDeleteLogistics(selectedLogistics.id); setSelectedLogistics(null); }}
+        onSaveNotes={handleSaveLogisticsNotes}
+      />
     </div>
   );
 }
