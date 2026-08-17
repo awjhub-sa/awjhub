@@ -39,6 +39,7 @@ import AdminTaskAssign     from './pages/admin/AdminTaskAssign';
 import AdminPhases         from './pages/admin/AdminPhases';
 import AdminReportView     from './pages/admin/AdminReportView';
 import ReportsViewer       from './pages/admin/ReportsViewer';
+import ReportsDeck         from './pages/admin/ReportsDeck';
 import AdminStaff          from './pages/admin/AdminStaff';
 import AdminMenu           from './pages/admin/AdminMenu';
 import StagesReport        from './pages/admin/StagesReport';
@@ -103,6 +104,10 @@ export default function App() {
         <Route
           path="/admin/reports-view"
           element={<RequireAdmin><ReportsViewer /></RequireAdmin>}
+        />
+        <Route
+          path="/admin/reports-deck"
+          element={<RequireAdmin><ReportsDeck /></RequireAdmin>}
         />
 
         {/* Admin Routes */}

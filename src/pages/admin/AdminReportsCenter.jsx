@@ -7,11 +7,20 @@ import {
   AR_NUM, buildLookups, buildTable, describeFilters,
   stashReportRequest, pruneReportRequests,
 } from '../../lib/reportQuery.js';
-import PageHeader from '../../components/PageHeader.jsx';
 import {
   FileArrowDown, ArrowSquareOut, MagnifyingGlass as Search, X, Warning,
   Columns, Funnel, Table as TableIcon, CalendarBlank, ListChecks,
+  ProjectorScreenChart, Siren, Stack as Boxes, ForkKnife, Gauge,
+  Buildings, MapPinArea, FileText, UsersThree, FlowArrow, CheckSquare,
 } from '@phosphor-icons/react';
+
+/* A face per section. A grid of identical rectangles is a list you read; a
+   grid of marked cards is one you recognise. */
+const SOURCE_ICON = {
+  reports: Siren, logistics: Boxes, meals: ForkKnife, mina: Gauge, arafat: Gauge,
+  caterers: Buildings, centers: MapPinArea, forms: FileText, users: UsersThree,
+  phases: FlowArrow, taskCompletions: CheckSquare,
+};
 
 const inputCls =
   'w-full px-3 py-2 border border-line rounded-xl text-sm text-ink outline-none focus:border-primary transition placeholder-muted/40 bg-white';
@@ -20,6 +29,20 @@ const Field = ({ label, children }) => (
   <div>
     <label className="block text-[11px] font-medium text-muted mb-1">{label}</label>
     {children}
+  </div>
+);
+
+const StepNo = ({ n }) => (
+  <span className="w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-black text-white flex-shrink-0"
+    style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}>
+    {n}
+  </span>
+);
+
+const Metric = ({ value, label, gold }) => (
+  <div className="text-center px-1">
+    <p className={`text-xl font-black tabular-nums leading-none ${gold ? 'text-accent' : 'text-white'}`}>{value}</p>
+    <p className="text-[10px] font-bold text-white/50 mt-1">{label}</p>
   </div>
 );
 
@@ -129,16 +152,42 @@ export default function AdminReportsCenter() {
     ? (detailed && sources[0].criteriaSections ? sources[0].dossierTitle : sources[0].label)
     : 'تقرير مجمّع';
 
-  /* One button, one destination. The report opens as a document in its own tab
-     — laid out on A4 in the company's identity — and every way of taking it
-     away (print to PDF, download Excel) lives there, next to what it exports. */
-  const openReport = () => {
+  /* Two destinations, one selection. The document is for reading and filing;
+     the deck is for standing in front of people. Both open in their own tab
+     and carry every way of taking them away — print to PDF, download Excel —
+     next to what they export. */
+  const openIn = (route) => {
     if (!totalRows) return setError('لا توجد سجلات مطابقة — عدّل الفلاتر أولاً.');
     const id = stashReportRequest({
       title: docTitle, picked, cols, filters, search, detailed, photos,
     });
     pruneReportRequests(id);
-    window.open(`/admin/reports-view?k=${id}`, '_blank', 'noopener');
+    window.open(`${route}?k=${id}`, '_blank', 'noopener');
+  };
+  const openReport = () => openIn('/admin/reports-view');
+  const openDeck   = () => openIn('/admin/reports-deck');
+
+  /* The filters actually in force, as removable tokens. A row of empty selects
+     does not tell you what is narrowing the result; a row of chips does. */
+  const activeFilters = [
+    filters.from    && { key: 'from',    label: `من ${filters.from}` },
+    filters.to      && { key: 'to',      label: `إلى ${filters.to}` },
+    filters.dhuDay  && { key: 'dhuDay',  label: `${AR_NUM(filters.dhuDay)} ذو الحجة` },
+    filters.season  && { key: 'season',  label: seasons.find(s => s.id === filters.season)?.name },
+    filters.center  && { key: 'center',  label: filters.center },
+    filters.caterer && { key: 'caterer', label: filters.caterer },
+    filters.status  && { key: 'status',  label: source.statuses?.[filters.status] ?? filters.status },
+    filters.role    && { key: 'role',    label: filters.role },
+    search.trim()   && { key: '__search', label: `بحث: ${search.trim()}` },
+  ].filter(Boolean);
+
+  const clearFilter = (key) => {
+    if (key === '__search') return setSearch('');
+    setFilters(f => ({ ...f, [key]: '' }));
+  };
+  const clearAll = () => {
+    setSearch('');
+    setFilters({ from: '', to: '', dhuDay: '', center: '', caterer: '', status: '', role: '', season: '' });
   };
 
   /* A readiness inspection is a record, not a row: in detailed mode each centre
@@ -150,40 +199,90 @@ export default function AdminReportsCenter() {
 
   return (
     <div className="space-y-5 pb-6" dir="rtl">
-      <PageHeader
-        Icon={FileArrowDown}
-        title="التقارير"
-        subtitle="اختر أي أقسام في النظام، حدّد ما تريده، وصدّره بهوية الشركة"
-      />
+      {/* ── The bar that says what you have and what you can do with it ──
+          It was at the bottom, under four sections of form, so the two things
+          the screen exists for were the last things you found. */}
+      <section className="rounded-2xl overflow-hidden shadow-[0_6px_24px_rgb(var(--c-primary-900)/0.2)]"
+        style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary)) 0%, rgb(var(--c-primary-700)) 100%)' }}>
+        <div className="p-4 sm:p-5 flex items-center justify-between gap-4 flex-wrap">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-accent">
+              <FileArrowDown size={16} weight="bold" />
+              <span className="text-[10px] font-black tracking-[0.2em]">مركز التقارير</span>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-black text-white mt-1.5 truncate">{docTitle}</h1>
+            <p className="text-[11px] font-bold text-white/55 mt-1">{filterSummary}</p>
+          </div>
+
+          <div className="flex items-center gap-3 flex-wrap">
+            <Metric value={AR_NUM(picked.length)} label="قسم" />
+            <Metric value={AR_NUM(totalRows)} label="سجل" gold />
+            <div className="w-px h-10 bg-white/12" />
+            <button onClick={openReport}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-black transition hover:-translate-y-0.5"
+              style={{
+                background: 'linear-gradient(135deg, rgb(var(--c-accent)), rgb(var(--c-accent-600)))',
+                color: 'rgb(var(--c-primary-900))',
+                boxShadow: '0 4px 16px rgb(var(--c-accent)/0.35), inset 0 1px 0 rgb(255 255 255 / 0.28)',
+              }}>
+              <ArrowSquareOut size={16} weight="bold" /> عرض التقرير
+            </button>
+            <button onClick={openDeck}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-black text-white border border-white/25 hover:border-white/50 hover:bg-white/10 transition">
+              <ProjectorScreenChart size={16} weight="bold" /> عرض تقديمي
+            </button>
+          </div>
+        </div>
+      </section>
 
       {/* ── 1. Sections ── */}
-      <section className="bg-white rounded-2xl border border-line p-4 space-y-3">
+      <section className="bg-white rounded-2xl border border-line p-4 space-y-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
-            <TableIcon size={15} className="text-primary" />
-            <h2 className="text-sm font-bold text-ink">١ · الأقسام ({AR_NUM(picked.length)})</h2>
+            <StepNo n="١" />
+            <h2 className="text-sm font-black text-ink">الأقسام</h2>
+            <span className="text-[11px] font-bold text-accent-600 bg-accent/12 px-2 py-0.5 rounded-full">
+              {AR_NUM(picked.length)} مختار
+            </span>
           </div>
           <p className="text-[11px] text-muted">اختر أكثر من قسم لتقرير واحد مجمّع</p>
         </div>
+
         {SOURCE_GROUPS.map(group => (
           <div key={group}>
-            <p className="text-[10px] font-bold text-muted mb-1.5">{group}</p>
-            <div className="flex flex-wrap gap-1.5">
+            <p className="text-[10px] font-black text-muted/70 tracking-widest mb-2">{group}</p>
+            {/* Cards, not pills: an icon and a count make a section
+                recognisable at a glance, and the row of identical rounded
+                rectangles gave neither. */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
               {REPORT_SOURCES.filter(s => s.group === group).map(s => {
                 const on = picked.includes(s.key);
+                const Icon = SOURCE_ICON[s.key] || TableIcon;
+                const n = tables[s.key]?.rows.length;
                 return (
                   <button
                     key={s.key}
                     onClick={() => togglePick(s.key)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                      on ? 'text-white border-transparent shadow-[0_3px_10px_rgb(var(--c-primary)/0.35)]'
-                         : 'bg-white text-ink border-line hover:border-primary/40'
+                    className={`group flex items-center gap-2.5 p-2.5 rounded-xl border text-right transition-all ${
+                      on
+                        ? 'border-primary bg-primary/[0.06] shadow-[0_3px_12px_rgb(var(--c-primary)/0.14)]'
+                        : 'border-line bg-white hover:border-primary/40 hover:bg-background'
                     }`}
-                    style={on
-                      ? { background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }
-                      : undefined}
                   >
-                    {s.label}
+                    <span className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+                      on ? 'text-white' : 'bg-background text-muted group-hover:text-primary'
+                    }`}
+                      style={on ? { background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' } : undefined}>
+                      <Icon size={17} weight={on ? 'fill' : 'regular'} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className={`block text-[12px] font-black truncate ${on ? 'text-primary' : 'text-ink'}`}>
+                        {s.label}
+                      </span>
+                      <span className="block text-[10px] font-bold text-muted mt-0.5">
+                        {on && n != null ? `${AR_NUM(n)} سجل` : s.group}
+                      </span>
+                    </span>
                   </button>
                 );
               })}
@@ -194,10 +293,36 @@ export default function AdminReportsCenter() {
 
       {/* ── 2. Filters ── */}
       <section className="bg-white rounded-2xl border border-line p-4 space-y-3">
-        <div className="flex items-center gap-2">
-          <Funnel size={15} className="text-primary" />
-          <h2 className="text-sm font-bold text-ink">٢ · التصفية</h2>
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <StepNo n="٢" />
+            <h2 className="text-sm font-black text-ink">التصفية</h2>
+          </div>
+          {activeFilters.length > 0 && (
+            <button onClick={clearAll}
+              className="text-[11px] font-bold text-muted hover:text-red-600 transition-colors">
+              مسح الكل
+            </button>
+          )}
         </div>
+
+        {/* What is actually narrowing the result, as tokens you can pull off
+            one at a time. A row of empty selects never said this. */}
+        {activeFilters.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {activeFilters.map(f => (
+              <span key={f.key}
+                className="inline-flex items-center gap-1.5 pr-2.5 pl-1.5 py-1 rounded-full text-[11px] font-bold bg-accent/12 text-accent-600 border border-accent/25">
+                {f.label}
+                <button onClick={() => clearFilter(f.key)}
+                  className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-accent/25 transition-colors"
+                  aria-label={`إزالة ${f.label}`}>
+                  <X size={9} weight="bold" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
 
         {anyHas('dhuDay') && (
           <Field label="يوم ذي الحجة">
@@ -313,10 +438,13 @@ export default function AdminReportsCenter() {
         <section className="bg-white rounded-2xl border border-line p-4 space-y-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
-              <Columns size={15} className="text-primary" />
-              <h2 className="text-sm font-bold text-ink">
-                ٣ · أعمدة «{source.label}» ({AR_NUM((cols[source.key] || []).length)})
+              <StepNo n="٣" />
+              <h2 className="text-sm font-black text-ink">
+                أعمدة «{source.label}»
               </h2>
+              <span className="text-[11px] font-bold text-accent-600 bg-accent/12 px-2 py-0.5 rounded-full">
+                {AR_NUM((cols[source.key] || []).length)}
+              </span>
             </div>
             <div className="flex gap-1.5">
               <button onClick={() => setCols(c => ({ ...c, [source.key]: source.columns.map(x => x.key) }))}
@@ -364,31 +492,20 @@ export default function AdminReportsCenter() {
       {/* ── 4. Preview + export ── */}
       <section className="bg-white rounded-2xl border border-line overflow-hidden">
         <div className="p-4 border-b border-line flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <h2 className="text-sm font-bold text-ink">{detailed ? '٣' : '٤'} · المعاينة</h2>
-            <p className="text-[11px] text-muted mt-0.5 flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
+            <StepNo n={detailed ? '٣' : '٤'} />
+            <h2 className="text-sm font-black text-ink">المعاينة</h2>
+            <span className="text-[11px] font-bold text-muted flex items-center gap-1.5">
               <CalendarBlank size={11} /> {filterSummary}
-            </p>
+            </span>
           </div>
-          <button onClick={openReport}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-xs font-bold hover:opacity-90 transition shadow-[0_4px_16px_rgb(var(--c-primary)/0.35)]"
-            style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}>
-            <ArrowSquareOut size={15} weight="bold" />
-            عرض التقرير
-          </button>
-        </div>
-
-        <div className="px-4 pb-1 -mt-1 flex items-center gap-4 flex-wrap">
           {canDossier && detailed && (
-            <label className="flex items-center gap-2 text-[11px] text-muted cursor-pointer">
+            <label className="flex items-center gap-2 text-[11px] font-bold text-muted cursor-pointer">
               <input type="checkbox" checked={photos} onChange={e => setPhotos(e.target.checked)}
                 className="accent-primary w-3.5 h-3.5" />
               تضمين الصور الميدانية
             </label>
           )}
-          <span className="text-[11px] text-muted">
-            يفتح في تبويب مستقل بمقاس A4 وهوية الشركة — ومنه تحفظه PDF أو تنزّله Excel.
-          </span>
         </div>
 
         {/* Section tabs — the PDF carries them all; the preview shows one. */}
