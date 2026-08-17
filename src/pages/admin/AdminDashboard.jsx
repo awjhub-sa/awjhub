@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { db } from '../../lib/db.js';
+import PageHeader from '../../components/PageHeader.jsx';
 import {
   REPORT_STATUS_LOOKUP, LOGISTICS_STATUS_LOOKUP, SEVERITY_MAP, SUPPORT_LOOKUP,
   MEAL_LABEL, MEAL_COLOR, HOLY_SITE_LABEL, HOLY_SITE_COLOR, HOLY_SITE_ICON,
@@ -9,6 +10,7 @@ import ReportDrawer from '../../components/details/ReportDrawer.jsx';
 import LogisticsDrawer from '../../components/details/LogisticsDrawer.jsx';
 import MediaLightbox from '../../components/MediaLightbox.jsx';
 import {
+  SquaresFour as LayoutDashboard,
   Warning as AlertTriangle,
   Truck,
   ClipboardText as ClipboardList,
@@ -107,25 +109,65 @@ function getActivityScore(item) {
 }
 
 /* ─── Stat Card ─── */
+/* The two queues, stated as a sentence rather than a number in a box.
+   A queue that is empty says so in green; a queue that is not shouts its size.
+   Same shape either way, so the page does not jump when one clears. */
+function ActionCard({ n, label, done, Icon, color, onClick }) {
+  const live = n > 0;
+  const tone = live ? color : '#15803D';
+  return (
+    <button onClick={onClick}
+      className="group w-full text-right rounded-2xl border p-4 flex items-center gap-4 transition-all hover:-translate-y-0.5"
+      style={{
+        borderColor: `color-mix(in srgb, ${tone} 28%, #fff)`,
+        background: live
+          ? `linear-gradient(135deg, color-mix(in srgb, ${tone} 9%, #fff), #fff)`
+          : '#fff',
+        boxShadow: live ? `0 6px 20px color-mix(in srgb, ${tone} 18%, transparent)` : undefined,
+      }}>
+      <span className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+        style={{ background: `color-mix(in srgb, ${tone} 14%, #fff)` }}>
+        {live
+          ? <Icon size={22} weight="bold" style={{ color: tone }} />
+          : <CheckCircle2 size={22} weight="bold" style={{ color: tone }} />}
+      </span>
+      <span className="min-w-0 flex-1">
+        {live ? (
+          <>
+            <span className="block text-3xl font-black tabular-nums leading-none" style={{ color: tone }}>{n}</span>
+            <span className="block text-[12px] font-bold text-muted mt-1.5">{label}</span>
+          </>
+        ) : (
+          <>
+            <span className="block text-[15px] font-black" style={{ color: tone }}>{done}</span>
+            <span className="block text-[11px] font-bold text-muted mt-1">لا شيء ينتظر هنا</span>
+          </>
+        )}
+      </span>
+      <ArrowLeft size={16} weight="bold"
+        className="flex-shrink-0 text-muted/40 group-hover:text-muted transition-colors" />
+    </button>
+  );
+}
+
+/* Numbers that describe the season rather than demand action: the accent is a
+   bar on the top edge, matching the tiles in the analytics section, so the two
+   screens read as one system. */
 function StatCard({ label, value, Icon, color, sub, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="group bg-white rounded-2xl p-4 border border-line shadow-[0_2px_8px_rgb(var(--c-ink)/0.07)] flex items-center gap-3 w-full text-right transition-all hover:shadow-[0_8px_24px_rgb(var(--c-ink)/0.10)] hover:-translate-y-0.5"
-      style={{ borderRight: `3px solid ${color}` }}
+      className="group relative bg-white rounded-2xl p-4 pt-5 border border-line overflow-hidden flex items-center gap-3 w-full text-right transition-all hover:shadow-[0_8px_24px_rgb(var(--c-ink)/0.10)] hover:-translate-y-0.5"
     >
+      <span className="absolute inset-x-0 top-0 h-1" style={{ background: color }} />
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-semibold text-muted mb-0.5">{label}</p>
+        <p className="text-[10px] font-bold text-muted mb-1 truncate">{label}</p>
         <p className="text-2xl font-black tabular-nums leading-none" style={{ color }}>{value ?? '—'}</p>
-        {sub && <p className="text-[10px] text-muted mt-1 font-bold">{sub}</p>}
+        {sub && <p className="text-[10px] text-muted mt-1.5 font-bold truncate">{sub}</p>}
       </div>
-      <div className="relative shrink-0">
-        <div className="absolute inset-0 rounded-xl blur-md opacity-0 group-hover:opacity-50 transition-opacity"
-          style={{ background: color }} />
-        <div className="relative w-11 h-11 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110"
-          style={{ background: `linear-gradient(135deg, ${color}, ${color}CC)` }}>
-          <Icon size={20} className="text-white" weight="regular" />
-        </div>
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110"
+        style={{ background: `color-mix(in srgb, ${color} 12%, #fff)` }}>
+        <Icon size={19} weight="bold" style={{ color }} />
       </div>
     </button>
   );
@@ -138,11 +180,15 @@ function PanelHeader({ title, subtitle, count, gradient, Icon, onViewAll, viewAl
   return (
     <div className="flex items-center justify-between px-3 sm:px-5 py-3 sm:py-3.5 border-b border-line gap-2">
       <div className="flex items-center gap-3 min-w-0">
+        {/* A tinted square, not a glowing gradient. Five glowing tiles down one
+            page competed with the rows they were introducing. */}
         <div className="relative shrink-0">
-          <div className="absolute inset-0 rounded-xl blur-md opacity-50" style={{ background: gradient.from }} />
-          <div className="relative w-10 h-10 rounded-xl flex items-center justify-center shadow-md"
-            style={{ background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})` }}>
-            <Icon size={17} className="text-white" weight="bold" />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center border"
+            style={{
+              background: `color-mix(in srgb, ${gradient.to} 12%, #fff)`,
+              borderColor: `color-mix(in srgb, ${gradient.to} 28%, #fff)`,
+            }}>
+            <Icon size={17} weight="bold" style={{ color: gradient.to }} />
           </div>
           {badge != null && badge > 0 && (
             <NotificationBadge count={badge} variant={badgeVariant} floating />
@@ -281,10 +327,42 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-5 pb-6" dir="rtl">
 
-      {/* Plain title. The card that used to sit here carried a clock and an
-          export button, both of which now live in the shell — leaving a banner
-          whose only content was its own name. */}
-      <h1 className="text-lg font-black text-ink">نظرة عامة</h1>
+      {/* The dashboard was the one admin screen without a masthead, so it read
+          as a loose pile of cards rather than a section of the system. */}
+      <PageHeader
+        kicker="لوحة الإدارة"
+        Icon={LayoutDashboard}
+        title="نظرة عامة"
+        subtitle="حالة الموسم الآن — وما يحتاج قرارك قبل غيره"
+        stats={[
+          { value: pendingReports, label: 'بلاغ معلّق', tone: pendingReports > 0 ? 'alert' : undefined },
+          { value: pendingLogistics, label: 'إسناد معلّق', tone: pendingLogistics > 0 ? 'alert' : undefined },
+          { value: counts.mina + counts.arafat, label: 'تقييم جاهزية', tone: 'gold' },
+        ]}
+      />
+
+      {/* ── What needs a decision ──
+          The two queues an operations lead opens this page to check. Loud when
+          they hold something, quiet and green when they do not — the page
+          should be readable from across the room before it is read at all. */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <ActionCard
+          n={pendingReports}
+          label="بلاغ ينتظر المعالجة"
+          done="لا بلاغات معلّقة"
+          Icon={AlertTriangle}
+          color="#B91C1C"
+          onClick={() => navigate('/admin/reports')}
+        />
+        <ActionCard
+          n={pendingLogistics}
+          label="طلب إسناد ينتظر الاعتماد"
+          done="لا طلبات معلّقة"
+          Icon={Truck}
+          color="#B45309"
+          onClick={() => navigate('/admin/logistics')}
+        />
+      </div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
