@@ -33,6 +33,7 @@ import AdminForms          from './pages/admin/AdminForms';
 import AdminBrand          from './pages/admin/AdminBrand';
 import AdminDrill          from './pages/admin/AdminDrill';
 import AdminReportsCenter  from './pages/admin/AdminReportsCenter';
+import AdminInsights       from './pages/admin/AdminInsights';
 import AdminUsers          from './pages/admin/AdminUsers';
 import AdminNotifications  from './pages/admin/AdminNotifications';
 import AdminTaskAssign     from './pages/admin/AdminTaskAssign';
@@ -129,6 +130,7 @@ export default function App() {
           <Route path="staff"         element={<AdminStaff />} />
           <Route path="notifications" element={<AdminNotifications />} />
           <Route path="reports-center" element={<AdminReportsCenter />} />
+          <Route path="insights"      element={<AdminInsights />} />
           <Route path="brand"         element={<AdminBrand />} />
           <Route path="tasks"         element={<AdminTaskAssign />} />
           <Route path="phases"        element={<AdminPhases />} />

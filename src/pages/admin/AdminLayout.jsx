@@ -22,6 +22,7 @@ import {
   UserGear as UserRoundCog,
   BellRinging as BellRing,
   MoonStars,
+  ChartLineUp,
   Palette,
   SidebarSimple as PanelLeft,
   X,
@@ -71,6 +72,7 @@ const NAV = [
     { to: '/admin/staff', label: 'الموظفين',             icon: UserRoundCog },
   ]},
 
+  { to: '/admin/insights',       label: 'التحليلات',    icon: ChartLineUp   },
   { to: '/admin/reports-center', label: 'التقارير',      icon: FileArrowDown },
   { to: '/admin/brand',          label: 'تصميم الهوية', icon: Palette       },
 ];
