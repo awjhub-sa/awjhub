@@ -28,11 +28,11 @@ CREATE TABLE IF NOT EXISTS public.menus (
   snacks         text[] NOT NULL DEFAULT '{}',
 
   -- Where it came from, so an imported menu can be told from a typed one when
-  -- someone asks why a dish is spelled oddly.
+  -- someone asks why a dish is spelled oddly. source_file holds the name of the
+  -- uploaded sheet, not the sheet itself.
   source         text DEFAULT 'manual' CHECK (source IN ('manual', 'excel', 'image')),
   source_file    text,
 
-  updated_by     text,
   created_at     timestamptz NOT NULL DEFAULT now(),
   updated_at     timestamptz NOT NULL DEFAULT now()
 );
@@ -56,9 +56,3 @@ ALTER TABLE public.menus ENABLE ROW LEVEL SECURITY;
 -- authenticated roles before the system ships to a customer.
 DROP POLICY IF EXISTS menus_all ON public.menus;
 CREATE POLICY menus_all ON public.menus FOR ALL USING (true) WITH CHECK (true);
-
--- Uploaded source files (an Excel sheet or a photograph of a printed menu) are
--- kept so an imported menu can be checked against what was imported.
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('menus', 'menus', true)
-ON CONFLICT (id) DO NOTHING;
