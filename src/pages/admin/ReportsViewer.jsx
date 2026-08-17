@@ -104,14 +104,14 @@ export default function ReportsViewer() {
       <header className="rv-head">
         {brand?.logo?.full && <img src={brand.logo.full} alt="" />}
         <div className="rv-head-meta">
-          <div>{stamp.hijri}</div>
+          <b>{stamp.hijri}</b>
           <div>{stamp.greg}</div>
         </div>
       </header>
       {children}
       {foot && (
         <footer className="rv-foot">
-          <span>{brand?.companyFullAr}</span>
+          <span><b>{brand?.companyFullAr}</b></span>
           <span>{request?.title}</span>
         </footer>
       )}
@@ -136,31 +136,33 @@ export default function ReportsViewer() {
 
             <div className="rv-stats">
               <Stat label="عدد الأقسام" value={AR_NUM(sections.length)} color="var(--rv-primary)" />
-              <Stat label="إجمالي السجلات" value={AR_NUM(totalRows)} color="var(--rv-primary)" />
-              <Stat label="تاريخ الإصدار" value={stamp.greg} color="#475569" small />
-              <Stat label="جهة الإصدار" value={brand?.companyName} color="#475569" small />
+              <Stat label="إجمالي السجلات" value={AR_NUM(totalRows)} color="var(--rv-accent-ink)" />
+              <Stat label="تاريخ الإصدار" value={stamp.greg} color="#475569" text />
+              <Stat label="جهة الإصدار" value={brand?.companyName} color="#475569" text />
             </div>
 
-            <table className="rv-table">
-              <thead>
-                <tr>
-                  <th className="rv-idx">#</th>
-                  <th>القسم</th>
-                  <th style={{ width: '28mm' }}>عدد السجلات</th>
-                  <th style={{ width: '40mm' }}>المجموعة</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sections.map((s, i) => (
-                  <tr key={s.source.key}>
-                    <td className="rv-idx">{AR_NUM(i + 1)}</td>
-                    <td>{s.source.label}</td>
-                    <td>{AR_NUM(s.rows.length)}</td>
-                    <td>{s.source.group}</td>
+            <div className="rv-tablewrap">
+              <table className="rv-table">
+                <thead>
+                  <tr>
+                    <th className="rv-idx">#</th>
+                    <th>القسم</th>
+                    <th className="rv-tight">المجموعة</th>
+                    <th className="rv-tight">عدد السجلات</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {sections.map((s, i) => (
+                    <tr key={s.source.key}>
+                      <td className="rv-idx">{AR_NUM(i + 1)}</td>
+                      <td className="rv-strong">{s.source.label}</td>
+                      <td className="rv-tight">{s.source.group}</td>
+                      <td className="rv-tight rv-strong">{AR_NUM(s.rows.length)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </Sheet>
 
           {/* ── One sheet per section ── */}
@@ -177,24 +179,7 @@ export default function ReportsViewer() {
                     ? <ReadinessSummary records={s.records} />
                     : s.rows.length === 0
                     ? <p className="rv-empty">لا سجلات مطابقة</p>
-                    : (
-                      <table className="rv-table">
-                        <thead>
-                          <tr>
-                            <th className="rv-idx">#</th>
-                            {s.columns.map((c, i) => <th key={i}>{c}</th>)}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {s.rows.map((r, i) => (
-                            <tr key={i}>
-                              <td className="rv-idx">{AR_NUM(i + 1)}</td>
-                              {r.map((cell, j) => <td key={j}>{cell || '—'}</td>)}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
+                    : <PlainTable columns={s.columns} rows={s.rows} />}
                 </Sheet>
 
                 {dossier && s.records.map(rec => (
@@ -211,6 +196,44 @@ export default function ReportsViewer() {
           })}
         </>
       )}
+    </div>
+  );
+}
+
+/* Any section's rows, as a table.
+ *
+ * Column widths are the whole problem here. Left to itself the browser gives
+ * every column an equal share, so a date and a score take as much room as a
+ * caterer's full trade name — and the name is what wraps. Short columns are
+ * measured from their content and pinned; whatever is left goes to the columns
+ * that hold prose. */
+const NARROW = /^(#|رقم|المركز|الحالة|التاريخ|اليوم|الدرجة|النسبة|التقدير|الخطورة|المشعر|الوجبة|التصنيف|الفئة|الصفة|الدور|كمية|عدد|المرحلة|وقت|مفعّل|المرفقات|التأخير|الجنسية|الشاخص|المربع|الجوال|البريد|السجل|رخصة|نوع)/;
+
+function PlainTable({ columns, rows }) {
+  const tight = columns.map(c => NARROW.test(String(c).trim()));
+
+  return (
+    <div className="rv-tablewrap">
+      <table className="rv-table">
+        <thead>
+          <tr>
+            <th className="rv-idx">#</th>
+            {columns.map((c, i) => (
+              <th key={i} className={tight[i] ? 'rv-tight' : undefined}>{c}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={i}>
+              <td className="rv-idx">{AR_NUM(i + 1)}</td>
+              {r.map((cell, j) => (
+                <td key={j} className={tight[j] ? 'rv-tight' : undefined}>{cell || '—'}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -236,38 +259,47 @@ function ReadinessSummary({ records }) {
         <Stat label="دون المقبول" value={AR_NUM(low)} color="#B91C1C" />
       </div>
 
-      <table className="rv-table">
-        <thead>
-          <tr>
-            <th className="rv-idx">#</th>
-            <th>المركز</th>
-            <th>المتعهد</th>
-            <th>المقيّم</th>
-            <th style={{ width: '20mm' }}>الدرجة</th>
-            <th style={{ width: '22mm' }}>التقدير</th>
-            <th style={{ width: '26mm' }}>التاريخ</th>
-          </tr>
-        </thead>
-        <tbody>
-          {records.map((r, i) => {
-            const sc = scoreOf(r);
-            const band = sc == null ? null : bandOf(sc);
-            return (
-              <tr key={r.id ?? i}>
-                <td className="rv-idx">{AR_NUM(i + 1)}</td>
-                <td>{r.center || '—'}</td>
-                <td>{r.caterer || '—'}</td>
-                <td>{r.observer || '—'}</td>
-                <td style={{ fontWeight: 700 }}>{sc == null ? '—' : AR_NUM(sc.toFixed(1))}</td>
-                <td style={band ? { color: band.color, fontWeight: 800 } : undefined}>
-                  {band?.label ?? '—'}
-                </td>
-                <td>{fmtDate(r.timestamp)}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      {/* The narrow columns declare themselves narrow, so the two that hold
+          names get the rest of the page instead of wrapping a surname onto a
+          line of its own. */}
+      <div className="rv-tablewrap">
+        <table className="rv-table">
+          <thead>
+            <tr>
+              <th className="rv-idx">#</th>
+              <th className="rv-tight">المركز</th>
+              <th>المتعهد</th>
+              <th>المقيّم</th>
+              <th className="rv-tight">الدرجة</th>
+              <th className="rv-tight">التقدير</th>
+              <th className="rv-tight">التاريخ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {records.map((r, i) => {
+              const sc = scoreOf(r);
+              const band = sc == null ? null : bandOf(sc);
+              return (
+                <tr key={r.id ?? i}>
+                  <td className="rv-idx">{AR_NUM(i + 1)}</td>
+                  <td className="rv-tight rv-strong">{r.center || '—'}</td>
+                  <td>{r.caterer || '—'}</td>
+                  <td>{r.observer || '—'}</td>
+                  <td className="rv-tight rv-strong">{sc == null ? '—' : AR_NUM(sc.toFixed(1))}</td>
+                  <td className="rv-tight">
+                    {band
+                      ? <span className="rv-pill" style={{
+                          color: band.color, background: band.soft, borderColor: band.line,
+                        }}>{band.label}</span>
+                      : '—'}
+                  </td>
+                  <td className="rv-tight">{fmtDate(r.timestamp)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }
@@ -326,44 +358,43 @@ function CenterRecord({ rec, source, withPhotos, Sheet }) {
         </div>
       </div>
 
-      <table className="rv-table">
-        <thead>
-          <tr>
-            <th className="rv-idx">#</th>
-            <th>المعيار</th>
-            <th style={{ width: '24mm' }}>الإجابة</th>
-            <th style={{ width: '16mm' }}>الدرجة</th>
-          </tr>
-        </thead>
-        <tbody>
-          {source.criteriaSections.map(sec => (
-            <Fragment key={sec.id ?? sec.title}>
-              <tr className="rv-sec-row">
-                <td colSpan={4}>{sec.title}</td>
-              </tr>
-              {sec.criteria.map(q => {
-                const a = answers[q.id] ?? answers[String(q.id)] ?? '';
-                const note = details[q.id] ?? details[String(q.id)] ?? '';
-                return (
-                  <tr key={`${sec.title}-${q.id}`}>
-                    <td className="rv-idx">{AR_NUM(q.id)}</td>
-                    <td>
-                      {q.text}
-                      {note && <span className="rv-note">— {note}</span>}
-                    </td>
-                    <td className={a === 'نعم' ? 'rv-yes' : a === 'لا' ? 'rv-no' : undefined}>
-                      {a || '—'}
-                    </td>
-                    <td>{q.score ? AR_NUM(a === 'نعم' ? q.score : 0) : '—'}</td>
-                  </tr>
-                );
-              })}
-            </Fragment>
-          ))}
-        </tbody>
-      </table>
-
-      {!showPhotos && <Signature rec={rec} />}
+      {/* No per-criterion score column: the reader is looking for which
+          criterion failed, and the weight of each one only adds up to the
+          final score already shown in the badge. */}
+      <div className="rv-tablewrap">
+        <table className="rv-table">
+          <thead>
+            <tr>
+              <th className="rv-idx">#</th>
+              <th>المعيار</th>
+              <th className="rv-tight">الإجابة</th>
+            </tr>
+          </thead>
+          <tbody>
+            {source.criteriaSections.map(sec => (
+              <Fragment key={sec.id ?? sec.title}>
+                <tr className="rv-sec-row">
+                  <td colSpan={3}>{sec.title}</td>
+                </tr>
+                {sec.criteria.map(q => {
+                  const a = answers[q.id] ?? answers[String(q.id)] ?? '';
+                  const note = details[q.id] ?? details[String(q.id)] ?? '';
+                  return (
+                    <tr key={`${sec.title}-${q.id}`}>
+                      <td className="rv-idx">{AR_NUM(q.id)}</td>
+                      <td>
+                        {q.text}
+                        {note && <span className="rv-note">— {note}</span>}
+                      </td>
+                      <td className="rv-tight"><Answer value={a} /></td>
+                    </tr>
+                  );
+                })}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </Sheet>
 
     {/* Photographs get their own sheet. Twenty-four criteria and three
@@ -384,33 +415,31 @@ function CenterRecord({ rec, source, withPhotos, Sheet }) {
           {shots.map(([qid, url]) => (
             <figure className="rv-shot" key={qid}>
               <img src={url} alt="" loading="lazy" />
-              <span>{AR_NUM(qid)} · {criteriaById.get(String(qid))?.text ?? 'معيار'}</span>
+              <figcaption>
+                <b>{AR_NUM(qid)}</b> · {criteriaById.get(String(qid))?.text ?? 'معيار'}
+              </figcaption>
             </figure>
           ))}
         </div>
-        <Signature rec={rec} />
       </Sheet>
     )}
     </>
   );
 }
 
-/* A record is a record because someone signs it. */
-function Signature({ rec }) {
-  return (
-    <div className="rv-sign">
-      <div><span>المقيّم</span><strong>{rec.observer || ''}</strong></div>
-      <div><span>التوقيع</span><strong>&nbsp;</strong></div>
-      <div><span>الاعتماد</span><strong>&nbsp;</strong></div>
-    </div>
-  );
+/* نعم / لا carry the whole reading of the page, so they are the only coloured
+   thing in the table. */
+function Answer({ value }) {
+  if (!value) return <span className="rv-pill rv-pill-na">—</span>;
+  const cls = value === 'نعم' ? 'rv-pill-yes' : value === 'لا' ? 'rv-pill-no' : 'rv-pill-na';
+  return <span className={`rv-pill ${cls}`}>{value}</span>;
 }
 
-function Stat({ label, value, color, small }) {
+function Stat({ label, value, color, text }) {
   return (
-    <div className="rv-stat">
+    <div className={`rv-stat${text ? ' is-text' : ''}`} style={{ '--rv-stat-color': color }}>
       <span>{label}</span>
-      <strong style={{ color, fontSize: small ? '0.82rem' : undefined }}>{value ?? '—'}</strong>
+      <strong>{value ?? '—'}</strong>
     </div>
   );
 }
