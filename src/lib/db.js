@@ -79,6 +79,15 @@ function createTableApi(table, { pk = 'id' } = {}) {
       return (data || []).map(rowFromDb);
     },
 
+    /* Does this table exist and can we read it?
+       list() deliberately swallows errors and returns [] so a blip never blanks
+       a screen — which also means a caller cannot tell "no rows" from "no
+       table". A screen that needs to say which one it is asks here. */
+    async probe() {
+      const { error } = await supabase.from(table).select(pk).limit(1);
+      return { ok: !error, code: error?.code || null, message: error?.message || null };
+    },
+
     async get(id) {
       const { data, error } = await supabase.from(table).select('*').eq(pk, id).maybeSingle();
       logErr(`${table}.get`, error);
@@ -216,6 +225,9 @@ export const db = {
   meal_phases:        createTableApi('meal_phases'),
   assigned_tasks:     createTableApi('assigned_tasks'),
   task_completions:   createTableApi('task_completions'),
+  /* One row per nationality × day × meal. See 008_menus.sql — the menu used
+     to be compiled in, which only works for one customer. */
+  menus:              createTableApi('menus'),
   /* Forms are three layers: what a form is, who owes it, and what happened.
      See docs/FORMS_MODULE.md. */
   form_templates:     createTableApi('form_templates'),

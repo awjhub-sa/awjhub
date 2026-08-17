@@ -25,4 +25,5 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 export const STORAGE_BUCKETS = {
   reports: 'reports',
   phases:  'phases',
+  menus:   'menus',
 };

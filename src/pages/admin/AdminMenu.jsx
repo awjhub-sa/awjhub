@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ForkKnife as UtensilsCrossed,
   Buildings as Building2,
@@ -8,11 +8,20 @@ import {
   MapPin,
   Clock as ClockIcon,
   Info,
+  PencilSimple,
+  Plus,
+  UploadSimple,
+  CloudCheck,
+  WarningCircle,
 } from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
+import MealEditor from '../../components/menu/MealEditor.jsx';
+import MenuImport from '../../components/menu/MenuImport.jsx';
 import { NATIONALITIES } from '../../config/nationalities.js';
+import { db } from '../../lib/db.js';
+import { refreshMenus, useMenuVersion } from '../../lib/menuStore.js';
 import {
-  HAJJ_DAYS, CATEGORY_KEYS, CATEGORY_META, getMeal, getMealItems,
+  HAJJ_DAYS, CATEGORY_KEYS, CATEGORY_META, getMeal, getMealItems, isSavedMeal,
 } from '../../config/menus.js';
 
 const MEAL_META = {
@@ -24,25 +33,138 @@ const MEAL_ORDER = ['breakfast', 'lunch', 'dinner'];
 
 const AR = (n) => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
 
+/* PostgREST answers a missing table with PGRST205 and an English sentence about
+   a schema cache, which tells an operations manager nothing. Until 008_menus.sql
+   has been run this is the only failure they can hit, so it gets named. */
+const MISSING_TABLE = 'جدول المنيو غير موجود بعد — شغّل ملف supabase/migrations/008_menus.sql في لوحة Supabase.';
+const explain = (err) => {
+  const msg = err?.message || '';
+  if (err?.code === 'PGRST205' || /schema cache|public\.menus/i.test(msg)) return MISSING_TABLE;
+  return msg || 'تعذّر الحفظ — تحقّق من الاتصال';
+};
+
 /**
  * The menu, read the way it is used: pick who is eating, pick the day, see the
- * three meals side by side.
+ * three meals side by side — and now written the same way.
  *
- * It used to be two screens — a grid of nationality cards that replaced itself
- * with a detail view, and an X to come back. Comparing Monday's lunch for two
- * nationalities meant four navigations. Both choices are now rails that stay on
- * screen, so switching either is one click and the answer never leaves.
+ * The dishes used to live in a source file, which was fine while one operator
+ * used the system. Each company brings its own nationalities and its own
+ * kitchen, so a menu is data the customer owns: typed here, or imported from
+ * the spreadsheet they already keep. What ships in the file remains the
+ * fallback, so nothing is ever blank while a season is half-entered.
  */
 export default function AdminMenu() {
   const [natKey, setNatKey] = useState(NATIONALITIES[0]?.key ?? null);
   const [day, setDay]       = useState('7');
 
+  const [seasonId, setSeasonId] = useState(null);
+  const [rows, setRows]         = useState([]);      // saved menu rows
+  const [editing, setEditing]   = useState(null);    // meal key being edited
+  const [importing, setImporting] = useState(false);
+  const [seedLines, setSeedLines] = useState(null);  // handed over from OCR
+  const [toast, setToast]       = useState('');
+  const [tableMissing, setTableMissing] = useState(false);
+
+  /* Re-renders when the overlay changes, so the cards below follow a save
+     without this screen having to thread the new values through by hand. */
+  useMenuVersion();
+
   const nat = useMemo(() => NATIONALITIES.find(n => n.key === natKey) || null, [natKey]);
+  const dayMeta = useMemo(() => HAJJ_DAYS.find(d => d.value === day) || null, [day]);
+
+  useEffect(() => {
+    const unsub = db.seasons.subscribe(list => {
+      setSeasonId(list.find(s => s.isActive)?.id ?? null);
+    });
+    return unsub;
+  }, []);
+
+  const reload = useCallback(async () => {
+    const list = await db.menus.list(seasonId ? { filter: { seasonId } } : {});
+    setRows(list);
+    await refreshMenus(seasonId);
+  }, [seasonId]);
+
+  /* Probes once for the table itself. A save that fails with an English note
+     about a schema cache is a dead end; a banner before anyone types is not. */
+  useEffect(() => {
+    let alive = true;
+    db.menus.probe().then(r => { if (alive) setTableMissing(!r.ok); });
+    return () => { alive = false; };
+  }, []);
+
+  useEffect(() => { reload(); }, [reload]);
+
+  const rowFor = useCallback(
+    (mealKey) => rows.find(r =>
+      r.nationality === natKey && String(r.day) === String(day) && r.meal === mealKey) || null,
+    [rows, natKey, day],
+  );
+
+  const flash = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2600); };
+
+  /* Save one meal. An existing row is updated rather than upserted: season_id
+     is nullable until a season exists, and ON CONFLICT cannot see a NULL. */
+  const saveMeal = async (mealKey, payload, { source = 'manual', sourceFile = null } = {}) => {
+    const existing = rowFor(mealKey);
+    const body = {
+      ...payload,
+      seasonId, nationality: natKey, day, meal: mealKey,
+      source, sourceFile, updatedAt: new Date(),
+    };
+    try {
+      if (existing) await db.menus.update(existing.id, body);
+      else await db.menus.insert(body);
+    } catch (err) { throw new Error(explain(err)); }
+    await reload();
+    flash('حُفظ المنيو');
+  };
+
+  const deleteMeal = async (mealKey) => {
+    const existing = rowFor(mealKey);
+    try {
+      if (existing) await db.menus.delete(existing.id);
+    } catch (err) { throw new Error(explain(err)); }
+    await reload();
+    flash('حُذف المنيو — عاد المنيو الافتراضي');
+  };
+
+  /* A sheet arrives as many meals at once, each already carrying its day.
+     Two rows in one file can land on the same meal — a corrected line left
+     below the original, most often. The last one wins, which is what someone
+     who edited their sheet downwards expects, and it keeps the pass from
+     inserting twice into a slot that only allows one. */
+  const applySheet = async (parsedRows, fileName) => {
+    const bySlot = new Map();
+    for (const r of parsedRows) bySlot.set(`${r.day}|${r.meal}`, r);
+
+    for (const r of bySlot.values()) {
+      const existing = rows.find(x =>
+        x.nationality === natKey && String(x.day) === String(r.day) && x.meal === r.meal);
+      const body = {
+        seasonId, nationality: natKey, day: String(r.day), meal: r.meal,
+        location: r.location, time: r.time,
+        ...Object.fromEntries(CATEGORY_KEYS.map(k => [k, r[k] || []])),
+        source: 'excel', sourceFile: fileName || null, updatedAt: new Date(),
+      };
+      try {
+        if (existing) await db.menus.update(existing.id, body);
+        else await db.menus.insert(body);
+      } catch (err) { throw new Error(explain(err)); }
+    }
+    await reload();
+    flash(`استُوردت ${AR(bySlot.size)} وجبة`);
+  };
 
   const dayTotal = useMemo(() => {
     if (!nat) return 0;
     return MEAL_ORDER.reduce((n, m) => n + getMealItems(nat.key, day, m).length, 0);
-  }, [nat, day]);
+  }, [nat, day, rows]);
+
+  const savedCount = useMemo(
+    () => rows.filter(r => r.nationality === natKey).length,
+    [rows, natKey],
+  );
 
   return (
     <div className="space-y-4 pb-6" dir="rtl">
@@ -50,13 +172,35 @@ export default function AdminMenu() {
         kicker="متابعة الوجبات"
         Icon={UtensilsCrossed}
         title="المنيو"
-        subtitle={nat ? `${nat.label} — ${HAJJ_DAYS.find(d => d.value === day)?.label ?? ''}` : 'اختر جنسية'}
+        subtitle={nat ? `${nat.label} — ${dayMeta?.label ?? ''}` : 'اختر جنسية'}
         stats={[
           { value: AR(NATIONALITIES.length), label: 'جنسية' },
           { value: AR(nat?.centers.length ?? 0), label: 'مركز لهذه الجنسية' },
           { value: AR(dayTotal), label: 'صنف في هذا اليوم', tone: 'gold' },
         ]}
+        heroActions={nat && (
+          <button onClick={() => setImporting(true)}
+            className="h-9 px-4 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25
+                       text-white text-[12px] font-black flex items-center gap-1.5 transition-colors">
+            <UploadSimple size={14} weight="bold" />
+            استيراد منيو
+          </button>
+        )}
       />
+
+      {tableMissing && (
+        <div className="rounded-2xl border p-3.5 flex gap-2.5"
+          style={{ borderColor: '#EBCFC3', background: 'color-mix(in srgb, #B4674E 8%, #fff)' }}>
+          <WarningCircle size={17} weight="bold" style={{ color: '#B4674E' }} className="flex-shrink-0 mt-0.5" />
+          <div className="min-w-0">
+            <p className="text-[12px] font-black text-ink">الحفظ غير مفعّل بعد</p>
+            <p className="text-[11px] text-ink/80 leading-relaxed mt-0.5">
+              {MISSING_TABLE} حتى ذلك الحين يعرض القسم المنيو الافتراضي المرفق مع النظام،
+              ولن تُحفظ أي إضافة.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── Who is eating ──
           A rail, not a screen: the choice stays visible so switching between
@@ -66,9 +210,10 @@ export default function AdminMenu() {
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
           {NATIONALITIES.map(n => {
             const on = n.key === natKey;
+            const saved = rows.filter(r => r.nationality === n.key).length;
             return (
               <button key={n.key} onClick={() => setNatKey(n.key)}
-                className={`flex-shrink-0 flex items-center gap-2.5 pr-2 pl-3.5 py-2 rounded-xl border transition-all ${
+                className={`relative flex-shrink-0 flex items-center gap-2.5 pr-2 pl-3.5 py-2 rounded-xl border transition-all ${
                   on ? 'shadow-[0_3px_12px_rgb(var(--c-ink)/0.12)]' : 'bg-white border-line hover:border-primary/40'
                 }`}
                 style={on
@@ -88,6 +233,11 @@ export default function AdminMenu() {
                     {AR(n.centers.length)} مركز
                   </span>
                 </span>
+                {/* A dot, not a number: it answers "did anyone enter menus for
+                    these pilgrims" without competing with the label. */}
+                {saved > 0 && (
+                  <span className="absolute top-1.5 left-1.5 w-1.5 h-1.5 rounded-full bg-success" />
+                )}
               </button>
             );
           })}
@@ -135,7 +285,8 @@ export default function AdminMenu() {
           {/* ── The three meals ── */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {MEAL_ORDER.map(key => (
-              <MealCard key={key} natKey={nat.key} day={day} mealKey={key} />
+              <MealCard key={key} natKey={nat.key} day={day} mealKey={key}
+                onEdit={() => setEditing(key)} />
             ))}
           </div>
         </>
@@ -143,11 +294,56 @@ export default function AdminMenu() {
 
       <p className="flex items-start gap-2 text-[11px] text-muted leading-relaxed px-1">
         <Info size={13} weight="bold" className="text-muted/60 mt-0.5 flex-shrink-0" />
-        المنيو مخزَّن في <code className="bg-white border border-line px-1.5 py-0.5 rounded text-[10px] font-mono mx-0.5">src/config/menus.js</code>
-        — عدّل القيم هناك ويظهر التغيير فوراً للمراقب والمشرف.
+        كل منيو تحفظه هنا يظهر فوراً للمراقب والمشرف ولتنبيهات المراحل.
+        الوجبات التي لم تُحفظ بعد تعرض المنيو الافتراضي المرفق مع النظام.
+        {savedCount > 0 && (
+          <span className="font-bold text-ink">— محفوظ لهذه الجنسية: {AR(savedCount)} وجبة.</span>
+        )}
       </p>
 
-      <style>{'.no-scrollbar::-webkit-scrollbar { display: none; }'}</style>
+      {/* ── Write one meal ── */}
+      {editing && nat && (
+        <MealEditor
+          open
+          onClose={() => { setEditing(null); setSeedLines(null); }}
+          natLabel={nat.label}
+          dayLabel={dayMeta?.label ?? ''}
+          mealLabel={MEAL_META[editing].label}
+          mealColor={MEAL_META[editing].color}
+          initial={getMeal(nat.key, day, editing)}
+          isSaved={Boolean(rowFor(editing))}
+          seedLines={seedLines}
+          onSave={(payload) => saveMeal(editing, payload)}
+          onDelete={() => deleteMeal(editing)}
+        />
+      )}
+
+      {/* ── Bring one in from a file ── */}
+      {importing && nat && (
+        <MenuImport
+          open
+          onClose={() => setImporting(false)}
+          natLabel={nat.label}
+          currentDay={day}
+          onApplySheet={applySheet}
+          onApplyImage={(lines, meal) => { setSeedLines(lines); setEditing(meal); }}
+        />
+      )}
+
+      {toast && (
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[80] flex items-center gap-2
+                        px-4 py-2.5 rounded-xl bg-ink text-white text-[12px] font-black
+                        shadow-[0_10px_30px_rgb(var(--c-ink)/0.4)] animate-[amToast_.2s_ease-out]">
+          <CloudCheck size={15} weight="bold" className="text-success" />
+          {toast}
+        </div>
+      )}
+
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        @keyframes amToast { from { opacity: 0; transform: translate(-50%, 8px); }
+                             to   { opacity: 1; transform: translate(-50%, 0); } }
+      `}</style>
     </div>
   );
 }
@@ -158,10 +354,11 @@ export default function AdminMenu() {
  * bordered card, each with a numbered square — three frames and a counter
  * around every line of text. Now the category is a labelled rule and the dish
  * is just the dish. */
-function MealCard({ natKey, day, mealKey }) {
+function MealCard({ natKey, day, mealKey, onEdit }) {
   const meta = MEAL_META[mealKey];
   const meal = getMeal(natKey, day, mealKey);
   const total = getMealItems(natKey, day, mealKey).length;
+  const saved = isSavedMeal(natKey, day, mealKey);
   const MIcon = meta.Icon;
 
   return (
@@ -176,10 +373,28 @@ function MealCard({ natKey, day, mealKey }) {
           </span>
           <div className="flex-1 min-w-0">
             <p className="text-[13px] font-black" style={{ color: meta.color }}>{meta.label}</p>
-            <p className="text-[10px] font-bold text-muted mt-0.5">
+            <p className="text-[10px] font-bold text-muted mt-0.5 flex items-center gap-1">
               {total > 0 ? `${AR(total)} صنف` : 'لم يُضف بعد'}
+              {saved && (
+                <>
+                  <span className="text-muted/40">·</span>
+                  <span className="inline-flex items-center gap-0.5 text-success">
+                    <CloudCheck size={10} weight="bold" />
+                    محفوظ
+                  </span>
+                </>
+              )}
             </p>
           </div>
+
+          <button onClick={onEdit} title={total > 0 ? 'تعديل المنيو' : 'إضافة منيو'}
+            className="w-8 h-8 rounded-lg border flex items-center justify-center flex-shrink-0
+                       transition-colors hover:bg-background"
+            style={{ borderColor: `color-mix(in srgb, ${meta.color} 35%, #fff)`, color: meta.color }}>
+            {total > 0
+              ? <PencilSimple size={14} weight="bold" />
+              : <Plus size={15} weight="bold" />}
+          </button>
         </div>
 
         {(meal.location || meal.time) && (
@@ -202,7 +417,14 @@ function MealCard({ natKey, day, mealKey }) {
 
       <div className="p-4 flex-1">
         {total === 0 ? (
-          <p className="text-[11px] font-bold text-muted/70 text-center py-8">لم يُضف المنيو بعد</p>
+          <button onClick={onEdit}
+            className="w-full py-8 flex flex-col items-center gap-1.5 rounded-xl border border-dashed
+                       transition-colors hover:bg-background"
+            style={{ borderColor: `color-mix(in srgb, ${meta.color} 30%, #fff)` }}>
+            <Plus size={16} weight="bold" style={{ color: meta.color }} />
+            <span className="text-[11px] font-black" style={{ color: meta.color }}>إضافة منيو {meta.label}</span>
+            <span className="text-[10px] font-bold text-muted">أو استورد ملفاً من الأعلى</span>
+          </button>
         ) : (
           <div className="space-y-3.5">
             {CATEGORY_KEYS.map(catKey => {

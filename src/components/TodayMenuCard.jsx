@@ -15,6 +15,7 @@ import {
   HAJJ_DAYS, CATEGORY_KEYS, CATEGORY_META,
   getMeal, getMealItems,
 } from '../config/menus.js';
+import { useMenuVersion } from '../lib/menuStore.js';
 
 const MEAL_META = {
   breakfast: { label: 'الإفطار', Icon: Sunrise,   color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A' },
@@ -24,6 +25,9 @@ const MEAL_META = {
 const MEAL_ORDER = ['breakfast', 'lunch', 'dinner'];
 
 export default function TodayMenuCard({ centerId, centerIds, defaultDay = '7' }) {
+  /* Saved menus arrive after first paint; this re-renders when they do. */
+  useMenuVersion();
+
   const [selectedDay,    setSelectedDay]    = useState(defaultDay);
   const [activeCenterId, setActiveCenterId] = useState(centerId || (centerIds && centerIds[0]) || null);
   const [activeNatKey,   setActiveNatKey]   = useState(null);

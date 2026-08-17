@@ -1442,9 +1442,50 @@ MENUS.bangladesh2['13'] = {
   dinner: { main: [], side: [], drinks: [], snacks: [] },
 };
 
+/* ── Saved menus ──────────────────────────────────────────────────────────
+   Everything above is what ships in the box: one operator's dishes, changed by
+   changing this file. That is no longer who uses the system — every company
+   brings its own nationalities and its own kitchen, and none of them can cut a
+   release to add a soup.
+
+   Menus the customer saves live in the `menus` table and are laid over the
+   built-in ones here, at the meal. Laying them over at this level rather than
+   at the reader means the observer's card, the phase alerts and the admin
+   screen all see a saved menu without one of them being changed — they call
+   getMeal(), and getMeal() answers with whatever is current.
+
+   A meal the customer has not touched still answers from the block above, so a
+   half-entered season is never half-blank. */
+let OVERLAY = {};
+
+/** @param {Array<{nationality,day,meal,main,side,drinks,snacks,location,time}>} rows */
+export function setMenuOverlay(rows) {
+  const next = {};
+  for (const r of rows || []) {
+    if (!r?.nationality || r.day == null || !r.meal) continue;
+    const nat = (next[r.nationality] ||= {});
+    const day = (nat[String(r.day)] ||= {});
+    day[r.meal] = {
+      main:     r.main   || [],
+      side:     r.side   || [],
+      drinks:   r.drinks || [],
+      snacks:   r.snacks || [],
+      location: r.location || null,
+      time:     r.time     || null,
+    };
+  }
+  OVERLAY = next;
+}
+
+/** True when this exact meal was authored by the customer. */
+export function isSavedMeal(nationalityKey, day, mealKey) {
+  return Boolean(OVERLAY?.[nationalityKey]?.[String(day)]?.[mealKey]);
+}
+
 /** Returns the meal object for (nationality, day, meal) — always a defined shape */
 export function getMeal(nationalityKey, day, mealKey) {
-  const raw = MENUS?.[nationalityKey]?.[String(day)]?.[mealKey] || {};
+  const saved = OVERLAY?.[nationalityKey]?.[String(day)]?.[mealKey];
+  const raw = saved || MENUS?.[nationalityKey]?.[String(day)]?.[mealKey] || {};
   return {
     main:     raw.main     || [],
     side:     raw.side     || [],

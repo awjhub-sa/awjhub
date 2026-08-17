@@ -1,7 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
 import { RequireAuth, RequireAdmin } from './components/PrivateRoute.jsx';
-import React from 'react';
+import React, { useEffect } from 'react';
+import { loadMenus } from './lib/menuStore.js';
 
 // صفحات المراقب (Observer)
 import Login           from './pages/Login';
@@ -70,6 +71,11 @@ const PublicRoute = ({ children }) => {
 };
 
 export default function App() {
+  /* Saved menus are read synchronously all over the app, so they are fetched
+     once here and laid over the built-in ones. Until they land, the built-in
+     menu shows — never a blank card. */
+  useEffect(() => { loadMenus(); }, []);
+
   return (
     <BrowserRouter>
       <Routes>
