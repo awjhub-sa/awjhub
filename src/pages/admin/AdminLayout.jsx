@@ -475,7 +475,7 @@ export default function AdminLayout() {
             has one place on every screen at both sizes, and announces itself
             when something is waiting. */}
         {/* The accent, not the navy. It is light, so everything on it is drawn
-            in the deep brand colour rather than white — white on #30D9CB is
+            in the deep brand colour rather than white — white on the accent is
             about 1.9:1 and unreadable. Both colours come from the tenant's
             palette, so a customer changing either keeps the pairing. */}
         <header className="px-3 py-2 flex items-center gap-3 flex-shrink-0 shadow-[0_2px_10px_rgb(var(--c-primary-900)/0.22)] border-b border-[rgb(var(--c-accent-600)/0.35)]"

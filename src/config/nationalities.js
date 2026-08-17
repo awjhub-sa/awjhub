@@ -4,7 +4,7 @@ function range(s, e) {
 
 export const NATIONALITIES = [
   /* Eight hues spread evenly round the wheel. None fall inside the navy band
-     (204–235) or near the #30D9CB accent, so a nationality chip can never be
+     (204–235) or near the #D8A15C accent, so a nationality chip can never be
      mistaken for a brand element or an active state. The previous set had two
      blues (#3182CE, #1E40AF) sitting directly on the brand hue. */
   { key: 'indonesia',   label: 'إندونيسيا', flag: '🇮🇩', centers: range(60, 90),             color: '#E11D48' },

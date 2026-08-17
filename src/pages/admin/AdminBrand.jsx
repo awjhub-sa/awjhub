@@ -86,14 +86,14 @@ export default function AdminBrand() {
 
   const restore = () => {
     if (!confirm(
-      'استعادة هوية أوج الأصلية؟\n\n'
+      'استعادة هوية نصاب الأصلية؟\n\n'
       + 'سيُستبدل الاسم والشعارات والألوان. بيانات الاتصال والسجل التجاري تبقى كما هي.\n'
       + 'لن يُحفظ شيء حتى تضغط «حفظ».',
     )) return;
     const next = { ...form, ...defaultIdentity() };
     setForm(next);
     applyPalette(next);
-    setNotice('استُعيدت هوية أوج — اضغط «حفظ» لتثبيتها، أو «تراجع» للعودة عمّا كان محفوظاً.');
+    setNotice('استُعيدت هوية نصاب — اضغط «حفظ» لتثبيتها، أو «تراجع» للعودة عمّا كان محفوظاً.');
   };
 
   if (!form) {
@@ -117,10 +117,10 @@ export default function AdminBrand() {
         subtitle="الاسم والشعارات والألوان — تسري على النظام كله وعلى كل مستند يُطبع"
         right={
           <div className="flex items-center gap-2">
-            <button onClick={restore} title="يعيد الاسم والشعارات والألوان إلى هوية أوج الأصلية"
+            <button onClick={restore} title="يعيد الاسم والشعارات والألوان إلى هوية نصاب الأصلية"
               className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-line text-muted text-sm font-medium hover:bg-background hover:text-primary hover:border-primary/40 transition-colors">
               <Sparkle size={14} />
-              <span className="hidden sm:inline">استعادة هوية أوج</span>
+              <span className="hidden sm:inline">استعادة هوية نصاب</span>
             </button>
             <button onClick={revert} title="يعود إلى آخر نسخة محفوظة"
               className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-line text-muted text-sm font-medium hover:bg-background transition-colors">

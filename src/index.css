@@ -22,16 +22,17 @@
   --c-primary-900:  10 17 31;
 
   /* Accent carries the energy the navy cannot: highlights, active states,
-     data emphasis. Deliberately far from success-green and error-red so a
-     status badge is never mistaken for a brand element. */
-  --c-accent:     48 217 203;     /* #30D9CB */
-  --c-accent-50: 236 253 250;
-  --c-accent-600: 13 148 136;
+     data emphasis. The gold of the نصاب wordmark — warm against the navy, and
+     far enough from success-green and error-red that a status badge is never
+     mistaken for a brand element. */
+  --c-accent:    216 161  92;     /* #D8A15C */
+  --c-accent-50: 253 246 236;
+  --c-accent-600: 169 118  47;    /* #A9762F — the accent as readable text */
 
   /* The top bar. Its own token rather than the accent: the bar is a large flat
      field while the accent is used in small marks, and a shade that sings as a
-     4px indicator can be a degree too bright across the full width. */
-  --c-header:     41 212 187;     /* #29D4BB */
+     4px indicator is a degree too bright across the full width. */
+  --c-header:    204 148  80;     /* #CC9450 */
 
   --c-ink:      22 35 61;         /* headings, primary text */
   --c-ink-800:  44 62 99;

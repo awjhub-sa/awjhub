@@ -11,15 +11,15 @@
  */
 
 export const BRAND = {
-  /* Shown in the header, login card, PDF cover, and document title. */
-  productName: 'أوج',
-  productNameEn: 'AWJ',
-  companyName: 'أوج',
-  companyNameEn: 'AWJ',
-  /* Full legal names, spelled exactly as they appear in the logo lockup. */
-  companyFullAr: 'أوج لحلول الإعاشة',
-  companyFullEn: 'AWJ For catering solutions',
-  tagline: 'لحلول الإعاشة',
+  /* Shown in the header, login card, report cover, and document title. */
+  productName: 'نصاب',
+  productNameEn: 'NSAB',
+  companyName: 'نصاب',
+  companyNameEn: 'NSAB',
+  /* Full names, spelled exactly as they appear in the logo lockup. */
+  companyFullAr: 'نصاب — نظام الإعاشة',
+  companyFullEn: 'NSAB Catering System',
+  tagline: 'نظام الإعاشة',
 
   /* Swap these files to rebrand.
      `full` is the horizontal lockup (444×180) — use it wherever there is
@@ -43,9 +43,9 @@ export const COLORS = {
   primary50:  '#F1F4F9',
   primary100: '#E2E8F1',
 
-  accent:     '#30D9CB',
-  accent600:  '#0D9488',
-  header:     '#29D4BB',
+  accent:     '#D8A15C',
+  accent600:  '#A9762F',
+  header:     '#CC9450',
 
   ink:     '#16233D',
   muted:   '#64748B',

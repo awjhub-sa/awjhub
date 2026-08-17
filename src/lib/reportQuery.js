@@ -145,7 +145,7 @@ export function describeFilters({ filters = {}, detailed, seasons = [], totalRow
    The viewer opens in its own tab, so the selection has to survive the trip.
    A URL would have to carry a dozen filters and a column list; localStorage
    carries the object itself and the URL carries only its key. */
-const SLOT = 'awj.report.request';
+const SLOT = 'nsab.report.request';
 
 export function stashReportRequest(config) {
   const id = `r${Date.now().toString(36)}`;

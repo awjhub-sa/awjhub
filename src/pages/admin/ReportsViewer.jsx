@@ -93,7 +93,7 @@ export default function ReportsViewer() {
 
   const palette = {
     '--rv-primary': brand?.colors?.primary || '#1B2A4A',
-    '--rv-accent':  brand?.colors?.accent  || '#30D9CB',
+    '--rv-accent':  brand?.colors?.accent  || '#D8A15C',
   };
 
   const today = new Date();

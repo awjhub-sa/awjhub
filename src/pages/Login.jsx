@@ -238,7 +238,7 @@ export default function Login() {
         type="button"
         onClick={() => { setAdminModal(true); setAdminError(''); setAdminEmail(''); setAdminPassword(''); }}
         /* Navy text on the accent, matching the report button — white would
-           sit at ~1.7:1 against #30D9CB. */
+           sit at ~1.7:1 against the accent. */
         className="mt-6 w-full max-w-sm py-3 rounded-xl font-bold text-sm text-primary transition-all hover:opacity-95 active:scale-[0.98] flex items-center justify-center gap-2"
         style={{
           background: 'rgb(var(--c-accent))',
