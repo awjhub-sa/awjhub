@@ -260,12 +260,32 @@ export function foldContinuationRows(grid) {
  */
 export async function parseMenuPdf(file, onProgress) {
   const pdfjs = await import('pdfjs-dist');
-  /* Vite rewrites this to the bundled worker URL, so the file ships with the
-     app rather than being fetched from someone else's CDN at run time. */
-  pdfjs.GlobalWorkerOptions.workerSrc =
-    (await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default;
+
+  /* The worker is handed over as a live port rather than as a path.
+     pdf.worker is an ES module, and a bare src leaves the library to guess
+     whether to construct it as one — a guess that fails silently on some dev
+     servers and leaves the reader hanging with no error to show. Building the
+     Worker here states the type outright. Vite bundles the file with the app,
+     so nothing is fetched from a third party at run time. */
+  if (!pdfjs.GlobalWorkerOptions.workerPort) {
+    try {
+      pdfjs.GlobalWorkerOptions.workerPort = new Worker(
+        new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url),
+        { type: 'module' },
+      );
+    } catch (err) {
+      /* No worker: pdf.js falls back to reading on the main thread. Slower on
+         a long document, but a menu is a page or two — and a slow read beats a
+         dead button. */
+      console.warn('[menuImport] pdf worker unavailable, reading inline', err?.message || err);
+    }
+  }
 
   const buf = await file.arrayBuffer();
+  /* No standardFontDataUrl on purpose. Those files matter for DRAWING a page
+     that names a standard font instead of embedding one; the text itself comes
+     from the content stream and its ToUnicode map, which is all this reads.
+     pdf.js logs a warning about them and extracts the text regardless. */
   const doc = await pdfjs.getDocument({ data: buf }).promise;
 
   let grid = [];

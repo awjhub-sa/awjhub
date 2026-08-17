@@ -194,6 +194,22 @@ export default function MenuImport({
               <input ref={inputRef} type="file" accept={accept} className="hidden"
                 onChange={e => { handleFile(e.target.files?.[0]); e.target.value = ''; }} />
 
+              {/* A file that fails to read leaves no preview and no footer, so
+                  this is the only place its reason can be said. Without it the
+                  screen simply sat there after an upload, which reads as the
+                  button being broken rather than the file being unreadable. */}
+              {err && (
+                <div className="rounded-xl border p-3 flex gap-2"
+                  style={{ borderColor: '#EBCFC3', background: 'color-mix(in srgb, #B4674E 8%, #fff)' }}>
+                  <WarningCircle size={15} weight="bold" style={{ color: '#B4674E' }}
+                    className="flex-shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <p className="text-[11.5px] font-black text-ink">تعذّرت قراءة الملف</p>
+                    <p className="text-[11px] text-ink/85 leading-relaxed mt-0.5">{err}</p>
+                  </div>
+                </div>
+              )}
+
               {tab === 'excel' ? (
                 <button type="button" onClick={downloadTemplate}
                   className="w-full h-9 rounded-xl border border-line bg-white text-[11.5px] font-bold text-primary
