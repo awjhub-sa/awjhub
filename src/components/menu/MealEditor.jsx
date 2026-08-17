@@ -30,7 +30,7 @@ export default function MealEditor({
   natLabel, dayLabel, mealLabel, mealColor,
   initial,            // { main, side, drinks, snacks, location, time }
   isSaved,            // already has a row of its own
-  seedLines,          // lines handed over from an imported photograph
+  seedLines,          // lines handed over from a PDF with no table
 }) {
   const [draft, setDraft] = useState(() => normalize(initial));
   const [busy, setBusy]   = useState(false);
@@ -140,7 +140,7 @@ export default function MealEditor({
               style={{ borderColor: '#EBCFC3', background: 'color-mix(in srgb, #B4674E 7%, #fff)' }}>
               <p className="text-[11px] font-black text-ink flex items-center gap-1.5 mb-2">
                 <WarningCircle size={13} weight="bold" style={{ color: '#B4674E' }} />
-                سطور مقروءة من الصورة — اضغط على السطر لإضافته للتصنيف المطلوب
+                سطور مقروءة من الملف — اضغط على السطر لإضافته للتصنيف المطلوب
               </p>
               <SeedLines lines={seedLines} onPick={addDish} />
             </div>

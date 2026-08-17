@@ -3,22 +3,26 @@
  *
  * Brings a menu in from a file instead of having it typed twice.
  *
- * Two paths, and they are not equals. A spreadsheet has columns that say what
- * each value is, so it imports exactly and the preview is a formality. A
- * photograph has to be read by OCR, and Arabic OCR on a phone photo is a guess
- * — so that path produces lines for a person to sort, and says as much rather
- * than presenting a guess as an import.
+ * Two paths into one parser. A spreadsheet is already a grid. A PDF is text
+ * with coordinates, so its rows and columns are rebuilt from where the words
+ * sit before the same rules run — which means a PDF that was a spreadsheet
+ * once imports exactly as its spreadsheet would have.
+ *
+ * A designed menu, laid out for the eye rather than as a table, will not
+ * resolve into columns. That case is not forced: the text is handed to the
+ * editor as lines for a person to place, and the screen says which of the two
+ * happened rather than presenting a guess as an import.
  *
  * Nothing is written until the preview is confirmed.
  */
 
 import { useRef, useState } from 'react';
 import {
-  X, MicrosoftExcelLogo, Image as ImageIcon, DownloadSimple, UploadSimple,
+  X, MicrosoftExcelLogo, FilePdf, DownloadSimple, UploadSimple,
   CheckCircle, WarningCircle, ArrowRight, Spinner,
 } from '@phosphor-icons/react';
 import { HAJJ_DAYS, MEAL_KEYS, MEAL_LABEL, CATEGORY_KEYS, CATEGORY_META } from '../../config/menus.js';
-import { parseMenuSheet, readMenuImage } from '../../lib/menuImport.js';
+import { parseMenuSheet, parseMenuPdf } from '../../lib/menuImport.js';
 
 const AR = (n) => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
 
@@ -30,7 +34,7 @@ export default function MenuImport({
   const [parsed, setParsed]   = useState(null);   // { rows, warnings, sheet }
   const [picked, setPicked]   = useState(() => new Set());
   const [dayFix, setDayFix]   = useState({});     // index -> day, for rows with no day column
-  const [ocr, setOcr]         = useState(null);   // { lines, confidence }
+  const [loose, setLoose]     = useState(null);   // { lines, source } — PDF with no table
   const [progress, setProgress] = useState(0);
   const [targetMeal, setTargetMeal] = useState('breakfast');
   const [busy, setBusy]       = useState(false);
@@ -38,7 +42,7 @@ export default function MenuImport({
   const inputRef = useRef(null);
 
   const reset = () => {
-    setFile(null); setParsed(null); setOcr(null);
+    setFile(null); setParsed(null); setLoose(null);
     setPicked(new Set()); setDayFix({}); setErr(''); setProgress(0);
   };
 
@@ -50,17 +54,20 @@ export default function MenuImport({
 
   const handleFile = async (f) => {
     if (!f) return;
-    setFile(f); setErr(''); setBusy(true); setParsed(null); setOcr(null);
+    setFile(f); setErr(''); setBusy(true); setParsed(null); setLoose(null);
     try {
-      if (tab === 'excel') {
-        const res = await parseMenuSheet(f);
+      setProgress(0);
+      const res = tab === 'excel'
+        ? await parseMenuSheet(f)
+        : await parseMenuPdf(f, setProgress);
+
+      /* A PDF that resolved into a table is treated exactly like a sheet.
+         One that did not comes back with lines instead of rows. */
+      if (res.rows?.length) {
         setParsed(res);
         setPicked(new Set(res.rows.map((_, i) => i)));   // everything, by default
       } else {
-        setProgress(0);
-        const res = await readMenuImage(f, setProgress);
-        if (!res.lines.length) throw new Error('لم يُقرأ أي نص من الصورة — جرّب صورة أوضح أو أفقية');
-        setOcr(res);
+        setLoose({ lines: res.lines || [], source: res.source });
       }
     } catch (e) {
       setErr(e?.message || 'تعذّرت قراءة الملف');
@@ -103,9 +110,7 @@ export default function MenuImport({
     XLSX.writeFile(wb, 'قالب-المنيو.xlsx');
   };
 
-  const accept = tab === 'excel'
-    ? '.xlsx,.xls,.csv'
-    : 'image/png,image/jpeg,image/webp';
+  const accept = tab === 'excel' ? '.xlsx,.xls,.csv' : '.pdf,application/pdf';
 
   return (
     <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center" dir="rtl">
@@ -135,7 +140,7 @@ export default function MenuImport({
         <div className="px-4 sm:px-6 pt-3 bg-white border-b border-line flex gap-2 flex-shrink-0">
           {[
             { key: 'excel', label: 'ملف إكسل', Icon: MicrosoftExcelLogo, hint: 'دقيق' },
-            { key: 'image', label: 'صورة المنيو', Icon: ImageIcon, hint: 'مسودّة' },
+            { key: 'pdf',   label: 'ملف PDF',  Icon: FilePdf,           hint: 'دقيق غالباً' },
           ].map(t => {
             const on = tab === t.key;
             return (
@@ -157,7 +162,7 @@ export default function MenuImport({
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-3">
 
           {/* ── Pick a file ── */}
-          {!parsed && !ocr && (
+          {!parsed && !loose && (
             <>
               <button type="button" onClick={() => inputRef.current?.click()} disabled={busy}
                 className="w-full rounded-2xl border-2 border-dashed border-line bg-white
@@ -167,22 +172,21 @@ export default function MenuImport({
                   <>
                     <Spinner size={26} weight="bold" className="text-primary animate-spin" />
                     <p className="text-[12px] font-black text-ink">
-                      {tab === 'image' ? `جارٍ قراءة الصورة… ${AR(progress)}٪` : 'جارٍ قراءة الملف…'}
+                      {tab === 'pdf' && progress > 0
+                        ? `جارٍ قراءة الملف… ${AR(progress)}٪`
+                        : 'جارٍ قراءة الملف…'}
                     </p>
-                    {tab === 'image' && (
-                      <p className="text-[10px] font-bold text-muted">قد يستغرق نحو دقيقة</p>
-                    )}
                   </>
                 ) : (
                   <>
                     <UploadSimple size={26} weight="bold" className="text-muted/50" />
                     <p className="text-[12.5px] font-black text-ink">
-                      {tab === 'excel' ? 'اختر ملف إكسل أو CSV' : 'اختر صورة للمنيو'}
+                      {tab === 'excel' ? 'اختر ملف إكسل أو CSV' : 'اختر ملف PDF'}
                     </p>
                     <p className="text-[10.5px] font-bold text-muted">
                       {tab === 'excel'
                         ? 'يحتاج الملف عموداً للوجبة وأعمدة للأصناف'
-                        : 'صورة واضحة، أفقية، ونص غير مائل'}
+                        : 'ملف نصّي — لا يُقرأ الـ PDF الممسوح ضوئياً'}
                     </p>
                   </>
                 )}
@@ -198,13 +202,14 @@ export default function MenuImport({
                   تنزيل قالب جاهز — املأه واستورده مباشرة
                 </button>
               ) : (
-                /* Said plainly, before the upload rather than after the mistake. */
+                /* Said plainly, before the upload rather than after the fact. */
                 <div className="rounded-xl border p-3 flex gap-2"
-                  style={{ borderColor: '#EBCFC3', background: 'color-mix(in srgb, #B4674E 7%, #fff)' }}>
-                  <WarningCircle size={15} weight="bold" style={{ color: '#B4674E' }} className="flex-shrink-0 mt-0.5" />
+                  style={{ borderColor: '#C4D8ED', background: 'color-mix(in srgb, #4E7CB0 7%, #fff)' }}>
+                  <WarningCircle size={15} weight="bold" style={{ color: '#4E7CB0' }} className="flex-shrink-0 mt-0.5" />
                   <p className="text-[11px] text-ink leading-relaxed">
-                    قراءة النص العربي من الصور غير مضمونة: النتيجة <b>مسودّة تحتاج مراجعة</b>،
-                    وستظهر لك السطور لتوزّعها بنفسك على التصنيفات. للاستيراد الدقيق استخدم ملف إكسل.
+                    إن كان المنيو في الملف على شكل <b>جدول</b> فسيُقرأ بدقة كملف الإكسل.
+                    وإن كان تصميماً حرّاً فستظهر لك سطوره لتوزّعها بنفسك.
+                    الملفات الممسوحة ضوئياً (صور داخل PDF) لا تُقرأ.
                   </p>
                 </div>
               )}
@@ -314,45 +319,42 @@ export default function MenuImport({
             </>
           )}
 
-          {/* ── OCR result ── */}
-          {ocr && (
+          {/* ── PDF that would not resolve into a table ── */}
+          {loose && (
             <>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="inline-flex items-center gap-1.5 text-[11px] font-black px-2.5 py-1 rounded-lg
                                  bg-white border border-line text-ink">
-                  {AR(ocr.lines.length)} سطر مقروء
+                  {AR(loose.lines.length)} سطر مقروء
                 </span>
-                <span className="text-[10.5px] font-bold text-muted">
-                  دقة تقديرية {AR(ocr.confidence)}٪
-                </span>
+                <span className="text-[10.5px] font-bold text-muted truncate">{file?.name}</span>
                 <button onClick={reset} className="mr-auto text-[11px] font-bold text-primary hover:underline">
-                  صورة أخرى
+                  ملف آخر
                 </button>
               </div>
 
-              {ocr.confidence < 70 && (
-                <div className="rounded-xl border p-3 flex gap-2"
-                  style={{ borderColor: '#EBCFC3', background: 'color-mix(in srgb, #B4674E 7%, #fff)' }}>
-                  <WarningCircle size={15} weight="bold" style={{ color: '#B4674E' }} className="flex-shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-ink leading-relaxed">
-                    الدقة منخفضة — راجع كل سطر قبل الاعتماد، أو استخدم صورة أوضح.
-                  </p>
-                </div>
-              )}
+              <div className="rounded-xl border p-3 flex gap-2"
+                style={{ borderColor: '#EBCFC3', background: 'color-mix(in srgb, #B4674E 7%, #fff)' }}>
+                <WarningCircle size={15} weight="bold" style={{ color: '#B4674E' }} className="flex-shrink-0 mt-0.5" />
+                <p className="text-[11px] text-ink leading-relaxed">
+                  قُرئ النص لكن لم يظهر على شكل جدول بأعمدة — الملف تصميم حرّ لا جدول.
+                  وزّع السطور بنفسك في المحرّر، أو استخدم ملف إكسل للاستيراد المباشر.
+                </p>
+              </div>
 
               <div className="bg-white rounded-2xl border border-line p-3 max-h-[38vh] overflow-y-auto space-y-1">
-                {ocr.lines.map((l, i) => (
+                {loose.lines.map((l, i) => (
                   <p key={i} className="text-[11.5px] text-ink bg-background rounded-lg px-2.5 py-1.5 border border-line/60">
                     {l}
                   </p>
                 ))}
               </div>
 
-              {/* A photograph does not say which sitting it is for, so it is
-                  asked rather than assumed — landing every scan on breakfast
+              {/* Loose text does not say which sitting it is for, so it is
+                  asked rather than assumed — landing every file on breakfast
                   would silently be wrong two times in three. */}
               <div className="bg-white rounded-2xl border border-line p-3">
-                <p className="text-[10px] font-black text-muted/70 tracking-widest mb-2">هذه الصورة تخصّ وجبة</p>
+                <p className="text-[10px] font-black text-muted/70 tracking-widest mb-2">هذه السطور تخصّ وجبة</p>
                 <div className="grid grid-cols-3 gap-2">
                   {MEAL_KEYS.map(k => {
                     const on = targetMeal === k;
@@ -378,7 +380,7 @@ export default function MenuImport({
           )}
         </div>
 
-        {(parsed || ocr) && (
+        {(parsed || loose) && (
           <footer className="px-4 sm:px-6 py-3 bg-white border-t border-line flex items-center gap-2 flex-shrink-0">
             {err && <p className="text-[11px] font-bold text-error flex-1 truncate">{err}</p>}
             <div className="mr-auto flex items-center gap-2">
@@ -395,7 +397,7 @@ export default function MenuImport({
                   {busy ? 'جارٍ الحفظ…' : `حفظ ${AR(picked.size)} وجبة`}
                 </button>
               ) : (
-                <button type="button" onClick={() => { onApplyImage(ocr.lines, targetMeal); close(); }}
+                <button type="button" onClick={() => { onApplyImage(loose.lines, targetMeal); close(); }}
                   className="h-9 px-5 rounded-lg text-white text-[12px] font-black flex items-center gap-1.5
                              shadow-[0_3px_12px_rgb(var(--c-primary)/0.3)]"
                   style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}>
