@@ -190,7 +190,7 @@ export default function CatererLayout() {
             ? <div className="py-24 flex justify-center">
                 <div className="w-9 h-9 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
               </div>
-            : <div className="max-w-6xl mx-auto"><Outlet context={ctx} /></div>}
+            : <Outlet context={ctx} />}
         </main>
       </div>
     </div>
