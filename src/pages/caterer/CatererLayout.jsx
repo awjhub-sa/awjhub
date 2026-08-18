@@ -72,12 +72,12 @@ export default function CatererLayout() {
     return (
       <div className="min-h-screen bg-canvas flex items-center justify-center p-6" dir="rtl">
         <div className="bg-white rounded-2xl border border-line p-7 max-w-sm text-center">
-          <p className="text-[14px] font-black text-ink">الحساب غير مرتبط بمنشأة</p>
-          <p className="text-[12px] text-muted leading-relaxed mt-2">
+          <p className="text-[16px] font-black text-ink">الحساب غير مرتبط بمنشأة</p>
+          <p className="text-[13.5px] text-muted leading-relaxed mt-2">
             راجع إدارة النظام لربط حسابك بملف المتعهد.
           </p>
           <button onClick={signOut}
-            className="mt-4 h-9 px-5 rounded-xl border border-line text-[12px] font-bold text-muted hover:text-ink">
+            className="mt-4 h-9 px-5 rounded-xl border border-line text-[13.5px] font-bold text-muted hover:text-ink">
             تسجيل الخروج
           </button>
         </div>
@@ -92,7 +92,7 @@ export default function CatererLayout() {
           <img src={brand.logo.fullOnDark} alt={brand.companyName}
             className="w-full max-w-[176px] h-auto" />
         )}
-        <p className="text-[9px] font-semibold tracking-widest uppercase opacity-40 text-white mt-1.5">
+        <p className="text-[10.5px] font-semibold tracking-widest uppercase opacity-40 text-white mt-1.5">
           بوابة المتعهد
         </p>
       </div>
@@ -114,10 +114,10 @@ export default function CatererLayout() {
                     background: isActive ? 'rgb(var(--c-accent) / 0.18)' : 'rgba(255,255,255,0.06)',
                     borderColor: isActive ? 'rgb(var(--c-accent) / 0.45)' : 'rgba(255,255,255,0.10)',
                   }}>
-                  <item.Icon size={17} weight={isActive ? 'bold' : 'regular'}
+                  <item.Icon size={19} weight={isActive ? 'bold' : 'regular'}
                     color={isActive ? 'rgb(var(--c-accent))' : 'rgba(255,255,255,0.75)'} />
                 </span>
-                <span className="text-[13px]">{item.label}</span>
+                <span className="text-[15px]">{item.label}</span>
               </>
             )}
           </NavLink>
@@ -127,18 +127,18 @@ export default function CatererLayout() {
       <div className="px-3 py-3 border-t border-white/10">
         <div className="flex items-center gap-2.5 px-1 mb-2">
           <span className="w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center flex-shrink-0">
-            <Buildings size={15} weight="bold" className="text-white/75" />
+            <Buildings size={17} weight="bold" className="text-white/75" />
           </span>
           <span className="min-w-0">
-            <span className="block text-[11.5px] font-bold text-white truncate">{caterer?.name || '—'}</span>
-            <span className="block text-[9.5px] text-white/45 font-semibold">
+            <span className="block text-[13px] font-bold text-white truncate">{caterer?.name || '—'}</span>
+            <span className="block text-[11px] text-white/45 font-semibold">
               {centers.length ? `${centers.length} مركز` : 'بلا مراكز'}
             </span>
           </span>
         </div>
         <button onClick={signOut}
           className="w-full flex items-center justify-center gap-2 h-9 rounded-xl bg-white/10 border border-white/15
-                     text-white/85 hover:text-white hover:bg-white/16 text-[12px] font-bold transition-colors">
+                     text-white/85 hover:text-white hover:bg-white/16 text-[13.5px] font-bold transition-colors">
           <SignOut size={14} weight="bold" />
           تسجيل الخروج
         </button>
@@ -163,7 +163,7 @@ export default function CatererLayout() {
             <button onClick={() => setOpen(false)}
               className="absolute top-3 left-3 w-8 h-8 rounded-lg bg-white/12 border border-white/20
                          flex items-center justify-center text-white">
-              <X size={15} weight="bold" />
+              <X size={17} weight="bold" />
             </button>
             <Rail />
           </aside>
@@ -177,11 +177,11 @@ export default function CatererLayout() {
           style={{ background: 'rgb(var(--c-primary))' }}>
           <button onClick={() => setOpen(true)}
             className="w-9 h-9 rounded-lg bg-white/12 border border-white/20 flex items-center justify-center">
-            <List size={16} weight="bold" />
+            <List size={18} weight="bold" />
           </button>
           <span className="min-w-0 flex-1">
-            <span className="block text-[12.5px] font-black truncate">{caterer?.name || '—'}</span>
-            <span className="block text-[9.5px] font-bold opacity-55">بوابة المتعهد</span>
+            <span className="block text-[14px] font-black truncate">{caterer?.name || '—'}</span>
+            <span className="block text-[11px] font-bold opacity-55">بوابة المتعهد</span>
           </span>
         </header>
 

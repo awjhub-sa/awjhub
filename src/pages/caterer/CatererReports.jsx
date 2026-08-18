@@ -95,19 +95,19 @@ export default function CatererReports() {
       />
 
       <section className="bg-white rounded-2xl border border-line overflow-hidden">
-        <div className="p-3 border-b border-line flex items-center gap-2 flex-wrap">
+        <div className="p-4 border-b border-line flex items-center gap-2 flex-wrap">
           {TABS.map(([k, label, n]) => (
             <button key={k} onClick={() => setFilter(k)}
-              className={`h-9 px-3.5 rounded-xl border text-[12px] font-black transition-colors flex items-center gap-1.5 ${
+              className={`h-9 px-3.5 rounded-xl border text-[13.5px] font-black transition-colors flex items-center gap-1.5 ${
                 filter === k ? 'bg-primary text-white border-transparent' : 'bg-white border-line text-muted hover:text-ink'
               }`}>
               {label}
-              <span className={`text-[10px] tabular-nums px-1.5 py-0.5 rounded-full ${
+              <span className={`text-[11.5px] tabular-nums px-1.5 py-0.5 rounded-full ${
                 filter === k ? 'bg-white/25' : 'bg-background text-primary'
               }`}>{AR(n)}</span>
             </button>
           ))}
-          <span className="mr-auto text-[11px] font-bold text-muted">اضغط أي صف لقراءته والردّ عليه</span>
+          <span className="mr-auto text-[12.5px] font-bold text-muted">اضغط أي صف لقراءته والردّ عليه</span>
         </div>
 
         {loading ? (
@@ -116,27 +116,27 @@ export default function CatererReports() {
           </div>
         ) : shown.length === 0 ? (
           <div className="py-16 flex flex-col items-center gap-2">
-            <CheckCircle size={30} weight="fill" className="text-success" />
-            <p className="text-[13px] font-black text-ink">
+            <CheckCircle size={34} weight="fill" className="text-success" />
+            <p className="text-[15px] font-black text-ink">
               {filter === 'all' ? 'لا بلاغات على مراكزك' : 'لا شيء هنا'}
             </p>
-            <p className="text-[11.5px] font-bold text-muted">
+            <p className="text-[13px] font-bold text-muted">
               {filter === 'waiting' ? 'رددتَ على كل ما هو مفتوح' : 'كل ما ورد أُغلق'}
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="text-muted text-[11px] bg-background border-b border-line">
+              <thead className="text-muted text-[12.5px] bg-background border-b border-line">
                 <tr>
-                  <th className="px-4 py-2.5 text-right font-black">الرقم</th>
-                  <th className="px-4 py-2.5 text-right font-black">المركز</th>
-                  <th className="px-4 py-2.5 text-right font-black">النوع</th>
-                  <th className="px-4 py-2.5 text-right font-black">الخطورة</th>
-                  <th className="px-4 py-2.5 text-right font-black">المشعر</th>
-                  <th className="px-4 py-2.5 text-right font-black">الحالة</th>
-                  <th className="px-4 py-2.5 text-right font-black">ردّك</th>
-                  <th className="px-4 py-2.5 text-right font-black">التاريخ</th>
+                  <th className="px-5 py-3.5 text-right font-black">الرقم</th>
+                  <th className="px-5 py-3.5 text-right font-black">المركز</th>
+                  <th className="px-5 py-3.5 text-right font-black">النوع</th>
+                  <th className="px-5 py-3.5 text-right font-black">الخطورة</th>
+                  <th className="px-5 py-3.5 text-right font-black">المشعر</th>
+                  <th className="px-5 py-3.5 text-right font-black">الحالة</th>
+                  <th className="px-5 py-3.5 text-right font-black">ردّك</th>
+                  <th className="px-5 py-3.5 text-right font-black">التاريخ</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
@@ -147,39 +147,39 @@ export default function CatererReports() {
                     <tr key={r.id} onClick={() => setOpenId(r.id)}
                       className="hover:bg-background/70 cursor-pointer transition-colors"
                       style={{ borderInlineStart: `3px solid ${sev?.bar || '#4E7CB0'}` }}>
-                      <td className="px-4 py-2.5 tabular-nums text-[11.5px] text-muted">
+                      <td className="px-5 py-3.5 tabular-nums text-[13px] text-muted">
                         {r.reportNumber || '—'}
                       </td>
-                      <td className="px-4 py-2.5 font-bold text-ink text-[12.5px] whitespace-nowrap">
+                      <td className="px-5 py-3.5 font-bold text-ink text-[14px] whitespace-nowrap">
                         {centreOf(r.center)}
                       </td>
-                      <td className="px-4 py-2.5 text-[12px] text-ink">{reportType(r).label}</td>
-                      <td className="px-4 py-2.5">
+                      <td className="px-5 py-3.5 text-[13.5px] text-ink">{reportType(r).label}</td>
+                      <td className="px-5 py-3.5">
                         {sev && (
-                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full whitespace-nowrap"
+                          <span className="text-[11.5px] font-black px-2 py-0.5 rounded-full whitespace-nowrap"
                             style={{ background: sev.bg, color: sev.text }}>{sev.label}</span>
                         )}
                       </td>
-                      <td className="px-4 py-2.5 text-[11.5px] text-muted whitespace-nowrap">
+                      <td className="px-5 py-3.5 text-[13px] text-muted whitespace-nowrap">
                         {HOLY_SITE_LABEL[r.holySite] || '—'}
                       </td>
-                      <td className="px-4 py-2.5">
-                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full whitespace-nowrap"
+                      <td className="px-5 py-3.5">
+                        <span className="text-[11.5px] font-black px-2 py-0.5 rounded-full whitespace-nowrap"
                           style={{ background: st.bg, color: st.color }}>{st.label}</span>
                       </td>
-                      <td className="px-4 py-2.5">
+                      <td className="px-5 py-3.5">
                         {r.catererResponse ? (
-                          <span className="inline-flex items-center gap-1 text-[10.5px] font-black text-success whitespace-nowrap">
-                            <CheckCircle size={11} weight="fill" />أُرسل
+                          <span className="inline-flex items-center gap-1 text-[12px] font-black text-success whitespace-nowrap">
+                            <CheckCircle size={13} weight="fill" />أُرسل
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[10.5px] font-black whitespace-nowrap"
+                          <span className="inline-flex items-center gap-1 text-[12px] font-black whitespace-nowrap"
                             style={{ color: '#8C7038' }}>
-                            <ChatText size={11} weight="bold" />بانتظارك
+                            <ChatText size={13} weight="bold" />بانتظارك
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-2.5 text-[11px] text-muted whitespace-nowrap">
+                      <td className="px-5 py-3.5 text-[12.5px] text-muted whitespace-nowrap">
                         {timeAgo(r.timestamp)}
                       </td>
                     </tr>
@@ -238,26 +238,26 @@ function ReportDrawer({ report, onClose, onSaved }) {
         chips={
           <>
             {sev && (
-              <span className="text-[10.5px] font-black px-2.5 py-1 rounded-full bg-white/15 text-white">
+              <span className="text-[12px] font-black px-2.5 py-1 rounded-full bg-white/15 text-white">
                 {sev.label}
               </span>
             )}
-            <span className="text-[10.5px] font-black px-2.5 py-1 rounded-full bg-white/15 text-white">
+            <span className="text-[12px] font-black px-2.5 py-1 rounded-full bg-white/15 text-white">
               {st.label}
             </span>
           </>
         }
         footer={
           <div className="flex items-center gap-3 w-full">
-            <p className="text-[10.5px] font-bold flex-1 leading-relaxed"
+            <p className="text-[12px] font-bold flex-1 leading-relaxed"
               style={{ color: err ? 'rgb(var(--c-error))' : 'rgb(var(--c-muted))' }}>
               {err || 'إغلاق البلاغ يعود للإدارة بعد التحقّق من المعالجة.'}
             </p>
             <button onClick={send} disabled={busy}
-              className="h-9 px-5 rounded-lg text-white text-[12px] font-black flex items-center gap-1.5
+              className="h-9 px-5 rounded-lg text-white text-[13.5px] font-black flex items-center gap-1.5
                          disabled:opacity-50 flex-shrink-0"
               style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}>
-              <PaperPlaneTilt size={13} weight="bold" />
+              <PaperPlaneTilt size={15} weight="bold" />
               {busy ? 'جارٍ الإرسال…' : report.catererResponse ? 'تحديث الردّ' : 'إرسال الردّ'}
             </button>
           </div>
@@ -266,15 +266,15 @@ function ReportDrawer({ report, onClose, onSaved }) {
         <div className="space-y-4">
           {report.description && (
             <section>
-              <p className="text-[10px] font-black text-muted/70 tracking-widest mb-1.5">الوصف</p>
-              <p className="text-[12.5px] text-ink leading-relaxed">{report.description}</p>
+              <p className="text-[11.5px] font-black text-muted/70 tracking-widest mb-1.5">الوصف</p>
+              <p className="text-[14px] text-ink leading-relaxed">{report.description}</p>
             </section>
           )}
 
           {Array.isArray(report.images) && report.images.length > 0 && (
             <section>
-              <p className="text-[10px] font-black text-muted/70 tracking-widest mb-2 flex items-center gap-1">
-                <ImageIcon size={11} weight="bold" />المرفقات ({AR(report.images.length)})
+              <p className="text-[11.5px] font-black text-muted/70 tracking-widest mb-2 flex items-center gap-1">
+                <ImageIcon size={13} weight="bold" />المرفقات ({AR(report.images.length)})
               </p>
               <div className="grid grid-cols-3 gap-2">
                 {report.images.map((src, i) => (
@@ -288,25 +288,25 @@ function ReportDrawer({ report, onClose, onSaved }) {
           )}
 
           <section className="rounded-xl border border-line bg-background p-3">
-            <p className="text-[10px] font-black text-muted/70 tracking-widest mb-1.5 flex items-center gap-1">
-              <Clock size={11} weight="bold" />التوقيت
+            <p className="text-[11.5px] font-black text-muted/70 tracking-widest mb-1.5 flex items-center gap-1">
+              <Clock size={13} weight="bold" />التوقيت
             </p>
-            <p className="text-[11.5px] font-bold text-ink">{fullDate(report.timestamp)}</p>
+            <p className="text-[13px] font-bold text-ink">{fullDate(report.timestamp)}</p>
             {report.closedAt && (
-              <p className="text-[11px] font-bold text-success mt-1">أُغلق {timeAgo(report.closedAt)}</p>
+              <p className="text-[12.5px] font-bold text-success mt-1">أُغلق {timeAgo(report.closedAt)}</p>
             )}
           </section>
 
           <section>
-            <p className="text-[10px] font-black text-muted/70 tracking-widest mb-1.5">ردّك على البلاغ</p>
+            <p className="text-[11.5px] font-black text-muted/70 tracking-widest mb-1.5">ردّك على البلاغ</p>
             {report.catererResponse && (
-              <p className="text-[10.5px] font-bold text-success mb-1.5">
+              <p className="text-[12px] font-bold text-success mb-1.5">
                 أُرسل {timeAgo(report.catererRespondedAt)} — يمكنك تحديثه
               </p>
             )}
             <textarea value={text} onChange={e => setText(e.target.value)} rows={5}
               placeholder="ما الإجراء الذي اتُّخذ؟ اذكر ما تمّ ومتى."
-              className="w-full px-3 py-2.5 rounded-lg border border-line bg-white text-[12.5px] text-ink
+              className="w-full px-3 py-2.5 rounded-lg border border-line bg-white text-[14px] text-ink
                          leading-relaxed focus:outline-none focus:border-primary/50 resize-none" />
           </section>
         </div>
@@ -318,7 +318,7 @@ function ReportDrawer({ report, onClose, onSaved }) {
           <img src={shot} alt="" className="relative max-h-[88vh] max-w-full rounded-xl" />
           <button className="absolute top-4 left-4 w-9 h-9 rounded-lg bg-white/15 border border-white/25
                              flex items-center justify-center text-white">
-            <X size={16} weight="bold" />
+            <X size={18} weight="bold" />
           </button>
         </div>
       )}

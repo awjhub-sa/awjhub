@@ -84,9 +84,9 @@ export default function CatererHome() {
         </div>
       ) : clear ? (
         <section className="bg-white rounded-2xl border border-line py-16 flex flex-col items-center gap-2">
-          <CheckCircle size={34} weight="fill" className="text-success" />
-          <p className="text-[14.5px] font-black text-ink">لا شيء يحتاج انتباهك</p>
-          <p className="text-[12px] font-bold text-muted">لا بلاغات مفتوحة ولا نماذج مستحقة</p>
+          <CheckCircle size={38} weight="fill" className="text-success" />
+          <p className="text-[17px] font-black text-ink">لا شيء يحتاج انتباهك</p>
+          <p className="text-[13.5px] font-bold text-muted">لا بلاغات مفتوحة ولا نماذج مستحقة</p>
         </section>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -102,20 +102,20 @@ export default function CatererHome() {
               const sev = severityOf(r);
               return (
                 <button key={r.id} onClick={() => nav('/caterer/reports')}
-                  className="w-full text-right px-4 py-2.5 border-b border-line/60 last:border-0
+                  className="w-full text-right px-5 py-3.5 border-b border-line/60 last:border-0
                              hover:bg-background transition-colors flex items-center gap-3"
                   style={{ borderInlineStart: `3px solid ${sev?.bar || '#4E7CB0'}` }}>
                   <span className="flex-1 min-w-0">
-                    <span className="block text-[12.5px] font-bold text-ink truncate">
+                    <span className="block text-[14px] font-bold text-ink truncate">
                       {reportType(r).label}
                     </span>
-                    <span className="block text-[10.5px] font-bold text-muted mt-0.5">
+                    <span className="block text-[12px] font-bold text-muted mt-0.5">
                       {r.center ? `مركز ${AR(String(r.center).replace(/\D/g, '') || r.center)}` : '—'}
                       {' · '}{timeAgo(r.timestamp)}
                     </span>
                   </span>
                   {sev && (
-                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full flex-shrink-0"
+                    <span className="text-[11.5px] font-black px-2 py-0.5 rounded-full flex-shrink-0"
                       style={{ background: sev.bg, color: sev.text }}>{sev.label}</span>
                   )}
                 </button>
@@ -134,20 +134,20 @@ export default function CatererHome() {
               const late = f.dueAt && ms(f.dueAt) < Date.now();
               return (
                 <button key={f.id} onClick={() => nav('/caterer/forms')}
-                  className="w-full text-right px-4 py-2.5 border-b border-line/60 last:border-0
+                  className="w-full text-right px-5 py-3.5 border-b border-line/60 last:border-0
                              hover:bg-background transition-colors flex items-center gap-3"
                   style={{ borderInlineStart: `3px solid ${late ? '#DC2626' : '#B99A64'}` }}>
                   <span className="flex-1 min-w-0">
-                    <span className="block text-[12.5px] font-bold text-ink truncate">
+                    <span className="block text-[14px] font-bold text-ink truncate">
                       {f.formNumber || 'نموذج'}
                     </span>
-                    <span className="block text-[10.5px] font-bold mt-0.5 flex items-center gap-1"
+                    <span className="block text-[12px] font-bold mt-0.5 flex items-center gap-1"
                       style={{ color: late ? 'rgb(var(--c-error))' : 'rgb(var(--c-muted))' }}>
-                      <Clock size={10} weight="bold" />
+                      <Clock size={12} weight="bold" />
                       {late ? 'تأخّر عن ' : 'يستحق '}{day(f.dueAt)}
                     </span>
                   </span>
-                  {late && <WarningCircle size={15} weight="fill" className="text-error flex-shrink-0" />}
+                  {late && <WarningCircle size={17} weight="fill" className="text-error flex-shrink-0" />}
                 </button>
               );
             })}
@@ -157,33 +157,33 @@ export default function CatererHome() {
 
       {/* ── the centres they hold ── */}
       <section className="bg-white rounded-2xl border border-line overflow-hidden">
-        <header className="px-4 py-3 border-b border-line flex items-center gap-2">
-          <Buildings size={15} weight="bold" className="text-primary" />
-          <p className="text-[13px] font-black text-ink">مراكزك</p>
-          <span className="text-[11px] font-black tabular-nums text-muted mr-auto">
+        <header className="px-5 py-4 border-b border-line flex items-center gap-2">
+          <Buildings size={17} weight="bold" className="text-primary" />
+          <p className="text-[15px] font-black text-ink">مراكزك</p>
+          <span className="text-[12.5px] font-black tabular-nums text-muted mr-auto">
             {AR(centers.length)}
           </span>
         </header>
         {centers.length === 0 ? (
-          <p className="py-10 text-center text-[12px] font-bold text-muted">لا مراكز مسنَدة</p>
+          <p className="py-10 text-center text-[13.5px] font-bold text-muted">لا مراكز مسنَدة</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="text-muted text-[11px] bg-background border-b border-line">
+              <thead className="text-muted text-[12.5px] bg-background border-b border-line">
                 <tr>
-                  <th className="px-4 py-2.5 text-right font-black">المركز</th>
-                  <th className="px-4 py-2.5 text-right font-black">المنشأة</th>
-                  <th className="px-4 py-2.5 text-right font-black">الجنسية</th>
-                  <th className="px-4 py-2.5 text-right font-black">الحجاج</th>
+                  <th className="px-5 py-3.5 text-right font-black">المركز</th>
+                  <th className="px-5 py-3.5 text-right font-black">المنشأة</th>
+                  <th className="px-5 py-3.5 text-right font-black">الجنسية</th>
+                  <th className="px-5 py-3.5 text-right font-black">الحجاج</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
                 {centers.map(c => (
                   <tr key={c.id} className="hover:bg-background/60">
-                    <td className="px-4 py-2.5 font-bold text-ink text-[12.5px]">{c.code}</td>
-                    <td className="px-4 py-2.5 text-[12px] text-muted">{c.facilityName || '—'}</td>
-                    <td className="px-4 py-2.5 text-[12px] text-muted">{c.pilgrimsNationality || '—'}</td>
-                    <td className="px-4 py-2.5 text-[12px] tabular-nums text-muted">
+                    <td className="px-5 py-3.5 font-bold text-ink text-[14px]">{c.code}</td>
+                    <td className="px-5 py-3.5 text-[13.5px] text-muted">{c.facilityName || '—'}</td>
+                    <td className="px-5 py-3.5 text-[13.5px] text-muted">{c.pilgrimsNationality || '—'}</td>
+                    <td className="px-5 py-3.5 text-[13.5px] tabular-nums text-muted">
                       {c.pilgrimsCount != null ? AR(c.pilgrimsCount) : '—'}
                     </td>
                   </tr>
@@ -201,21 +201,21 @@ function Panel({ Icon, title, count, onAll, empty, children }) {
   const has = Array.isArray(children) ? children.length > 0 : Boolean(children);
   return (
     <section className="bg-white rounded-2xl border border-line overflow-hidden flex flex-col">
-      <header className="px-4 py-3 border-b border-line flex items-center gap-2">
-        <Icon size={15} weight="bold" className="text-primary" />
-        <p className="text-[13px] font-black text-ink">{title}</p>
+      <header className="px-5 py-4 border-b border-line flex items-center gap-2">
+        <Icon size={17} weight="bold" className="text-primary" />
+        <p className="text-[15px] font-black text-ink">{title}</p>
         {count > 0 && (
-          <span className="text-[11px] font-black tabular-nums px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+          <span className="text-[12.5px] font-black tabular-nums px-2 py-0.5 rounded-full bg-primary/10 text-primary">
             {AR(count)}
           </span>
         )}
         <button onClick={onAll}
-          className="mr-auto text-[11px] font-black text-primary flex items-center gap-1 hover:underline">
-          الكل <ArrowLeft size={11} weight="bold" />
+          className="mr-auto text-[12.5px] font-black text-primary flex items-center gap-1 hover:underline">
+          الكل <ArrowLeft size={13} weight="bold" />
         </button>
       </header>
       {has ? <div>{children}</div> : (
-        <p className="py-10 text-center text-[12px] font-bold text-muted flex-1 flex items-center justify-center">
+        <p className="py-10 text-center text-[13.5px] font-bold text-muted flex-1 flex items-center justify-center">
           {empty}
         </p>
       )}
