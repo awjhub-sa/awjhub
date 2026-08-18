@@ -26,6 +26,7 @@ import {
   BellRinging as BellRing,
   MoonStars,
   ChartLineUp,
+  Broadcast,
   Palette,
   SidebarSimple as PanelLeft,
   X,
@@ -77,6 +78,9 @@ const NAV = [
     { to: '/admin/staff', label: 'الموظفين',             icon: UserRoundCog },
   ]},
 
+  /* Sits above the rest and outside every group: it is not a section you work
+     in, it is the wall you put the season on. */
+  { to: '/admin/live',           label: 'الشاشة المباشرة', icon: Broadcast, standalone: true },
   { to: '/admin/insights',       label: 'التحليلات',    icon: ChartLineUp   },
   { to: '/admin/reports-center', label: 'التقارير',      icon: FileArrowDown },
   { to: '/admin/brand',          label: 'تصميم الهوية', icon: Palette       },

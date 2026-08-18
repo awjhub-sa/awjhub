@@ -45,6 +45,7 @@ import AdminPhases         from './pages/admin/AdminPhases';
 import AdminReportView     from './pages/admin/AdminReportView';
 import ReportsViewer       from './pages/admin/ReportsViewer';
 import ReportsDeck         from './pages/admin/ReportsDeck';
+import LiveScreen          from './pages/admin/LiveScreen';
 import AdminStaff          from './pages/admin/AdminStaff';
 import AdminMenu           from './pages/admin/AdminMenu';
 import StagesReport        from './pages/admin/StagesReport';
@@ -118,6 +119,11 @@ export default function App() {
         <Route
           path="/admin/reports-deck"
           element={<RequireAdmin><ReportsDeck /></RequireAdmin>}
+        />
+        {/* The operations wall — outside AdminLayout so it takes the whole display. */}
+        <Route
+          path="/admin/live"
+          element={<RequireAdmin><LiveScreen /></RequireAdmin>}
         />
 
         {/* Admin Routes */}
