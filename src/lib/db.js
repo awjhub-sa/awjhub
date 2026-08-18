@@ -246,6 +246,8 @@ export const db = {
      009_nationalities.sql — centre 26 serves two, so the link is its own row. */
   nationalities:        createTableApi('nationalities'),
   center_nationalities: createTableApi('center_nationalities'),
+  /* Season-long scorecard per caterer. See 010_caterer_evaluations.sql. */
+  caterer_evaluations:  createTableApi('caterer_evaluations'),
   /* Forms are three layers: what a form is, who owes it, and what happened.
      See docs/FORMS_MODULE.md. */
   form_templates:     createTableApi('form_templates'),

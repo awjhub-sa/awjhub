@@ -34,6 +34,7 @@ import {
   ChartLineUp,
   Broadcast,
   PushPin,
+  ClipboardText as Clipboard,
   Palette,
   SidebarSimple as PanelLeft,
   X,
@@ -77,6 +78,7 @@ const NAV = [
     { to: '/admin/centers',  label: 'المراكز',    icon: MapPinArea },
     { to: '/admin/nationalities', label: 'جنسيات الحجاج', icon: Earth },
     { to: '/admin/forms',    label: 'النماذج',    icon: FileText   },
+    { to: '/admin/evaluations', label: 'التقييمات', icon: Clipboard },
   ]},
 
   { key: 'people', label: 'المستخدمين', icon: UsersRound, children: [

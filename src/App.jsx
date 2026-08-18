@@ -32,6 +32,7 @@ import AdminAnalytics      from './pages/admin/AdminAnalytics';
 import AdminCaterers       from './pages/admin/AdminCaterers';
 import AdminCenters        from './pages/admin/AdminCenters';
 import AdminNationalities  from './pages/admin/AdminNationalities';
+import AdminEvaluations    from './pages/admin/AdminEvaluations';
 import AdminForms          from './pages/admin/AdminForms';
 import AdminBrand          from './pages/admin/AdminBrand';
 import AdminDrill          from './pages/admin/AdminDrill';
@@ -140,6 +141,7 @@ export default function App() {
           <Route path="readiness/drill"    element={<AdminDrill />} />
           <Route path="centers"       element={<AdminCenters />} />
           <Route path="nationalities" element={<AdminNationalities />} />
+          <Route path="evaluations"   element={<AdminEvaluations />} />
           <Route path="caterers"      element={<AdminCaterers />} />
           <Route path="forms"         element={<AdminForms />} />
           <Route path="observers"     element={<AdminObservers />} />
