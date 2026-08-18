@@ -7,16 +7,21 @@
  * feature was built — the rows were always theirs, there was simply no door
  * they could come in through. This is that door.
  *
+ * A table, because what a caterer does here is scan for what is late: due dates
+ * in a column can be compared down the page, where the same dates on a stack of
+ * cards must be held in the head one card at a time. Overdue rows carry a red
+ * edge so the eye finds them before it reads anything.
+ *
  * The sheet itself is FormFill, unchanged: it was written with an `as` prop
  * whose default is 'caterer', so the caterer's view of a form is the one it
  * already knew how to draw. Reusing it means an admin reviewing a submission
- * and the caterer who filed it are looking at the same document, which is the
- * only way the two can ever agree about what was submitted.
+ * and the caterer who filed it look at the same document, which is the only way
+ * the two can ever agree about what was submitted.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { FileText, CheckCircle, Clock, WarningCircle } from '@phosphor-icons/react';
+import { FileText, CheckCircle, WarningCircle, CaretLeft } from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
 import { db } from '../../lib/db.js';
 import { STATUS_META } from '../../config/formSchema.js';
@@ -25,7 +30,8 @@ import { useAuth } from '../../context/AuthContext.jsx';
 
 const AR = (n) => String(n ?? '').replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
 const ms = (v) => (v?.toMillis?.() ?? (v ? new Date(v).getTime() : 0));
-const day = (v) => (v ? new Date(ms(v)).toISOString().slice(0, 10) : null);
+const day = (v) => (v ? AR(new Date(ms(v)).toISOString().slice(0, 10)) : '—');
+const isDone = (s) => s === 'submitted' || s === 'accepted';
 
 export default function CatererForms() {
   const { caterer, catererId, centers } = useOutletContext();
@@ -55,10 +61,14 @@ export default function CatererForms() {
   const centerById = useMemo(
     () => Object.fromEntries(centers.map(c => [c.id, c])), [centers]);
 
-  const sorted = useMemo(() => {
-    const rank = (r) => (r.status === 'submitted' || r.status === 'accepted' ? 1 : 0);
-    return [...rows].sort((a, b) => rank(a) - rank(b) || ms(a.dueAt) - ms(b.dueAt));
-  }, [rows]);
+  /* Unfinished first, then by how soon it is due — the order in which they
+     will be dealt with. */
+  const sorted = useMemo(() => [...rows].sort(
+    (a, b) => (isDone(a.status) ? 1 : 0) - (isDone(b.status) ? 1 : 0) || ms(a.dueAt) - ms(b.dueAt),
+  ), [rows]);
+
+  const due = sorted.filter(a => !isDone(a.status)).length;
+  const late = sorted.filter(a => !isDone(a.status) && a.dueAt && ms(a.dueAt) < Date.now()).length;
 
   const open = sorted.find(a => a.id === openId);
   if (open) {
@@ -76,26 +86,6 @@ export default function CatererForms() {
     );
   }
 
-  if (loading) {
-    return <div className="py-20 flex justify-center">
-      <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-    </div>;
-  }
-
-  if (!sorted.length) {
-    return (
-      <div className="bg-white rounded-2xl border border-line py-14 flex flex-col items-center gap-2">
-        <FileText size={28} weight="bold" className="text-muted/40" />
-        <p className="text-[13px] font-black text-ink">لا نماذج مسنَدة إليك</p>
-        <p className="text-[11px] font-bold text-muted">ستظهر هنا فور إسنادها من الإدارة</p>
-      </div>
-    );
-  }
-
-  const dueCount = sorted.filter(a => a.status !== 'submitted' && a.status !== 'accepted').length;
-  const lateCount = sorted.filter(a =>
-    a.status !== 'submitted' && a.status !== 'accepted' && a.dueAt && ms(a.dueAt) < Date.now()).length;
-
   return (
     <div className="space-y-4" dir="rtl">
       <PageHeader
@@ -105,63 +95,107 @@ export default function CatererForms() {
         subtitle="النماذج المسنَدة إليك ومواعيد استحقاقها"
         stats={[
           { value: AR(sorted.length), label: 'نموذج' },
-          { value: AR(dueCount), label: 'مستحق', tone: dueCount ? 'gold' : undefined },
-          ...(lateCount ? [{ value: AR(lateCount), label: 'متأخر', tone: 'alert' }] : []),
+          { value: AR(due), label: 'مستحق', tone: due ? 'gold' : undefined },
+          ...(late ? [{ value: AR(late), label: 'متأخر', tone: 'alert' }] : []),
         ]}
       />
 
-      <div className="space-y-2.5">
-      {sorted.map(a => {
-        const t = templateById[a.templateId];
-        const st = STATUS_META[a.status] || STATUS_META.pending;
-        const done = a.status === 'submitted' || a.status === 'accepted';
-        const late = !done && a.dueAt && ms(a.dueAt) < Date.now();
-        return (
-          <button key={a.id} onClick={() => setOpenId(a.id)}
-            className="w-full text-right bg-white rounded-2xl border border-line p-4 flex items-start gap-3
-                       hover:border-primary/40 transition-colors">
-            <span className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: done
-                ? 'color-mix(in srgb, #16A34A 12%, #fff)'
-                : late ? 'color-mix(in srgb, #DC2626 12%, #fff)'
-                : 'color-mix(in srgb, #B99A64 14%, #fff)' }}>
-              {done ? <CheckCircle size={17} weight="fill" className="text-success" />
-                : late ? <WarningCircle size={17} weight="fill" className="text-error" />
-                : <FileText size={17} weight="bold" style={{ color: '#8C7038' }} />}
-            </span>
-            <span className="flex-1 min-w-0">
-              <span className="flex items-center gap-2 flex-wrap">
-                <b className="text-[13px] text-ink">{t?.name || 'نموذج'}</b>
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
-                  style={{ background: `color-mix(in srgb, ${st.color} 14%, #fff)`, color: st.color }}>
-                  {st.label}
-                </span>
-              </span>
-              <span className="block text-[11px] font-bold text-muted mt-1">
-                {a.formNumber && <>{a.formNumber} · </>}
-                {centerById[a.centerId]?.code || 'كل المراكز'}
-                {a.dueAt && (
-                  <> · <span className={late ? 'text-error' : ''}>
-                    {late ? 'تأخّر عن ' : 'يستحق '}{AR(day(a.dueAt))}
-                  </span></>
-                )}
-              </span>
-              {a.submittedAt && (
-                <span className="block text-[10px] font-bold text-success mt-1 flex items-center gap-1">
-                  <Clock size={10} weight="bold" />أُرسل {AR(day(a.submittedAt))}
-                </span>
-              )}
-              {a.reviewNote && (
-                <span className="block text-[10.5px] text-ink/80 mt-1.5 leading-relaxed
-                                 border-r-2 border-line pr-2">
-                  ملاحظة المراجعة: {a.reviewNote}
-                </span>
-              )}
-            </span>
-          </button>
-        );
-      })}
-      </div>
+      <section className="bg-white rounded-2xl border border-line overflow-hidden">
+        {loading ? (
+          <div className="py-16 flex justify-center">
+            <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+          </div>
+        ) : sorted.length === 0 ? (
+          <div className="py-16 flex flex-col items-center gap-2">
+            <FileText size={30} weight="bold" className="text-muted/40" />
+            <p className="text-[13px] font-black text-ink">لا نماذج مسنَدة إليك</p>
+            <p className="text-[11.5px] font-bold text-muted">ستظهر هنا فور إسنادها من الإدارة</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-muted text-[11px] bg-background border-b border-line">
+                <tr>
+                  <th className="px-4 py-2.5 text-right font-black">النموذج</th>
+                  <th className="px-4 py-2.5 text-right font-black">الرقم</th>
+                  <th className="px-4 py-2.5 text-right font-black">المركز</th>
+                  <th className="px-4 py-2.5 text-right font-black">الاستحقاق</th>
+                  <th className="px-4 py-2.5 text-right font-black">الحالة</th>
+                  <th className="px-4 py-2.5 text-right font-black">أُرسل</th>
+                  <th className="px-4 py-2.5 text-right font-black"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {sorted.map(a => {
+                  const t = templateById[a.templateId];
+                  const st = STATUS_META[a.status] || STATUS_META.pending;
+                  const done = isDone(a.status);
+                  const overdue = !done && a.dueAt && ms(a.dueAt) < Date.now();
+                  return (
+                    <tr key={a.id} onClick={() => setOpenId(a.id)}
+                      className="hover:bg-background/70 cursor-pointer transition-colors"
+                      style={{ borderInlineStart: `3px solid ${
+                        overdue ? '#DC2626' : done ? '#16A34A' : '#B99A64'}` }}>
+                      <td className="px-4 py-2.5 font-bold text-ink text-[12.5px]">
+                        {t?.name || 'نموذج'}
+                      </td>
+                      <td className="px-4 py-2.5 tabular-nums text-[11.5px] text-muted">
+                        {a.formNumber || '—'}
+                      </td>
+                      <td className="px-4 py-2.5 text-[12px] text-muted whitespace-nowrap">
+                        {centerById[a.centerId]?.code || 'كل المراكز'}
+                      </td>
+                      <td className="px-4 py-2.5 text-[11.5px] whitespace-nowrap tabular-nums"
+                        style={{ color: overdue ? 'rgb(var(--c-error))' : 'rgb(var(--c-muted))' }}>
+                        {overdue && <WarningCircle size={11} weight="fill" className="inline ml-1" />}
+                        {day(a.dueAt)}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full whitespace-nowrap"
+                          style={{ background: `color-mix(in srgb, ${st.color} 14%, #fff)`, color: st.color }}>
+                          {st.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 text-[11.5px] text-muted whitespace-nowrap tabular-nums">
+                        {a.submittedAt
+                          ? <span className="text-success font-bold inline-flex items-center gap-1">
+                              <CheckCircle size={11} weight="fill" />{day(a.submittedAt)}
+                            </span>
+                          : '—'}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <CaretLeft size={13} weight="bold" className="text-muted" />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* Review notes belong under the table, not squeezed into a cell — they
+          are sentences, and a column would either clip them or ruin the row. */}
+      {sorted.some(a => a.reviewNote) && (
+        <section className="bg-white rounded-2xl border border-line overflow-hidden">
+          <header className="px-4 py-3 border-b border-line">
+            <p className="text-[13px] font-black text-ink">ملاحظات المراجعة</p>
+          </header>
+          {sorted.filter(a => a.reviewNote).map(a => (
+            <button key={a.id} onClick={() => setOpenId(a.id)}
+              className="w-full text-right px-4 py-3 border-b border-line/60 last:border-0 hover:bg-background">
+              <p className="text-[12px] font-bold text-ink">
+                {templateById[a.templateId]?.name || 'نموذج'}
+                {a.formNumber && <span className="text-muted font-bold mr-2">{a.formNumber}</span>}
+              </p>
+              <p className="text-[11.5px] text-ink/80 leading-relaxed mt-1 border-r-2 border-line pr-2.5">
+                {a.reviewNote}
+              </p>
+            </button>
+          ))}
+        </section>
+      )}
     </div>
   );
 }
