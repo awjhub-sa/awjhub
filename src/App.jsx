@@ -37,7 +37,8 @@ import AdminBrand          from './pages/admin/AdminBrand';
 import AdminDrill          from './pages/admin/AdminDrill';
 import AdminReportsCenter  from './pages/admin/AdminReportsCenter';
 import AdminInsights       from './pages/admin/AdminInsights';
-import AdminUsers          from './pages/admin/AdminUsers';
+import AdminObservers      from './pages/admin/AdminObservers';
+import AdminSupervisors    from './pages/admin/AdminSupervisors';
 import AdminNotifications  from './pages/admin/AdminNotifications';
 import AdminTaskAssign     from './pages/admin/AdminTaskAssign';
 import AdminPhases         from './pages/admin/AdminPhases';
@@ -135,7 +136,10 @@ export default function App() {
           <Route path="nationalities" element={<AdminNationalities />} />
           <Route path="caterers"      element={<AdminCaterers />} />
           <Route path="forms"         element={<AdminForms />} />
-          <Route path="users"         element={<AdminUsers />} />
+          <Route path="observers"     element={<AdminObservers />} />
+          <Route path="supervisors"   element={<AdminSupervisors />} />
+          {/* The two roles used to share one screen behind a filter. */}
+          <Route path="users"         element={<Navigate to="/admin/observers" replace />} />
           <Route path="staff"         element={<AdminStaff />} />
           <Route path="notifications" element={<AdminNotifications />} />
           <Route path="reports-center" element={<AdminReportsCenter />} />

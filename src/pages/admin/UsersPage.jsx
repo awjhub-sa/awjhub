@@ -1,5 +1,24 @@
+/**
+ * src/pages/admin/UsersPage.jsx
+ *
+ * One field role, one screen.
+ *
+ * Observers and supervisors used to share a table behind a filter chip. They
+ * are not the same record: an observer works one centre and answers to a
+ * supervisor; a supervisor covers many centres and has observers under them.
+ * Holding both in one table meant every row carried the other's columns as a
+ * dash — a supervisor with an empty "bravo code" and an empty "reports to",
+ * an observer with a centre count of one.
+ *
+ * So the page takes the role as a parameter and the two routes render it with
+ * theirs. The forms, the bulk add and the edit dialog are shared because they
+ * genuinely are the same work; the columns, the counts and the wording are not,
+ * and those follow the role.
+ */
+
 import { useEffect, useMemo, useState } from 'react';
 import { db, serverTimestamp } from '../../lib/db.js';
+import PageHeader from '../../components/PageHeader.jsx';
 import { CENTERS, getCaterer } from '../../config/centers.js';
 import {
   Users,
@@ -12,21 +31,40 @@ import {
   ShieldCheck,
   Pencil,
   Trash as Trash2,
-  Sparkle as Sparkles,
-  Funnel as Filter,
   MagnifyingGlass as Search,
 } from '@phosphor-icons/react';
-
-const ROLES = [
-  { value: 'observer',   label: 'مراقب', Icon: Eye          },
-  { value: 'supervisor', label: 'مشرف',  Icon: ShieldCheck  },
-];
 
 const ROLE_META = {
   observer:   { Icon: Eye,         label: 'مراقب', gradient: 'from-line to-primary-400' },
   supervisor: { Icon: ShieldCheck, label: 'مشرف',  gradient: 'from-primary to-[rgb(var(--c-primary-700))]' },
 };
 const MAX_BULK = 10;
+
+/* Everything that differs between the two screens, in one place. */
+const PAGE = {
+  observer: {
+    Icon: Eye,
+    title: 'المراقبون',
+    subtitle: 'حسابات المراقبين الميدانيين والمركز المسنَد لكل منهم',
+    one: 'مراقب',
+    many: 'مراقبين',
+    codeLabel: 'رمز المراقب',
+    addTitle: 'إضافة مراقب',
+    emptyText: 'لا يوجد مراقبون',
+  },
+  supervisor: {
+    Icon: ShieldCheck,
+    title: 'المشرفون',
+    subtitle: 'حسابات المشرفين والمراكز التي يغطّيها كل مشرف',
+    one: 'مشرف',
+    many: 'مشرفين',
+    codeLabel: 'رمز المشرف',
+    addTitle: 'إضافة مشرف',
+    emptyText: 'لا يوجد مشرفون',
+  },
+};
+
+const AR = (n) => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
 
 const inputCls =
   'w-full px-4 py-2.5 border border-line rounded-xl text-sm text-ink outline-none focus:border-primary transition placeholder-muted/40 bg-white';
@@ -124,25 +162,28 @@ function CentersCell({ user }) {
   );
 }
 
-const EMPTY_SINGLE = {
+const emptySingle = (role) => ({
   nameAr: '', nameEn: '', idNumber: '', phone: '',
-  role: 'observer', center: '', centers: [], supervisorId: '',
+  role, center: '', centers: [], supervisorId: '',
   roleCode: '', bravoCode: '',
-};
-const emptyBulkRow = () => ({
+});
+const emptyBulkRow = (role) => ({
   nameAr: '', nameEn: '', idNumber: '', phone: '',
-  role: 'observer',
+  role,
   center: '', centers: [], supervisorId: '',
   roleCode: '', bravoCode: '',
 });
 
-export default function AdminUsers() {
+/** @param {{role: 'observer'|'supervisor'}} props */
+export default function UsersPage({ role }) {
+  const isObserver = role === 'observer';
+  const page = PAGE[role];
+  const EMPTY_SINGLE = useMemo(() => emptySingle(role), [role]);
   const [allUsers, setAllUsers] = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [listError, setListError] = useState(null);
 
   const [mode,   setMode]   = useState('single');   // 'single' | 'bulk'
-  const [filter, setFilter] = useState('all');      // 'all' | 'observer' | 'supervisor'
   const [search, setSearch] = useState('');
 
   // Single add
@@ -152,7 +193,7 @@ export default function AdminUsers() {
   const [singleSuccess,  setSingleSuccess]  = useState(null);
 
   // Bulk add
-  const [rows,        setRows]        = useState([emptyBulkRow()]);
+  const [rows,        setRows]        = useState([emptyBulkRow(role)]);
   const [bulkSaving,  setBulkSaving]  = useState(false);
   const [bulkError,   setBulkError]   = useState(null);
 
@@ -161,6 +202,14 @@ export default function AdminUsers() {
   const [editForm,   setEditForm]   = useState(EMPTY_SINGLE);
   const [editSaving, setEditSaving] = useState(false);
   const [editError,  setEditError]  = useState(null);
+
+  /* Landing on the other role resets the form to that role's blank record —
+     otherwise a half-typed supervisor would be submitted as an observer. */
+  useEffect(() => {
+    setForm(emptySingle(role));
+    setRows([emptyBulkRow(role)]);
+    setSearch('');
+  }, [role]);
 
   useEffect(() => {
     setLoading(true);
@@ -179,8 +228,11 @@ export default function AdminUsers() {
   const supervisors = useMemo(() => users.filter((u) => u.role === 'supervisor'), [users]);
   const observers   = useMemo(() => users.filter((u) => u.role === 'observer'),   [users]);
 
+  /* The rows this page owns. */
+  const mine = useMemo(() => users.filter((u) => u.role === role), [users, role]);
+
   const visible = useMemo(() => {
-    const base = filter === 'all' ? users : users.filter((u) => u.role === filter);
+    const base = mine;
     const q = search.trim().toLowerCase();
     if (!q) return base;
     return base.filter((u) => {
@@ -189,9 +241,7 @@ export default function AdminUsers() {
       const id = (u.idNumber || '').toLowerCase();
       return ar.includes(q) || en.includes(q) || id.includes(q);
     });
-  }, [users, filter, search]);
-
-  const counts = { all: users.length, observer: observers.length, supervisor: supervisors.length };
+  }, [mine, search]);
 
   /* Build center → supervisor map so observer rows can show their supervisor.
      A supervisor's assigned_centers array tells us which centers they cover. */
@@ -203,6 +253,42 @@ export default function AdminUsers() {
     });
     return map;
   }, [supervisors]);
+
+  /* The mirror of the map above: how many observers a supervisor carries.
+     It is the one number that says whether a supervisor is over-loaded, and
+     the combined table had nowhere to put it. */
+  const observerLoad = useMemo(() => {
+    const counts = new Map();
+    observers.forEach((o) => {
+      const sup = centerToSupervisor.get(o.center);
+      if (sup) counts.set(sup.id, (counts.get(sup.id) || 0) + 1);
+    });
+    return counts;
+  }, [observers, centerToSupervisor]);
+
+  /* name, id, phone, role code, bravo, centres, [supervisor | observers], actions */
+  const colCount = 8;
+
+  const coveredCenters = useMemo(() => {
+    const set = new Set();
+    mine.forEach((u) => {
+      (u.assignedCenters || u.centers || (u.center ? [u.center] : []))
+        .forEach((c) => c && set.add(c));
+    });
+    return set.size;
+  }, [mine]);
+
+  const activeCount = useMemo(
+    () => mine.filter((u) => u.active !== false).length,
+    [mine],
+  );
+
+  const unassigned = useMemo(
+    () => (isObserver
+      ? observers.filter((o) => !centerToSupervisor.get(o.center)).length
+      : supervisors.filter((sv) => !(sv.assignedCenters || sv.centers || []).length).length),
+    [isObserver, observers, supervisors, centerToSupervisor],
+  );
 
   
   const validateSingle = (f) => {
@@ -281,9 +367,9 @@ export default function AdminUsers() {
   const updateRow = (i, patch) =>
     setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
   const addRow = () =>
-    setRows((prev) => (prev.length >= MAX_BULK ? prev : [...prev, emptyBulkRow()]));
+    setRows((prev) => (prev.length >= MAX_BULK ? prev : [...prev, emptyBulkRow(role)]));
   const removeRow = (i) =>
-    setRows((prev) => (prev.length === 1 ? [emptyBulkRow()] : prev.filter((_, idx) => idx !== i)));
+    setRows((prev) => (prev.length === 1 ? [emptyBulkRow(role)] : prev.filter((_, idx) => idx !== i)));
 
   const handleBulkAdd = async (e) => {
     e.preventDefault();
@@ -346,7 +432,7 @@ export default function AdminUsers() {
           }),
         ),
       );
-      setRows([emptyBulkRow()]);
+      setRows([emptyBulkRow(role)]);
     } catch (ex) {
       setBulkError(ex.message);
     }
@@ -401,37 +487,25 @@ export default function AdminUsers() {
   
   return (
     <div className="space-y-5" dir="rtl">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-white via-white to-background/40 rounded-2xl border border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgb(var(--c-primary)/0.14)] overflow-hidden group">
-        <div
-          className="flex items-center justify-between px-6 py-4 relative"
-          style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 55%)' }}
-        >
-          <div className="absolute inset-y-0 right-0 w-32 opacity-30 pointer-events-none"
-            style={{ background: 'radial-gradient(circle at top right, rgb(var(--c-primary-400) / 0.4), transparent 70%)' }} />
-          <div className="flex items-center gap-3 relative">
-            <div className="relative">
-              <div
-                className="absolute inset-0 rounded-xl blur-xl opacity-50 group-hover:opacity-80 transition-opacity"
-                style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}
-              />
-              <div
-                className="relative w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300"
-                style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}
-              >
-                <Users size={20} className="text-white" weight="bold" />
-                <Sparkles size={10} className="absolute -top-0.5 -right-0.5 text-yellow-200 drop-shadow" />
-              </div>
-            </div>
-            <div>
-              <h1 className="text-base font-bold text-ink">المراقبين والمشرفين</h1>
-              <p className="text-xs text-muted mt-0.5">
-                حسابات الفرق الميدانية والمراكز المخصَّصة لها
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        kicker="المستخدمين"
+        Icon={page.Icon}
+        title={page.title}
+        subtitle={page.subtitle}
+        stats={[
+          { value: AR(mine.length), label: page.one },
+          isObserver
+            ? { value: AR(coveredCenters), label: 'مركز مغطّى' }
+            : { value: AR(coveredCenters), label: 'مركز يُغطّى', tone: 'gold' },
+          unassigned > 0
+            ? {
+                value: AR(unassigned),
+                label: isObserver ? 'بلا مشرف' : 'بلا مراكز',
+                tone: 'alert',
+              }
+            : { value: AR(activeCount), label: 'نشط', tone: 'gold' },
+        ]}
+      />
 
       {/* Main grid */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
@@ -511,34 +585,6 @@ export default function AdminUsers() {
                   />
                 </Field>
               </div>
-              <Field label="الدور" required>
-                <div className="grid grid-cols-2 gap-2">
-                  {ROLES.map((r) => {
-                    const RIcon = r.Icon;
-                    const active = form.role === r.value;
-                    return (
-                      <button
-                        key={r.value}
-                        type="button"
-                        onClick={() => setForm((p) => ({ ...p, role: r.value }))}
-                        className={`group/role relative overflow-hidden px-3 py-2.5 rounded-xl text-sm font-bold border-2 transition-all flex items-center justify-center gap-2 ${
-                          active
-                            ? 'border-primary bg-gradient-to-br from-primary-400 to-primary text-white shadow-[0_4px_14px_rgb(var(--c-primary)/0.4)] scale-[1.02]'
-                            : 'border-line bg-white text-muted hover:border-primary/50 hover:scale-[1.02]'
-                        }`}
-                      >
-                        <RIcon
-                          size={16}
-                          className={`transition-transform duration-300 ${
-                            active ? 'scale-110' : 'group-hover/role:scale-110'
-                          }`}
-                        />
-                        {r.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </Field>
               {/* Role-specific code + Bravo code */}
               <div className="grid grid-cols-2 gap-3">
                 <Field label={form.role === 'observer' ? 'رمز المراقب' : 'رمز المشرف'} required>
@@ -649,31 +695,6 @@ export default function AdminUsers() {
                       >
                         × إزالة
                       </button>
-                    </div>
-                    {/* Role selector — first so the rest of the form adapts */}
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {ROLES.map((r) => {
-                        const RIcon = r.Icon;
-                        const active = row.role === r.value;
-                        return (
-                          <button
-                            key={r.value}
-                            type="button"
-                            onClick={() => updateRow(i, {
-                              role: r.value,
-                              center: '', centers: [], supervisorId: '',
-                            })}
-                            className={`px-2 py-1 rounded-md text-xs font-bold border transition flex items-center justify-center gap-1.5 ${
-                              active
-                                ? 'bg-gradient-to-br from-primary-400 to-primary text-white border-primary shadow-sm'
-                                : 'bg-white text-muted border-line hover:border-primary/50'
-                            }`}
-                          >
-                            <RIcon size={12} />
-                            {r.label}
-                          </button>
-                        );
-                      })}
                     </div>
                     <input
                       value={row.nameAr}
@@ -805,8 +826,8 @@ export default function AdminUsers() {
           <div className="p-4 border-b border-line space-y-3">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <h2 className="text-lg font-bold text-primary">
-                المستخدمون ({visible.length}
-                {(filter !== 'all' || search) && ` من ${counts.all}`})
+                {page.title} ({AR(visible.length)}
+                {search && ` من ${AR(mine.length)}`})
               </h2>
             </div>
 
@@ -834,32 +855,6 @@ export default function AdminUsers() {
               )}
             </div>
 
-            <div className="flex gap-2 flex-wrap">
-              <FilterChip
-                active={filter === 'all'}
-                onClick={() => setFilter('all')}
-                count={counts.all}
-                Icon={Filter}
-              >
-                الكل
-              </FilterChip>
-              <FilterChip
-                active={filter === 'observer'}
-                onClick={() => setFilter('observer')}
-                count={counts.observer}
-                Icon={Eye}
-              >
-                المراقبون
-              </FilterChip>
-              <FilterChip
-                active={filter === 'supervisor'}
-                onClick={() => setFilter('supervisor')}
-                count={counts.supervisor}
-                Icon={ShieldCheck}
-              >
-                المشرفون
-              </FilterChip>
-            </div>
           </div>
 
           {listError && (
@@ -878,32 +873,38 @@ export default function AdminUsers() {
                   <th className="px-4 py-3 text-right font-semibold">الاسم</th>
                   <th className="px-4 py-3 text-right font-semibold">الهوية</th>
                   <th className="px-4 py-3 text-right font-semibold">الجوال</th>
-                  <th className="px-4 py-3 text-right font-semibold">الدور</th>
-                  <th className="px-4 py-3 text-right font-semibold">رمز المراقب/المشرف</th>
+                  <th className="px-4 py-3 text-right font-semibold">{page.codeLabel}</th>
+                  {/* Both roles carry one — every supervisor on file has a
+                      bravo code, so this is not an observer-only field. */}
                   <th className="px-4 py-3 text-right font-semibold">رمز البرافو</th>
-                  <th className="px-4 py-3 text-right font-semibold">المركز/المراكز</th>
-                  <th className="px-4 py-3 text-right font-semibold">المشرف المسؤول</th>
+                  <th className="px-4 py-3 text-right font-semibold">
+                    {isObserver ? 'المركز' : 'المراكز'}
+                  </th>
+                  {isObserver ? (
+                    <th className="px-4 py-3 text-right font-semibold">المشرف المسؤول</th>
+                  ) : (
+                    <th className="px-4 py-3 text-right font-semibold">المراقبون</th>
+                  )}
                   <th className="px-4 py-3 text-right font-semibold">إجراء</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
                 {loading && (
                   <tr>
-                    <td colSpan={9} className="p-8 text-center text-muted">
+                    <td colSpan={colCount} className="p-8 text-center text-muted">
                       جارٍ التحميل...
                     </td>
                   </tr>
                 )}
                 {!loading && visible.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="p-8 text-center text-muted">
-                      {search ? `لم يتم العثور على نتائج لـ "${search}"` : 'لا يوجد مستخدمون'}
+                    <td colSpan={colCount} className="p-8 text-center text-muted">
+                      {search ? `لم يتم العثور على نتائج لـ "${search}"` : page.emptyText}
                     </td>
                   </tr>
                 )}
                 {visible.map((u) => {
                   const meta = ROLE_META[u.role] || ROLE_META.observer;
-                  const RoleIcon = meta.Icon;
                   return (
                     <tr
                       key={u.id}
@@ -937,18 +938,6 @@ export default function AdminUsers() {
                       <td className="px-4 py-3 text-muted" dir="ltr">
                         {u.phone || '—'}
                       </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${
-                            u.role === 'supervisor'
-                              ? 'bg-gradient-to-r from-primary-400 to-primary text-white shadow-sm'
-                              : 'bg-primary/10 text-primary border border-primary/20'
-                          }`}
-                        >
-                          <RoleIcon size={11} weight="bold" />
-                          {meta.label}
-                        </span>
-                      </td>
                       <td className="px-4 py-3 text-muted text-xs">
                         {u.roleCode ? (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-background border border-line text-primary font-bold">
@@ -967,7 +956,7 @@ export default function AdminUsers() {
                         <CentersCell user={u} />
                       </td>
                       <td className="px-4 py-3 text-xs">
-                        {u.role === 'observer' ? (() => {
+                        {isObserver ? (() => {
                           const sup = centerToSupervisor.get(u.center);
                           return sup ? (
                             <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gradient-to-br from-background to-white border border-line">
@@ -975,11 +964,22 @@ export default function AdminUsers() {
                               <span className="font-bold text-ink">{sup.nameAr || sup.name}</span>
                             </div>
                           ) : (
-                            <span className="text-muted">— غير محدد —</span>
+                            /* Worth naming: an observer whose centre no
+                               supervisor covers reports to nobody. */
+                            <span className="text-amber-700 font-bold">— بلا مشرف —</span>
                           );
-                        })() : (
-                          <span className="text-muted">—</span>
-                        )}
+                        })() : (() => {
+                          const n = observerLoad.get(u.id) || 0;
+                          return n ? (
+                            <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gradient-to-br from-background to-white border border-line">
+                              <Eye size={11} className="text-primary" weight="bold" />
+                              <span className="font-bold text-ink tabular-nums">{AR(n)}</span>
+                              <span className="text-muted">مراقب</span>
+                            </div>
+                          ) : (
+                            <span className="text-muted">— لا مراقبين —</span>
+                          );
+                        })()}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5">
@@ -1083,37 +1083,9 @@ export default function AdminUsers() {
                   />
                 </Field>
               </div>
-              <Field label="الدور" required>
-                <div className="grid grid-cols-2 gap-2">
-                  {ROLES.map((r) => {
-                    const RIcon = r.Icon;
-                    const active = editForm.role === r.value;
-                    return (
-                      <button
-                        key={r.value}
-                        type="button"
-                        onClick={() => setEditForm((p) => ({ ...p, role: r.value }))}
-                        className={`group/role relative overflow-hidden px-3 py-2.5 rounded-xl text-sm font-bold border-2 transition-all flex items-center justify-center gap-2 ${
-                          active
-                            ? 'border-primary bg-gradient-to-br from-primary-400 to-primary text-white shadow-[0_4px_14px_rgb(var(--c-primary)/0.4)] scale-[1.02]'
-                            : 'border-line bg-white text-muted hover:border-primary/50 hover:scale-[1.02]'
-                        }`}
-                      >
-                        <RIcon
-                          size={16}
-                          className={`transition-transform duration-300 ${
-                            active ? 'scale-110' : 'group-hover/role:scale-110'
-                          }`}
-                        />
-                        {r.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </Field>
               {/* Role-specific code + Bravo code */}
               <div className="grid grid-cols-2 gap-3">
-                <Field label={editForm.role === 'observer' ? 'رمز المراقب' : 'رمز المشرف'} required>
+                <Field label={page.codeLabel} required>
                   <input
                     value={editForm.roleCode}
                     onChange={(e) => setEditForm((p) => ({ ...p, roleCode: e.target.value }))}
@@ -1213,33 +1185,3 @@ export default function AdminUsers() {
   );
 }
 
-function FilterChip({ active, count, onClick, Icon, children }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`group/chip px-3 py-1.5 rounded-xl text-sm font-bold border transition-all flex items-center gap-1.5 ${
-        active
-          ? 'bg-gradient-to-br from-primary-400 to-primary text-white border-primary shadow-[0_3px_10px_rgb(var(--c-primary)/0.35)] scale-[1.03]'
-          : 'bg-white text-ink border-line hover:border-primary/50 hover:scale-[1.02]'
-      }`}
-    >
-      {Icon && (
-        <Icon
-          size={14}
-          className={`transition-transform duration-300 ${
-            active ? 'scale-110' : 'group-hover/chip:scale-110 text-primary'
-          }`}
-        />
-      )}
-      {children}
-      <span
-        className={`px-1.5 py-0.5 rounded-full text-xs ${
-          active ? 'bg-white/25 text-white' : 'bg-background text-primary'
-        }`}
-      >
-        {count}
-      </span>
-    </button>
-  );
-}

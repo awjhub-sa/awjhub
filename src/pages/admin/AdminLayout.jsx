@@ -14,6 +14,8 @@ import {
   Buildings as Building2,
   MapPinArea,
   Globe as Earth,
+  Eye,
+  ShieldCheck,
   FileText,
   ClipboardText,
   CaretDown,
@@ -70,7 +72,8 @@ const NAV = [
   ]},
 
   { key: 'people', label: 'المستخدمين', icon: UsersRound, children: [
-    { to: '/admin/users', label: 'المراقبين والمشرفين', icon: UsersRound   },
+    { to: '/admin/observers',   label: 'المراقبون', icon: Eye         },
+    { to: '/admin/supervisors', label: 'المشرفون',  icon: ShieldCheck },
     { to: '/admin/staff', label: 'الموظفين',             icon: UserRoundCog },
   ]},
 
