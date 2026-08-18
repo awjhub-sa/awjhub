@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { db } from '../../lib/db.js';
 import {
   Buildings as Building2,
@@ -21,6 +21,8 @@ import {
   Warning,
 } from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
+import CatererAccountDialog from '../../components/caterers/CatererAccountDialog.jsx';
+import { Key } from '@phosphor-icons/react';
 import { COLORS } from '../../config/brand.js';
 
 /* Hex, not rgb(var(--token)) — these colours get an alpha suffix appended
@@ -164,6 +166,18 @@ export default function AdminCaterers() {
     setError(null);
     setModalOpen(true);
   };
+
+  /* Which caterers already hold a sign-in account. Loaded once for the whole
+     table rather than per row, and refreshed when the dialog changes one. */
+  const [accounts, setAccounts] = useState({});
+  const [accountFor, setAccountFor] = useState(null);
+
+  const loadAccounts = useCallback(async () => {
+    const rows = await db.users.list({ filter: { role: 'caterer' } });
+    setAccounts(Object.fromEntries(
+      rows.filter(r => r.catererId).map(r => [r.catererId, r])));
+  }, []);
+  useEffect(() => { loadAccounts(); }, [loadAccounts]);
 
   const openEdit = (c) => {
     setForm({
@@ -346,16 +360,17 @@ export default function AdminCaterers() {
                 <th className="px-4 py-3 text-right font-semibold">ضابط الاتصال</th>
                 <th className="px-4 py-3 text-right font-semibold">المراكز</th>
                 <th className="px-4 py-3 text-right font-semibold">الحالة</th>
+                <th className="px-4 py-3 text-right font-semibold">حساب الدخول</th>
                 <th className="px-4 py-3 text-right font-semibold">إجراء</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
               {loading && (
-                <tr><td colSpan={7} className="p-8 text-center text-muted">جارٍ التحميل...</td></tr>
+                <tr><td colSpan={8} className="p-8 text-center text-muted">جارٍ التحميل...</td></tr>
               )}
               {!loading && visible.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-10 text-center">
+                  <td colSpan={8} className="p-10 text-center">
                     <Building2 size={34} className="mx-auto text-muted/30 mb-2" />
                     <p className="text-muted text-sm">
                       {caterers.length === 0
@@ -457,6 +472,24 @@ export default function AdminCaterers() {
                         <StatusIcon size={11} weight="bold" />
                         {meta.label}
                       </span>
+                    </td>
+
+                    <td className="px-4 py-3">
+                      {accounts[c.id] ? (
+                        <button onClick={() => setAccountFor(c)}
+                          className="inline-flex items-center gap-1 text-[10.5px] font-black px-2 py-1 rounded-lg
+                                     border border-success/30 text-success bg-success/5 hover:bg-success/10 max-w-[170px]">
+                          <Key size={10} weight="fill" className="flex-shrink-0" />
+                          <span className="truncate" dir="ltr">{accounts[c.id].email || 'مرتبط'}</span>
+                        </button>
+                      ) : (
+                        <button onClick={() => setAccountFor(c)}
+                          className="inline-flex items-center gap-1 text-[10.5px] font-bold px-2 py-1 rounded-lg
+                                     border border-line text-muted hover:text-primary hover:border-primary/40">
+                          <Key size={10} weight="bold" />
+                          إنشاء حساب
+                        </button>
+                      )}
                     </td>
 
                     <td className="px-4 py-3">
@@ -753,6 +786,14 @@ export default function AdminCaterers() {
             </div>
           </div>
         </div>
+      )}
+
+      {accountFor && (
+        <CatererAccountDialog
+          caterer={accountFor}
+          onClose={() => setAccountFor(null)}
+          onChanged={loadAccounts}
+        />
       )}
     </div>
   );
