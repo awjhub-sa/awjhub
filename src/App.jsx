@@ -24,6 +24,7 @@ import SupReport           from './pages/Supervisor/SupReport';
 import SupLogisticsRequest from './pages/Supervisor/SupLogisticsRequest';
 
 // صفحات المسؤول (Admin)
+import FormPrint           from './pages/FormPrint';
 import CatererLayout       from './pages/caterer/CatererLayout';
 import CatererHome         from './pages/caterer/CatererHome';
 import CatererReports      from './pages/caterer/CatererReports';
@@ -130,6 +131,13 @@ export default function App() {
         <Route
           path="/admin/live"
           element={<RequireAdmin><LiveScreen /></RequireAdmin>}
+        />
+
+        {/* One accepted form on paper — its own tab, so the print dialogue
+            gets a page with nothing else on it. */}
+        <Route
+          path="/forms/print/:id"
+          element={<RequireAuth><FormPrint /></RequireAuth>}
         />
 
         {/* Caterer portal — an outside company, so its own shell and guard. */}

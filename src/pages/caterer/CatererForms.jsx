@@ -21,7 +21,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { FileText, CheckCircle, WarningCircle, CaretLeft } from '@phosphor-icons/react';
+import { FileText, CheckCircle, WarningCircle, CaretLeft, Printer } from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
 import { db } from '../../lib/db.js';
 import { STATUS_META } from '../../config/formSchema.js';
@@ -164,7 +164,21 @@ export default function CatererForms() {
                           : '—'}
                       </td>
                       <td className="px-5 py-3.5">
-                        <CaretLeft size={15} weight="bold" className="text-muted" />
+                        {/* Printing is offered only once the office has accepted
+                            the filing — a draft on letterhead asserts something
+                            that was never agreed. */}
+                        {a.status === 'accepted' ? (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); window.open(`/forms/print/${a.id}`, '_blank', 'noopener'); }}
+                            title="طباعة النموذج"
+                            className="inline-flex items-center gap-1.5 text-[12.5px] font-bold px-2.5 py-1.5 rounded-lg
+                                       border border-primary/25 text-primary hover:bg-primary/5 transition-colors">
+                            <Printer size={14} weight="bold" />
+                            طباعة
+                          </button>
+                        ) : (
+                          <CaretLeft size={15} weight="bold" className="text-muted" />
+                        )}
                       </td>
                     </tr>
                   );

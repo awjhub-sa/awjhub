@@ -15,6 +15,7 @@ import {
   FileText, Plus, X, FloppyDisk as Save, Pencil, Trash as Trash2, Copy,
   PaperPlaneTilt, MagnifyingGlass as Search, Eye, Warning, CalendarBlank,
   CheckCircle, Clock, Lock, Buildings as Building2, CaretLeft, Sparkle,
+  Printer,
 } from '@phosphor-icons/react';
 
 const inputCls =
@@ -604,9 +605,22 @@ export default function AdminForms() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <Action onClick={() => setOpenId(a.id)} Icon={Eye} tone="primary">
-                          {['submitted'].includes(a.status) ? 'مراجعة' : 'فتح'}
-                        </Action>
+                        <div className="flex items-center gap-1.5">
+                          <Action onClick={() => setOpenId(a.id)} Icon={Eye} tone="primary">
+                            {['submitted'].includes(a.status) ? 'مراجعة' : 'فتح'}
+                          </Action>
+                          {/* Offered only once accepted, and to both sides —
+                              the caterer prints the same sheet from their
+                              portal, so a filing and its copy cannot differ. */}
+                          {a.status === 'accepted' && (
+                            <Action
+                              onClick={() => window.open(`/forms/print/${a.id}`, '_blank', 'noopener')}
+                              Icon={Printer}
+                            >
+                              طباعة
+                            </Action>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

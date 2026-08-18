@@ -1,0 +1,101 @@
+/* form-print.css — one accepted form, on paper.
+ *
+ * The screen shows the sheet on a grey desk so its edges are visible; the
+ * printer gets the sheet alone. Everything here is either the desk or the
+ * removal of the desk.
+ */
+
+.fp-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(var(--c-canvas));
+  padding: 24px;
+}
+
+.fp-page {
+  min-height: 100vh;
+  background: #E4E9F0;
+  padding: 0 0 40px;
+}
+
+/* ── the toolbar ── */
+.fp-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgb(var(--c-primary));
+  border-bottom: 1px solid rgb(255 255 255 / 0.1);
+}
+.fp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid rgb(255 255 255 / 0.2);
+  background: rgb(255 255 255 / 0.12);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background .15s;
+}
+.fp-btn:hover { background: rgb(255 255 255 / 0.22); }
+.fp-primary {
+  background: rgb(var(--c-accent));
+  border-color: transparent;
+  color: rgb(var(--c-primary-900));
+}
+.fp-primary:hover { background: rgb(var(--c-accent) / 0.85); }
+.fp-hint {
+  margin-inline-start: auto;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: rgb(255 255 255 / 0.6);
+}
+
+/* ── the desk ── */
+.fp-sheet {
+  padding: 28px 16px;
+  display: flex;
+  justify-content: center;
+}
+
+/* ── paper ──────────────────────────────────────────────────
+   A4 with a real margin, and the toolbar and desk taken away. The document
+   itself already drops its frame in print mode, so nothing here has to fight
+   a border off the page. */
+@page {
+  size: A4 portrait;
+  margin: 14mm;
+}
+
+@media print {
+  .fp-bar { display: none !important; }
+
+  .fp-page { background: #fff !important; padding: 0 !important; min-height: 0 !important; }
+  .fp-sheet { padding: 0 !important; display: block !important; }
+
+  /* The sheet is the page: no width cap, no centring gutter, no shadow. */
+  .fp-sheet > * {
+    max-width: none !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border: 0 !important;
+  }
+
+  /* A signature or a table split across a page break is a document nobody
+     will accept. */
+  table, img { break-inside: avoid; page-break-inside: avoid; }
+
+  /* Colour matters here — the letterhead rule and the brand navy carry the
+     document's identity, and browsers drop backgrounds by default. */
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

@@ -7,6 +7,11 @@
  *   preview  the builder's live pane — blanks are dotted, nothing is editable
  *   fill     the caterer filling it in — blanks become inputs
  *   view     a submitted form — values printed as text
+ *   print    the same, dressed for paper: no page frame, and the signature
+ *            and stamp sit on the sheet rather than inside a dashed box —
+ *            a box drawn round a signature is scaffolding for filling one
+ *            in, and printing it makes a finished document look like a form
+ *            somebody forgot to complete
  *
  * Keeping them in one component is the point: what the author sees while
  * building is exactly what the caterer fills and exactly what prints. Three
@@ -138,7 +143,7 @@ function Input({ fieldKey, def, value, error, onChange, onUpload, disabled }) {
 function Slot(props) {
   const { mode, def, as } = props;
   if (mode === 'preview') return <Blank def={def} fieldKey={props.fieldKey} />;
-  if (mode === 'view')    return <Printed value={props.value} def={def} />;
+  if (mode === 'view' || mode === 'print') return <Printed value={props.value} def={def} />;
   return <Input {...props} disabled={fieldOwner(def) !== as} />;
 }
 
@@ -342,7 +347,16 @@ function Block({ block, fields, mode, as, values, errors, onChange }) {
         <div className="mt-10 flex flex-wrap gap-10 justify-around">
           {slots.map(s => {
             const img = values[s.key];
-            const box = (
+            /* On paper the box goes and a rule takes its place — the same line
+               a signature is written above on any letter. On screen the dashed
+               box stays, because there it means "something goes here". */
+            const box = mode === 'print' ? (
+              <div className="h-24 flex items-end justify-center overflow-hidden">
+                {img
+                  ? <img src={img} alt={s.label} className="max-h-[92px] object-contain" />
+                  : <span className="w-full border-b border-ink/40" />}
+              </div>
+            ) : (
               <div className={`h-20 rounded-lg border border-dashed border-line bg-background/40 flex items-center justify-center overflow-hidden ${
                 mode === 'fill' ? 'cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors' : ''
               }`}>
@@ -355,7 +369,7 @@ function Block({ block, fields, mode, as, values, errors, onChange }) {
             );
             return (
               <div key={s.key} className="w-48 text-center">
-                <p className="text-xs font-bold text-ink mb-2">{s.label}</p>
+                {mode !== 'print' && <p className="text-xs font-bold text-ink mb-2">{s.label}</p>}
                 {mode === 'fill' ? (
                   <label className="block">
                     <input
@@ -367,6 +381,9 @@ function Block({ block, fields, mode, as, values, errors, onChange }) {
                     {box}
                   </label>
                 ) : box}
+                {mode === 'print' && (
+                  <p className="text-[11px] font-bold text-ink mt-1.5">{s.label}</p>
+                )}
               </div>
             );
           })}
@@ -396,12 +413,15 @@ export default function FormDocument({
 }) {
   const { brand } = useBrand();
   const { blocks = [], fields = {} } = definition;
+  /* Print is view, plus the paper treatment. Everything that asks "is this
+     read-only?" should say yes for both. */
+  const isPaper = mode === 'print';
   const today = new Date();
   const hijri = (() => { try { return formatHijri(today); } catch { return null; } })();
 
   return (
     <div
-      className="bg-white mx-auto shadow-[0_2px_16px_rgb(var(--c-ink)/0.10)] border border-line"
+      className={`bg-white mx-auto ${isPaper ? '' : 'shadow-[0_2px_16px_rgb(var(--c-ink)/0.10)] border border-line'}`}
       style={{ width: '100%', maxWidth: 794, minHeight: 400 }}   /* 794px ≈ A4 at 96dpi */
       dir="rtl"
     >
