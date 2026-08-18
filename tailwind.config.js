@@ -47,13 +47,33 @@ export default {
       fontFamily: {
         arabic: ['"Cairo"', 'Tahoma', 'sans-serif'],
       },
+      /* Softer and more generous than Tailwind's defaults.
+       *
+       * Changed here rather than page by page: rounded-xl appears 409 times in
+       * this codebase and rounded-2xl 369, so the shape of the whole system is
+       * decided by these six numbers. Editing twenty screens to round a corner
+       * would have guaranteed that three of them ended up different. */
+      borderRadius: {
+        md:    '0.625rem',   // 10px — chips, small controls
+        lg:    '0.75rem',    // 12px — inputs, buttons
+        xl:    '1rem',       // 16px — inner panels, icon tiles
+        '2xl': '1.375rem',   // 22px — cards and sections
+        '3xl': '1.75rem',    // 28px — drawers, dialogs
+      },
+
+      /* Two shadows stacked rather than one: a hairline that seats the card on
+       * the page, and a wide soft pool beneath it. A single mid-blur shadow is
+       * what makes an interface look like 2016 — it reads as a drop shadow
+       * instead of as light. */
       boxShadow: {
-        brand:      '0 4px 24px rgb(var(--c-primary) / 0.18)',
-        'brand-lg': '0 8px 40px rgb(var(--c-primary) / 0.25)',
-        gold:       '0 4px 24px rgb(var(--c-primary) / 0.18)',
-        'gold-lg':  '0 8px 40px rgb(var(--c-primary) / 0.25)',
-        card:       '0 2px 16px rgb(var(--c-ink) / 0.08)',
-        'card-lg':  '0 8px 32px rgb(var(--c-ink) / 0.12)',
+        brand:      '0 2px 6px -2px rgb(var(--c-primary) / 0.24), 0 12px 32px -12px rgb(var(--c-primary) / 0.34)',
+        'brand-lg': '0 4px 10px -3px rgb(var(--c-primary) / 0.28), 0 24px 56px -16px rgb(var(--c-primary) / 0.42)',
+        gold:       '0 2px 6px -2px rgb(var(--c-accent) / 0.28), 0 12px 32px -12px rgb(var(--c-accent) / 0.40)',
+        'gold-lg':  '0 4px 10px -3px rgb(var(--c-accent) / 0.32), 0 24px 56px -16px rgb(var(--c-accent) / 0.46)',
+        card:       '0 1px 2px rgb(var(--c-ink) / 0.04), 0 8px 24px -10px rgb(var(--c-ink) / 0.14)',
+        'card-lg':  '0 2px 4px rgb(var(--c-ink) / 0.05), 0 20px 48px -16px rgb(var(--c-ink) / 0.20)',
+        /* For the hover lift — barely there, but the eye reads it as motion. */
+        lift:       '0 4px 8px -4px rgb(var(--c-ink) / 0.10), 0 18px 40px -14px rgb(var(--c-ink) / 0.22)',
       },
       backgroundImage: {
         'brand-gradient': 'linear-gradient(135deg, rgb(var(--c-primary-400)) 0%, rgb(var(--c-primary)) 50%, rgb(var(--c-primary-700)) 100%)',

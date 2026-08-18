@@ -1,14 +1,27 @@
 /**
- * PageHeader — the masthead every admin section opens with.
+ * src/components/PageHeader.jsx
  *
- * One component, so the sections cannot drift apart: a navy band carrying the
- * identity and the numbers that matter to that section, and — when the section
- * has controls — a light strip beneath it holding them.
+ * The masthead every section wears.
  *
- * The split is deliberate. Controls are pale, bordered, gradient-filled things
- * designed for a white surface; dropping them onto the navy would have meant
- * restyling every button in the app. The band says where you are and how much
- * of it there is; the strip is where you act.
+ * One component for twenty-odd screens, so it is where the system's character
+ * is decided. The colours are the brand's and do not change; what changed is
+ * everything about how they are arranged.
+ *
+ * Three things do the work:
+ *
+ *   Light, not paint. The accent used to sit as a flat tinted square behind the
+ *   icon. Now it arrives as two soft blooms across the navy and a thin bright
+ *   seam along the top edge, so the surface reads as lit rather than coloured
+ *   in. A flat field of tint is the single most dating thing an interface can
+ *   do to itself.
+ *
+ *   Figures as objects. The statistics were loose numerals floating on the
+ *   band; they are now frosted tiles with their own edge, which lets them be
+ *   read at a glance and gives the right-hand side a shape rather than a ragged
+ *   edge.
+ *
+ *   Room. The band is taller and the type is larger, because a masthead that
+ *   sits tight against its own text reads as a toolbar.
  */
 
 export default function PageHeader({
@@ -30,57 +43,85 @@ export default function PageHeader({
   gradient, glowColor, sparkle,
 }) {
   return (
-    <div className="rounded-2xl overflow-hidden border border-line shadow-[0_6px_24px_rgb(var(--c-primary-900)/0.18)]">
-      <div className="relative px-4 sm:px-5 py-4 flex items-center justify-between gap-4 flex-wrap"
-        style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary)) 0%, rgb(var(--c-primary-700)) 100%)' }}>
+    <div className="rounded-3xl overflow-hidden shadow-brand">
+      <div
+        className="relative px-5 sm:px-7 py-6 sm:py-7 flex items-center justify-between gap-5 flex-wrap"
+        style={{
+          background:
+            'linear-gradient(140deg, rgb(var(--c-primary-700)) 0%, rgb(var(--c-primary)) 42%, rgb(var(--c-primary-900)) 100%)',
+        }}
+      >
+        {/* Two blooms rather than one: a warm one where the eye lands first and
+            a cool one opposite, so the band has depth across its width instead
+            of a single bright corner. */}
+        <span aria-hidden className="pointer-events-none absolute -top-28 -left-16 w-[26rem] h-64 rounded-full opacity-[0.22]"
+          style={{ background: 'radial-gradient(circle, rgb(var(--c-accent)) 0%, transparent 66%)' }} />
+        <span aria-hidden className="pointer-events-none absolute -bottom-32 -right-10 w-96 h-64 rounded-full opacity-[0.20]"
+          style={{ background: 'radial-gradient(circle, rgb(var(--c-primary-400)) 0%, transparent 70%)' }} />
+        {/* The seam — one hairline of accent along the top, the way light
+            catches an edge. */}
+        <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px"
+          style={{ background: 'linear-gradient(90deg, transparent, rgb(var(--c-accent) / 0.55), transparent)' }} />
 
-        {/* A warm bloom in the corner — the accent as light, not as a field. */}
-        <span aria-hidden className="pointer-events-none absolute -top-20 -left-10 w-64 h-48 rounded-full opacity-[0.16]"
-          style={{ background: 'radial-gradient(circle, rgb(var(--c-accent)) 0%, transparent 68%)' }} />
-
-        <div className="relative flex items-center gap-3 min-w-0">
+        <div className="relative flex items-center gap-4 min-w-0">
           {Icon && (
-            <span className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 border border-accent/40 bg-accent/12">
-              <Icon size={21} weight="bold" className="text-accent" />
+            <span
+              className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0
+                         border border-white/15 backdrop-blur-sm"
+              style={{
+                background: 'linear-gradient(150deg, rgb(var(--c-accent) / 0.28), rgb(var(--c-accent) / 0.08))',
+                boxShadow: 'inset 0 1px 0 rgb(255 255 255 / 0.18)',
+              }}
+            >
+              <Icon size={26} weight="duotone" className="text-accent" />
             </span>
           )}
           <div className="min-w-0">
-            <p className="text-[10px] font-black tracking-[0.2em] text-accent/85">
+            <p className="text-[10.5px] font-black tracking-[0.22em] text-accent/90 uppercase">
               {kicker || 'لوحة الإدارة'}
             </p>
-            <h1 className="text-lg sm:text-xl font-black text-white mt-1 truncate">{title}</h1>
+            <h1 className="text-[22px] sm:text-[26px] font-black text-white mt-1.5 truncate leading-tight">
+              {title}
+            </h1>
             {subtitle && (
-              <p className="text-[11px] font-bold text-white/55 mt-0.5 truncate">{subtitle}</p>
+              <p className="text-[12.5px] font-bold text-white/60 mt-1 truncate">{subtitle}</p>
             )}
           </div>
         </div>
 
         {(stats.length > 0 || heroActions) && (
-          <div className="relative flex items-center gap-4 sm:gap-5 flex-shrink-0 flex-wrap">
+          <div className="relative flex items-center gap-2.5 flex-shrink-0 flex-wrap">
             {stats.map((s, i) => (
-              <div key={i} className="text-center px-1">
-                <p className={`text-xl font-black tabular-nums leading-none ${
+              <div
+                key={i}
+                className="px-4 py-2.5 rounded-2xl border border-white/12 backdrop-blur-sm text-center min-w-[76px]"
+                style={{
+                  background: s.tone === 'gold'
+                    ? 'rgb(var(--c-accent) / 0.16)'
+                    : s.tone === 'alert'
+                      ? 'rgb(220 38 38 / 0.20)'
+                      : 'rgb(255 255 255 / 0.07)',
+                }}
+              >
+                <p className={`text-[25px] font-black tabular-nums leading-none ${
                   s.tone === 'gold' ? 'text-accent'
-                    : s.tone === 'alert' ? 'text-red-400'
+                    : s.tone === 'alert' ? 'text-red-300'
                     : 'text-white'
                 }`}>
                   {s.value}
                 </p>
-                <p className="text-[10px] font-bold text-white/50 mt-1 whitespace-nowrap">{s.label}</p>
+                <p className="text-[10.5px] font-bold text-white/60 mt-1.5 whitespace-nowrap">{s.label}</p>
               </div>
             ))}
             {heroActions && (
-              <>
-                {stats.length > 0 && <span className="w-px h-10 bg-white/12" />}
-                <div className="flex items-center gap-2 flex-wrap">{heroActions}</div>
-              </>
+              <div className="flex items-center gap-2 flex-wrap ms-1">{heroActions}</div>
             )}
           </div>
         )}
       </div>
 
       {right && (
-        <div className="px-4 sm:px-5 py-2.5 bg-white border-t border-line flex items-center justify-end gap-2 flex-wrap">
+        <div className="px-5 sm:px-7 py-3 bg-white border-t border-line flex items-center justify-end gap-2 flex-wrap">
           {right}
         </div>
       )}

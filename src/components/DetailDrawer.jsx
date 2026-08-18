@@ -53,7 +53,7 @@ export default function DetailDrawer({
       <div className="fixed inset-0 z-[60]" dir="rtl">
         <div
           onClick={onClose}
-          className="dw-veil absolute inset-0 bg-[rgb(var(--c-primary-900)/0.55)] backdrop-blur-[2px]"
+          className="dw-veil absolute inset-0 bg-[rgb(var(--c-primary-900)/0.62)] backdrop-blur-[3px]"
           style={{ animation: 'dwFade .18s ease-out both' }}
         />
 
@@ -61,31 +61,32 @@ export default function DetailDrawer({
             margin: in a right-to-left flex row the auto margin left the panel a
             full width off-screen. */}
         <aside
-          className="dw-panel absolute inset-y-0 left-0 bg-canvas shadow-[0_0_60px_rgb(var(--c-primary-900)/0.45)] flex flex-col"
+          className="dw-panel absolute inset-y-0 left-0 bg-canvas flex flex-col
+                     rounded-s-3xl overflow-hidden shadow-[0_0_80px_rgb(var(--c-primary-900)/0.5)]"
           style={{ width: `min(${width}px, 100%)`, animation: 'dwSlide .26s cubic-bezier(.2,.8,.2,1) both' }}
           onClick={e => e.stopPropagation()}
         >
             {/* ── Hero ── */}
-            <header className="relative px-5 pt-5 pb-4 flex-shrink-0 overflow-hidden"
+            <header className="relative px-6 pt-6 pb-5 flex-shrink-0 overflow-hidden"
               style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary)) 0%, rgb(var(--c-primary-700)) 100%)' }}>
-              <span aria-hidden className="pointer-events-none absolute -top-24 -left-12 w-72 h-56 rounded-full opacity-[0.18]"
+              <span aria-hidden className="pointer-events-none absolute -top-24 -left-12 w-80 h-60 rounded-full opacity-[0.24]"
                 style={{ background: `radial-gradient(circle, ${accent} 0%, transparent 68%)` }} />
               <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px]"
                 style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }} />
 
               <div className="relative flex items-start gap-3">
                 {Icon && (
-                  <span className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 border"
+                  <span className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 border backdrop-blur-sm"
                     style={{ borderColor: `${accent}66`, background: `${accent}1F` }}>
                     <Icon size={23} weight="bold" style={{ color: accent }} />
                   </span>
                 )}
                 <div className="min-w-0 flex-1">
                   {kicker && (
-                    <p className="text-[10px] font-black tracking-[0.2em]" style={{ color: accent }}>{kicker}</p>
+                    <p className="text-[10.5px] font-black tracking-[0.22em] uppercase" style={{ color: accent }}>{kicker}</p>
                   )}
-                  <h2 className="text-lg font-black text-white mt-1 leading-tight">{title}</h2>
-                  {subtitle && <p className="text-[11px] font-bold text-white/55 mt-1">{subtitle}</p>}
+                  <h2 className="text-[21px] font-black text-white mt-1.5 leading-tight">{title}</h2>
+                  {subtitle && <p className="text-[12.5px] font-bold text-white/60 mt-1">{subtitle}</p>}
                 </div>
                 <button onClick={onClose} aria-label="إغلاق"
                   className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-white/70 border border-white/20 hover:text-white hover:bg-white/10 transition-colors">

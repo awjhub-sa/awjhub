@@ -114,8 +114,11 @@ const spring = { type: 'spring', stiffness: 400, damping: 18 };
 /* ── Nav pieces ───────────────────────────────────────────── */
 
 const iconBox = (isActive) => ({
-  background:  isActive ? 'rgb(var(--c-accent) / 0.18)' : 'rgba(255,255,255,0.06)',
-  borderColor: isActive ? 'rgb(var(--c-accent) / 0.45)' : 'rgba(255,255,255,0.10)',
+  background: isActive
+    ? 'linear-gradient(150deg, rgb(var(--c-accent) / 0.32), rgb(var(--c-accent) / 0.12))'
+    : 'rgba(255,255,255,0.055)',
+  borderColor: isActive ? 'rgb(var(--c-accent) / 0.45)' : 'rgba(255,255,255,0.09)',
+  boxShadow: isActive ? 'inset 0 1px 0 rgb(255 255 255 / 0.16)' : 'none',
 });
 
 function NavItem({ item, idx, onNavigate, pendingCount, nested }) {
@@ -125,13 +128,16 @@ function NavItem({ item, idx, onNavigate, pendingCount, nested }) {
       to={to}
       onClick={onNavigate}
       className={({ isActive }) =>
-        `group flex items-center gap-3 rounded-xl text-sm transition-colors duration-150 ${
+        `group relative flex items-center gap-3 rounded-xl text-sm transition-all duration-200 mx-2 ${
           nested ? 'px-2.5 py-2' : 'px-3 py-2.5'
-        } ${isActive ? 'text-white font-bold' : 'text-white/80 font-semibold hover:text-white'}`
+        } ${isActive ? 'text-white font-bold' : 'text-white/75 font-semibold hover:text-white hover:bg-white/[0.07]'}`
       }
       style={({ isActive }) => isActive
-        ? { background: 'rgb(255 255 255 / 0.12)', borderRight: '3px solid rgb(var(--c-accent))' }
-        : { borderRight: '3px solid transparent' }}
+        ? {
+            background: 'linear-gradient(100deg, rgb(var(--c-accent) / 0.20), rgb(255 255 255 / 0.06))',
+            boxShadow: 'inset 0 1px 0 rgb(255 255 255 / 0.12)',
+          }
+        : undefined}
     >
       {({ isActive }) => (
         <>
@@ -147,9 +153,9 @@ function NavItem({ item, idx, onNavigate, pendingCount, nested }) {
             style={iconBox(isActive)}
           >
             <Icon
-              size={nested ? 14 : 17}
-              weight={isActive ? 'bold' : 'regular'}
-              color={isActive ? 'rgb(var(--c-accent))' : 'rgba(255,255,255,0.75)'}
+              size={nested ? 15 : 18}
+              weight={isActive ? 'fill' : 'duotone'}
+              color={isActive ? 'rgb(var(--c-accent))' : 'rgba(255,255,255,0.78)'}
             />
           </motion.div>
 
@@ -167,7 +173,10 @@ function NavItem({ item, idx, onNavigate, pendingCount, nested }) {
             </motion.span>
           )}
 
-          {isActive && <ChevronRight size={12} weight="bold" className="opacity-40 flex-shrink-0" />}
+          {isActive && (
+            <span aria-hidden className="absolute inset-y-2 right-0 w-[3px] rounded-full"
+              style={{ background: 'rgb(var(--c-accent))' }} />
+          )}
         </>
       )}
     </NavLink>
