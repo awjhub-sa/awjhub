@@ -85,6 +85,56 @@ const DAYS = [
   { id: '13', label: '١٣ ذو الحجة' },
 ];
 
+/* Milliseconds out of whatever shape the timestamp arrived in. */
+const tsMs = (v) => {
+  if (!v) return null;
+  try {
+    const d = v.toDate ? v.toDate() : (v.seconds ? new Date(v.seconds * 1000) : new Date(v));
+    return isNaN(d.getTime()) ? null : d.getTime();
+  } catch { return null; }
+};
+
+/* Where a centre stands this minute: the last step it completed, how long ago,
+   and therefore what it is waiting on. */
+function liveState(data, nowMs) {
+  const marks = [1, 2, 3].map(i => tsMs(data?.[`phase${i}`]));
+  const done = marks.filter(Boolean).length;
+  const lastAt = marks.filter(Boolean).length ? Math.max(...marks.filter(Boolean)) : null;
+  const sinceMin = lastAt ? Math.floor((nowMs - lastAt) / 60000) : null;
+  return {
+    done,
+    lastAt,
+    sinceMin,
+    /* The step it is on now — 0 means it has not started. */
+    current: done >= 3 ? null : done + 1,
+    complete: done >= 3,
+  };
+}
+
+/* A stall is time without movement, and how much is too much depends on what
+   is being waited for.
+   
+   Waiting on distribution is the short one — the food is already cooked and
+   sitting, and that is a temperature problem before it is a scheduling one.
+   Waiting on cooking is slower to matter: prepared trays keep.
+
+   There is no entry for 1: a stall needs at least one completed step to
+   measure from, so a centre that has not started is "لم يبدأ", never
+   "متوقّف" — the two look identical in a percentage and are not the same
+   problem. */
+const STALL_MIN = { 2: 60, 3: 30 };
+const isStalled = (st) =>
+  !st.complete && st.done > 0 && st.sinceMin != null
+  && st.sinceMin >= (STALL_MIN[st.current] ?? 60);
+
+const sinceLabel = (min) => {
+  if (min == null) return null;
+  if (min < 1) return 'الآن';
+  if (min < 60) return `منذ ${min} د`;
+  const h = Math.floor(min / 60), m = min % 60;
+  return m ? `منذ ${h} س ${m} د` : `منذ ${h} س`;
+};
+
 // دالة الوقت المحسنة لمنع الانهيار
 function fmtTime(ts) {
   if (!ts) return null;
@@ -281,8 +331,19 @@ export default function AdminPhases() {
             now, dateOnly: selectedDateOnly,
           })
         : { phase1Late: false, phase3Late: false, prepStart: null, distStart: null, hasMenuTime: false };
-      return { center: c.id, caterer: c.caterer, total, data, evalDoc, alerts, hasMeal };
+      const live = liveState(data, now.getTime());
+      return { center: c.id, caterer: c.caterer, total, data, evalDoc, alerts, hasMeal, live,
+               stalled: hasMeal && isStalled(live) };
     });
+    /* Stalled first, longest-stopped at the top — the order someone working
+       the phones needs. Centres with no meal on the menu sink to the bottom
+       whatever the sort, because nothing is expected of them. */
+    if (sortBy === 'stalled') {
+      return [...list].sort((a, b) =>
+        (a.hasMeal === b.hasMeal ? 0 : a.hasMeal ? -1 : 1)
+        || (b.stalled ? 1 : 0) - (a.stalled ? 1 : 0)
+        || (b.live.sinceMin ?? -1) - (a.live.sinceMin ?? -1));
+    }
     if (sortBy === 'progress') return [...list].sort((a, b) => b.total - a.total);
     return list;
   }, [phasesData, selectedDay, selectedMeal, sortBy, evalLookup, now, selectedDateOnly]);
@@ -297,6 +358,15 @@ export default function AdminPhases() {
   const overallPct = totalEligible > 0
     ? Math.round((eligibleRows.reduce((s, r) => s + r.total, 0) / (totalEligible * maxDone)) * 100)
     : 0;
+
+  /* Where the fleet is standing this minute. Two centres at "50%" can be in
+     different phases; percentage averages that away, and during service the
+     phase is the thing you act on. */
+  const waiting = PHASES.map(p => ({
+    ...p,
+    n: eligibleRows.filter(r => !r.live.complete && r.live.current === p.id).length,
+  }));
+  const stalledCount = eligibleRows.filter(r => r.stalled).length;
 
   /* Selected-meal meta (label, icon, color) for the header strip + progress bar */
   const mealMeta = MEALS.find(m => m.id === selectedMeal) || MEALS[0];
@@ -317,11 +387,13 @@ export default function AdminPhases() {
         right={
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setSortBy(s => s === 'progress' ? 'center' : 'progress')}
+              onClick={() => setSortBy(s =>
+                s === 'stalled' ? 'progress' : s === 'progress' ? 'center' : 'stalled')}
               className="flex items-center gap-2 px-3 py-2 rounded-xl border border-line bg-white text-ink text-xs font-bold hover:border-primary hover:bg-background transition-all flex-shrink-0"
             >
               <RotateCcw size={13} weight="regular" className="text-primary" />
-              {sortBy === 'progress' ? 'ترتيب حسب التقدم' : 'ترتيب حسب المركز'}
+              {sortBy === 'stalled' ? 'الأطول توقّفاً أولاً'
+                : sortBy === 'progress' ? 'ترتيب حسب التقدم' : 'ترتيب حسب المركز'}
             </button>
             {!clearConfirm ? (
               <button
@@ -493,10 +565,43 @@ export default function AdminPhases() {
         </div>
       </div>
 
+      {/* Where everyone is standing, before the detail of who */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {waiting.map(p => (
+          <button
+            key={p.id}
+            onClick={() => setSortBy('stalled')}
+            className="bg-white rounded-2xl border border-line p-4 text-right transition-shadow hover:shadow-lift"
+            style={{ borderTop: `3px solid ${p.color}` }}
+          >
+            <p className="text-[26px] font-black tabular-nums leading-none" style={{ color: p.color }}>
+              {p.n}
+            </p>
+            <p className="text-[11.5px] font-bold text-ink mt-1.5">بانتظار {p.label}</p>
+            <p className="text-[10px] font-bold text-muted mt-0.5">
+              {p.n ? `من ${totalEligible} مركز` : 'لا أحد'}
+            </p>
+          </button>
+        ))}
+        <div className="bg-white rounded-2xl border p-4"
+          style={{ borderColor: stalledCount ? '#FECACA' : 'rgb(var(--c-line))',
+                   borderTop: `3px solid ${stalledCount ? '#DC2626' : '#5E9070'}`,
+                   background: stalledCount ? 'color-mix(in srgb, #DC2626 5%, #fff)' : '#fff' }}>
+          <p className="text-[26px] font-black tabular-nums leading-none"
+            style={{ color: stalledCount ? '#DC2626' : '#5E9070' }}>
+            {stalledCount}
+          </p>
+          <p className="text-[11.5px] font-bold text-ink mt-1.5">متوقّف</p>
+          <p className="text-[10px] font-bold text-muted mt-0.5">
+            {stalledCount ? 'لم يتحرّك منذ مدة' : 'كل شيء يتقدّم'}
+          </p>
+        </div>
+      </div>
+
       {/* Table — one row per center, columns for each of the 3 phases of the selected meal */}
       <div className="bg-gradient-to-br from-white via-white to-background/40 rounded-2xl border border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgb(var(--c-primary)/0.14)] overflow-hidden">
-        <div className="grid gap-3 px-5 py-3 border-b border-line bg-bg"
-          style={{ gridTemplateColumns: '1.6fr repeat(3, 1fr) 0.7fr 0.9fr 0.5fr' }}>
+        <div className="grid gap-3 px-5 py-3 border-b border-line bg-bg sticky top-0 z-20"
+          style={{ gridTemplateColumns: '1.5fr repeat(3, 1fr) 1fr 0.6fr 0.8fr 0.5fr' }}>
           <p className="text-[11px] font-bold text-muted">المركز / المتعهد</p>
           {PHASES.map(phase => (
             <div key={phase.id} className="flex items-center justify-center gap-1.5">
@@ -508,6 +613,7 @@ export default function AdminPhases() {
               <p className="text-[11px] font-bold text-muted">{phase.label}</p>
             </div>
           ))}
+          <p className="text-[11px] font-bold text-muted text-center">الحالة الآن</p>
           <p className="text-[11px] font-bold text-muted text-center">التقدم</p>
           <p className="text-[11px] font-bold text-muted text-center">تقييم الوجبة</p>
           <p className="text-[11px] font-bold text-muted text-center">إجراء</p>
@@ -523,8 +629,8 @@ export default function AdminPhases() {
           return (
             <div
               key={row.center}
-              className={`grid gap-3 px-5 py-3.5 items-center group/row transition-colors ${!isLast ? 'border-b border-line' : ''} ${isLate ? 'row-pulse-red' : noMeal ? 'bg-bg/60' : 'hover:bg-[#FDFAF7]'}`}
-              style={{ gridTemplateColumns: '1.6fr repeat(3, 1fr) 0.7fr 0.9fr 0.5fr' }}
+              className={`grid gap-3 px-5 py-3.5 items-center group/row transition-colors ${!isLast ? 'border-b border-line' : ''} ${isLate ? 'row-pulse-red' : row.stalled ? 'bg-red-50/70' : noMeal ? 'bg-bg/60' : 'hover:bg-[#FDFAF7]'}`}
+              style={{ gridTemplateColumns: '1.5fr repeat(3, 1fr) 1fr 0.6fr 0.8fr 0.5fr' }}
             >
               {/* Center info */}
               <div className="min-w-0 flex items-center gap-2.5">
@@ -606,6 +712,31 @@ export default function AdminPhases() {
                   </div>
                 );
               })}
+
+              {/* Where it stands this minute */}
+              <div className="text-center min-w-0">
+                {noMeal ? (
+                  <span className="text-[10px] font-bold text-muted/60">—</span>
+                ) : row.live.complete ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-black text-[#5E9070]">
+                    <CheckCircle2 size={12} weight="fill" />
+                    اكتملت
+                  </span>
+                ) : row.live.done === 0 ? (
+                  <span className="text-[11px] font-bold text-muted">لم يبدأ</span>
+                ) : (
+                  <>
+                    <p className="text-[11.5px] font-black truncate"
+                      style={{ color: row.stalled ? '#DC2626' : PHASES[row.live.current - 1].color }}>
+                      بانتظار {PHASES[row.live.current - 1].label}
+                    </p>
+                    <p className="text-[10px] font-bold tabular-nums mt-0.5"
+                      style={{ color: row.stalled ? '#DC2626' : 'rgb(var(--c-muted))' }}>
+                      {sinceLabel(row.live.sinceMin)}
+                    </p>
+                  </>
+                )}
+              </div>
 
               {/* Progress */}
               <div className="text-center">
