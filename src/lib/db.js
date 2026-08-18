@@ -65,7 +65,13 @@ function logErr(op, error) {
 function createTableApi(table, { pk = 'id' } = {}) {
   return {
     async list(options = {}) {
-      let q = supabase.from(table).select('*');
+      /* `columns` narrows the select. Used by the caterer portal, which must
+         never request the office's internal notes — discarding them in the
+         browser would be too late, they would already have been sent. */
+      const projection = options.columns
+        ? options.columns.map(toSnake).join(',')
+        : '*';
+      let q = supabase.from(table).select(projection);
       if (options.filter) {
         for (const [k, v] of Object.entries(options.filter)) {
           q = q.eq(toSnake(k), v);

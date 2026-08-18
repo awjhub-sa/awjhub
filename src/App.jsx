@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
-import { RequireAuth, RequireAdmin } from './components/PrivateRoute.jsx';
+import { RequireAuth, RequireAdmin, RequireCaterer } from './components/PrivateRoute.jsx';
 import React, { useEffect } from 'react';
 import { loadMenus } from './lib/menuStore.js';
 import { loadNationalities } from './lib/nationalityStore.js';
@@ -24,6 +24,10 @@ import SupReport           from './pages/Supervisor/SupReport';
 import SupLogisticsRequest from './pages/Supervisor/SupLogisticsRequest';
 
 // صفحات المسؤول (Admin)
+import CatererLayout       from './pages/caterer/CatererLayout';
+import CatererHome         from './pages/caterer/CatererHome';
+import CatererReports      from './pages/caterer/CatererReports';
+import CatererForms        from './pages/caterer/CatererForms';
 import AdminLayout         from './pages/admin/AdminLayout';
 import AdminDashboard      from './pages/admin/AdminDashboard';
 import AdminReports        from './pages/admin/AdminReports';
@@ -65,6 +69,7 @@ function RootRedirect() {
   if (!user) return <Navigate to="/login" replace />;
   
   if (role === 'admin' || role === 'staff') return <Navigate to="/admin/dashboard" replace />;
+  if (role === 'caterer') return <Navigate to="/caterer/home" replace />;
   if (role === 'supervisor') return <Navigate to="/supervisor-home" replace />;
   return <Navigate to="/home" replace />;
 }
@@ -126,6 +131,14 @@ export default function App() {
           path="/admin/live"
           element={<RequireAdmin><LiveScreen /></RequireAdmin>}
         />
+
+        {/* Caterer portal — an outside company, so its own shell and guard. */}
+        <Route path="/caterer" element={<RequireCaterer><CatererLayout /></RequireCaterer>}>
+          <Route index          element={<Navigate to="/caterer/home" replace />} />
+          <Route path="home"    element={<CatererHome />} />
+          <Route path="reports" element={<CatererReports />} />
+          <Route path="forms"   element={<CatererForms />} />
+        </Route>
 
         {/* Admin Routes */}
         <Route path="/admin" element={<RequireAdmin><AdminLayout /></RequireAdmin>}>

@@ -28,6 +28,9 @@ export default function Login() {
 
   
   const [adminModal,    setAdminModal]    = useState(false);
+  /* 'admin' | 'caterer' — only changes the wording and which roles are
+     accepted; both authenticate against Supabase Auth with a password. */
+  const [accountMode,   setAccountMode]   = useState('admin');
   const [adminEmail,    setAdminEmail]    = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [adminError,    setAdminError]    = useState('');
@@ -41,22 +44,32 @@ export default function Login() {
     if (loading || !role) return;
     const flow = loginFlow.current;
 
-    /* Admin path: role mismatch */
-    if (flow === 'admin' && role !== 'admin' && role !== 'staff') {
-      logout();
-      setAdminBusy(false);
-      setAdminError('هذا الحساب غير مسجّل كمسؤول إداري');
-      loginFlow.current = null;
-      return;
+    /* Password path: the account must be of the kind that was asked for.
+       Signing a caterer into the admin console — or the reverse — would be a
+       far worse failure than refusing the login. */
+    if (flow === 'admin') {
+      const allowed = accountMode === 'caterer'
+        ? role === 'caterer'
+        : role === 'admin' || role === 'staff';
+      if (!allowed) {
+        logout();
+        setAdminBusy(false);
+        setAdminError(accountMode === 'caterer'
+          ? 'هذا الحساب غير مسجّل كمتعهد'
+          : 'هذا الحساب غير مسجّل كمسؤول إداري');
+        loginFlow.current = null;
+        return;
+      }
     }
 
     loginFlow.current = null;
     if (role === 'admin' || role === 'staff') navigate('/admin/dashboard',  { replace: true });
     else if (role === 'supervisor')           navigate('/supervisor-home',  { replace: true });
     else if (role === 'observer')             navigate('/home',             { replace: true });
+    else if (role === 'caterer')              navigate('/caterer/home',     { replace: true });
     setBusy(false);
     setAdminBusy(false);
-  }, [role, loading, navigate]);
+  }, [role, loading, navigate, accountMode]);
 
   const handleAdminLogin = async (e) => {
     e.preventDefault();
@@ -237,7 +250,7 @@ export default function Login() {
 
       <button
         type="button"
-        onClick={() => { setAdminModal(true); setAdminError(''); setAdminEmail(''); setAdminPassword(''); }}
+        onClick={() => { setAccountMode('admin'); setAdminModal(true); setAdminError(''); setAdminEmail(''); setAdminPassword(''); }}
         /* Navy text on the accent, matching the report button — white would
            sit at ~1.7:1 against the accent. */
         className="mt-6 w-full max-w-sm py-3 rounded-xl font-bold text-sm text-primary transition-all hover:opacity-95 active:scale-[0.98] flex items-center justify-center gap-2"
@@ -252,6 +265,14 @@ export default function Login() {
           <path d="M7 11V7a5 5 0 0 1 10 0v4" />
         </svg>
         دخول الإدارة
+      </button>
+
+      <button
+        type="button"
+        onClick={() => { setAccountMode('caterer'); setAdminError(''); setAdminModal(true); }}
+        className="mt-2 mx-auto block text-[11.5px] font-bold text-muted hover:text-primary transition-colors"
+      >
+        دخول المتعهد
       </button>
 
       {/* Year comes from the clock rather than a literal, so the notice does
@@ -281,8 +302,14 @@ export default function Login() {
             <div className="px-7 py-7 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-bold text-ink">دخول الإدارة</h2>
-                  <p className="text-muted text-xs mt-0.5">للمسؤولين المخوّلين فقط</p>
+                  <h2 className="text-lg font-bold text-ink">
+                    {accountMode === 'caterer' ? 'دخول المتعهد' : 'دخول الإدارة'}
+                  </h2>
+                  <p className="text-muted text-xs mt-0.5">
+                    {accountMode === 'caterer'
+                      ? 'بالبريد وكلمة المرور المسجّلة لمنشأتك'
+                      : 'للمسؤولين المخوّلين فقط'}
+                  </p>
                 </div>
                 <button
                   type="button"
