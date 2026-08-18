@@ -137,7 +137,7 @@ export default function CatererForms() {
                       style={{ borderInlineStart: `3px solid ${
                         overdue ? '#DC2626' : done ? '#16A34A' : '#B99A64'}` }}>
                       <td className="px-5 py-3.5 font-bold text-ink text-[14px]">
-                        {t?.name || 'نموذج'}
+                        {t?.title || 'نموذج'}
                       </td>
                       <td className="px-5 py-3.5 tabular-nums text-[13px] text-muted">
                         {a.formNumber || '—'}
@@ -200,7 +200,7 @@ export default function CatererForms() {
             <button key={a.id} onClick={() => setOpenId(a.id)}
               className="w-full text-right px-5 py-4 border-b border-line/60 last:border-0 hover:bg-background">
               <p className="text-[13.5px] font-bold text-ink">
-                {templateById[a.templateId]?.name || 'نموذج'}
+                {templateById[a.templateId]?.title || 'نموذج'}
                 {a.formNumber && <span className="text-muted font-bold mr-2">{a.formNumber}</span>}
               </p>
               <p className="text-[13px] text-ink/80 leading-relaxed mt-1 border-r-2 border-line pr-2.5">

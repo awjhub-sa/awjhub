@@ -72,7 +72,7 @@ export default function FormPrint() {
   const { loading, error, data } = state;
 
   useEffect(() => {
-    if (data?.template?.name) document.title = data.template.name;
+    if (data?.template?.title) document.title = data.template.title;
   }, [data]);
 
   if (loading) {
@@ -118,12 +118,12 @@ export default function FormPrint() {
 
       <div className="fp-sheet">
         <FormDocument
-          definition={template?.definition}
+          definition={template?.definition || { blocks: [], fields: {} }}
           mode="print"
-          title={template?.name}
+          title={template?.title}
           formNumber={assignment.formNumber}
           values={assignment.data || {}}
-          meta={{ caterer, center, season }}
+          meta={[caterer?.name, center?.code, season?.name].filter(Boolean).join(' · ')}
         />
       </div>
     </div>
