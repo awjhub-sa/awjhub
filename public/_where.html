@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>أين زر حساب المتعهد</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200..1000&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#1E3A5F;--gold:#B99A64;--gold6:#8C7038;--ink:#16233D;--muted:#647488;--line:#D6DEEA;--bg:#F6F8FB;--ok:#16A34A}
+*{box-sizing:border-box}
+body{margin:0;font-family:Cairo,Tahoma,sans-serif;background:#EEF2F7;color:var(--ink);padding:24px}
+.wrap{max-width:1000px;margin:0 auto}
+h1{font-size:19px;margin:0 0 4px}
+.sub{font-size:13px;color:var(--muted);margin:0 0 18px;line-height:1.9}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.hd{padding:12px 16px;border-bottom:1px solid var(--line);font-weight:900;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:var(--bg);text-align:right;padding:9px 12px;font-weight:800;color:#4a5a70;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid #EDF1F6;vertical-align:top}
+.btn{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:4px 9px;border-radius:8px;border:1px solid;white-space:nowrap}
+.acc{border-color:rgba(185,154,100,.4);color:var(--gold6);background:rgba(185,154,100,.06)}
+.accOn{border-color:rgba(22,163,74,.4);color:var(--ok);background:rgba(22,163,74,.06)}
+.edit{border-color:rgba(30,58,95,.2);color:var(--navy)}
+.del{border-color:#FECACA;color:#EF4444}
+.pill{display:inline-block;font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;background:#E7F6EC;color:#15803D}
+.mark{position:relative}
+.mark::after{content:"";position:absolute;inset:-6px -4px;border:2px dashed #DC2626;border-radius:10px;pointer-events:none}
+.note{margin-top:14px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;font-size:12.5px;line-height:2.05}
+.k{display:inline-block;background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:0 5px;font-size:11px;font-weight:800}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>أين زر «حساب دخول» في جدول المتعهدين</h1>
+<p class="sub">الإدارة ← <b>إدارة المتعهدين</b> ← <b>المتعهدين</b>. الزر أول أزرار عمود «إجراء» في آخر كل صف.</p>
+
+<div class="card">
+  <div class="hd">المتعهدين</div>
+  <table>
+    <tr>
+      <th>المتعهد</th><th>السجل / الرخصة</th><th>المالك</th>
+      <th>ضابط الاتصال</th><th>المراكز</th><th>الحالة</th><th>إجراء</th>
+    </tr>
+    <tr>
+      <td><b>شركة مطاعم ومطابخ المضياف العربي</b></td>
+      <td>٤٠٣٠٢٧٨١٩٢</td><td>عبدالله المضياف</td><td>٠٥٥٥١٢٣٤٥٦</td>
+      <td>١</td><td><span class="pill">نشط</span></td>
+      <td><span class="mark"><span class="btn acc">🔑 حساب دخول</span></span>
+          <span class="btn edit">✎ تعديل</span>
+          <span class="btn del">🗑 حذف</span></td>
+    </tr>
+    <tr>
+      <td><b>مطابخ نعيمة ادريس صالح نوح</b></td>
+      <td>٤٠٣٠١١٢٢٣٣</td><td>نعيمة ادريس</td><td>٠٥٥٥٧٦٥٤٣٢</td>
+      <td>١</td><td><span class="pill">نشط</span></td>
+      <td><span class="btn accOn">🔑 الحساب</span>
+          <span class="btn edit">✎ تعديل</span>
+          <span class="btn del">🗑 حذف</span></td>
+    </tr>
+  </table>
+</div>
+
+<div class="note">
+  <b>الزر له حالتان:</b><br>
+  <span class="btn acc">🔑 حساب دخول</span> ذهبي — لا حساب بعد، اضغطه لإنشائه.<br>
+  <span class="btn accOn">🔑 الحساب</span> أخضر — له حساب، اضغطه لترى بريده أو تفكّ الربط.
+  <br><br>
+  <b>إن كان الجدول فارغاً عندك:</b> بعد ترحيل الصلاحيات صار جدول المتعهدين لا يُقرأ إلا بجلسة مصادَقة.
+  سجّل خروج ثم ادخل من <b>«دخول الإدارة»</b> بالبريد وكلمة المرور — لا بجلسة قديمة —
+  وحدّث الصفحة بـ<span class="k">Ctrl</span> + <span class="k">Shift</span> + <span class="k">R</span>.
+</div>
+
+</div></body></html>

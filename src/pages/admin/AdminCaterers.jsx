@@ -360,17 +360,16 @@ export default function AdminCaterers() {
                 <th className="px-4 py-3 text-right font-semibold">ضابط الاتصال</th>
                 <th className="px-4 py-3 text-right font-semibold">المراكز</th>
                 <th className="px-4 py-3 text-right font-semibold">الحالة</th>
-                <th className="px-4 py-3 text-right font-semibold">حساب الدخول</th>
                 <th className="px-4 py-3 text-right font-semibold">إجراء</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
               {loading && (
-                <tr><td colSpan={8} className="p-8 text-center text-muted">جارٍ التحميل...</td></tr>
+                <tr><td colSpan={7} className="p-8 text-center text-muted">جارٍ التحميل...</td></tr>
               )}
               {!loading && visible.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="p-10 text-center">
+                  <td colSpan={7} className="p-10 text-center">
                     <Building2 size={34} className="mx-auto text-muted/30 mb-2" />
                     <p className="text-muted text-sm">
                       {caterers.length === 0
@@ -475,25 +474,22 @@ export default function AdminCaterers() {
                     </td>
 
                     <td className="px-4 py-3">
-                      {accounts[c.id] ? (
-                        <button onClick={() => setAccountFor(c)}
-                          className="inline-flex items-center gap-1 text-[10.5px] font-black px-2 py-1 rounded-lg
-                                     border border-success/30 text-success bg-success/5 hover:bg-success/10 max-w-[170px]">
-                          <Key size={10} weight="fill" className="flex-shrink-0" />
-                          <span className="truncate" dir="ltr">{accounts[c.id].email || 'مرتبط'}</span>
-                        </button>
-                      ) : (
-                        <button onClick={() => setAccountFor(c)}
-                          className="inline-flex items-center gap-1 text-[10.5px] font-bold px-2 py-1 rounded-lg
-                                     border border-line text-muted hover:text-primary hover:border-primary/40">
-                          <Key size={10} weight="bold" />
-                          إنشاء حساب
-                        </button>
-                      )}
-                    </td>
-
-                    <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5">
+                        {/* First of the three: issuing a login is the thing an
+                            operator comes to this row looking for once the
+                            caterer's own details are already right. */}
+                        <button
+                          onClick={() => setAccountFor(c)}
+                          title={accounts[c.id] ? accounts[c.id].email : 'إنشاء حساب دخول للمتعهد'}
+                          className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg border transition-all ${
+                            accounts[c.id]
+                              ? 'border-success/40 text-success bg-success/5 hover:bg-success/10'
+                              : 'border-accent/40 text-accent-600 bg-accent/5 hover:bg-accent/10'
+                          }`}
+                        >
+                          <Key size={12} weight={accounts[c.id] ? 'fill' : 'bold'} />
+                          {accounts[c.id] ? 'الحساب' : 'حساب دخول'}
+                        </button>
                         <button
                           onClick={() => openEdit(c)}
                           className="group/edit flex items-center gap-1 text-primary hover:text-white text-xs font-bold px-2 py-1 rounded-lg border border-primary/20 hover:bg-gradient-to-br hover:from-primary-400 hover:to-primary hover:border-transparent transition-all hover:shadow-md"
