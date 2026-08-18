@@ -169,7 +169,7 @@ export default function CatererForms() {
                             that was never agreed. */}
                         {a.status === 'accepted' ? (
                           <button
-                            onClick={(e) => { e.stopPropagation(); window.open(`/forms/print/${a.id}`, '_blank', 'noopener'); }}
+                            onClick={(e) => { e.stopPropagation(); window.open(`/forms/print/${a.id}`, '_blank'); }}
                             title="طباعة النموذج"
                             className="inline-flex items-center gap-1.5 text-[12.5px] font-bold px-2.5 py-1.5 rounded-lg
                                        border border-primary/25 text-primary hover:bg-primary/5 transition-colors">

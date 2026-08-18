@@ -13,7 +13,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   ShieldCheck,
   Mountains as Mountain,
@@ -76,6 +76,7 @@ function deltaStyle(d) {
 }
 
 export default function StagesReport() {
+  const nav = useNavigate();
   const [params] = useSearchParams();
   const initialTab = params.get('tab') === 'arafat' ? 'arafat' : 'mina';
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -195,7 +196,7 @@ export default function StagesReport() {
       <div className="print:hidden sticky top-0 z-50 bg-white border-b border-line shadow-sm">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-3 px-5 py-3">
           <div className="flex items-center gap-2">
-            <button onClick={() => window.close()}
+            <button onClick={() => closeDocumentTab(nav, '/admin/insights')}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line text-muted text-xs font-bold hover:bg-[rgb(var(--c-primary-50))] transition-colors">
               <X size={13} /> إغلاق
             </button>

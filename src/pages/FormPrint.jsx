@@ -24,7 +24,7 @@ import { db } from '../lib/db.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import FormDocument from '../components/forms/FormDocument.jsx';
 import './form-print.css';
-import { usePrintPage } from '../lib/printPage.js';
+import { usePrintPage, closeDocumentTab } from '../lib/printPage.js';
 
 export default function FormPrint() {
   const { id } = useParams();
@@ -109,7 +109,7 @@ export default function FormPrint() {
           <Printer size={16} weight="bold" />
           طباعة
         </button>
-        <button className="fp-btn" onClick={() => (window.opener ? window.close() : nav(-1))}>
+        <button className="fp-btn" onClick={() => closeDocumentTab(nav, role === 'caterer' ? '/caterer/forms' : '/admin/forms')}>
           <X size={15} weight="bold" />
           إغلاق
         </button>

@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, Fragment } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { db } from '../../lib/db.js';
 import {
   toMs, getTotalElapsedMs, fmtDuration,
@@ -25,7 +25,7 @@ import {
 } from '@phosphor-icons/react';
 const logoSrc = BRAND.logo.color;
 import './report-view.css';
-import { usePrintPage } from '../../lib/printPage.js';
+import { usePrintPage, closeDocumentTab } from '../../lib/printPage.js';
 import { BRAND } from '../../config/brand.js';
 
 const REPORT_TYPES = {
@@ -170,6 +170,7 @@ async function fetchReportData({ centerFilter, dateFilter, types }) {
 }
 
 export default function AdminReportView() {
+  const nav = useNavigate();
   usePrintPage('A4 portrait', '1.2cm');
   const [params] = useSearchParams();
 
@@ -285,7 +286,7 @@ function Toolbar() {
         اطبع / احفظ PDF
       </button>
       <button
-        onClick={() => window.close()}
+        onClick={() => closeDocumentTab(nav, '/admin/reports')}
         className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-line bg-white text-muted font-bold text-sm hover:bg-background hover:border-primary transition-colors"
       >
         <X size={14} weight="bold" />

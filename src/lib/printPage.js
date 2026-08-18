@@ -37,3 +37,29 @@ export function usePrintPage(size, margin) {
     return () => el.remove();
   }, [size, margin]);
 }
+
+/**
+ * Closes a document tab, or goes somewhere useful when the browser refuses.
+ *
+ * A browser lets script close only a window that script opened. Every document
+ * in this app was opened with `noopener`, which severs exactly that
+ * relationship — so `window.close()` was silently refused and every close
+ * button in the app did nothing. The openers have dropped `noopener`: these are
+ * same-origin pages of our own app, and the reverse-tabnabbing it guards
+ * against needs an untrusted destination.
+ *
+ * The fallback stays because a pasted or bookmarked URL opens a tab nobody
+ * scripted, and that tab can never be closed by script. Better to leave than
+ * to sit on a button that does nothing.
+ *
+ * @param {(to: string) => void} navigate
+ * @param {string} fallback  where to go if the tab cannot be closed
+ */
+export function closeDocumentTab(navigate, fallback = '/') {
+  window.close();
+  /* close() is synchronous when permitted; if we are still here a moment
+     later, it was refused. */
+  setTimeout(() => {
+    if (!window.closed) navigate(fallback);
+  }, 120);
+}

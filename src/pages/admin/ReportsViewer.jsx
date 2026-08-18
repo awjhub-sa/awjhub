@@ -14,7 +14,7 @@
  */
 
 import { Fragment, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Printer, FileXls, X, CircleNotch } from '@phosphor-icons/react';
 import { db } from '../../lib/db.js';
 import { useBrand } from '../../context/BrandContext.jsx';
@@ -25,7 +25,7 @@ import {
   scoreOf, bandOf, exportCsv, readReportRequest,
 } from '../../lib/reportQuery.js';
 import './reports-viewer.css';
-import { usePrintPage } from '../../lib/printPage.js';
+import { usePrintPage, closeDocumentTab } from '../../lib/printPage.js';
 
 const ROLE_AR = { observer: 'مراقب', supervisor: 'مشرف', staff: 'موظف', admin: 'مسؤول', caterer: 'متعهد' };
 
@@ -36,6 +36,7 @@ const fmtDate = (v) => {
 };
 
 export default function ReportsViewer() {
+  const nav = useNavigate();
   usePrintPage('A4 portrait', '12mm');
   const [params] = useSearchParams();
   const { brand } = useBrand();
@@ -470,7 +471,7 @@ function Toolbar({ sections, title }) {
         </select>
       )}
 
-      <button className="rv-btn" onClick={() => window.close()}>
+      <button className="rv-btn" onClick={() => closeDocumentTab(nav, '/admin/reports-center')}>
         <X size={14} /> إغلاق
       </button>
 

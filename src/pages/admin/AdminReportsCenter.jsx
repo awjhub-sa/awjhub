@@ -162,7 +162,7 @@ export default function AdminReportsCenter() {
       title: docTitle, picked, cols, filters, search, detailed, photos,
     });
     pruneReportRequests(id);
-    window.open(`${route}?k=${id}`, '_blank', 'noopener');
+    window.open(`${route}?k=${id}`, '_blank');
   };
   const openReport = () => openIn('/admin/reports-view');
   const openDeck   = () => openIn('/admin/reports-deck');

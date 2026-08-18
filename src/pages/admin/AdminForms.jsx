@@ -614,7 +614,7 @@ export default function AdminForms() {
                               portal, so a filing and its copy cannot differ. */}
                           {a.status === 'accepted' && (
                             <Action
-                              onClick={() => window.open(`/forms/print/${a.id}`, '_blank', 'noopener')}
+                              onClick={() => window.open(`/forms/print/${a.id}`, '_blank')}
                               Icon={Printer}
                             >
                               طباعة

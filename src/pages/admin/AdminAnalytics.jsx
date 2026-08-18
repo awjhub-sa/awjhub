@@ -436,7 +436,7 @@ export default function AdminAnalytics({ site }) {
 
           {/* ── Stages report button ── */}
           <button
-            onClick={() => window.open(`/admin/stages-report?tab=${activeTab}`, '_blank', 'noopener')}
+            onClick={() => window.open(`/admin/stages-report?tab=${activeTab}`, '_blank')}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-white text-sm font-black transition-all shadow-md hover:shadow-lg active:scale-[0.99]"
             style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)) 60%, rgb(var(--c-primary-700)))' }}
           >

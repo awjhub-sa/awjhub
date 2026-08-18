@@ -14,7 +14,7 @@
  */
 
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   CaretRight, CaretLeft, Printer, X, ArrowsOut,
 } from '@phosphor-icons/react';
@@ -27,7 +27,7 @@ import {
   scoreOf, bandOf, BANDS, readReportRequest,
 } from '../../lib/reportQuery.js';
 import './reports-deck.css';
-import { usePrintPage } from '../../lib/printPage.js';
+import { usePrintPage, closeDocumentTab } from '../../lib/printPage.js';
 
 const ROWS_PER_SLIDE = 8;
 
@@ -35,6 +35,7 @@ const chunk = (arr, n) =>
   Array.from({ length: Math.ceil(arr.length / n) }, (_, i) => arr.slice(i * n, i * n + n));
 
 export default function ReportsDeck() {
+  const nav = useNavigate();
   usePrintPage('297mm 167mm', '0');
   const [params] = useSearchParams();
   const { brand } = useBrand();
@@ -105,7 +106,7 @@ export default function ReportsDeck() {
       else if (e.key === 'ArrowRight' || e.key === 'PageUp') { e.preventDefault(); go(-1); }
       else if (e.key === 'Home') setIdx(0);
       else if (e.key === 'End')  setIdx(slides.length - 1);
-      else if (e.key === 'Escape') window.close();
+      else if (e.key === 'Escape') closeDocumentTab(nav, '/admin/reports-center');
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -137,7 +138,7 @@ export default function ReportsDeck() {
       </div>
 
       <div className="dk-bar-ui">
-        <button className="dk-btn" onClick={() => window.close()}><X size={13} /> إغلاق</button>
+        <button className="dk-btn" onClick={() => closeDocumentTab(nav, '/admin/reports-center')}><X size={13} /> إغلاق</button>
         <button className="dk-btn" onClick={() => document.documentElement.requestFullscreen?.()}>
           <ArrowsOut size={13} /> ملء الشاشة
         </button>
