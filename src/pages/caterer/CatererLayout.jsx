@@ -1,26 +1,30 @@
 /**
  * src/pages/caterer/CatererLayout.jsx
  *
- * The shell an outside company sees.
+ * The shell an outside company sees — the same system, fewer rooms.
  *
- * Deliberately not the admin shell. That one carries twenty-three sections, a
- * command palette and a live operations wall; a caterer has three places to be,
- * and a chrome built for twenty-three would imply the other twenty are behind
- * a permission they lack. Three tabs is the whole navigation.
+ * The first attempt was a narrow column with a tab bar, which read as a phone
+ * app blown up on a desktop. A caterer opening this on an office machine is
+ * doing office work: reading findings, filing forms. So it takes the shape the
+ * rest of the system takes — a navy rail on the side, a masthead on each
+ * section, tables on a light canvas — and simply has three destinations instead
+ * of twenty-three.
  *
  * Everything under here is scoped to one caterer, resolved once from the
- * signed-in profile and handed down. A screen that had to work out whose data
- * it was showing would eventually get it wrong.
+ * signed-in profile and handed down through the outlet. A screen that had to
+ * work out whose data it was showing would eventually get it wrong.
  */
 
 import { useEffect, useMemo, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { House, Siren, FileText, SignOut } from '@phosphor-icons/react';
+import {
+  House, Siren, FileText, SignOut, List, X, Buildings,
+} from '@phosphor-icons/react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useBrand } from '../../context/BrandContext.jsx';
 import { db } from '../../lib/db.js';
 
-const TABS = [
+const NAV = [
   { to: '/caterer/home',    label: 'الرئيسية', Icon: House },
   { to: '/caterer/reports', label: 'البلاغات', Icon: Siren },
   { to: '/caterer/forms',   label: 'النماذج',  Icon: FileText },
@@ -34,6 +38,7 @@ export default function CatererLayout() {
   const [caterer, setCaterer] = useState(null);
   const [centers, setCenters] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);          // drawer, on narrow screens
 
   const catererId = profile?.catererId || null;
 
@@ -61,15 +66,15 @@ export default function CatererLayout() {
 
   const signOut = async () => { await logout(); nav('/login', { replace: true }); };
 
-  /* An account with no caterer attached can see nothing and must not be shown
-     an empty portal as if it were working. */
+  /* An account with no caterer attached can see nothing, and must not be shown
+     an empty portal as though it were working. */
   if (!loading && !catererId) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6" dir="rtl">
-        <div className="bg-white rounded-2xl border border-line p-6 max-w-sm text-center">
-          <p className="text-[14px] font-black text-ink">الحساب غير مرتبط بمتعهد</p>
+      <div className="min-h-screen bg-canvas flex items-center justify-center p-6" dir="rtl">
+        <div className="bg-white rounded-2xl border border-line p-7 max-w-sm text-center">
+          <p className="text-[14px] font-black text-ink">الحساب غير مرتبط بمنشأة</p>
           <p className="text-[12px] text-muted leading-relaxed mt-2">
-            راجع إدارة النظام لربط حسابك بملف المنشأة.
+            راجع إدارة النظام لربط حسابك بملف المتعهد.
           </p>
           <button onClick={signOut}
             className="mt-4 h-9 px-5 rounded-xl border border-line text-[12px] font-bold text-muted hover:text-ink">
@@ -80,49 +85,114 @@ export default function CatererLayout() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-background flex flex-col" dir="rtl">
-      <header className="sticky top-0 z-40 text-white"
-        style={{ background: 'rgb(var(--c-primary))' }}>
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
-          {brand?.logo?.fullOnDark && (
-            <img src={brand.logo.fullOnDark} alt="" className="h-6 w-auto opacity-95" />
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="text-[12.5px] font-black truncate">{caterer?.name || '—'}</p>
-            <p className="text-[10px] font-bold opacity-60">
-              بوابة المتعهد
-              {centers.length > 0 && ` · ${centers.length} مركز`}
-            </p>
-          </div>
-          <button onClick={signOut}
-            className="w-8 h-8 rounded-lg bg-white/12 border border-white/20 flex items-center justify-center flex-shrink-0"
-            title="تسجيل الخروج">
-            <SignOut size={14} weight="bold" />
-          </button>
+  const Rail = () => (
+    <div className="flex flex-col h-full">
+      <div className="px-4 py-4 border-b border-white/10">
+        {brand?.logo?.fullOnDark && (
+          <img src={brand.logo.fullOnDark} alt={brand.companyName}
+            className="w-full max-w-[176px] h-auto" />
+        )}
+        <p className="text-[9px] font-semibold tracking-widest uppercase opacity-40 text-white mt-1.5">
+          بوابة المتعهد
+        </p>
+      </div>
+
+      <nav className="flex-1 py-3 space-y-0.5 overflow-y-auto">
+        {NAV.map(item => (
+          <NavLink key={item.to} to={item.to} onClick={() => setOpen(false)}
+            className={({ isActive }) =>
+              `group flex items-center gap-3 px-3 py-2.5 mx-0 text-sm transition-colors ${
+                isActive ? 'text-white font-bold' : 'text-white/75 font-semibold hover:text-white'
+              }`}
+            style={({ isActive }) => isActive
+              ? { background: 'rgb(255 255 255 / 0.12)', borderRight: '3px solid rgb(var(--c-accent))' }
+              : { borderRight: '3px solid transparent' }}>
+            {({ isActive }) => (
+              <>
+                <span className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 border"
+                  style={{
+                    background: isActive ? 'rgb(var(--c-accent) / 0.18)' : 'rgba(255,255,255,0.06)',
+                    borderColor: isActive ? 'rgb(var(--c-accent) / 0.45)' : 'rgba(255,255,255,0.10)',
+                  }}>
+                  <item.Icon size={17} weight={isActive ? 'bold' : 'regular'}
+                    color={isActive ? 'rgb(var(--c-accent))' : 'rgba(255,255,255,0.75)'} />
+                </span>
+                <span className="text-[13px]">{item.label}</span>
+              </>
+            )}
+          </NavLink>
+        ))}
+      </nav>
+
+      <div className="px-3 py-3 border-t border-white/10">
+        <div className="flex items-center gap-2.5 px-1 mb-2">
+          <span className="w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center flex-shrink-0">
+            <Buildings size={15} weight="bold" className="text-white/75" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[11.5px] font-bold text-white truncate">{caterer?.name || '—'}</span>
+            <span className="block text-[9.5px] text-white/45 font-semibold">
+              {centers.length ? `${centers.length} مركز` : 'بلا مراكز'}
+            </span>
+          </span>
         </div>
+        <button onClick={signOut}
+          className="w-full flex items-center justify-center gap-2 h-9 rounded-xl bg-white/10 border border-white/15
+                     text-white/85 hover:text-white hover:bg-white/16 text-[12px] font-bold transition-colors">
+          <SignOut size={14} weight="bold" />
+          تسجيل الخروج
+        </button>
+      </div>
+    </div>
+  );
 
-        <nav className="max-w-4xl mx-auto px-2 flex">
-          {TABS.map(t => (
-            <NavLink key={t.to} to={t.to}
-              className={({ isActive }) =>
-                `flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-black border-b-2 transition-colors ${
-                  isActive ? 'border-accent text-white' : 'border-transparent text-white/60 hover:text-white/85'
-                }`}>
-              <t.Icon size={14} weight="bold" />
-              {t.label}
-            </NavLink>
-          ))}
-        </nav>
-      </header>
+  return (
+    <div className="h-screen flex overflow-hidden bg-canvas" dir="rtl">
 
-      <main className="flex-1 max-w-4xl w-full mx-auto p-3 sm:p-4">
-        {loading
-          ? <div className="py-20 flex justify-center">
-              <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-            </div>
-          : <Outlet context={ctx} />}
-      </main>
+      {/* ── the rail ── */}
+      <aside className="hidden lg:flex flex-col w-60 flex-shrink-0"
+        style={{ background: 'rgb(var(--c-primary))' }}>
+        <Rail />
+      </aside>
+
+      {open && (
+        <>
+          <button className="lg:hidden fixed inset-0 z-40 bg-ink/50" onClick={() => setOpen(false)} aria-label="إغلاق" />
+          <aside className="lg:hidden fixed inset-y-0 right-0 z-50 w-64 flex flex-col shadow-2xl"
+            style={{ background: 'rgb(var(--c-primary))' }}>
+            <button onClick={() => setOpen(false)}
+              className="absolute top-3 left-3 w-8 h-8 rounded-lg bg-white/12 border border-white/20
+                         flex items-center justify-center text-white">
+              <X size={15} weight="bold" />
+            </button>
+            <Rail />
+          </aside>
+        </>
+      )}
+
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* A bar only where the rail is not: on a wide screen the rail already
+            names the company, and a second header repeating it is furniture. */}
+        <header className="lg:hidden flex items-center gap-3 px-4 h-14 flex-shrink-0 text-white"
+          style={{ background: 'rgb(var(--c-primary))' }}>
+          <button onClick={() => setOpen(true)}
+            className="w-9 h-9 rounded-lg bg-white/12 border border-white/20 flex items-center justify-center">
+            <List size={16} weight="bold" />
+          </button>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[12.5px] font-black truncate">{caterer?.name || '—'}</span>
+            <span className="block text-[9.5px] font-bold opacity-55">بوابة المتعهد</span>
+          </span>
+        </header>
+
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+          {loading
+            ? <div className="py-24 flex justify-center">
+                <div className="w-9 h-9 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+              </div>
+            : <div className="max-w-6xl mx-auto"><Outlet context={ctx} /></div>}
+        </main>
+      </div>
     </div>
   );
 }

@@ -17,6 +17,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { FileText, CheckCircle, Clock, WarningCircle } from '@phosphor-icons/react';
+import PageHeader from '../../components/PageHeader.jsx';
 import { db } from '../../lib/db.js';
 import { STATUS_META } from '../../config/formSchema.js';
 import FormFill from '../../components/forms/FormFill.jsx';
@@ -91,8 +92,25 @@ export default function CatererForms() {
     );
   }
 
+  const dueCount = sorted.filter(a => a.status !== 'submitted' && a.status !== 'accepted').length;
+  const lateCount = sorted.filter(a =>
+    a.status !== 'submitted' && a.status !== 'accepted' && a.dueAt && ms(a.dueAt) < Date.now()).length;
+
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-4" dir="rtl">
+      <PageHeader
+        kicker={caterer?.name || 'المتعهد'}
+        Icon={FileText}
+        title="النماذج"
+        subtitle="النماذج المسنَدة إليك ومواعيد استحقاقها"
+        stats={[
+          { value: AR(sorted.length), label: 'نموذج' },
+          { value: AR(dueCount), label: 'مستحق', tone: dueCount ? 'gold' : undefined },
+          ...(lateCount ? [{ value: AR(lateCount), label: 'متأخر', tone: 'alert' }] : []),
+        ]}
+      />
+
+      <div className="space-y-2.5">
       {sorted.map(a => {
         const t = templateById[a.templateId];
         const st = STATUS_META[a.status] || STATUS_META.pending;
@@ -143,6 +161,7 @@ export default function CatererForms() {
           </button>
         );
       })}
+      </div>
     </div>
   );
 }

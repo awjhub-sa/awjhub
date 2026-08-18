@@ -20,6 +20,7 @@ import { useOutletContext } from 'react-router-dom';
 import {
   Siren, CheckCircle, Clock, PaperPlaneTilt, Image as ImageIcon, X, CaretDown,
 } from '@phosphor-icons/react';
+import PageHeader from '../../components/PageHeader.jsx';
 import { db } from '../../lib/db.js';
 import {
   reportType, severityOf, reportStatus, timeAgo, fullDate, HOLY_SITE_LABEL,
@@ -36,7 +37,7 @@ const SAFE_COLUMNS = [
 ];
 
 export default function CatererReports() {
-  const { caterer } = useOutletContext();
+  const { caterer, centers } = useOutletContext();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('open');   // 'open' | 'all'
@@ -66,19 +67,29 @@ export default function CatererReports() {
   const answered = rows.filter(r => r.catererResponse).length;
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
+    <div className="space-y-4" dir="rtl">
+      <PageHeader
+        kicker={caterer?.name || 'المتعهد'}
+        Icon={Siren}
+        title="البلاغات"
+        subtitle="المخالفات المسجَّلة على مراكزك وردّك عليها"
+        stats={[
+          { value: AR(openCount), label: 'مفتوح', tone: openCount ? 'alert' : undefined },
+          { value: AR(rows.length - openCount), label: 'مُغلق' },
+          { value: AR(answered), label: 'رددتَ عليه', tone: 'gold' },
+        ]}
+      />
+
+      <div className="bg-white rounded-2xl border border-line p-3 flex items-center gap-2 flex-wrap">
         {[['open', `المفتوحة (${AR(openCount)})`], ['all', `الكل (${AR(rows.length)})`]].map(([k, l]) => (
           <button key={k} onClick={() => setFilter(k)}
             className={`h-9 px-4 rounded-xl border text-[12px] font-black transition-colors ${
               filter === k ? 'bg-primary text-white border-transparent' : 'bg-white border-line text-muted hover:text-ink'
             }`}>{l}</button>
         ))}
-        {answered > 0 && (
-          <span className="mr-auto text-[11px] font-bold text-muted">
-            رددتَ على {AR(answered)} من {AR(rows.length)}
-          </span>
-        )}
+        <span className="mr-auto text-[11px] font-bold text-muted">
+          اضغط أي بلاغ لقراءته والردّ عليه
+        </span>
       </div>
 
       {loading ? (
