@@ -47,6 +47,7 @@ const day  = (v) => (v ? String(v).slice(0, 10) : '');
 const num  = (v) => (v === null || v === undefined || v === '' ? '' : String(v));
 const yn   = (v) => (v ? 'نعم' : 'لا');
 const arr  = (v) => (Array.isArray(v) ? v.length : '');
+const list = (v) => (Array.isArray(v) ? v.join('، ') : (v ?? ''));
 const map  = (dict) => (v) => dict[v] ?? v ?? '';
 const score = (r) => {
   if (r.scoreOutOf10 != null) return Number(r.scoreOutOf10).toFixed(1);
@@ -236,20 +237,58 @@ export const REPORT_SOURCES = [
   },
 
   {
-    key: 'users', label: 'المراقبون والمشرفون', group: 'المستخدمون',
+    key: 'observers', label: 'المراقبون', group: 'المستخدمون',
     table: 'users', dateField: 'createdAt',
-    filters: ['role', 'center'],
+    where: (r) => r.role === 'observer',
+    filters: ['center'],
+    columns: [
+      { key: 'nameAr',    label: 'الاسم' },
+      { key: 'idNumber',  label: 'رقم الهوية' },
+      { key: 'phone',     label: 'الجوال' },
+      { key: 'roleCode',  label: 'رمز المراقب' },
+      { key: 'bravoCode', label: 'رمز البرافو' },
+      { key: 'center',    label: 'المركز' },
+      { key: 'caterer',   label: 'المتعهد' },
+      { key: 'email',     label: 'البريد' },
+    ],
+    defaultColumns: ['nameAr', 'idNumber', 'phone', 'roleCode', 'center'],
+  },
+
+  {
+    key: 'supervisors', label: 'المشرفون', group: 'المستخدمون',
+    table: 'users', dateField: 'createdAt',
+    where: (r) => r.role === 'supervisor',
+    /* No centre filter: a supervisor covers several, so filtering the list to
+       one centre would answer a question nobody asked. */
+    filters: [],
     columns: [
       { key: 'nameAr',          label: 'الاسم' },
       { key: 'idNumber',        label: 'رقم الهوية' },
       { key: 'phone',           label: 'الجوال' },
-      { key: 'role',            label: 'الدور', format: map(ROLES) },
-      { key: 'center',          label: 'المركز' },
+      { key: 'roleCode',        label: 'رمز المشرف' },
+      { key: 'bravoCode',       label: 'رمز البرافو' },
       { key: 'assignedCenters', label: 'عدد المراكز', format: arr },
-      { key: 'caterer',         label: 'المتعهد' },
+      { key: '__centerList',    label: 'المراكز', compute: (r) => list(r.assignedCenters) },
       { key: 'email',           label: 'البريد' },
     ],
-    defaultColumns: ['nameAr', 'idNumber', 'phone', 'role', 'center'],
+    defaultColumns: ['nameAr', 'idNumber', 'phone', 'roleCode', 'assignedCenters', '__centerList'],
+  },
+
+  {
+    /* Kept so the two remaining roles stay reachable — splitting the field
+       roles out must not quietly drop the office accounts from reporting. */
+    key: 'staffUsers', label: 'فريق الإدارة', group: 'المستخدمون',
+    table: 'users', dateField: 'createdAt',
+    where: (r) => r.role === 'admin' || r.role === 'staff',
+    filters: [],
+    columns: [
+      { key: 'nameAr',   label: 'الاسم' },
+      { key: 'idNumber', label: 'رقم الهوية' },
+      { key: 'phone',    label: 'الجوال' },
+      { key: 'role',     label: 'الدور', format: map(ROLES) },
+      { key: 'email',    label: 'البريد' },
+    ],
+    defaultColumns: ['nameAr', 'idNumber', 'phone', 'role', 'email'],
   },
 
   {

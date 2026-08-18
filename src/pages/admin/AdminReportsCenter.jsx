@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { db } from '../../lib/db.js';
 import {
-  REPORT_SOURCES, SOURCE_GROUPS, DHU_DAYS,
+  REPORT_SOURCES, SOURCE_BY_KEY, SOURCE_GROUPS, DHU_DAYS,
 } from '../../config/reportSources.js';
 import {
   AR_NUM, buildLookups, buildTable, describeFilters,
@@ -13,13 +13,15 @@ import {
   Columns, Funnel, Table as TableIcon, CalendarBlank, ListChecks,
   ProjectorScreenChart, Siren, Stack as Boxes, ForkKnife, Gauge,
   Buildings, MapPinArea, FileText, UsersThree, FlowArrow, CheckSquare,
+  Eye, ShieldCheck,
 } from '@phosphor-icons/react';
 
 /* A face per section. A grid of identical rectangles is a list you read; a
    grid of marked cards is one you recognise. */
 const SOURCE_ICON = {
   reports: Siren, logistics: Boxes, meals: ForkKnife, mina: Gauge, arafat: Gauge,
-  caterers: Buildings, centers: MapPinArea, forms: FileText, users: UsersThree,
+  caterers: Buildings, centers: MapPinArea, forms: FileText,
+  observers: Eye, supervisors: ShieldCheck, staffUsers: UsersThree,
   phases: FlowArrow, taskCompletions: CheckSquare,
 };
 
@@ -64,7 +66,7 @@ export default function AdminReportsCenter() {
   const [detailed, setDetailed] = useState(false);
   const [photos,   setPhotos]   = useState(true);
   const [filters,  setFilters]  = useState({
-    from: '', to: '', dhuDay: '', center: '', caterer: '', status: '', role: '', season: '',
+    from: '', to: '', dhuDay: '', center: '', caterer: '', status: '', season: '',
   });
 
   const [caterers,  setCaterers]  = useState([]);
@@ -97,11 +99,15 @@ export default function AdminReportsCenter() {
     const missing = picked.filter(k => !data[k]);
     if (!missing.length) return;
     setLoading(true);
-    Promise.all(missing.map(k => {
-      const s = REPORT_SOURCES.find(x => x.key === k);
-      return db[s.table].list().then(rows => [k, rows]);
-    }))
-      .then(pairs => setData(d => ({ ...d, ...Object.fromEntries(pairs) })))
+    const tables = [...new Set(missing.map(k => SOURCE_BY_KEY[k].table))];
+    Promise.all(tables.map(t => db[t].list().then(rows => [t, rows])))
+      .then(pairs => {
+        const byTable = Object.fromEntries(pairs);
+        setData(d => ({
+          ...d,
+          ...Object.fromEntries(missing.map(k => [k, byTable[SOURCE_BY_KEY[k].table]])),
+        }));
+      })
       .catch(ex => setError(ex.message))
       .finally(() => setLoading(false));
   }, [picked]);
@@ -171,7 +177,6 @@ export default function AdminReportsCenter() {
     filters.center  && { key: 'center',  label: filters.center },
     filters.caterer && { key: 'caterer', label: filters.caterer },
     filters.status  && { key: 'status',  label: source.statuses?.[filters.status] ?? filters.status },
-    filters.role    && { key: 'role',    label: filters.role },
     search.trim()   && { key: '__search', label: `بحث: ${search.trim()}` },
   ].filter(Boolean);
 
@@ -379,15 +384,9 @@ export default function AdminReportsCenter() {
               </select>
             </Field>
           )}
-          {anyHas('role') && (
-            <Field label="الدور">
-              <select value={filters.role} onChange={e => setFilters(f => ({ ...f, role: e.target.value }))} className={inputCls}>
-                <option value="">كل الأدوار</option>
-                {[['observer', 'مراقب'], ['supervisor', 'مشرف'], ['staff', 'موظف'], ['admin', 'مسؤول']]
-                  .map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
-            </Field>
-          )}
+          {/* The role dropdown is gone: each user section now IS a role, so
+              the control could only ever have contradicted the section it sat
+              under. */}
           <Field label="بحث حر">
             <div className="relative">
               <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">

@@ -278,11 +278,6 @@ export default function UsersPage({ role }) {
     return set.size;
   }, [mine]);
 
-  const activeCount = useMemo(
-    () => mine.filter((u) => u.active !== false).length,
-    [mine],
-  );
-
   const unassigned = useMemo(
     () => (isObserver
       ? observers.filter((o) => !centerToSupervisor.get(o.center)).length
@@ -492,18 +487,20 @@ export default function UsersPage({ role }) {
         Icon={page.Icon}
         title={page.title}
         subtitle={page.subtitle}
+        /* The third tile appears only when there is something wrong to
+           report. A permanent "active" count would have to be invented —
+           the users table carries no such flag — and a number that always
+           equals the one beside it teaches the reader to stop looking. */
         stats={[
           { value: AR(mine.length), label: page.one },
-          isObserver
-            ? { value: AR(coveredCenters), label: 'مركز مغطّى' }
-            : { value: AR(coveredCenters), label: 'مركز يُغطّى', tone: 'gold' },
-          unassigned > 0
-            ? {
+          { value: AR(coveredCenters), label: isObserver ? 'مركز مغطّى' : 'مركز يُغطّى', tone: 'gold' },
+          ...(unassigned > 0
+            ? [{
                 value: AR(unassigned),
                 label: isObserver ? 'بلا مشرف' : 'بلا مراكز',
                 tone: 'alert',
-              }
-            : { value: AR(activeCount), label: 'نشط', tone: 'gold' },
+              }]
+            : []),
         ]}
       />
 

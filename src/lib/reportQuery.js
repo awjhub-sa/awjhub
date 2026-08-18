@@ -55,6 +55,11 @@ export function filterRows(source, rows, { filters = {}, search = '', lookups = 
   const toMs   = filters.to   ? new Date(`${filters.to}T23:59:59`).getTime()   : null;
 
   return (rows || []).filter(r => {
+    /* A section may own a slice of its table rather than all of it — the three
+       user sections share one table and differ only by role. Applied first so
+       nothing downstream has to know about it. */
+    if (source.where && !source.where(r)) return false;
+
     if (has(source, 'date') && (fromMs || toMs)) {
       const raw = r[source.dateField];
       const ms = raw?.toMillis?.() ?? (raw ? new Date(raw).getTime() : null);
