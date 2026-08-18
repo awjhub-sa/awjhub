@@ -200,6 +200,10 @@ export default function AdminPhases() {
   const [selectedDay,  setSelectedDay]  = useState('7');
   const [selectedMeal, setSelectedMeal] = useState('breakfast');
   const [sortBy,       setSortBy]       = useState('progress');
+  /* null | 1 | 2 | 3 | 'stalled' — set by the cards above the table. A card
+     that names a group and does not show it on click is a label pretending to
+     be a control. */
+  const [waitFilter,   setWaitFilter]   = useState(null);
   const [lightboxSrc,  setLightboxSrc]  = useState(null);
   const [evalDetail,   setEvalDetail]   = useState(null);
   const [view,         setView]         = useState('phases');  // 'phases' | 'reports'
@@ -348,6 +352,10 @@ export default function AdminPhases() {
     return list;
   }, [phasesData, selectedDay, selectedMeal, sortBy, evalLookup, now, selectedDateOnly]);
 
+  /* The filter belongs to one meal on one day: the same words name a different
+     set of centres once either changes. */
+  useEffect(() => { setWaitFilter(null); }, [selectedDay, selectedMeal]);
+
   const maxDone = PHASES.length; // 3 phases for a single meal
   /* Eligible = centers that actually have this meal in their menu. */
   const eligibleRows = rows.filter(r => r.hasMeal);
@@ -358,6 +366,12 @@ export default function AdminPhases() {
   const overallPct = totalEligible > 0
     ? Math.round((eligibleRows.reduce((s, r) => s + r.total, 0) / (totalEligible * maxDone)) * 100)
     : 0;
+
+  const visibleRows = useMemo(() => {
+    if (!waitFilter) return rows;
+    if (waitFilter === 'stalled') return rows.filter(r => r.stalled);
+    return rows.filter(r => r.hasMeal && !r.live.complete && r.live.current === waitFilter);
+  }, [rows, waitFilter]);
 
   /* Where the fleet is standing this minute. Two centres at "50%" can be in
      different phases; percentage averages that away, and during service the
@@ -567,35 +581,66 @@ export default function AdminPhases() {
 
       {/* Where everyone is standing, before the detail of who */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {waiting.map(p => (
-          <button
-            key={p.id}
-            onClick={() => setSortBy('stalled')}
-            className="bg-white rounded-2xl border border-line p-4 text-right transition-shadow hover:shadow-lift"
-            style={{ borderTop: `3px solid ${p.color}` }}
-          >
-            <p className="text-[26px] font-black tabular-nums leading-none" style={{ color: p.color }}>
-              {p.n}
-            </p>
-            <p className="text-[11.5px] font-bold text-ink mt-1.5">بانتظار {p.label}</p>
-            <p className="text-[10px] font-bold text-muted mt-0.5">
-              {p.n ? `من ${totalEligible} مركز` : 'لا أحد'}
-            </p>
-          </button>
-        ))}
-        <div className="bg-white rounded-2xl border p-4"
-          style={{ borderColor: stalledCount ? '#FECACA' : 'rgb(var(--c-line))',
-                   borderTop: `3px solid ${stalledCount ? '#DC2626' : '#5E9070'}`,
-                   background: stalledCount ? 'color-mix(in srgb, #DC2626 5%, #fff)' : '#fff' }}>
-          <p className="text-[26px] font-black tabular-nums leading-none"
-            style={{ color: stalledCount ? '#DC2626' : '#5E9070' }}>
-            {stalledCount}
-          </p>
-          <p className="text-[11.5px] font-bold text-ink mt-1.5">متوقّف</p>
-          <p className="text-[10px] font-bold text-muted mt-0.5">
-            {stalledCount ? 'لم يتحرّك منذ مدة' : 'كل شيء يتقدّم'}
-          </p>
-        </div>
+        {waiting.map(p => {
+          const on = waitFilter === p.id;
+          return (
+            <button
+              key={p.id}
+              onClick={() => setWaitFilter(on ? null : p.id)}
+              disabled={p.n === 0}
+              aria-pressed={on}
+              className={`rounded-2xl border p-4 text-right transition-all ${
+                p.n === 0 ? 'opacity-55 cursor-default' : 'hover:shadow-lift cursor-pointer'
+              }`}
+              style={{
+                borderTop: `3px solid ${p.color}`,
+                borderColor: on ? p.color : 'rgb(var(--c-line))',
+                background: on ? `color-mix(in srgb, ${p.color} 9%, #fff)` : '#fff',
+                boxShadow: on ? `0 0 0 2px color-mix(in srgb, ${p.color} 35%, transparent)` : undefined,
+              }}
+            >
+              <p className="text-[26px] font-black tabular-nums leading-none" style={{ color: p.color }}>
+                {p.n}
+              </p>
+              <p className="text-[11.5px] font-bold text-ink mt-1.5">بانتظار {p.label}</p>
+              <p className="text-[10px] font-bold mt-0.5"
+                style={{ color: on ? p.color : 'rgb(var(--c-muted))' }}>
+                {on ? 'معروضون في الجدول' : p.n ? `من ${totalEligible} مركز` : 'لا أحد'}
+              </p>
+            </button>
+          );
+        })}
+        {(() => {
+          const on = waitFilter === 'stalled';
+          return (
+            <button
+              onClick={() => setWaitFilter(on ? null : 'stalled')}
+              disabled={stalledCount === 0}
+              aria-pressed={on}
+              className={`rounded-2xl border p-4 text-right transition-all ${
+                stalledCount === 0 ? 'opacity-55 cursor-default' : 'hover:shadow-lift cursor-pointer'
+              }`}
+              style={{
+                borderTop: `3px solid ${stalledCount ? '#DC2626' : '#5E9070'}`,
+                borderColor: on ? '#DC2626' : stalledCount ? '#FECACA' : 'rgb(var(--c-line))',
+                background: on ? 'color-mix(in srgb, #DC2626 10%, #fff)'
+                  : stalledCount ? 'color-mix(in srgb, #DC2626 5%, #fff)' : '#fff',
+                boxShadow: on ? '0 0 0 2px rgb(220 38 38 / 0.35)' : undefined,
+              }}
+            >
+              <p className="text-[26px] font-black tabular-nums leading-none"
+                style={{ color: stalledCount ? '#DC2626' : '#5E9070' }}>
+                {stalledCount}
+              </p>
+              <p className="text-[11.5px] font-bold text-ink mt-1.5">متوقّف</p>
+              <p className="text-[10px] font-bold mt-0.5"
+                style={{ color: on ? '#DC2626' : 'rgb(var(--c-muted))' }}>
+                {on ? 'معروضون في الجدول'
+                  : stalledCount ? 'لم يتحرّك منذ مدة' : 'كل شيء يتقدّم'}
+              </p>
+            </button>
+          );
+        })()}
       </div>
 
       {/* Table — one row per center, columns for each of the 3 phases of the selected meal */}
@@ -619,8 +664,31 @@ export default function AdminPhases() {
           <p className="text-[11px] font-bold text-muted text-center">إجراء</p>
         </div>
 
-        {rows.map((row, idx) => {
-          const isLast = idx === rows.length - 1;
+        {waitFilter && (
+          <div className="flex items-center gap-2 px-5 py-2.5 border-b border-line bg-primary/[0.04]">
+            <p className="text-[11.5px] font-bold text-ink">
+              يُعرض {visibleRows.length} من {rows.length} مركزاً —{' '}
+              {waitFilter === 'stalled'
+                ? 'المتوقّفون'
+                : `بانتظار ${PHASES[waitFilter - 1].label}`}
+            </p>
+            <button
+              onClick={() => setWaitFilter(null)}
+              className="mr-auto text-[11.5px] font-black text-primary hover:underline"
+            >
+              عرض الكل
+            </button>
+          </div>
+        )}
+
+        {visibleRows.length === 0 && (
+          <p className="py-12 text-center text-[12.5px] font-bold text-muted">
+            لا مراكز في هذه الحالة الآن
+          </p>
+        )}
+
+        {visibleRows.map((row, idx) => {
+          const isLast = idx === visibleRows.length - 1;
           const pct = Math.round((row.total / maxDone) * 100);
           const data = row.data;
           const isTarget = mealClearTarget?.center === row.center && mealClearTarget?.mealId === selectedMeal;
