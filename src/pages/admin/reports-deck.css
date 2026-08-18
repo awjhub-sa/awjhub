@@ -190,7 +190,9 @@
 .dk-empty { display: grid; place-items: center; min-height: 60vh; color: rgb(255 255 255 / 0.6); font-size: 1rem; }
 
 /* ── Print: one slide per page ───────────────────────── */
-@page { size: 297mm 167mm; margin: 0; }
+/* The page size is injected by the route (see lib/printPage.js), not declared
+   here: @page takes no selector, every stylesheet lands in one document, and
+   the last rule parsed would win for every printable page in the app. */
 
 @media print {
   .dk { background: #fff; display: block; }

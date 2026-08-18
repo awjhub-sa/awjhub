@@ -25,6 +25,7 @@ import {
 } from '@phosphor-icons/react';
 const logoSrc = BRAND.logo.color;
 import './report-view.css';
+import { usePrintPage } from '../../lib/printPage.js';
 import { BRAND } from '../../config/brand.js';
 
 const REPORT_TYPES = {
@@ -169,6 +170,7 @@ async function fetchReportData({ centerFilter, dateFilter, types }) {
 }
 
 export default function AdminReportView() {
+  usePrintPage('A4 portrait', '1.2cm');
   const [params] = useSearchParams();
 
   /* `center` URL param can be comma-separated for multi-select.

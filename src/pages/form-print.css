@@ -72,10 +72,9 @@
    A4 with a real margin, and the toolbar and desk taken away. The document
    itself already drops its frame in print mode, so nothing here has to fight
    a border off the page. */
-@page {
-  size: A4 portrait;
-  margin: 14mm;
-}
+/* The page size is injected by the route (see lib/printPage.js), not declared
+   here: @page takes no selector, every stylesheet lands in one document, and
+   the last rule parsed would win for every printable page in the app. */
 
 @media print {
   .fp-bar { display: none !important; }

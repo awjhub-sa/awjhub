@@ -25,6 +25,7 @@ import {
   scoreOf, bandOf, exportCsv, readReportRequest,
 } from '../../lib/reportQuery.js';
 import './reports-viewer.css';
+import { usePrintPage } from '../../lib/printPage.js';
 
 const ROLE_AR = { observer: 'مراقب', supervisor: 'مشرف', staff: 'موظف', admin: 'مسؤول', caterer: 'متعهد' };
 
@@ -35,6 +36,7 @@ const fmtDate = (v) => {
 };
 
 export default function ReportsViewer() {
+  usePrintPage('A4 portrait', '12mm');
   const [params] = useSearchParams();
   const { brand } = useBrand();
 

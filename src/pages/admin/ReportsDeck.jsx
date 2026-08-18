@@ -27,6 +27,7 @@ import {
   scoreOf, bandOf, BANDS, readReportRequest,
 } from '../../lib/reportQuery.js';
 import './reports-deck.css';
+import { usePrintPage } from '../../lib/printPage.js';
 
 const ROWS_PER_SLIDE = 8;
 
@@ -34,6 +35,7 @@ const chunk = (arr, n) =>
   Array.from({ length: Math.ceil(arr.length / n) }, (_, i) => arr.slice(i * n, i * n + n));
 
 export default function ReportsDeck() {
+  usePrintPage('297mm 167mm', '0');
   const [params] = useSearchParams();
   const { brand } = useBrand();
 

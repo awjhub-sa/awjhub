@@ -1,9 +1,8 @@
 /* Print-specific layout for /admin/report-view */
 
-@page {
-  size: A4;
-  margin: 1.2cm;
-}
+/* The page size is injected by the route (see lib/printPage.js), not declared
+   here: @page takes no selector, every stylesheet lands in one document, and
+   the last rule parsed would win for every printable page in the app. */
 
 .report-view {
   background: rgb(var(--c-bg));

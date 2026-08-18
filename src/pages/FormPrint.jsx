@@ -24,11 +24,13 @@ import { db } from '../lib/db.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import FormDocument from '../components/forms/FormDocument.jsx';
 import './form-print.css';
+import { usePrintPage } from '../lib/printPage.js';
 
 export default function FormPrint() {
   const { id } = useParams();
   const nav = useNavigate();
   const { profile, role } = useAuth();
+  usePrintPage('A4 portrait', '14mm');
 
   const [state, setState] = useState({ loading: true, error: null, data: null });
 
