@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../config/supabase.js';
-import { db } from '../lib/db.js';
+import { db, rowFromDb } from '../lib/db.js';
 
 const AuthContext = createContext(null);
 
@@ -107,7 +107,25 @@ export function AuthProvider({ children }) {
     if (!id) throw new Error('أدخل رقم الهوية');
     if (id.length !== 10) throw new Error('رقم الهوية يجب أن يكون 10 أرقام');
 
-    const row = await db.users.findBy('idNumber', id);
+    /* Through the function first, the table second.
+     *
+     * 012_rls_stage1.sql closes `users` to the anon key and moves this lookup
+     * into login_by_id_number(), which returns one field-role row and nothing
+     * else. The fallback is what makes that migration safe to run on a live
+     * season: this code works before it and after it, so there is no moment
+     * where the deployed app and the database disagree about who may read
+     * seventy-six national ID numbers.
+     *
+     * Once the migration is everywhere, the fallback can go. */
+    let row = null;
+    const { data: viaRpc, error: rpcErr } = await supabase
+      .rpc('login_by_id_number', { p_id_number: id });
+
+    if (!rpcErr && Array.isArray(viaRpc)) {
+      row = viaRpc.length ? rowFromDb(viaRpc[0]) : null;
+    } else {
+      row = await db.users.findBy('idNumber', id);
+    }
     if (!row) throw new Error('رقم الهوية غير مسجل في النظام');
 
     if (row.role !== 'observer' && row.role !== 'supervisor') {
