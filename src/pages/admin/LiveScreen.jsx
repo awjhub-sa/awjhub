@@ -225,13 +225,13 @@ export default function LiveScreen() {
               const sev = severityOf(r);
               return (
                 <button key={r.id} className="ls-item" onClick={() => nav('/admin/reports')}
-                  style={{ borderInlineStartColor: sev?.color || '#4E7CB0' }}>
+                  style={{ borderInlineStartColor: sev?.bar || '#4E7CB0' }}>
                   <span className="ls-item-t">
-                    {r.center ? `مركز ${extractCenterNum(r.center) ?? r.center}` : 'بلا مركز'} — {reportType(r)}
+                    {r.center ? `مركز ${AR(extractCenterNum(r.center) ?? r.center)}` : 'بلا مركز'} — {reportType(r).label}
                   </span>
                   <span className="ls-item-s">
-                    {r.observer || '—'} · {timeAgo(r.timestamp)}
-                    {sev && <b style={{ color: sev.color }}> · {sev.label}</b>}
+                    {r.observer || '—'} · {AR(timeAgo(r.timestamp))}
+                    {sev && <b style={{ color: sev.text }}> · {sev.label}</b>}
                   </span>
                 </button>
               );
@@ -305,11 +305,15 @@ export default function LiveScreen() {
           </header>
 
           <div className="ls-phases">
-            {mealPhases.map((p, i) => {
-              const state = p.done >= p.total ? 'done' : p.done > 0 ? 'run' : 'idle';
+            {mealPhases.map((p) => {
+              const state = p.done >= p.total ? 'done'
+                : (started && p.done > 0) ? 'run'
+                : p.done > 0 ? 'part' : 'idle';
               return (
                 <button key={p.label} className={`ls-phase ls-${state}`} onClick={() => nav('/admin/phases')}>
-                  <span className="ls-mark">{state === 'done' ? '✓' : state === 'run' ? '◍' : '—'}</span>
+                  <span className="ls-mark">
+                    {state === 'done' ? '✓' : state === 'run' ? '◍' : state === 'part' ? '·' : '—'}
+                  </span>
                   <span className="ls-phase-b">
                     <span className="ls-phase-t">{p.label}</span>
                     <span className="ls-phase-s">{AR(p.done)} / {AR(p.total)} مركز</span>
@@ -359,7 +363,7 @@ export default function LiveScreen() {
 function Stat({ v, l, tone, onClick }) {
   return (
     <button className={`ls-stat ${tone ? `ls-${tone}` : ''}`} onClick={onClick}>
-      <span className="ls-stat-v">{typeof v === 'number' ? AR(v) : v}</span>
+      <span className="ls-stat-v">{AR(v)}</span>
       <span className="ls-stat-l">{l}</span>
     </button>
   );

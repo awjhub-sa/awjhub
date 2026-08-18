@@ -248,3 +248,9 @@
   font-size: 10px; font-weight: 700;
   color: rgb(var(--c-muted)); line-height: 1.7;
 }
+
+/* A phase with a few records but before recording has really begun: present,
+   but not to be read as "in progress". */
+.ls-part { opacity: .7; }
+.ls-part .ls-mark { background: rgb(var(--c-muted)); }
+.ls-part .ls-track i { background: rgb(var(--c-muted)); }
