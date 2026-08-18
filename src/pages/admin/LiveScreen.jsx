@@ -200,7 +200,7 @@ export default function LiveScreen() {
         <Stat v={critical.length} l="حرج أو عالي" tone={critical.length ? 'warn' : 'ok'} onClick={() => nav('/admin/reports')} />
         <Stat v={stats.average != null ? `${Math.round(stats.average * 10)}٪` : '—'}
               l={`جاهزية ${site === 'mina' ? 'منى' : 'عرفات'}`} tone="gold"
-              onClick={() => nav(site === 'mina' ? '/admin/mina-readiness' : '/admin/arafat-readiness')} />
+              onClick={() => nav(site === 'mina' ? '/admin/readiness/mina' : '/admin/readiness/arafat')} />
         <Stat v={openLogi.length} l="طلب إسناد" tone={openLogi.length ? 'warn' : 'ok'} onClick={() => nav('/admin/logistics')} />
         <Stat v={observers} l="مراقب" onClick={() => nav('/admin/observers')} />
       </div>
@@ -266,7 +266,7 @@ export default function LiveScreen() {
                     <button key={g.id} className={`ls-cell ${b ? '' : 'ls-none'}`}
                       style={b ? { background: b.color } : undefined}
                       title={`${g.code}${g.score != null ? ` — ${Math.round(g.score * 10)}٪` : ' — لم يُقيَّم'}`}
-                      onClick={() => nav(site === 'mina' ? '/admin/mina-readiness' : '/admin/arafat-readiness')} />
+                      onClick={() => nav(site === 'mina' ? '/admin/readiness/mina' : '/admin/readiness/arafat')} />
                   );
                 })}
               </div>
@@ -280,7 +280,7 @@ export default function LiveScreen() {
                 <div className="ls-worst">
                   <span className="ls-worst-l">الأدنى</span>
                   {worst.map(w => (
-                    <button key={w.id} onClick={() => nav(site === 'mina' ? '/admin/mina-readiness' : '/admin/arafat-readiness')}
+                    <button key={w.id} onClick={() => nav(site === 'mina' ? '/admin/readiness/mina' : '/admin/readiness/arafat')}
                       style={{ color: bandFor(w.score).color, borderColor: bandFor(w.score).color }}>
                       {AR(w.num)} <b>{AR(Math.round(w.score * 10))}٪</b>
                     </button>

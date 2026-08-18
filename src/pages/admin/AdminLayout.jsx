@@ -1,5 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { useSyncExternalStore } from 'react';
+import WorkspaceTabs from '../../components/WorkspaceTabs.jsx';
+import CommandPalette from '../../components/CommandPalette.jsx';
+import {
+  subscribe as wsSubscribe, getPins as wsGetPins, togglePin as wsTogglePin,
+} from '../../lib/workspace.js';
 import { db } from '../../lib/db.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -27,6 +33,7 @@ import {
   MoonStars,
   ChartLineUp,
   Broadcast,
+  PushPin,
   Palette,
   SidebarSimple as PanelLeft,
   X,
@@ -85,6 +92,15 @@ const NAV = [
   { to: '/admin/reports-center', label: 'التقارير',      icon: FileArrowDown },
   { to: '/admin/brand',          label: 'تصميم الهوية', icon: Palette       },
 ];
+
+/* Every navigable section, flattened out of NAV. Derived rather than repeated
+   so a section added to the menu is searchable the same day. */
+const SECTIONS = NAV.flatMap(item =>
+  item.children
+    ? item.children.map(c => ({ to: c.to, label: c.label, hint: item.label }))
+    : [{ to: item.to, label: item.label, hint: '' }],
+);
+const LABEL_BY_PATH = Object.fromEntries(SECTIONS.map(s => [s.to, s.label]));
 
 const NOTIF_COLS = [
   'reports', 'logistics_requests', 'meal_evaluations',
@@ -308,6 +324,11 @@ export default function AdminLayout() {
   const [openGroups, setOpenGroups] = useState({});
   const toggleGroup = (key) => setOpenGroups(p => ({ ...p, [key]: !p[key] }));
   const [loggingOut, setLoggingOut] = useState(false);
+
+  /* The pinned sections, and the name a path answers to. Both are read by the
+     sidebar and by the tab strip, so they are resolved once here. */
+  const pins = useSyncExternalStore(wsSubscribe, wsGetPins);
+  const labelFor = useCallback((path) => LABEL_BY_PATH[path] || null, []);
   const [pendingCount, setPendingCount] = useState(0);
   const [newCount,     setNewCount]     = useState(0);
   const [logisticsCount, setLogisticsCount] = useState(0);
@@ -397,6 +418,22 @@ export default function AdminLayout() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+        {pins.length > 0 && (
+          <div className="mb-1">
+            <p className="text-[9px] font-black tracking-widest px-4 pt-2 pb-1"
+               style={{ color: 'rgb(255 255 255 / 0.42)' }}>
+              مثبّت
+            </p>
+            {pins
+              .filter(to => LABEL_BY_PATH[to])
+              .map((to, i) => (
+                <NavItem key={`pin-${to}`} idx={i} nested
+                  item={{ to, label: LABEL_BY_PATH[to], icon: PushPin }}
+                  onNavigate={() => setOpen(false)} pendingCount={pendingCount} />
+              ))}
+          </div>
+        )}
+
         {NAV.map((item, idx) =>
           item.children
             ? <NavGroup key={item.key} item={item} idx={idx} openGroups={openGroups}
@@ -618,6 +655,8 @@ export default function AdminLayout() {
           </div>
         </header>
 
+        <WorkspaceTabs labelFor={labelFor} />
+
         <main className="flex-1 overflow-y-auto bg-canvas p-3 sm:p-4 md:p-6">
           <Outlet />
         </main>
@@ -643,7 +682,12 @@ export default function AdminLayout() {
         @media (prefers-reduced-motion: reduce) {
           [style*="bellSwing"], [style*="badgePulse"] { animation: none !important; }
         }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { scrollbar-width: none; }
       `}</style>
+
+      {/* Ctrl K, mounted at the shell so it answers from any section. */}
+      <CommandPalette sections={SECTIONS} />
     </div>
   );
 }
