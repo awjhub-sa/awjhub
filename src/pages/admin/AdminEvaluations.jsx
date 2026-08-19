@@ -362,13 +362,6 @@ export default function AdminEvaluations() {
         )}
       </section>
 
-      <p className="flex items-start gap-2 text-[11px] text-muted leading-relaxed px-1">
-        <Sparkle size={13} weight="bold" className="text-success mt-0.5 flex-shrink-0" />
-        البنود المعلَّمة بـ<Calculator size={11} weight="bold" className="inline text-success" /> يحسبها النظام من تفتيش
-        الجاهزية وتقييمات الوجبات — ٥٠ درجة من ١٠٠. تقدر تعدّل أي رقم منها يدوياً، ويُسجَّل أنه تعديل لا حساب.
-        والتقدير لا يظهر إلا بعد اكتمال البنود الأحد عشر، فالتقييم الناقص ليس تقييماً ضعيفاً.
-      </p>
-
       {editing && (
         <EvaluationEditor
           card={editing}
@@ -451,7 +444,7 @@ function EvaluationEditor({ card, onClose, onSave }) {
             <p className="text-[10.5px] font-bold text-muted mt-0.5">
               {complete
                 ? <span style={{ color: grade.color }}>{grade.label}</span>
-                : <>{AR(filled)} من {AR(ALL_CRITERIA.length)} بند — التقدير يظهر بعد الاكتمال</>}
+                : <>{AR(filled)} من {AR(ALL_CRITERIA.length)} بند</>}
             </p>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-lg border border-line bg-white flex items-center justify-center flex-shrink-0">
@@ -530,7 +523,7 @@ function EvaluationEditor({ card, onClose, onSave }) {
           {err && <p className="text-[11px] font-bold text-error flex-1">{err}</p>}
           {!err && complete && (
             <p className="text-[11px] font-bold flex items-center gap-1.5" style={{ color: grade.color }}>
-              <CheckCircle size={13} weight="fill" />اكتمل — {grade.label}
+              <CheckCircle size={13} weight="fill" />اكتمل {grade.label}
             </p>
           )}
           <div className="mr-auto flex items-center gap-2">

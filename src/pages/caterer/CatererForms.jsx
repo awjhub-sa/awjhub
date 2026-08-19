@@ -21,10 +21,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { FileText, CheckCircle, WarningCircle, CaretLeft, Printer } from '@phosphor-icons/react';
+import { FileText, CheckCircle, WarningCircle, Printer, Eye } from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
 import { db } from '../../lib/db.js';
-import { STATUS_META } from '../../config/formSchema.js';
+import { STATUS_META, isPrintable } from '../../config/formSchema.js';
 import FormFill from '../../components/forms/FormFill.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 
@@ -92,7 +92,6 @@ export default function CatererForms() {
         kicker={caterer?.name || 'المتعهد'}
         Icon={FileText}
         title="النماذج"
-        subtitle="النماذج المسنَدة إليك ومواعيد استحقاقها"
         stats={[
           { value: AR(sorted.length), label: 'نموذج' },
           { value: AR(due), label: 'مستحق', tone: due ? 'gold' : undefined },
@@ -109,7 +108,6 @@ export default function CatererForms() {
           <div className="py-16 flex flex-col items-center gap-2">
             <FileText size={34} weight="bold" className="text-muted/40" />
             <p className="text-[15px] font-black text-ink">لا نماذج مسنَدة إليك</p>
-            <p className="text-[13px] font-bold text-muted">ستظهر هنا فور إسنادها من الإدارة</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -164,21 +162,31 @@ export default function CatererForms() {
                           : '—'}
                       </td>
                       <td className="px-5 py-3.5">
-                        {/* Printing is offered only once the office has accepted
-                            the filing — a draft on letterhead asserts something
-                            that was never agreed. */}
-                        {a.status === 'accepted' ? (
+                        {/* The same two the office has, and the same sheet:
+                            printing opens the identical route, so a filing and
+                            its copy cannot differ. Deleting is not offered —
+                            the assignment is the office's record of what it
+                            asked for. */}
+                        <div className="flex items-center gap-1.5">
                           <button
-                            onClick={(e) => { e.stopPropagation(); window.open(`/forms/print/${a.id}`, '_blank'); }}
-                            title="طباعة النموذج"
+                            onClick={(e) => { e.stopPropagation(); setOpenId(a.id); }}
+                            title="فتح النموذج"
                             className="inline-flex items-center gap-1.5 text-[12.5px] font-bold px-2.5 py-1.5 rounded-lg
                                        border border-primary/25 text-primary hover:bg-primary/5 transition-colors">
-                            <Printer size={14} weight="bold" />
-                            طباعة
+                            <Eye size={14} weight="bold" />
+                            فتح
                           </button>
-                        ) : (
-                          <CaretLeft size={15} weight="bold" className="text-muted" />
-                        )}
+                          {isPrintable(a.status) && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); window.open(`/forms/print/${a.id}`, '_blank'); }}
+                              title="طباعة النموذج"
+                              className="inline-flex items-center gap-1.5 text-[12.5px] font-bold px-2.5 py-1.5 rounded-lg
+                                         border border-line text-muted hover:border-primary/40 hover:text-primary transition-colors">
+                              <Printer size={14} weight="bold" />
+                              طباعة
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

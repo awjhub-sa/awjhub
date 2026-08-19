@@ -169,12 +169,7 @@ export default function FormBuilder({ value, onChange }) {
 
           {showFields && (
             <div className="p-3 space-y-2">
-              {Object.keys(fields).length === 0 && (
-                <p className="text-xs text-muted text-center py-3">
-                  عرّف حقلاً ثم أدرجه داخل النص أو في بلوك حقول.
-                </p>
-              )}
-
+              
               {Object.entries(fields).map(([key, def]) => (
                 <div key={key} className="rounded-xl border border-line p-2.5 space-y-2">
                   <div className="flex items-center gap-2">
@@ -503,9 +498,6 @@ export default function FormBuilder({ value, onChange }) {
 
       {/* ── Live page ────────────────────────── */}
       <div className="bg-background/60 rounded-2xl border border-line p-4 sm:p-6">
-        <p className="flex items-center gap-1.5 text-[11px] text-muted mb-3">
-          <Eye size={13} /> المعاينة — هذا ما سيراه المتعهد وما سيُطبع
-        </p>
         <FormDocument definition={definition} mode="preview" formNumber="FRM-••••" />
       </div>
     </div>

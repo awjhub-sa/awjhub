@@ -26,7 +26,6 @@ export default function Profile() {
 
   return (
     <div dir="rtl" className="min-h-screen bg-canvas font-arabic">
-      {}
       <header className="bg-white border-b border-line px-4 py-4 flex items-center justify-between sticky top-0 z-50">
         <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-50 rounded-full transition-colors text-muted">
           <ChevronRight size={24} />
@@ -36,8 +35,6 @@ export default function Profile() {
       </header>
 
       <main className="max-w-md mx-auto px-4 py-6">
-        
-        {}
         <div 
           className="rounded-[2.5rem] p-8 mb-8 text-center shadow-lg relative overflow-hidden"
           style={{ background: 'linear-gradient(135deg, rgb(var(--c-ink-800)) 0%, rgb(var(--c-ink)) 100%)' }}
@@ -64,8 +61,6 @@ export default function Profile() {
             </span>
           </div>
         </div>
-
-        {}
         <div className="bg-white rounded-3xl border border-line shadow-sm overflow-hidden mb-8">
           <div className="p-4 border-b border-line bg-gray-50/50">
             <p className="text-xs font-bold text-muted tracking-widest uppercase">بيانات الارتباط</p>
@@ -93,8 +88,6 @@ export default function Profile() {
             </div>
           </div>
         </div>
-
-        {}
         <div className="space-y-4">
           <button 
             onClick={handleSignOut}

@@ -113,7 +113,7 @@ function liveState(data, nowMs) {
 
 /* A stall is time without movement, and how much is too much depends on what
    is being waited for.
-   
+
    Waiting on distribution is the short one — the food is already cooked and
    sitting, and that is a temperature problem before it is a scheduling one.
    Waiting on cooking is slower to matter: prepared trays keep.
@@ -208,7 +208,7 @@ export default function AdminPhases() {
   const [evalDetail,   setEvalDetail]   = useState(null);
   const [view,         setView]         = useState('phases');  // 'phases' | 'reports'
   const [reportCenter, setReportCenter] = useState(null);      // center selected in reports view
-  
+
   // حالات المسح (التي كانت ناقصة وتسبب الخطأ)
   const [clearConfirm,    setClearConfirm]    = useState(false);
   const [clearing,        setClearing]        = useState(false);
@@ -392,7 +392,6 @@ export default function AdminPhases() {
         kicker="متابعة الوجبات"
         Icon={Activity}
         title="المراحل الميدانية"
-        subtitle="تجهيز ثم طبخ ثم توزيع — تحديث فوري"
         stats={[
           { value: `${fullyDone}/${totalEligible}`, label: 'مركز مكتمل', tone: 'gold' },
           { value: inProgress, label: 'قيد التنفيذ' },
@@ -667,7 +666,7 @@ export default function AdminPhases() {
         {waitFilter && (
           <div className="flex items-center gap-2 px-5 py-2.5 border-b border-line bg-primary/[0.04]">
             <p className="text-[11.5px] font-bold text-ink">
-              يُعرض {visibleRows.length} من {rows.length} مركزاً —{' '}
+              يُعرض {visibleRows.length} من {rows.length} مركزاً ·{' '}
               {waitFilter === 'stalled'
                 ? 'المتوقّفون'
                 : `بانتظار ${PHASES[waitFilter - 1].label}`}
@@ -896,8 +895,6 @@ export default function AdminPhases() {
       </div>
 
       </>}
-
-      {}
       {view === 'reports' && !reportCenter && (
         <ReportsCenterList
           centers={CENTERS}
@@ -1182,8 +1179,7 @@ function ReportsCenterList({ centers, selectedDay, phasesData, evalLookup, cente
           <ImageIcon size={18} className="text-white" weight="bold" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-black text-ink">تقارير المراكز — {DAYS.find(d => d.id === selectedDay)?.label}</p>
-          <p className="text-[11px] text-muted mt-0.5">اختر مركزاً لعرض المراحل والصور والتقييمات الخاصة به</p>
+          <p className="text-sm font-black text-ink">تقارير المراكز · {DAYS.find(d => d.id === selectedDay)?.label}</p>
         </div>
       </div>
 

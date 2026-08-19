@@ -11,6 +11,218 @@
  * one customer's changes must not become every customer's changes.
  */
 
+
+/* ── The ministry sheet ───────────────────────────────────── */
+/**
+ * محضر تأكيد جاهزية تقديم خدمة الإعاشة — the readiness minute signed by the
+ * service company and the caterer before the season opens.
+ *
+ * This one is reproduced, not designed. It is the ministry's sheet: a four
+ * column ruled grid where the label cells are pale green and the values white,
+ * and an inspector reads it by its shape as much as its words. So it is built
+ * from `grid` rows that mirror the paper line for line, rather than from the
+ * prose blocks the company's own letters use.
+ *
+ * What the system contributes is the filling, not the form: fourteen of its
+ * blanks are already on record and arrive answered and locked, and the day and
+ * date are taken from the clock when the minute is filled — which is the pair
+ * people most often write inconsistently by hand.
+ */
+
+const READINESS_ITEMS = [
+  'توفير عدد العاملين المرخص لهم للعمل بالمشاعر المقدسة لقطاع الإعاشة',
+  'جاهزية مواقد الطبخ',
+  'جاهزية خزانات الكيروسين',
+  'جاهزية تمديدات المياه',
+  'توفر مخزون الحطب (بمشعر عرفات)',
+  'توفر المواد الغذائية',
+  'توفر التجهيزات ومعدات الطبخ',
+  'التحقق من كفاءة التشغيل وجاهزية المواقع وعدم وجود أي معوقات',
+];
+
+const READY_OPTIONS = ['جاهز', 'غير جاهز', 'لا ينطبق'];
+
+/* The heading the sheet gives these blanks. Written once so the assignment
+   screen and the document cannot disagree about what they are. */
+const REP_GROUP = 'بيانات الأطراف · ممثل شركة تقديم الخدمة';
+
+/* The answers the minute normally carries, proposed rather than assumed: they
+   arrive filled and the company may change any of them before it sends the
+   form. Item 3 is 'لا ينطبق' because kerosene tanks are not used, and item 5
+   only applies at عرفات — a Mina minute answers it the same way for the same
+   reason. */
+const readyNotes = {
+  6: 'مخزن في مستودعات المتعهدين لتجنب سوء تخزينها في المشاعر',
+  8: 'المواقع جاهزة',
+};
+
+const readyDefaults = (mina) => ({
+  1: 'جاهز',
+  2: 'جاهز',
+  3: 'لا ينطبق',
+  4: 'جاهز',
+  5: mina ? 'لا ينطبق' : 'جاهز',
+  6: 'جاهز',
+  7: 'جاهز',
+  8: 'جاهز',
+});
+
+/* Cell shorthands — they let a row below read the way the row reads on paper. */
+const lbl  = (text, extra = {}) => ({ text, tone: 'label', ...extra });
+const val  = (field, extra = {}) => ({ field, ...extra });
+const bar  = (text) => ({ cells: [{ text, tone: 'label', span: 4, align: 'center' }] });
+const pair = (l1, f1, l2, f2) => ({ cells: [lbl(l1), val(f1), lbl(l2), val(f2)] });
+
+function readinessMinute(site) {
+  const mina = site === 'منى';
+  const other = mina ? 'عرفات' : 'منى';
+  const tick = (col) => ({ text: col === site ? '☑' : '', align: 'center' });
+
+  return {
+    key: `readiness_minutes_${mina ? 'mina' : 'arafat'}`,
+    title: `محضر تأكيد جاهزية تقديم خدمة الإعاشة (${site})`,
+    category: 'تشغيلي',
+    description:
+      `نموذج الوزارة بتصميمه الأصلي. يوقّعه ممثل شركة تقديم الخدمة وممثل مزود الإعاشة، ويثبت جاهزية مواقع الإعاشة بمشعر ${site} بنداً بنداً.`,
+    requiresSignature: true,
+    requiresAttachment: false,
+
+    definition: {
+      /* The sheet is the whole document: no letterhead of ours above it. */
+      chrome: 'none',
+      /* One minute per centre. It prints that centre's shakhis, its pilgrim
+         count and its head by name, so a copy assigned to a caterer rather
+         than to a centre is a sheet that cannot be completed — the blanks have
+         nothing to resolve against. The assignment screen enforces it. */
+      scope: 'center',
+      blocks: [
+        {
+          id: 'sheet',
+          type: 'grid',
+          widths: ['17%', '41%', '21%', '21%'],
+          rows: [
+            { cells: [{ span: 4, tone: 'label', align: 'center', lines: [
+              'محضر تأكيد جاهزية تقديم خدمة الإعاشة',
+              'بين شركة تقديم الخدمة',
+              'ومزود خدمة الإعاشة',
+              'لموسم حج عام {{hijri_year}}هـ',
+            ] }] },
+
+            { cells: [lbl('اليوم'), val('minute_weekday'), lbl('التاريخ'), val('minute_date')] },
+
+            bar('بيانات المشعر'),
+            /* Both معشر are printed and one is ticked, exactly as on the sheet:
+               the paper carries the choice, and a minute that silently dropped
+               the unticked one would not be the ministry's form. */
+            { cells: [
+              lbl('اسم المشعر', { rowspan: 2 }),
+              { text: mina ? site : other, tone: 'label', align: 'center' },
+              { text: mina ? other : site, tone: 'label', align: 'center', span: 2 },
+            ] },
+            { cells: [tick(mina ? site : other), { ...tick(mina ? other : site), span: 2 }] },
+
+            bar('بيانات مزود خدمة الإعاشة'),
+            pair('رقم السجل التجاري', 'cr_number', 'رقم الرخصة', 'municipal_license'),
+            pair('رقم التواصل', 'caterer_phone', 'اسم المتعهد', 'caterer_name'),
+            { cells: [lbl('العنوان الرئيسي'), val('caterer_address', { span: 3 })] },
+
+            bar('بيانات شركة تقديم الخدمة'),
+            pair('رقم الترخيص', 'facility_license', 'اسم المنشأة', 'facility_name'),
+            pair('رقم المربع', 'murabba', 'رقم مركز الضيافة', 'center_code'),
+            pair('رقم الشاخص', 'shakhis', 'عدد الحجاج', 'pilgrims_count'),
+            pair('اسم رئيس المركز', 'center_head_name', 'رقم التواصل', 'center_head_phone'),
+
+            bar('جاهزية مواقع الإعاشة'),
+            { cells: [lbl('م'), lbl('البند'), lbl('جاهز / غير جاهز'), lbl('الملاحظات')] },
+            ...READINESS_ITEMS.map((item, i) => ({ cells: [
+              { text: String(i + 1), align: 'center' },
+              { text: item, align: 'right' },
+              val(`item${i + 1}_status`),
+              val(`item${i + 1}_note`),
+            ] })),
+
+            bar('بيانات الأطراف'),
+            { cells: [
+              lbl('#'),
+              lbl('ممثل شركة تقديم الخدمة'),
+              lbl('ممثل مزود خدمة الإعاشة', { span: 2 }),
+            ] },
+            { cells: [lbl('الاسم الرباعي'), val('company_rep_name'), val('caterer_rep_name', { span: 2 })] },
+            { cells: [lbl('الصفة'),        val('company_rep_title'), val('caterer_rep_title', { span: 2 })] },
+            { cells: [lbl('رقم الهوية'),   val('company_rep_id'),    val('caterer_rep_id', { span: 2 })] },
+            { cells: [
+              lbl('التوقيع'),
+              { sig: ['company_signature'], owner: 'admin' },
+              { sig: ['caterer_signature', 'caterer_stamp'], owner: 'caterer', span: 2 },
+            ] },
+            { cells: [lbl('التاريخ'), val('company_sign_date'), val('caterer_sign_date', { span: 2 })] },
+          ],
+        },
+      ],
+
+      fields: {
+        hijri_year:     { label: 'السنة',   type: 'text', source: 'hijri_year', readonly: true },
+        /* Taken from the clock as the minute is filled, so the weekday and the
+           date can never contradict each other. */
+        minute_weekday: { label: 'اليوم',   type: 'text', source: 'weekday', readonly: true },
+        /* Gregorian, as the paper is. The rest of the app prints Hijri. */
+        minute_date:    { label: 'التاريخ', type: 'date', source: 'today', calendar: 'gregorian', readonly: true },
+
+        /* On record in the caterer registry. */
+        caterer_name:      { label: 'اسم المتعهد',       type: 'text',  source: 'caterer.name',              readonly: true },
+        cr_number:         { label: 'رقم السجل التجاري', type: 'text',  source: 'caterer.cr_number',         readonly: true },
+        municipal_license: { label: 'رقم الرخصة',        type: 'text',  source: 'caterer.municipal_license', readonly: true },
+        caterer_phone:     { label: 'رقم التواصل',       type: 'phone', source: 'caterer.owner_phone',       readonly: true },
+        caterer_address:   { label: 'العنوان الرئيسي',   type: 'text',  source: 'caterer.address',           readonly: true },
+
+        /* On record against the center for this season. */
+        /* The service company's own operating identity, stated once in
+           «هوية الشركة» and the same on every centre's minute. */
+        facility_license: { label: 'رقم الترخيص', type: 'text', source: 'company.license_number', readonly: true },
+        facility_name:    { label: 'اسم المنشأة', type: 'text', source: 'company.facility_name',  readonly: true },
+        murabba:          { label: 'رقم المربع',  type: 'text', source: 'company.murabba',        readonly: true },
+
+        /* On record against the centre for this season. */
+        center_code:       { label: 'رقم مركز الضيافة', type: 'text',   source: 'center.code',             readonly: true },
+        shakhis:           { label: 'رقم الشاخص',       type: 'text',   source: `center.shakhis_${mina ? 'mina' : 'arafat'}`, readonly: true },
+        pilgrims_count:    { label: 'عدد الحجاج',       type: 'number', source: 'center.pilgrims_count',   readonly: true },
+        center_head_name:  { label: 'اسم رئيس المركز',  type: 'text',   source: 'center.head_name',        readonly: true },
+        center_head_phone: { label: 'رقم التواصل',      type: 'phone',  source: 'center.head_phone',       readonly: true },
+
+        /* The eight answers are settled: this minute always carries them, so
+           they are printed rather than asked for. Nobody retypes a constant
+           eight times a season, and nobody mistypes it either. */
+        ...Object.fromEntries(READINESS_ITEMS.flatMap((item, i) => [
+          [`item${i + 1}_status`, { label: item, type: 'select', options: READY_OPTIONS, owner: 'system', default: readyDefaults(mina)[i + 1] }],
+          [`item${i + 1}_note`,   { label: `ملاحظات البند ${i + 1}`, type: 'text', owner: 'system', default: readyNotes[i + 1] }],
+        ])),
+
+        /* Who signs for each side. `group` is the heading these blanks are
+           gathered under wherever they are asked for, so whoever fills them in
+           knows which party they are describing — the labels alone read the
+           same for both sides of the sheet. */
+        company_rep_name:  { label: 'الاسم الرباعي', type: 'text', owner: 'admin', required: true, group: REP_GROUP },
+        company_rep_title: { label: 'الصفة',         type: 'text', owner: 'admin', group: REP_GROUP },
+        company_rep_id:    { label: 'رقم الهوية',    type: 'id',   owner: 'admin', group: REP_GROUP },
+        company_signature: { label: 'التوقيع',       type: 'file', owner: 'admin', group: REP_GROUP },
+        company_sign_date: { label: 'التاريخ',       type: 'date', source: 'today', calendar: 'gregorian', readonly: true },
+
+        /* Read from the caterer registry and locked. The caterer is not asked
+           to retype what the company already holds about them; they add a
+           signature and a stamp, and nothing else. */
+        caterer_rep_name:  { label: 'الاسم الرباعي', type: 'text', source: 'caterer.owner_name',      readonly: true },
+        caterer_rep_title: { label: 'الصفة',         type: 'text', source: 'caterer.owner_capacity',  readonly: true },
+        caterer_rep_id:    { label: 'رقم الهوية',    type: 'id',   source: 'caterer.owner_id_number', readonly: true },
+        caterer_sign_date: { label: 'التاريخ',       type: 'date', source: 'today', calendar: 'gregorian', readonly: true },
+
+        /* All the caterer owes, and all they may touch. */
+        caterer_signature: { label: 'التوقيع', type: 'file', owner: 'caterer', required: true },
+        caterer_stamp:     { label: 'الختم',   type: 'file', owner: 'caterer', required: true },
+      },
+    },
+  };
+}
+
 export const STANDARD_FORMS = [
   {
     key: 'caterer_pledge',
@@ -23,7 +235,7 @@ export const STANDARD_FORMS = [
 
     definition: {
       blocks: [
-        { id: 'p1', type: 'heading', text: 'تعهد مقدم خدمات الإعاشة لموسم حج {{season_name}}' },
+        { id: 'p1', type: 'heading', text: 'تعهد مقدم خدمات الإعاشة لموسم حج {{hijri_year}}هـ' },
 
         { id: 'p2', type: 'paragraph',
           text: 'يقر المتعهد / {{caterer_name}} المتعاقد بموجب العقد رقم ({{contract_number}}) بالاطلاع على كراسة ملحق العقد التي تتضمن الاشتراطات والمواصفات الفنية، والتي تم إرسالها إليه إلكترونيًا من قبل شركة {{company_name}}، ويتعهد بالالتزام التام بجميع ما ورد فيها والعمل بموجبها.' },
@@ -86,7 +298,7 @@ export const STANDARD_FORMS = [
       fields: {
         company_name:  { label: 'اسم الشركة',    type: 'text', source: 'company.name',  readonly: true },
         caterer_name:  { label: 'اسم المتعهد',   type: 'text', source: 'caterer.name',  readonly: true },
-        season_name:   { label: 'الموسم',        type: 'text', source: 'season.name',   readonly: true },
+        hijri_year:    { label: 'السنة',         type: 'text', source: 'hijri_year',    readonly: true },
 
         /* The company sets these, not the caterer: the contract number is on
            the company's own contract, and the deadlines are its instructions.
@@ -157,4 +369,8 @@ export const STANDARD_FORMS = [
       },
     },
   },
+
+
+  readinessMinute('منى'),
+  readinessMinute('عرفات'),
 ];

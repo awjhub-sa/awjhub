@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { db, serverTimestamp } from '../../lib/db.js';
+import { db, uploadFile, serverTimestamp } from '../../lib/db.js';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { useBrand } from '../../context/BrandContext.jsx';
 import { COLORS } from '../../config/brand.js';
 import {
-  FORM_STATUSES, STATUS_META, isOverdue, daysLate, visibleFieldKeys,
+  FORM_STATUSES, STATUS_META, isOverdue, daysLate, visibleFieldKeys, isPrintable,
   keysOwnedBy, resolveSources, fieldOwner,
 } from '../../config/formSchema.js';
 import FormBuilder from '../../components/forms/FormBuilder.jsx';
@@ -46,11 +47,21 @@ export default function AdminForms() {
   const [assignments, setAssignments] = useState([]);
   const [caterers,    setCaterers]    = useState([]);
   const [centers,     setCenters]     = useState([]);
+  /* Centre heads live in center_officials, one row flagged primary. The minute
+     asks for the head by name and number, so they are loaded alongside the
+     centres and folded on where a centre is used. */
+  const [officials,   setOfficials]   = useState([]);
   const [seasons,     setSeasons]     = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [notice,      setNotice]      = useState(null);
 
   const [search, setSearch] = useState('');
+
+  /* Filtering the assignments list. A season produces one row per caterer per
+     centre per form, so «كل تكليفات فلان» is the question actually asked of
+     this table, and scrolling is not an answer to it. */
+  const [byCaterer, setByCaterer] = useState('');
+  const [byStatus,  setByStatus]  = useState('');
 
   /* Builder */
   const [builder, setBuilder] = useState(null);   // the template being authored
@@ -70,11 +81,30 @@ export default function AdminForms() {
     const u3 = db.caterers.subscribe(setCaterers, { orderBy: 'name', ascending: true });
     const u4 = db.centers.subscribe(setCenters);
     const u5 = db.seasons.subscribe(setSeasons);
-    return () => { u1(); u2(); u3(); u4(); u5(); };
+    const u6 = db.center_officials.subscribe(setOfficials);
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); };
   }, []);
 
   const activeSeason = seasons.find(s => s.isActive) || seasons[0] || null;
   const catererById  = useMemo(() => Object.fromEntries(caterers.map(c => [c.id, c])), [caterers]);
+  const headByCenter = useMemo(
+    () => Object.fromEntries(officials.filter(o => o.isPrimary).map(o => [o.centerId, o])),
+    [officials],
+  );
+  /* Every place a centre feeds a form gets it with its head attached, so no
+     call site can forget and print two blanks in an official minute. */
+  const withHead = (c) => (c ? { ...c, headName: headByCenter[c.id]?.name, headPhone: headByCenter[c.id]?.phone } : c);
+
+  /* The tenant's own operating identity, from the live record. */
+  const { brand } = useBrand();
+  const company = useMemo(() => ({
+    name:  brand.companyFullAr,
+    short: brand.companyName,
+    licenseNumber: brand.facility?.licenseNumber,
+    facilityName:  brand.facility?.facilityName,
+    murabba:       brand.facility?.murabba,
+  }), [brand]);
+
   const centerById   = useMemo(() => Object.fromEntries(centers.map(c => [c.id, c])), [centers]);
   const templateById = useMemo(() => Object.fromEntries(templates.map(t => [t.id, t])), [templates]);
 
@@ -203,7 +233,8 @@ export default function AdminForms() {
       template: t,
       catererIds: [],
       dueAt: due.toISOString().slice(0, 10),
-      perCenter: false,
+      /* A centre-scoped form is only ever assigned per centre. */
+      perCenter: t.definition?.scope === 'center',
       shared: {},     // one value applied to every selected caterer
       perCaterer: {}, // catererId → { fieldKey: value }, overriding shared
       step: 'who',
@@ -212,13 +243,70 @@ export default function AdminForms() {
 
   /* Fields the admin owns on this template — what the system cannot answer and
      the caterer should not be asked for. */
+  const visibleAssignments = useMemo(() => seasonAssignments.filter(a =>
+    (!byCaterer || a.catererId === byCaterer) &&
+    (!byStatus  || a.status === byStatus)
+  ), [seasonAssignments, byCaterer, byStatus]);
+
+  /* Only caterers who actually have an assignment this season: a list of every
+     caterer would offer choices that return nothing. */
+  const catererOptions = useMemo(() => {
+    const ids = [...new Set(seasonAssignments.map(a => a.catererId).filter(Boolean))];
+    return ids
+      .map(id => ({ id, name: catererById[id]?.name || '—',
+                    n: seasonAssignments.filter(a => a.catererId === id).length }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+  }, [seasonAssignments, catererById]);
+
   const adminKeys = useMemo(
     () => (assign ? keysOwnedBy(assign.template.definition, 'admin') : []),
     [assign],
   );
 
+  /* An image cannot be typed into a table cell, so the per-caterer override
+     table is offered for everything except the uploads. */
+  const perCatererKeys = useMemo(
+    () => adminKeys.filter(k => assign?.template.definition.fields[k]?.type !== 'file'),
+    [adminKeys, assign],
+  );
+
+  const [uploading, setUploading] = useState(null);
+
+  /* The company's signature is chosen before any assignment exists, so it is
+     filed under the template rather than an assignment id. It is the same
+     image on every copy the batch produces, which is the point of asking for
+     it once here instead of on each form. */
+  const uploadShared = async (key, file) => {
+    setUploading(key);
+    try {
+      const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+      const url = await uploadFile('forms', `templates/${assign.template.id}/${key}.${ext}`, file);
+      setAssign(p => ({ ...p, shared: { ...p.shared, [key]: url } }));
+    } catch (e) {
+      setNotice(`تعذّر رفع الملف: ${e.message}`);
+    } finally {
+      setUploading(null);
+    }
+  };
+
   /* What each caterer's copy will actually carry: registry values first, then
      the shared value the admin typed, then any per-caterer override. */
+  /* One row backs both screens, so removing it removes the caterer's copy
+     too. That is the intent — but it is worth saying out loud before it
+     happens, because a submitted filing is a signed document. */
+  const removeAssignment = async (a) => {
+    const who = catererById[a.catererId]?.name || 'المتعهد';
+    const signed = ['submitted', 'accepted'].includes(a.status);
+    const warn = signed
+      ? `سيُحذف النموذج المُسلَّم من ${who} — ومعه توقيعه وما عبّأه. لا يمكن التراجع.`
+      : `سيُحذف التكليف من ${who}، ولن يظهر في بوابته.`;
+    if (!window.confirm(`${warn}\n\nمتأكد؟`)) return;
+    try {
+      await db.form_assignments.delete(a.id);
+      setNotice(`حُذف تكليف ${who}.`);
+    } catch (ex) { setNotice(ex.message); }
+  };
+
   const valuesFor = (catererId) => {
     const def = assign.template.definition;
     const caterer = catererById[catererId];
@@ -227,8 +315,9 @@ export default function AdminForms() {
       : [];
     const system = resolveSources(def.fields, {
       caterer,
-      center: centersOwned[0] || null,
+      center: withHead(centersOwned[0] || null),
       season: activeSeason,
+      company,
     });
     return { ...system, ...assign.shared, ...(assign.perCaterer[catererId] || {}) };
   };
@@ -251,10 +340,14 @@ export default function AdminForms() {
 
     const rows = [];
     let skipped = 0;
+    let withoutCenters = 0;
     for (const catererId of catererIds) {
       const targets = perCenter
         ? centers.filter(c => c.seasonId === activeSeason.id && c.catererId === catererId).map(c => c.id)
         : [null];
+      /* Without this the loop simply produces nothing for that caterer and the
+         batch reports a success that never reached them. */
+      if (perCenter && targets.length === 0) { withoutCenters++; continue; }
       for (const centerId of targets) {
         if (open.has(`${catererId}|${centerId || ''}`)) { skipped++; continue; }
         /* The document is stored already filled. What reaches the caterer is
@@ -263,8 +356,9 @@ export default function AdminForms() {
            own facility and shakhis rather than the first one found. */
         const system = resolveSources(template.definition.fields, {
           caterer: catererById[catererId],
-          center:  centerId ? centerById[centerId] : null,
+          center:  centerId ? withHead(centerById[centerId]) : null,
           season:  activeSeason,
+          company,
         });
         rows.push({
           seasonId:   activeSeason.id,
@@ -281,7 +375,10 @@ export default function AdminForms() {
 
     if (!rows.length) {
       setAssigning(false);
-      setNotice(skipped ? `الجميع لديهم نسخة مفتوحة من «${template.title}» — لم يُسند شيء.` : 'لا شيء لإسناده.');
+      setNotice(
+        withoutCenters ? `لا مراكز لـ ${withoutCenters} متعهد في هذا الموسم — والمحضر لا يُسنَد إلا لمركز.`
+          : skipped ? `الجميع لديهم نسخة مفتوحة من «${template.title}» — لم يُسند شيء.`
+          : 'لا شيء لإسناده.');
       return;
     }
 
@@ -295,7 +392,8 @@ export default function AdminForms() {
       setAssign(null);
       setNotice(
         `أُسند «${template.title}» إلى ${created.length} جهة` +
-        (skipped ? ` — وتُخطّي ${skipped} لديهم نسخة مفتوحة.` : '.'),
+        (skipped ? ` · تُخطّي ${skipped} لديهم نسخة مفتوحة` : '') +
+        (withoutCenters ? ` · ${withoutCenters} بلا مراكز في هذا الموسم` : '') + '.',
       );
       setTab('assignments');
     } catch (ex) {
@@ -392,7 +490,6 @@ export default function AdminForms() {
         kicker="إدارة المتعهدين"
         Icon={FileText}
         title="النماذج"
-        subtitle="قوالب المستندات المطلوبة من المتعهدين ومتابعة تسليمها"
         gradient={{ from: 'rgb(var(--c-primary-400))', to: 'rgb(var(--c-primary))' }}
         right={
           <button
@@ -475,16 +572,10 @@ export default function AdminForms() {
               {tab === 'library' ? (
                 <>
                   <h3 className="font-bold text-ink text-sm mb-1">المكتبة فارغة</h3>
-                  <p className="text-muted text-xs">
-                    شغّل <code className="text-[11px]">node scripts/seedForms.mjs</code> لتحميل النماذج الجاهزة.
-                  </p>
                 </>
               ) : (
                 <>
                   <h3 className="font-bold text-ink text-sm mb-1">لا قوالب خاصة بك بعد</h3>
-                  <p className="text-muted text-xs mb-5">
-                    ابدأ من الصفر، أو انسخ نموذجاً من المكتبة الجاهزة وعدّله.
-                  </p>
                   <button onClick={openNew}
                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-bold text-sm hover:opacity-90 transition"
                     style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}>
@@ -550,10 +641,41 @@ export default function AdminForms() {
         </section>
       ) : (
         <section className="bg-white rounded-2xl border border-line overflow-hidden">
-          <div className="p-4 border-b border-line">
-            <h2 className="text-lg font-bold text-primary">
-              {activeSeason ? `تكليفات ${activeSeason.name}` : 'التكليفات'}
-            </h2>
+          <div className="p-4 border-b border-line space-y-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h2 className="text-lg font-bold text-primary">
+                {activeSeason ? `تكليفات ${activeSeason.name}` : 'التكليفات'}
+              </h2>
+              <span className="text-[12px] font-bold text-muted tabular-nums">
+                {visibleAssignments.length === seasonAssignments.length
+                  ? `${seasonAssignments.length}`
+                  : `${visibleAssignments.length} من ${seasonAssignments.length}`}
+              </span>
+              {(byCaterer || byStatus) && (
+                <button onClick={() => { setByCaterer(''); setByStatus(''); }}
+                  className="mr-auto text-[12px] font-black text-primary hover:underline">
+                  عرض الكل
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <select value={byCaterer} onChange={e => setByCaterer(e.target.value)}
+                className={`${inputCls} w-auto min-w-[220px]`}>
+                <option value="">كل المتعهدين</option>
+                {catererOptions.map(c => (
+                  <option key={c.id} value={c.id}>{c.name} ({c.n})</option>
+                ))}
+              </select>
+
+              <select value={byStatus} onChange={e => setByStatus(e.target.value)}
+                className={`${inputCls} w-auto min-w-[150px]`}>
+                <option value="">كل الحالات</option>
+                {FORM_STATUSES.map(st => (
+                  <option key={st.value} value={st.value}>{st.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -570,12 +692,14 @@ export default function AdminForms() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {seasonAssignments.length === 0 && (
+                {visibleAssignments.length === 0 && (
                   <tr><td colSpan={7} className="p-10 text-center text-muted text-sm">
-                    لا تكليفات بعد — أسند نموذجاً من تبويب «نماذج جاهزة» أو «قوالبي».
+                    {seasonAssignments.length === 0
+                      ? 'لا تكليفات بعد'
+                      : 'لا تكليفات تطابق هذه التصفية'}
                   </td></tr>
                 )}
-                {seasonAssignments.map(a => {
+                {visibleAssignments.map(a => {
                   const meta = STATUS_META[a.status] || STATUS_META.pending;
                   const late = isOverdue(a) && a.status !== 'accepted';
                   return (
@@ -609,10 +733,11 @@ export default function AdminForms() {
                           <Action onClick={() => setOpenId(a.id)} Icon={Eye} tone="primary">
                             {['submitted'].includes(a.status) ? 'مراجعة' : 'فتح'}
                           </Action>
-                          {/* Offered only once accepted, and to both sides —
-                              the caterer prints the same sheet from their
-                              portal, so a filing and its copy cannot differ. */}
-                          {a.status === 'accepted' && (
+                          {/* Offered from submission onward, and to both
+                              sides — the caterer prints the same sheet from
+                              their portal, so a filing and its copy cannot
+                              differ. */}
+                          {isPrintable(a.status) && (
                             <Action
                               onClick={() => window.open(`/forms/print/${a.id}`, '_blank')}
                               Icon={Printer}
@@ -620,6 +745,12 @@ export default function AdminForms() {
                               طباعة
                             </Action>
                           )}
+                          {/* The office's alone. Deleting removes the caterer's
+                              copy with it — there is one row, and the portal
+                              reads the same one. */}
+                          <Action onClick={() => removeAssignment(a)} Icon={Trash2} tone="danger">
+                            حذف
+                          </Action>
                         </div>
                       </td>
                     </tr>
@@ -664,9 +795,6 @@ export default function AdminForms() {
                 </button>
                 <div>
                   <h2 className="font-bold text-ink text-sm">تعبئة ما لا يعرفه النظام</h2>
-                  <p className="text-[10px] text-muted">
-                    {assign.catererIds.length} متعهد · المتعهد يستلم النموذج جاهزاً للتوقيع
-                  </p>
                 </div>
               </div>
               <button onClick={() => setAssign(null)}
@@ -684,33 +812,65 @@ export default function AdminForms() {
                 </span>
               </div>
 
-              {/* One value for everyone — the common case. */}
-              <div className="space-y-3">
+              {/* One value for everyone — the common case. Grouped under the
+                  heading the sheet itself gives these blanks: «الاسم الرباعي»
+                  on its own does not say which party it names, and the minute
+                  has two. */}
+              <div className="space-y-4">
                 <p className="text-xs font-bold text-ink">قيمة موحّدة لجميع المتعهدين</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {adminKeys.map(key => {
-                    const def = assign.template.definition.fields[key] || {};
-                    return (
-                      <Field key={key} label={def.label || key} required={def.required}>
-                        {def.type === 'date' && def.calendar !== 'gregorian' ? (
-                          <HijriDateInput
-                            value={assign.shared[key] ?? ''}
-                            onChange={v => setAssign(p => ({ ...p, shared: { ...p.shared, [key]: v } }))}
-                          />
-                        ) : (
-                          <input
-                            type={def.type === 'date' ? 'date' : 'text'}
-                            value={assign.shared[key] ?? ''}
-                            onChange={e => setAssign(p => ({ ...p, shared: { ...p.shared, [key]: e.target.value } }))}
-                            placeholder={def.source ? 'يُعبَّأ من النظام إن وُجد' : '—'}
-                            className={inputCls}
-                            dir={['id', 'phone', 'email', 'number', 'date'].includes(def.type) ? 'ltr' : undefined}
-                          />
-                        )}
-                      </Field>
-                    );
-                  })}
-                </div>
+                {Object.entries(
+                  adminKeys.reduce((acc, key) => {
+                    const g = assign.template.definition.fields[key]?.group || '';
+                    (acc[g] ||= []).push(key);
+                    return acc;
+                  }, {}),
+                ).map(([group, keys]) => (
+                  <div key={group} className="space-y-3">
+                    {group && (
+                      <p className="text-[11px] font-black text-primary bg-primary/[0.06] rounded-lg px-3 py-2">
+                        {group}
+                      </p>
+                    )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {keys.map(key => {
+                        const def = assign.template.definition.fields[key] || {};
+                        return (
+                          <Field key={key} label={def.label || key} required={def.required}>
+                            {def.type === 'file' ? (
+                              <div className="flex items-center gap-3">
+                                {assign.shared[key] && (
+                                  <img src={assign.shared[key]} alt=""
+                                    className="h-10 w-auto object-contain rounded-lg border border-line bg-white" />
+                                )}
+                                <label className={`${inputCls} cursor-pointer text-muted flex items-center`}>
+                                  <input type="file" accept="image/*" className="hidden"
+                                    onChange={e => e.target.files?.[0] && uploadShared(key, e.target.files[0])} />
+                                  {uploading === key
+                                    ? 'جارٍ الرفع…'
+                                    : assign.shared[key] ? 'استبدال الصورة' : 'إرفاق صورة'}
+                                </label>
+                              </div>
+                            ) : def.type === 'date' && def.calendar !== 'gregorian' ? (
+                              <HijriDateInput
+                                value={assign.shared[key] ?? ''}
+                                onChange={v => setAssign(p => ({ ...p, shared: { ...p.shared, [key]: v } }))}
+                              />
+                            ) : (
+                              <input
+                                type={def.type === 'date' ? 'date' : 'text'}
+                                value={assign.shared[key] ?? ''}
+                                onChange={e => setAssign(p => ({ ...p, shared: { ...p.shared, [key]: e.target.value } }))}
+                                placeholder={def.source ? 'يُعبَّأ من النظام إن وُجد' : '—'}
+                                className={inputCls}
+                                dir={['id', 'phone', 'email', 'number', 'date'].includes(def.type) ? 'ltr' : undefined}
+                              />
+                            )}
+                          </Field>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
 
               {/* Per-caterer, for anything that differs — a contract number does. */}
@@ -723,7 +883,7 @@ export default function AdminForms() {
                     <thead className="text-muted border-b border-line">
                       <tr>
                         <th className="px-2 py-2 text-right font-semibold min-w-[180px]">المتعهد</th>
-                        {adminKeys.map(k => (
+                        {perCatererKeys.map(k => (
                           <th key={k} className="px-2 py-2 text-right font-semibold whitespace-nowrap">
                             {assign.template.definition.fields[k]?.label || k}
                           </th>
@@ -736,7 +896,7 @@ export default function AdminForms() {
                         return (
                           <tr key={id}>
                             <td className="px-2 py-2 text-ink">{catererById[id]?.name}</td>
-                            {adminKeys.map(k => (
+                            {perCatererKeys.map(k => (
                               <td key={k} className="px-2 py-2">
                                 <input
                                   value={assign.perCaterer[id]?.[k] ?? ''}
@@ -757,9 +917,6 @@ export default function AdminForms() {
                       })}
                     </tbody>
                   </table>
-                  <p className="text-[10px] text-muted mt-2">
-                    الفراغ يعني «استخدم القيمة الموحّدة أو ما يعرفه النظام» — النص الباهت هو ما سيُستخدم فعلاً.
-                  </p>
                 </div>
               </details>
 
@@ -827,7 +984,7 @@ export default function AdminForms() {
             </div>
 
             <div className="px-6 py-5 space-y-3">
-              <Field label="تاريخ التسليم" hint="يُحتسب التأخير من نهاية هذا اليوم.">
+              <Field label="تاريخ التسليم">
                 <div className="relative">
                   <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
                     <CalendarBlank size={14} className="text-primary" />
@@ -838,15 +995,27 @@ export default function AdminForms() {
                 </div>
               </Field>
 
-              <label className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl border border-line cursor-pointer hover:bg-background transition-colors">
-                <input type="checkbox" checked={assign.perCenter}
-                  onChange={e => setAssign(p => ({ ...p, perCenter: e.target.checked }))}
-                  className="accent-primary w-4 h-4 mt-0.5" />
-                <span className="text-xs">
-                  <span className="text-ink font-medium block">نسخة لكل مركز</span>
-                  <span className="text-muted">للنماذج الخاصة بمركز بعينه — استلام مطبخ مثلاً. بدونها تُسند نسخة واحدة للشركة.</span>
-                </span>
-              </label>
+              {(() => {
+                const locked = assign.template.definition?.scope === 'center';
+                return (
+                  <label className={`flex items-start gap-2.5 px-3 py-2.5 rounded-xl border transition-colors ${
+                    locked ? 'border-primary/30 bg-primary/[0.04] cursor-default'
+                           : 'border-line cursor-pointer hover:bg-background'
+                  }`}>
+                    <input type="checkbox" checked={assign.perCenter} disabled={locked}
+                      onChange={e => setAssign(p => ({ ...p, perCenter: e.target.checked }))}
+                      className="accent-primary w-4 h-4 mt-0.5" />
+                    <span className="text-xs">
+                      <span className="text-ink font-medium block">نسخة لكل مركز</span>
+                      {locked && (
+                        <span className="text-[10.5px] text-muted block mt-0.5">
+                          هذا النموذج يطبع بيانات المركز، فلا يُسنَد إلا لمركز
+                        </span>
+                      )}
+                    </span>
+                  </label>
+                );
+              })()}
 
               <Field label={`المتعهدون (${assign.catererIds.length} محدد)`} required>
                 <div className="flex gap-1.5 mb-2">
@@ -887,12 +1056,7 @@ export default function AdminForms() {
                     );
                   })}
                 </div>
-                {assign.perCenter && (
-                  <p className="text-[10px] text-amber-600 mt-1">
-                    من ليس لديه مراكز في هذا الموسم لن يُسند له شيء.
-                  </p>
-                )}
-              </Field>
+                              </Field>
 
               <div className="flex gap-2 pt-2">
                 <button

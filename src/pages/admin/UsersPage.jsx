@@ -285,7 +285,6 @@ export default function UsersPage({ role }) {
     [isObserver, observers, supervisors, centerToSupervisor],
   );
 
-  
   const validateSingle = (f) => {
     if (!f.nameAr.trim()) return 'الاسم العربي مطلوب';
     if (!f.idNumber.trim()) return 'رقم الهوية مطلوب';
@@ -330,7 +329,6 @@ export default function UsersPage({ role }) {
     };
   };
 
-  
   const resetSingle = () => {
     setForm(EMPTY_SINGLE);
     setSingleError(null);
@@ -358,7 +356,6 @@ export default function UsersPage({ role }) {
     setSingleSaving(false);
   };
 
-  
   const updateRow = (i, patch) =>
     setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
   const addRow = () =>
@@ -434,7 +431,6 @@ export default function UsersPage({ role }) {
     setBulkSaving(false);
   };
 
-  
   const openEdit = (u) => {
     setEditTarget(u);
     setEditError(null);
@@ -469,7 +465,6 @@ export default function UsersPage({ role }) {
     setEditSaving(false);
   };
 
-  
   const handleDelete = async (u) => {
     if (!confirm(`حذف "${u.nameAr || u.name}" نهائياً؟`)) return;
     try {
@@ -479,7 +474,6 @@ export default function UsersPage({ role }) {
     }
   };
 
-  
   return (
     <div className="space-y-5" dir="rtl">
       <PageHeader
@@ -506,7 +500,6 @@ export default function UsersPage({ role }) {
 
       {/* Main grid */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-        {}
         <section className="bg-gradient-to-br from-white via-white to-background/40 rounded-2xl border border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgb(var(--c-primary)/0.14)] lg:col-span-2 h-fit relative">
           <div className="bg-background p-1 m-3 rounded-xl flex">
             <button
@@ -674,9 +667,6 @@ export default function UsersPage({ role }) {
             </form>
           ) : (
             <form onSubmit={handleBulkAdd} className="p-5 pt-2 space-y-3">
-              <p className="text-xs text-muted">
-                املأ بيانات حتى {MAX_BULK} مستخدمين وأضفهم بضغطة واحدة. الصفوف الفارغة تُتجاهل.
-              </p>
               <div className="space-y-2 max-h-[460px] overflow-y-auto pr-1">
                 {rows.map((row, i) => (
                   <div
@@ -702,7 +692,7 @@ export default function UsersPage({ role }) {
                     <input
                       value={row.nameEn}
                       onChange={(e) => updateRow(i, { nameEn: e.target.value })}
-                      placeholder="الاسم (إنجليزي — اختياري)"
+                      placeholder="الاسم (إنجليزي، اختياري)"
                       dir="ltr"
                       className="w-full border border-line rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-primary"
                     />
@@ -817,8 +807,6 @@ export default function UsersPage({ role }) {
             </form>
           )}
         </section>
-
-        {}
         <section className="bg-gradient-to-br from-white via-white to-background/40 rounded-2xl border border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgb(var(--c-primary)/0.14)] overflow-hidden lg:col-span-3">
           <div className="p-4 border-b border-line space-y-3">
             <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -963,7 +951,7 @@ export default function UsersPage({ role }) {
                           ) : (
                             /* Worth naming: an observer whose centre no
                                supervisor covers reports to nobody. */
-                            <span className="text-amber-700 font-bold">— بلا مشرف —</span>
+                            <span className="text-amber-700 font-bold">بلا مشرف</span>
                           );
                         })() : (() => {
                           const n = observerLoad.get(u.id) || 0;
@@ -974,7 +962,7 @@ export default function UsersPage({ role }) {
                               <span className="text-muted">مراقب</span>
                             </div>
                           ) : (
-                            <span className="text-muted">— لا مراقبين —</span>
+                            <span className="text-muted">لا مراقبين</span>
                           );
                         })()}
                       </td>
@@ -1006,8 +994,6 @@ export default function UsersPage({ role }) {
           </div>
         </section>
       </div>
-
-      {}
       {editTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeEdit} />

@@ -48,9 +48,16 @@ export default function CatererLayout() {
       if (!catererId) { setLoading(false); return; }
       const [c, ce] = await Promise.all([
         db.caterers.get(catererId),
+        /* Narrowed on purpose — the portal must never request the office's
+           internal notes. The identifiers below are added because the ministry
+           minute prints them on a sheet this caterer signs: withholding them
+           here does not protect anything, it just leaves holes in their own
+           document. Anything the office keeps to itself stays off this list. */
         db.centers.list({ filter: { catererId }, columns: [
-          'id', 'code', 'facilityName', 'pilgrimsCount', 'pilgrimsNationality',
-          'kitchenLocationMina', 'kitchenLocationArafat', 'active', 'catererName',
+          'id', 'code', 'facilityName', 'facilityLicense', 'pilgrimsCount',
+          'pilgrimsNationality', 'category', 'shakhisMina', 'shakhisArafat',
+          'murabbaMina', 'kitchenLocationMina', 'kitchenLocationArafat',
+          'active', 'catererName',
         ] }),
       ]);
       if (!alive) return;

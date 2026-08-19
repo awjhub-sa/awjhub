@@ -115,7 +115,6 @@ export default function AdminBrand() {
         kicker="الإعدادات"
         Icon={Palette}
         title="هوية الشركة"
-        subtitle="الاسم والشعارات والألوان — تسري على النظام كله وعلى كل مستند يُطبع"
         right={
           <div className="flex items-center gap-2">
             <button onClick={restore} title="يعيد الاسم والشعارات والألوان إلى هوية نصاب الأصلية"
@@ -161,7 +160,7 @@ export default function AdminBrand() {
               <Field label="الاسم المختصر (إنجليزي)">
                 <input value={form.nameEn ?? ''} onChange={e => patch({ nameEn: e.target.value })} dir="ltr" className={inputCls} />
               </Field>
-              <Field label="الاسم الكامل (عربي)" hint="يظهر في ترويسة المستندات">
+              <Field label="الاسم الكامل (عربي)">
                 <input value={form.fullNameAr ?? ''} onChange={e => patch({ fullNameAr: e.target.value })} className={inputCls} />
               </Field>
               <Field label="الاسم الكامل (إنجليزي)">
@@ -178,6 +177,15 @@ export default function AdminBrand() {
               </Field>
               <Field label="الموقع الإلكتروني">
                 <input value={form.website ?? ''} onChange={e => patch({ website: e.target.value })} dir="ltr" className={inputCls} />
+              </Field>
+              <Field label="رقم الترخيص">
+                <input value={form.licenseNumber ?? ''} onChange={e => patch({ licenseNumber: e.target.value })} dir="ltr" className={inputCls} />
+              </Field>
+              <Field label="اسم المنشأة">
+                <input value={form.facilityName ?? ''} onChange={e => patch({ facilityName: e.target.value })} className={inputCls} />
+              </Field>
+              <Field label="رقم المربع">
+                <input value={form.murabba ?? ''} onChange={e => patch({ murabba: e.target.value })} dir="ltr" className={inputCls} />
               </Field>
               <div className="sm:col-span-2">
                 <Field label="العنوان">
@@ -239,10 +247,6 @@ export default function AdminBrand() {
                   </div>
                 </Field>
               ))}
-              <p className="sm:col-span-2 text-[11px] text-muted leading-relaxed">
-                التدرّجات والدرجات الفاتحة تُشتقّ تلقائياً من الأساسي — تكفي هذه الستة.
-                والتغيير يظهر فوراً على الشاشة كلها قبل الحفظ.
-              </p>
             </div>
           </section>
         </div>

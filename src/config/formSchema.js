@@ -17,6 +17,7 @@
  */
 
 import { BRAND } from './brand.js';
+import { toHijriParts } from '../lib/hijri.js';
 
 /* ── Blocks ───────────────────────────────────────────────── */
 export const BLOCK_TYPES = [
@@ -31,6 +32,9 @@ export const BLOCK_TYPES = [
   { type: 'fields',    label: 'حقول',    hint: 'خانات معنونة — شبكة أو نقاط' },
   { type: 'table',     label: 'جدول',    hint: 'صفوف متكررة — العمال، الأصناف، العهد' },
   { type: 'note',      label: 'ملاحظة',  hint: 'تنبيه أو شرط يظهر بخلفية مميزة' },
+  /* Government forms are a ruled grid, not prose: label and blank share one
+     table so the sheet an inspector receives is the sheet they know. */
+  { type: 'grid',      label: 'شبكة نموذج', hint: 'جدول رسمي بخلايا معنونة — للنماذج الحكومية' },
   { type: 'divider',   label: 'فاصل',    hint: 'خط فاصل' },
   /* Saudi official letters close with a signature *and* a company stamp side by
      side, so the block holds slots rather than a single box. */
@@ -107,6 +111,11 @@ export const SOURCES = [
      the same template reusable by whoever buys the product. */
   { key: 'company.name',              label: 'اسم الشركة (كامل)' },
   { key: 'company.short',             label: 'اسم الشركة (مختصر)' },
+  /* The company's own operating identity, as the ministry forms ask for it.
+     Held on org_settings so the customer states it once. */
+  { key: 'company.license_number',    label: 'رقم ترخيص الشركة' },
+  { key: 'company.facility_name',     label: 'اسم المنشأة' },
+  { key: 'company.murabba',           label: 'رقم المربع' },
 
   { key: 'caterer.name',              label: 'اسم المتعهد' },
   { key: 'caterer.cr_number',         label: 'السجل التجاري' },
@@ -115,6 +124,7 @@ export const SOURCES = [
   { key: 'caterer.owner_name',        label: 'اسم المالك' },
   { key: 'caterer.owner_id_number',   label: 'هوية المالك' },
   { key: 'caterer.owner_phone',       label: 'جوال المالك' },
+  { key: 'caterer.owner_capacity',    label: 'صفة المالك' },
   { key: 'caterer.email',             label: 'بريد المتعهد' },
   { key: 'caterer.liaison_name',      label: 'ضابط الاتصال' },
   { key: 'caterer.liaison_phone',     label: 'جوال ضابط الاتصال' },
@@ -125,8 +135,20 @@ export const SOURCES = [
   { key: 'center.category',           label: 'فئة المركز' },
   { key: 'center.shakhis_mina',       label: 'الشاخص (منى)' },
   { key: 'center.shakhis_arafat',     label: 'الشاخص (عرفة)' },
+  { key: 'center.murabba_mina',       label: 'رقم المربع (منى)' },
+  { key: 'center.head_name',          label: 'اسم رئيس المركز' },
+  { key: 'center.head_phone',         label: 'جوال رئيس المركز' },
   { key: 'season.name',               label: 'الموسم' },
+  /* The Hajj season is named by the Hijri year it falls in, and Dhul-Hijjah is
+     the last month of that year — so today's Umm al-Qura year is the season's
+     name for all but the days after it ends, when the next season has already
+     begun. Taken from the calendar rather than from the season record, which
+     carries whatever it was called when someone typed it. */
+  { key: 'hijri_year',                label: 'السنة الهجرية (من التقويم)' },
   { key: 'today',                     label: 'تاريخ اليوم' },
+  /* Official minutes are dated by day *and* weekday, and the weekday is the
+     half people get wrong when they write it by hand. */
+  { key: 'weekday',                   label: 'اسم اليوم' },
 ];
 export const SOURCE_LABEL = Object.fromEntries(SOURCES.map(s => [s.key, s.label]));
 
@@ -137,7 +159,10 @@ export const TOKEN_RE = /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g;
 export function tokensIn(blocks = []) {
   const found = new Set();
   for (const b of blocks) {
-    const strings = [b.text, b.label, ...(b.items || [])];
+    /* A grid keeps its prose in cells, and a token there resolves like any
+       other — miss them and a title prints a literal {{season_name}}. */
+    const cellText = (b.rows || []).flatMap(r => (r.cells || []).flatMap(c => [c.text, ...(c.lines || [])]));
+    const strings = [b.text, b.label, ...(b.items || []), ...cellText];
     for (const text of strings) {
       if (typeof text !== 'string') continue;
       for (const m of text.matchAll(TOKEN_RE)) found.add(m[1]);
@@ -162,6 +187,17 @@ export function splitTokens(text = '') {
 /* ── Autofill ─────────────────────────────────────────────── */
 const SNAKE_TO_CAMEL = s => s.replace(/_([a-z0-9])/g, (_, c) => c.toUpperCase());
 
+/* Written out rather than taken from Intl: the runtime's Arabic locale data is
+   not guaranteed on every browser the field uses, and a document that prints
+   "Wednesday" in an Arabic minute is worse than one that prints nothing. */
+const AR_WEEKDAYS = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+/** Today where the person filling the form is standing, as YYYY-MM-DD. */
+export function localISODate(d = new Date()) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 /**
  * Resolves the `source` of every field against the records the assignment
  * points at, returning the values the caterer should never have to type.
@@ -171,18 +207,40 @@ export function resolveSources(fields = {}, ctx = {}) {
   /* `company` is injected rather than passed in: it is the tenant's own
      identity, identical for every assignment, and no caller should have to
      remember to supply it. */
+  /* The tenant's identity comes from the live record when the caller has it
+     — the forms module used to read the compiled-in brand, which meant a
+     customer who filled in their licence number still saw a blank on the
+     ministry sheet. The compiled defaults remain the fallback. */
   const scope = {
     ...ctx,
-    company: { name: BRAND.companyFullAr, short: BRAND.companyName },
+    company: {
+      name:  ctx.company?.name  || BRAND.companyFullAr,
+      short: ctx.company?.short || BRAND.companyName,
+      licenseNumber: ctx.company?.licenseNumber,
+      facilityName:  ctx.company?.facilityName,
+      murabba:       ctx.company?.murabba,
+    },
   };
 
   const out = {};
   for (const [key, def] of Object.entries(fields)) {
     if (!def?.source) continue;
-    if (def.source === 'today') { out[key] = new Date().toISOString().slice(0, 10); continue; }
+    /* One clock reading for both, and read locally. toISOString() is UTC, and
+       between midnight and 03:00 in Riyadh that is still yesterday — so a
+       minute filled at 01:00 on Wednesday printed «الأربعاء» beside Tuesday's
+       date. The pair has to come from the same instant in the same zone. */
+    if (def.source === 'today')   { out[key] = localISODate(); continue; }
+    if (def.source === 'weekday') { out[key] = AR_WEEKDAYS[new Date().getDay()]; continue; }
+    if (def.source === 'hijri_year') { out[key] = String(toHijriParts().y); continue; }
     const [entity, column] = def.source.split('.');
     const value = scope[entity]?.[SNAKE_TO_CAMEL(column || '')];
     if (value !== undefined && value !== null && value !== '') out[key] = value;
+  }
+
+  /* A default is the answer the form usually has, not a fact on record: it is
+     proposed, and whoever owns the field may change it before sending. */
+  for (const [key, def] of Object.entries(fields)) {
+    if (def?.default !== undefined && out[key] === undefined) out[key] = def.default;
   }
   return out;
 }
@@ -249,6 +307,38 @@ export function validateForm(definition, values = {}, { owner } = {}) {
   return errors;
 }
 
+/**
+ * The signature slots this role is expected to sign, whatever they are called.
+ *
+ * The submit check used to look for a key literally named `signature`, which
+ * is what the company's own letters happen to use. A ministry sheet names its
+ * slots after the parties — caterer_signature, caterer_stamp — so a caterer
+ * who had signed and stamped was still told the signature was missing, with no
+ * way to satisfy a condition that could not be met.
+ */
+export function signatureKeysFor(definition, owner) {
+  const { blocks = [], fields = {} } = definition || {};
+  const keys = [];
+  for (const b of blocks) {
+    if (b.type === 'signature') {
+      for (const slot of b.slots || []) {
+        if (slot.key && fieldOwner(fields[slot.key]) === owner) keys.push(slot.key);
+      }
+    }
+    if (b.type === 'grid') {
+      for (const row of b.rows || []) {
+        for (const cell of row.cells || []) {
+          const sig = Array.isArray(cell.sig) ? cell.sig : cell.sig ? [cell.sig] : [];
+          for (const k of sig) {
+            if (cell.owner ? cell.owner === owner : fieldOwner(fields[k]) === owner) keys.push(k);
+          }
+        }
+      }
+    }
+  }
+  return [...new Set(keys)];
+}
+
 /** Field keys the rendered document actually puts in front of the user. */
 export function visibleFieldKeys(definition) {
   const { blocks = [] } = definition || {};
@@ -256,11 +346,31 @@ export function visibleFieldKeys(definition) {
   for (const b of blocks) {
     if (b.type === 'fields') (b.keys || []).forEach(k => keys.add(k));
     if (b.type === 'table' && b.key) keys.add(b.key);
+    if (b.type === 'grid') {
+      for (const row of b.rows || []) {
+        for (const cell of row.cells || []) {
+          if (cell.field) keys.add(cell.field);
+          /* A signature cell is a blank too. Leaving it out is why the company
+             was never asked for the one the sheet has a line for. */
+          for (const k of (Array.isArray(cell.sig) ? cell.sig : cell.sig ? [cell.sig] : [])) keys.add(k);
+        }
+      }
+    }
   }
   return keys;
 }
 
 /* ── Assignment status ────────────────────────────────────── */
+/**
+ * A filing may be printed once the caterer has signed and sent it.
+ *
+ * A draft on letterhead asserts something nobody agreed to, so pending,
+ * draft and returned print nothing. Submitted does: it is the caterer's own
+ * signed sheet, and they are entitled to a copy of what they sent without
+ * waiting on the office to review it.
+ */
+export const isPrintable = (status) => status === 'submitted' || status === 'accepted';
+
 export const FORM_STATUSES = [
   { value: 'pending',   label: 'في الانتظار', color: '#64748B' },
   { value: 'draft',     label: 'مسودة',       color: '#3D6795' },

@@ -333,7 +333,6 @@ export default function AdminDashboard() {
         kicker="لوحة الإدارة"
         Icon={LayoutDashboard}
         title="نظرة عامة"
-        subtitle="حالة الموسم الآن — وما يحتاج قرارك قبل غيره"
         stats={[
           { value: pendingReports, label: 'بلاغ معلّق', tone: pendingReports > 0 ? 'alert' : undefined },
           { value: pendingLogistics, label: 'إسناد معلّق', tone: pendingLogistics > 0 ? 'alert' : undefined },

@@ -388,7 +388,6 @@ export default function StagesReport() {
           <div className="px-5 py-3.5 border-b border-line"
             style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 100%)' }}>
             <p className="text-sm font-black text-ink">رسم بياني للجاهزية</p>
-            <p className="text-[11px] text-muted font-bold">العمود الأيمن: قبل (رمادي) — العمود الأيسر: بعد (ملوّن)</p>
           </div>
           <div className="p-5 space-y-2.5">
             {rows.filter(r => r.beforeScore != null || r.afterScore != null).map(r => (

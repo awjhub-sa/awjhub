@@ -292,7 +292,6 @@ export default function AdminCenters() {
         kicker="إدارة المتعهدين"
         Icon={MapPinArea}
         title="المراكز"
-        subtitle="مراكز منى وعرفة الممنوحة للشركة في كل موسم"
         gradient={{ from: COLORS.accent, to: COLORS.accent600 }}
         glowColor="rgb(var(--c-accent) / 0.4)"
         right={
@@ -338,10 +337,6 @@ export default function AdminCenters() {
         <div className="bg-white rounded-2xl border border-line p-12 text-center">
           <CalendarBlank size={38} className="mx-auto text-muted/30 mb-3" />
           <h3 className="font-bold text-ink text-sm mb-1">ابدأ بإنشاء موسم</h3>
-          <p className="text-muted text-xs mb-5 max-w-sm mx-auto leading-relaxed">
-            المراكز تُمنح للشركة سنةً بسنة، فكل مركز يسكن داخل موسمه.
-            أنشئ موسم هذا العام ثم أضف مراكزه.
-          </p>
           <button
             onClick={() => { setSeasonForm(EMPTY_SEASON); setSeasonModal(true); }}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-bold text-sm hover:opacity-90 transition"
@@ -581,7 +576,7 @@ export default function AdminCenters() {
                     onChange={(e) => setForm(p => ({ ...p, category: e.target.value }))}
                     className={inputCls}
                   >
-                    <option value="">— اختر —</option>
+                    <option value="">اختر</option>
                     {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.value}</option>)}
                   </select>
                 </Field>
@@ -617,14 +612,13 @@ export default function AdminCenters() {
 
               <Field
                 label="المتعهد المسؤول"
-                hint="اتركه فارغاً إن لم يُسنَد المركز بعد — يظهر في القائمة كـ «غير مُسند»."
               >
                 <select
                   value={form.catererId}
                   onChange={(e) => setForm(p => ({ ...p, catererId: e.target.value }))}
                   className={inputCls}
                 >
-                  <option value="">— بدون متعهد —</option>
+                  <option value="">بدون متعهد</option>
                   {caterers.filter(c => c.status !== 'archived').map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
@@ -854,7 +848,7 @@ export default function AdminCenters() {
               </label>
               {seasonForm.isActive && seasons.some(s => s.isActive) && (
                 <p className="text-[10px] text-muted -mt-1">
-                  سيُلغى تنشيط «{seasons.find(s => s.isActive)?.name}» — موسم نشط واحد فقط.
+                  سيُلغى تنشيط «{seasons.find(s => s.isActive)?.name}»، موسم نشط واحد فقط.
                 </p>
               )}
 

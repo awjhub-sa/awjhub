@@ -210,18 +210,13 @@ export default function MenuImport({
                   className="w-full h-9 rounded-xl border border-line bg-white text-[11.5px] font-bold text-primary
                              flex items-center justify-center gap-1.5 hover:bg-primary/5">
                   <DownloadSimple size={13} weight="bold" />
-                  تنزيل قالب جاهز — املأه واستورده مباشرة
+                  تنزيل قالب جاهز
                 </button>
               ) : (
                 /* Said plainly, before the upload rather than after the fact. */
                 <div className="rounded-xl border p-3 flex gap-2"
                   style={{ borderColor: '#C4D8ED', background: 'color-mix(in srgb, #4E7CB0 7%, #fff)' }}>
                   <WarningCircle size={15} weight="bold" style={{ color: '#4E7CB0' }} className="flex-shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-ink leading-relaxed">
-                    إن كان المنيو في الملف على شكل <b>جدول</b> فسيُقرأ بدقة كملف الإكسل.
-                    وإن كان تصميماً حرّاً فستظهر لك سطوره لتوزّعها بنفسك.
-                    الملفات الممسوحة ضوئياً (صور داخل PDF) لا تُقرأ.
-                  </p>
                 </div>
               )}
 
@@ -231,10 +226,7 @@ export default function MenuImport({
                              hover:bg-primary/5 transition-colors">
                   <span className="flex items-center gap-1.5 text-[11.5px] font-bold text-primary">
                     <DownloadSimple size={13} weight="bold" />
-                    تنزيل قالب Word — املأه ثم احفظه PDF وارفعه
-                  </span>
-                  <span className="block text-[10px] font-bold text-muted mt-0.5 pr-[18px]">
-                    يفتح في Word بجدول جاهز لكل يوم ووجبة، بالعناوين التي يعرفها القارئ
+                    تنزيل قالب Word
                   </span>
                 </button>
               )}
@@ -338,9 +330,6 @@ export default function MenuImport({
                 </ul>
               </div>
 
-              <p className="text-[10.5px] text-muted leading-relaxed px-1">
-                الحفظ يستبدل المنيو الحالي للوجبات المحدّدة فقط، ولا يمسّ بقية الأيام.
-              </p>
             </>
           )}
 
@@ -361,10 +350,6 @@ export default function MenuImport({
               <div className="rounded-xl border p-3 flex gap-2"
                 style={{ borderColor: '#EBCFC3', background: 'color-mix(in srgb, #B4674E 7%, #fff)' }}>
                 <WarningCircle size={15} weight="bold" style={{ color: '#B4674E' }} className="flex-shrink-0 mt-0.5" />
-                <p className="text-[11px] text-ink leading-relaxed">
-                  قُرئ النص لكن لم يظهر على شكل جدول بأعمدة — الملف تصميم حرّ لا جدول.
-                  وزّع السطور بنفسك في المحرّر، أو استخدم ملف إكسل للاستيراد المباشر.
-                </p>
               </div>
 
               <div className="bg-white rounded-2xl border border-line p-3 max-h-[38vh] overflow-y-auto space-y-1">
@@ -398,9 +383,6 @@ export default function MenuImport({
                 </div>
               </div>
 
-              <p className="text-[10.5px] text-muted leading-relaxed px-1">
-                ستُفتح هذه السطور داخل محرّر الوجبة لتوزّعها على التصنيفات، ولن يُحفظ شيء قبل مراجعتك.
-              </p>
             </>
           )}
         </div>

@@ -608,7 +608,7 @@ export default function SupervisorHome() {
 
   return (
     <div dir="rtl" className="min-h-screen bg-canvas font-arabic pb-10 overflow-x-hidden text-right">
-      
+
       {(isSheetOpen || isProfileOpen) && (
         <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] transition-opacity duration-300"
@@ -769,7 +769,6 @@ export default function SupervisorHome() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-base font-black text-ink leading-tight">جاهزية منى</p>
-                  <p className="text-[11px] text-muted mt-0.5">رفع جاهزية لأي مركز بدون إسناد مسبق</p>
                 </div>
                 <ChevronLeft size={18} className="text-primary shrink-0 group-hover:-translate-x-1 transition-transform" />
               </div>
@@ -790,7 +789,6 @@ export default function SupervisorHome() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-base font-black text-ink leading-tight">جاهزية عرفة</p>
-                  <p className="text-[11px] text-muted mt-0.5">رفع جاهزية لأي مركز بدون إسناد مسبق</p>
                 </div>
                 <ChevronLeft size={18} className="text-[#5E9070] shrink-0 group-hover:-translate-x-1 transition-transform" />
               </div>
@@ -862,7 +860,7 @@ export default function SupervisorHome() {
             {(pendingTasks.length > 10 || openReports.length > 10 || openLogistics.length > 10) && (
               <div className="px-5 py-3 bg-[#FDFAF7] border-t border-line text-center">
                 <p className="text-xs text-muted font-medium">
-                  معروض ١٠ من كل فئة — افتح مركزاً معيناً لرؤية الكل
+                  معروض ١٠ من كل فئة
                 </p>
               </div>
             )}
@@ -880,7 +878,6 @@ export default function SupervisorHome() {
               </div>
               <div>
                 <h2 className="text-base font-bold text-ink">مراكزي</h2>
-                <p className="text-[11px] text-muted mt-0.5">ادخل على مركز للاطلاع التفصيلي</p>
               </div>
             </div>
             <div className="p-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -984,7 +981,7 @@ export default function SupervisorHome() {
               <div className="mb-6 relative w-48"><GoldRule /></div>
               <div className="bg-white/5 rounded-2xl px-5 py-4 border border-white/10 backdrop-blur-sm flex items-start gap-3">
                 <Building2 size={18} className="text-primary mt-0.5" />
-                <div><p className="text-white/50 text-[10px] mb-1">{selectedCenter} — المتعهد المسجل</p><p className="text-white text-sm font-bold leading-snug">{caterer}</p></div>
+                <div><p className="text-white/50 text-[10px] mb-1">{selectedCenter} · المتعهد المسجل</p><p className="text-white text-sm font-bold leading-snug">{caterer}</p></div>
               </div>
             </div>
             <div className="bg-background px-6 py-3 flex items-center justify-between border-t border-line/30">

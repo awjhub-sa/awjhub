@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { db } from '../../lib/db.js';
 import { getCaterer } from '../../config/centers.js';
 import PageHeader from '../../components/PageHeader.jsx';
@@ -15,15 +16,21 @@ import {
   Checks as CheckCheck,
   Funnel as Filter,
   Sparkle as Sparkles,
+  FileText,
 } from '@phosphor-icons/react';
 
-
+/* `route` is where the row goes when it is clicked. A notification that names
+   a thing and cannot take you to it makes the reader hunt for what the system
+   already knows the location of. */
 const SOURCES = [
-  { key: 'reports',           col: 'reports',            label: 'بلاغ ميداني',   icon: AlertTriangle, color: '#E53E3E' },
-  { key: 'logistics_requests',col: 'logistics_requests', label: 'طلب إسناد',     icon: Truck,         color: '#4E7CB0' },
-  { key: 'meal_evaluations',  col: 'meal_evaluations',   label: 'تقييم وجبات',   icon: Utensils,      color: 'rgb(var(--c-primary))' },
-  { key: 'mina_readiness',    col: 'mina_readiness',     label: 'جاهزية منى',    icon: Mountain,      color: '#16A34A' },
-  { key: 'arafat_readiness',  col: 'arafat_readiness',   label: 'جاهزية عرفة',   icon: Mountain,      color: '#3D6795' },
+  { key: 'reports',           col: 'reports',            label: 'بلاغ ميداني',   icon: AlertTriangle, color: '#E53E3E', route: '/admin/reports' },
+  { key: 'logistics_requests',col: 'logistics_requests', label: 'طلب إسناد',     icon: Truck,         color: '#4E7CB0', route: '/admin/logistics' },
+  { key: 'meal_evaluations',  col: 'meal_evaluations',   label: 'تقييم وجبات',   icon: Utensils,      color: 'rgb(var(--c-primary))', route: '/admin/phases' },
+  { key: 'mina_readiness',    col: 'mina_readiness',     label: 'جاهزية منى',    icon: Mountain,      color: '#16A34A', route: '/admin/analytics' },
+  { key: 'arafat_readiness',  col: 'arafat_readiness',   label: 'جاهزية عرفة',   icon: Mountain,      color: '#3D6795', route: '/admin/analytics' },
+  /* A submitted form is something waiting on the office, which is exactly what
+     this screen is for — and it was the one arrival that never reached it. */
+  { key: 'forms',             col: 'form_assignments',   label: 'نموذج مُسلَّم',  icon: FileText,      color: '#B99A64', route: '/admin/forms' },
 ];
 
 const FILTERS = [
@@ -31,9 +38,19 @@ const FILTERS = [
   ...SOURCES.map(s => ({ value: s.key, label: s.label, color: s.color, icon: s.icon })),
 ];
 
+/* Rows arrive from Postgres as ISO strings. This used to call `.toMillis()`,
+   which only a Firestore timestamp has — so every row scored 0, the feed never
+   sorted, and nothing was ever «جديد». */
+function ms(v) {
+  if (!v) return 0;
+  if (typeof v.toMillis === 'function') return v.toMillis();
+  if (typeof v.toDate === 'function') return v.toDate().getTime();
+  const t = new Date(v).getTime();
+  return Number.isNaN(t) ? 0 : t;
+}
 
 function getTs(doc) {
-  return doc.timestamp?.toMillis?.() ?? doc.createdAt?.toMillis?.() ?? 0;
+  return ms(doc.submittedAt) || ms(doc.timestamp) || ms(doc.createdAt) || 0;
 }
 
 function timeAgo(ts) {
@@ -52,9 +69,11 @@ function fullDate(ts) {
     .toLocaleString('ar-SA', { dateStyle: 'long', timeStyle: 'short' });
 }
 
-
 export default function AdminNotifications() {
+  const nav = useNavigate();
   const [items,  setItems]  = useState([]);
+  const [templates, setTemplates] = useState([]);
+  const [caterers,  setCaterers]  = useState([]);
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
 
@@ -72,7 +91,12 @@ export default function AdminNotifications() {
     const unsubs = SOURCES.map(src => {
       allItems[src.key] = [];
       return db[src.col].subscribe(rows => {
-        allItems[src.key] = rows.map(d => ({
+        /* An assignment becomes news when the caterer hands it back, not when
+           the office sends it out. */
+        const useful = src.key === 'forms'
+          ? rows.filter(r => r.status === 'submitted')
+          : rows;
+        allItems[src.key] = useful.map(d => ({
           _id:  `${src.key}_${d.id}`,
           _src: src.key,
           ...d,
@@ -85,8 +109,16 @@ export default function AdminNotifications() {
       });
     });
 
-    return () => unsubs.forEach(u => u());
+    const uT = db.form_templates.subscribe(setTemplates);
+    const uC = db.caterers.subscribe(setCaterers);
+
+    return () => { unsubs.forEach(u => u()); uT(); uC(); };
   }, []);
+
+  const templateById = useMemo(
+    () => Object.fromEntries(templates.map(t => [t.id, t])), [templates]);
+  const catererById = useMemo(
+    () => Object.fromEntries(caterers.map(c => [c.id, c])), [caterers]);
 
   const filtered = filter === 'all'
     ? items
@@ -105,7 +137,6 @@ export default function AdminNotifications() {
         kicker="التنبيهات"
         Icon={Bell}
         title="الإشعارات"
-        subtitle="كل ما وصل من الميدان — تحديث فوري"
         stats={[
           { value: items.length, label: 'إشعار' },
           { value: newCount, label: 'جديد', tone: newCount > 0 ? 'alert' : undefined },
@@ -158,13 +189,17 @@ export default function AdminNotifications() {
           const src      = SOURCES.find(s => s.key === item._src);
           const Icon     = src.icon;
           const color    = src.color;
-          const ts       = item.timestamp ?? item.createdAt ?? null;
+          const ts       = item.submittedAt ?? item.timestamp ?? item.createdAt ?? null;
           const isNew    = getTs(item) > prevLastSeen;
-          const caterer  = item.caterer || getCaterer(item.center) || '—';
+          const isForm   = item._src === 'forms';
+          const caterer  = isForm
+            ? (catererById[item.catererId]?.name || '—')
+            : (item.caterer || getCaterer(item.center) || '—');
 
           return (
-            <div key={item._id}
-              className={`bg-white rounded-2xl border shadow-[0_2px_10px_rgb(var(--c-ink)/0.06)] overflow-hidden transition-all hover:shadow-[0_6px_24px_rgb(var(--c-ink)/0.11)] ${
+            <button key={item._id}
+              onClick={() => src.route && nav(src.route)}
+              className={`w-full text-right bg-white rounded-2xl border shadow-[0_2px_10px_rgb(var(--c-ink)/0.06)] overflow-hidden transition-all hover:shadow-[0_6px_24px_rgb(var(--c-ink)/0.11)] hover:-translate-y-px ${
                 isNew ? 'border-l-0' : 'border-line'
               }`}
               style={isNew ? {
@@ -173,12 +208,12 @@ export default function AdminNotifications() {
                 borderRightColor: color,
               } : {}}>
 
-              <div className="flex items-start gap-3 px-4 py-3.5">
+              <div className="group flex items-start gap-3 px-4 py-3.5">
 
-                {/* Icon */}
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
+                {/* Icon — lifts and deepens on hover, so the row reads as a way in */}
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 transition-transform duration-200 group-hover:scale-105"
                   style={{ background: `linear-gradient(135deg, ${color}28, ${color}14)` }}>
-                  <Icon size={18} style={{ color }} weight="regular" />
+                  <Icon size={18} style={{ color }} weight={isNew ? 'fill' : 'regular'} />
                 </div>
 
                 {/* Content */}
@@ -198,8 +233,11 @@ export default function AdminNotifications() {
                   {/* Observer + center + caterer */}
                   <div className="flex items-center gap-3 flex-wrap text-xs text-ink-800">
                     <span className="flex items-center gap-1 font-bold">
-                      <User size={11} weight="regular" className="text-primary" />
-                      {item.observer || '—'}
+                      {isForm ? <FileText size={11} weight="regular" className="text-primary" />
+                              : <User size={11} weight="regular" className="text-primary" />}
+                      {isForm
+                        ? (templateById[item.templateId]?.title || 'نموذج')
+                        : (item.observer || '—')}
                     </span>
                     <span className="text-muted">·</span>
                     <span className="flex items-center gap-1">
@@ -230,6 +268,11 @@ export default function AdminNotifications() {
                       النتيجة: {item.scoreOutOf10}/10
                     </p>
                   )}
+                  {isForm && (
+                    <p className="text-[11px] text-muted mt-0.5">
+                      {item.formNumber ? `رقم ${item.formNumber} · ` : ''}بانتظار مراجعة الإدارة
+                    </p>
+                  )}
                 </div>
 
                 {/* Timestamp */}
@@ -241,7 +284,7 @@ export default function AdminNotifications() {
                   <span className="text-[10px] text-muted">{fullDate(ts)}</span>
                 </div>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>

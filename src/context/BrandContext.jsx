@@ -123,6 +123,13 @@ export function toBrand(settings) {
       address:  settings.address,  phone: settings.phone,
       email:    settings.email,    website: settings.website,
     },
+    /* What the ministry's forms ask of the service company itself. Separate
+       from `legal` because these describe the operation, not the entity. */
+    facility: {
+      licenseNumber: settings.licenseNumber,
+      facilityName:  settings.facilityName,
+      murabba:       settings.murabba,
+    },
     colors: {
       ...DEFAULT_COLORS,
       primary:    settings.colorPrimary    || DEFAULT_COLORS.primary,

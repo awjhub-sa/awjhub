@@ -98,7 +98,7 @@ function TaskGate({ profile, tasks, completions, loading, onSelect }) {
             </div>
             <div>
               <p className="text-primary text-[10px] font-black uppercase tracking-widest">مهام التقييم</p>
-              <h2 className="text-base font-bold">اختر الوجبة للتقييم</h2>
+              <h2 className="text-base font-bold">الوجبات</h2>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2">
@@ -562,12 +562,7 @@ export default function Mealcheck() {
 
         <div className="fixed bottom-0 left-0 right-0 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-white/90 backdrop-blur-md border-t border-line z-50">
           <div className="max-w-xl mx-auto">
-            {!allPhasesComplete && (
-              <p className="text-center text-[11px] text-muted font-semibold mb-2">
-                ارفع صورة لكل مرحلة لتتمكن من بدء التقييم
-              </p>
-            )}
-            <button onClick={() => setScreen('questions')} disabled={!allPhasesComplete}
+                        <button onClick={() => setScreen('questions')} disabled={!allPhasesComplete}
               className={`min-h-[56px] w-full py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-3 transition-all duration-300 ${
                 allPhasesComplete
                   ? 'text-white shadow-[0_8px_28px_rgb(var(--c-primary)/0.4)] hover:shadow-[0_10px_36px_rgb(var(--c-primary)/0.5)] active:scale-95'

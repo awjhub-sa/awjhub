@@ -50,7 +50,6 @@ export default function SupMinaReadiness() {
   const [selectedTask, setSelectedTask] = useState(null);
   const photoInputRefs = useRef({});
 
-  
   const [tasks,        setTasks]        = useState([]);
   const [completions,  setCompletions]  = useState([]);
   const [tasksLoading, setTasksLoading] = useState(true);
@@ -203,7 +202,7 @@ export default function SupMinaReadiness() {
             <button onClick={() => navigate('/supervisor-home')} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition shrink-0">
               <ChevronRight className="text-primary" size={22} weight="bold" />
             </button>
-            <h1 className="text-base font-bold text-ink absolute left-1/2 -translate-x-1/2 whitespace-nowrap">جاهزية منى — اختر المركز</h1>
+            <h1 className="text-base font-bold text-ink absolute left-1/2 -translate-x-1/2 whitespace-nowrap">جاهزية منى</h1>
             <div className="w-10 shrink-0" />
           </div>
         </header>
@@ -215,7 +214,7 @@ export default function SupMinaReadiness() {
             </div>
             <div>
               <p className="text-primary text-[10px] font-black uppercase tracking-widest mb-0.5">جاهزية منى</p>
-              <h2 className="text-white text-lg font-bold leading-snug">اختر المركز لرفع تقييم الجاهزية</h2>
+              <h2 className="text-white text-lg font-bold leading-snug">المراكز</h2>
               <p className="text-white/60 text-xs mt-1">تقدر تختار أي مركز بدون الحاجة لإسناد مسبق.</p>
             </div>
           </div>
@@ -280,7 +279,6 @@ export default function SupMinaReadiness() {
       </div>
     );
   }
-
 
   if (!selectedTask) {
     return (
@@ -357,7 +355,6 @@ export default function SupMinaReadiness() {
     );
   }
 
-  
   return (
     <div dir="rtl" className="min-h-screen bg-canvas pb-28 font-arabic px-4 md:px-8">
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-line w-full px-4 md:px-8 py-3 mb-6 shadow-sm">

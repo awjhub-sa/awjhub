@@ -98,3 +98,54 @@
      document's identity, and browsers drop backgrounds by default. */
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* ── the document root, while printing ─────────────────────
+ *
+ * The app's base styles are written for a screen: `body { overflow-x: hidden }`
+ * keeps a stray wide element from producing a horizontal scrollbar. On paper
+ * that same rule gives the printer a clipped box to lay out inside, and Chrome
+ * paginates against it — which is how a sheet that looks right in the preview
+ * comes out of the printer cut off or shifted.
+ *
+ * A `min-height: 100vh` left standing is the other half: the viewport height
+ * becomes a page height the content does not fill, and the printer is handed a
+ * blank second page for it.
+ *
+ * These are print-only and corrective. Nothing on screen changes, and every
+ * other printable route in the app inherits the same repair. */
+@media print {
+  html, body {
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+  #root {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+}
+
+/* ── the ministry sheet, on paper ───────────────────────────
+ *
+ * The grid is drawn once and read in two places: in the tab, where somebody
+ * checks it before printing, and on A4. On screen it wants room; on paper the
+ * whole minute has to land on one sheet, and thirty-one rows carrying six
+ * pixels of padding each is a fifth of a page spent on air.
+ *
+ * So the component marks the parts and this compacts them, rather than the
+ * component compacting and the preview shrinking with it. */
+@media print {
+  .nsab-grid .nsab-cell {
+    padding-top: 2.5px !important;
+    padding-bottom: 2.5px !important;
+  }
+  /* The tallest row on the sheet. */
+  .nsab-sig { min-height: 46px !important; }
+  .nsab-sig-img { max-height: 44px !important; }
+  /* The @page margin is the margin; the sheet adds none of its own. */
+  .nsab-bare { padding: 0 !important; }
+}

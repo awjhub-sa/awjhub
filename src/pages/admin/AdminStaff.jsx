@@ -280,7 +280,6 @@ export default function AdminStaff() {
         kicker="المستخدمين"
         Icon={UserCog}
         title="الموظفين"
-        subtitle="حسابات الإداريين والمراكز المخصَّصة لهم"
         gradient={{ from: 'rgb(var(--c-primary-400))', to: 'rgb(var(--c-primary))' }}
         sparkle
       />
@@ -295,7 +294,6 @@ export default function AdminStaff() {
             </div>
             <div>
               <h2 className="font-bold text-ink text-sm">إضافة موظف جديد</h2>
-              <p className="text-[10px] text-muted">سيتم إنشاء حساب دخول بالبريد الإلكتروني</p>
             </div>
           </div>
 
@@ -604,7 +602,6 @@ export default function AdminStaff() {
                   dir="ltr"
                   className={`${inputCls} bg-gray-50 text-muted`}
                 />
-                <p className="text-[10px] text-muted mt-1">البريد لا يمكن تغييره بعد إنشاء الحساب.</p>
               </Field>
               <Field label="رقم الجوال">
                 <input

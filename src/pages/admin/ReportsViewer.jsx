@@ -408,7 +408,7 @@ function CenterRecord({ rec, source, withPhotos, Sheet }) {
       <Sheet>
         <div className="rv-title">
           <h1>{source.dossierTitle || source.label}</h1>
-          <p>{rec.center} — الصور الميدانية</p>
+          <p>{rec.center} · الصور الميدانية</p>
         </div>
         <div className="rv-band">
           <h2>الصور المرفقة</h2>
@@ -475,10 +475,6 @@ function Toolbar({ sections, title }) {
         <X size={14} /> إغلاق
       </button>
 
-      <p className="rv-hint">
-        عند الطباعة اختر <b>A4</b> وفعّل <b>«Background graphics»</b> ليخرج التنسيق الملوّن — ثم
-        احفظ كـ PDF{title ? ` باسم «${title}»` : ''}.
-      </p>
     </div>
   );
 }

@@ -137,7 +137,6 @@ export default function AdminInsights() {
         kicker="التحليلات"
         Icon={ChartLineUp}
         title="تحليلات الموسم"
-        subtitle="كل ما في النظام مقروءًا كرسوم وقراءات — وكل رقم مرتبط بالشاشة التي يخرج منها"
         stats={[
           { value: AR(bothEvals), label: 'تقييم' },
           { value: overallAvg == null ? '—' : AR(overallAvg.toFixed(1)), label: 'متوسط الجاهزية', tone: 'gold' },
@@ -157,7 +156,7 @@ export default function AdminInsights() {
           tone={STEEL} hint={`${AR(arafatStats.centers)} مركز · ${AR(arafatStats.evaluations)} تقييم`} />
         <Kpi label="إجمالي المخالفات" Icon={WarningCircle}
           value={AR(minaStats.violations + arafatStats.violations)}
-          tone={RED} hint="إجابات «لا» في المشعرين" />
+          tone={RED} />
         <Kpi label="متعهدون تحت القياس" Icon={Building2}
           value={AR(scorecards.length)}
           tone={GOLD} hint={`${AR(scorecards.filter(s => (s.rank ?? 0) >= 8).length)} منهم بتقدير ممتاز`} />
@@ -172,13 +171,10 @@ export default function AdminInsights() {
           </span>
           <div className="min-w-0">
             <h2 className="text-[13px] font-black text-ink">قراءات تلقائية</h2>
-            <p className="text-[11px] font-bold text-muted">
-              مستخرجة من أرقام الموسم — كل قراءة تحمل الرقم الذي أنتجها
-            </p>
           </div>
         </header>
 
-        {findings.length === 0 ? <Empty label="لا توجد قراءات بعد — أضف تقييمات أولاً" /> : (
+        {findings.length === 0 ? <Empty label="لا توجد قراءات بعد" /> : (
           <div className="p-4 grid gap-2.5 md:grid-cols-2">
             {findings.map((f, i) => {
               const t = TONE[f.tone];
@@ -216,7 +212,7 @@ export default function AdminInsights() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="حركة الجاهزية" subtitle="متوسط الدرجة في كل جولة تقييم">
+        <Panel title="حركة الجاهزية">
           {/* A trend needs two points. With one round the honest thing is to
               say so and show the round, not to draw a line through a single
               value or leave the panel reading "no data". */}
@@ -227,7 +223,7 @@ export default function AdminInsights() {
                 <span className="text-base font-bold text-muted"> /١٠</span>
               </p>
               <p className="text-[11px] font-bold text-muted mt-2">
-                جولة تقييم واحدة في {stats.byDate[0]?.date || '—'} — الحركة تظهر بعد الجولة الثانية
+                جولة تقييم واحدة في {stats.byDate[0]?.date || '—'} 
               </p>
             </div>
           ) : (
@@ -244,7 +240,7 @@ export default function AdminInsights() {
           )}
         </Panel>
 
-        <Panel title="توزيع المراكز على التقدير" subtitle="بحسب آخر تقييم لكل مركز">
+        <Panel title="توزيع المراكز على التقدير">
           <Donut
             total={stats.centers}
             caption="مركز"
@@ -257,7 +253,7 @@ export default function AdminInsights() {
         </Panel>
 
         <Panel title="أكثر المعايير سقوطاً"
-          subtitle="عدد مرات الإجابة بـ«لا» — أعلى ستة">
+>
           <BarsH
             items={stats.failures.slice(0, 6).map(f => ({
               label: `${AR(f.q.id)} · ${f.q.text}`,
@@ -266,7 +262,7 @@ export default function AdminInsights() {
           />
         </Panel>
 
-        <Panel title="أدنى المراكز جاهزية" subtitle="آخر درجة مسجّلة — أدنى ستة">
+        <Panel title="أدنى المراكز جاهزية">
           <BarsH
             max={10}
             unit=""
@@ -282,7 +278,6 @@ export default function AdminInsights() {
       {/* ── Where every centre stands, in one look ── */}
       <Panel
         title="خريطة الجاهزية"
-        subtitle="كل مركز بآخر درجة سجّلها — الأحمر يحتاج زيارة قبل غيره"
         right={
           <div className="flex items-center gap-3">
             {[['ممتاز ٨+', GREEN], ['مقبول ٦–٨', AMBER], ['ضعيف <٦', RED], ['بلا تقييم', '#CBD5E1']].map(([l, c]) => (
@@ -306,7 +301,7 @@ export default function AdminInsights() {
           when a section has not started, because a decision-maker cannot tell
           an empty chart from an all-clear. */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="متابعة المراحل" subtitle="التجهيز ثم الطبخ ثم التوزيع"
+        <Panel title="متابعة المراحل"
           right={<Link to="/admin/phases" nav={navigate} />}>
           {!ops.phases.active ? (
             <NotStarted
@@ -327,7 +322,7 @@ export default function AdminInsights() {
           )}
         </Panel>
 
-        <Panel title="المهام المسندة" subtitle="ما أُسند للمراقبين وما رجع منه"
+        <Panel title="المهام المسندة"
           right={<Link to="/admin/tasks" nav={navigate} />}>
           {!ops.tasks.active ? (
             <NotStarted what="لا توجد مهام مسنَدة" why="أسند مهمة من شاشة إسناد المهام لتظهر هنا." />
@@ -353,7 +348,7 @@ export default function AdminInsights() {
           )}
         </Panel>
 
-        <Panel title="التزام المتعهدين بالنماذج" subtitle="ما سُلِّم في وقته وما تأخّر"
+        <Panel title="التزام المتعهدين بالنماذج"
           right={<Link to="/admin/forms" nav={navigate} />}>
           {!ops.forms.active ? (
             <NotStarted what="لا توجد نماذج مُسنَدة" why="أسند نموذجاً لمتعهد ليبدأ قياس الالتزام." />
@@ -371,7 +366,7 @@ export default function AdminInsights() {
           )}
         </Panel>
 
-        <Panel title="تغطية المراكز بالمتعهدين" subtitle="كل مركز بلا متعهد هو مركز خارج كل قياس"
+        <Panel title="تغطية المراكز بالمتعهدين"
           right={<Link to="/admin/centers" nav={navigate} />}>
           <div className="grid grid-cols-3 gap-3 mb-4">
             <MiniStat label="مركز" value={AR(ops.coverage.total)} color={NAVY} />
@@ -394,7 +389,7 @@ export default function AdminInsights() {
 
       {/* فرضية الوزارة has no store behind it yet; saying so is more use than
           leaving the reader to wonder why it is missing. */}
-      <Panel title="فرضية الوزارة" subtitle="تمارين المحاكاة والفرضيات الميدانية"
+      <Panel title="فرضية الوزارة"
         right={<Link to="/admin/readiness/drill" nav={navigate} />}>
         <NotStarted
           what="القسم لم يُفعَّل بعد"
@@ -404,7 +399,6 @@ export default function AdminInsights() {
       {/* ── The join nothing else makes ── */}
       <Panel
         title="بطاقة أداء المتعهدين"
-        subtitle="الجاهزية والمخالفات والبلاغات على سطر واحد لكل متعهد"
         right={
           <button onClick={() => navigate('/admin/caterers')}
             className="text-[11px] font-bold text-primary hover:underline">
@@ -487,8 +481,8 @@ function ReadinessMap({ stats, allCenters, onPick }) {
 function RoundPanel({ cmp, label }) {
   if (!cmp || !cmp.moved.length) {
     return (
-      <Panel title={`مقارنة الجولات — ${label}`} subtitle="الفرق بين الجولة الأولى وآخر جولة لكل مركز">
-        <Empty label={`لم تُنفَّذ جولة ثانية في ${label} بعد — المقارنة تظهر تلقائياً بعدها`} />
+      <Panel title={`مقارنة الجولات · ${label}`}>
+        <Empty label={`لم تُنفَّذ جولة ثانية في ${label} بعد`} />
       </Panel>
     );
   }
@@ -497,7 +491,7 @@ function RoundPanel({ cmp, label }) {
 
   return (
     <Panel
-      title={`مقارنة الجولات — ${label}`}
+      title={`مقارنة الجولات · ${label}`}
       subtitle={`${AR(cmp.moved.length)} مركز له جولتان أو أكثر${cmp.single ? ` · ${AR(cmp.single)} بجولة واحدة` : ''}`}
       right={
         <span className="text-[12px] font-black px-2.5 py-1 rounded-full"
@@ -528,9 +522,6 @@ function RoundPanel({ cmp, label }) {
         <MoveList title="الأكثر تراجعاً" rows={cmp.bottom} tone={RED} />
       </div>
 
-      <p className="text-[10px] font-bold text-muted mt-4">
-        الفرق يُحسب بين أول تقييم وآخر تقييم لكل مركز — وتغيّر أقل من ٠٫١٥ نقطة يُعدّ ثباتاً لا حركة.
-      </p>
     </Panel>
   );
 }
@@ -622,10 +613,6 @@ function Scorecards({ rows }) {
           })}
         </tbody>
       </table>
-      <p className="text-[10px] font-bold text-muted mt-3 leading-relaxed">
-        الأداء العام = متوسط الجاهزية، ناقص أثر المخالفات والبلاغات موزوناً على عدد مراكز المتعهد —
-        حتى لا يُحاسَب متعهد كبير على حجمه.
-      </p>
     </div>
   );
 }

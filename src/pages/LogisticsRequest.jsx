@@ -67,12 +67,10 @@ export default function LogisticsRequest() {
   const navigate = useNavigate();
   const { profile } = useAuth();
 
-  
   const [pendingReports,  setPendingReports]  = useState([]);
   const [loadingReports,  setLoadingReports]  = useState(true);
   const [selectedReport,  setSelectedReport]  = useState(null);
 
-  
   const [holySite, setHolySite] = useState('');
   const [category, setCategory] = useState('');
   const [supportType, setSupportType] = useState('');
@@ -191,7 +189,6 @@ export default function LogisticsRequest() {
     );
   }
 
-  
   if (!selectedReport) {
     return (
       <div dir="rtl" className="min-h-screen bg-canvas pb-10 font-arabic">
@@ -219,7 +216,7 @@ export default function LogisticsRequest() {
               </div>
               <div>
                 <p className="text-primary text-[10px] font-black uppercase tracking-widest mb-1">الخطوة الأولى</p>
-                <h2 className="text-white text-lg font-bold leading-snug">اختر البلاغ الذي تطلب الإسناد له</h2>
+                <h2 className="text-white text-lg font-bold leading-snug">البلاغات</h2>
                 <p className="text-white/60 text-xs mt-1.5 leading-relaxed">
                   طلب الإسناد يجب أن يكون مرتبطاً ببلاغ <span className="text-amber-300 font-bold">قيد الانتظار</span> رفعته سابقاً على مركزك.
                 </p>
@@ -312,7 +309,6 @@ export default function LogisticsRequest() {
     );
   }
 
-  
   return (
     <div dir="rtl" className="min-h-screen bg-canvas pb-28 font-arabic px-0">
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-line w-full px-4 md:px-8 py-3 mb-6 shadow-sm">
@@ -354,10 +350,10 @@ export default function LogisticsRequest() {
 
       <div className="px-4">
         {/* Header Card with Observer Info */}
-        <div className="rounded-[2.5rem] p-6 my-6 text-white shadow-lg relative overflow-hidden" 
+        <div className="rounded-[2.5rem] p-6 my-6 text-white shadow-lg relative overflow-hidden"
              style={{ background: 'rgb(var(--c-ink))' }}>
           <Truck className="absolute -left-4 -bottom-4 text-white/5 w-32 h-32 rotate-12" />
-          
+
           <div className="flex justify-between items-center mb-8 relative z-10 group">
             <div className="flex items-center gap-4">
               <div className="relative">
@@ -428,7 +424,7 @@ export default function LogisticsRequest() {
             <label className="text-xs font-bold text-primary mb-4 block text-center uppercase tracking-wide">تصنيف الإسناد</label>
             <div className="grid grid-cols-2 gap-4">
               {CATEGORY_TYPES.map(type => (
-                <button key={type.id} 
+                <button key={type.id}
                   onClick={() => { setCategory(type.id); setSupportType(''); setQtyInternal(''); setQtyExternal(''); }}
                   className={`py-6 rounded-3xl flex flex-col items-center gap-3 transition-all duration-300 border-2 ${category === type.id ? 'border-primary bg-primary/5 text-ink' : 'border-transparent bg-[#F9F7F5] text-muted'}`}>
                   <type.icon size={32} className={category === type.id ? 'text-primary' : 'text-line'} />
@@ -445,7 +441,7 @@ export default function LogisticsRequest() {
                 <label className="text-xs font-bold text-primary mb-4 block text-center tracking-wider">نطاق الإسناد</label>
                 <div className="grid grid-cols-3 gap-3">
                   {SUPPORT_TYPES.map(type => (
-                    <button key={type.value} 
+                    <button key={type.value}
                       onClick={() => { setSupportType(type.value); setQtyInternal(''); setQtyExternal(''); }}
                       className={`py-4 rounded-2xl text-[11px] font-bold transition-all ${supportType === type.value ? 'bg-ink text-white shadow-lg' : 'bg-[#F9F7F5] text-muted border border-line'}`}>
                       {type.label}
@@ -458,10 +454,10 @@ export default function LogisticsRequest() {
                 {showInternal && (
                   <div className="animate-in zoom-in-95 duration-300">
                     <label className="flex items-center gap-2 text-xs font-bold text-ink mb-2 px-1">
-                      <Package size={14} className="text-primary" /> 
+                      <Package size={14} className="text-primary" />
                       {category === 'water' ? 'عدد العبوات (داخلي)' : 'عدد الوجبات (داخلي)'}
                     </label>
-                    <input type="text" inputMode="numeric" value={qtyInternal} 
+                    <input type="text" inputMode="numeric" value={qtyInternal}
                       onChange={e => setQtyInternal(sanitizeNumber(e.target.value))} placeholder="0"
                       className="w-full px-5 py-4 bg-background border-2 border-line rounded-2xl outline-none focus:border-primary font-bold text-lg" />
                   </div>
@@ -472,7 +468,7 @@ export default function LogisticsRequest() {
                       <Package size={14} className="text-primary" />
                       {category === 'water' ? 'عدد العبوات (خارجي)' : 'عدد الوجبات (خارجي)'}
                     </label>
-                    <input type="text" inputMode="numeric" value={qtyExternal} 
+                    <input type="text" inputMode="numeric" value={qtyExternal}
                       onChange={e => setQtyExternal(sanitizeNumber(e.target.value))} placeholder="0"
                       className="w-full px-5 py-4 bg-background border-2 border-line rounded-2xl outline-none focus:border-primary font-bold text-lg" />
                   </div>

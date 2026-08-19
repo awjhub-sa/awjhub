@@ -238,7 +238,6 @@ export default function AdminReportsCenter() {
               {AR_NUM(picked.length)} مختار
             </span>
           </div>
-          <p className="text-[11px] text-muted">اختر أكثر من قسم لتقرير واحد مجمّع</p>
         </div>
 
         {SOURCE_GROUPS.map(group => (
@@ -557,12 +556,7 @@ export default function AdminReportsCenter() {
           </table>
         </div>
 
-        {current.rows.length > 200 && (
-          <div className="px-4 py-2.5 border-t border-line text-[11px] text-muted text-center">
-            تُعرض أول ٢٠٠ سطر — التصدير يشمل الـ {AR_NUM(current.rows.length)} كاملة.
-          </div>
-        )}
-      </section>
+              </section>
     </div>
   );
 }

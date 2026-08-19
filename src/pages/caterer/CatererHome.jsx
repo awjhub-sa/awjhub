@@ -60,6 +60,8 @@ export default function CatererHome() {
     () => forms.filter(f => f.status !== 'submitted' && f.status !== 'accepted'), [forms]);
   const overdue = useMemo(
     () => dueForms.filter(f => f.dueAt && ms(f.dueAt) < Date.now()), [dueForms]);
+  /* Asked for and not yet opened. A draft is one they have already touched. */
+  const untouched = useMemo(() => dueForms.filter(f => f.status === 'pending'), [dueForms]);
 
   const clear = !loading && open.length === 0 && dueForms.length === 0;
 
@@ -127,16 +129,25 @@ export default function CatererHome() {
           <Panel
             Icon={FileText} title="نماذج مستحقة"
             count={dueForms.length}
+            tone={overdue.length ? '#DC2626' : untouched.length ? '#B99A64' : undefined}
             onAll={() => nav('/caterer/forms')}
             empty="لا نماذج مستحقة"
           >
             {dueForms.slice(0, 6).map(f => {
               const late = f.dueAt && ms(f.dueAt) < Date.now();
+              /* Not opened yet: the office is waiting and the caterer may not
+                 know. It is tinted rather than merely edged, because an edge is
+                 read only by someone already looking at the row. */
+              const fresh = f.status === 'pending';
               return (
                 <button key={f.id} onClick={() => nav('/caterer/forms')}
                   className="w-full text-right px-5 py-3.5 border-b border-line/60 last:border-0
-                             hover:bg-background transition-colors flex items-center gap-3"
-                  style={{ borderInlineStart: `3px solid ${late ? '#DC2626' : '#B99A64'}` }}>
+                             transition-colors flex items-center gap-3 hover:brightness-[0.98]"
+                  style={{
+                    borderInlineStart: `3px solid ${late ? '#DC2626' : fresh ? '#B99A64' : '#94A3B8'}`,
+                    background: late ? 'color-mix(in srgb, #DC2626 6%, #fff)'
+                      : fresh ? 'color-mix(in srgb, #B99A64 10%, #fff)' : '#fff',
+                  }}>
                   <span className="flex-1 min-w-0">
                     <span className="block text-[14px] font-bold text-ink truncate">
                       {f.formNumber || 'نموذج'}
@@ -197,15 +208,20 @@ export default function CatererHome() {
   );
 }
 
-function Panel({ Icon, title, count, onAll, empty, children }) {
+function Panel({ Icon, title, count, tone, onAll, empty, children }) {
   const has = Array.isArray(children) ? children.length > 0 : Boolean(children);
   return (
     <section className="bg-white rounded-2xl border border-line overflow-hidden flex flex-col">
       <header className="px-5 py-4 border-b border-line flex items-center gap-2">
-        <Icon size={17} weight="bold" className="text-primary" />
+        <Icon size={17} weight="bold" style={tone ? { color: tone } : undefined}
+          className={tone ? undefined : 'text-primary'} />
         <p className="text-[15px] font-black text-ink">{title}</p>
         {count > 0 && (
-          <span className="text-[12.5px] font-black tabular-nums px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+          <span className={`text-[12.5px] font-black tabular-nums px-2 py-0.5 rounded-full ${
+            tone ? '' : 'bg-primary/10 text-primary'}`}
+            style={tone
+              ? { background: `color-mix(in srgb, ${tone} 14%, #fff)`, color: tone }
+              : undefined}>
             {AR(count)}
           </span>
         )}

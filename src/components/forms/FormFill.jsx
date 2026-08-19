@@ -11,9 +11,11 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import FormDocument from './FormDocument.jsx';
+import { useBrand } from '../../context/BrandContext.jsx';
 import { db, uploadFile, serverTimestamp } from '../../lib/db.js';
 import {
   resolveSources, validateForm, STATUS_META, isOverdue, daysLate, keysOwnedBy,
+  signatureKeysFor,
 } from '../../config/formSchema.js';
 import {
   X, FloppyDisk as Save, PaperPlaneTilt, CheckCircle, ArrowUUpLeft,
@@ -40,12 +42,44 @@ export default function FormFill({
   const [busy,   setBusy]   = useState(null);   // 'draft' | 'submit' | 'accept' | 'return' | key being uploaded
   const [notice, setNotice] = useState(null);
 
+  /* The tenant's own identity, as the ministry forms ask for it. Read from the
+     live identity record rather than the compiled brand, so a licence number
+     typed into «هوية الشركة» reaches the sheet without a redeploy. */
+  const { brand } = useBrand();
+  const company = useMemo(() => ({
+    name:  brand.companyFullAr,
+    short: brand.companyName,
+    licenseNumber: brand.facility?.licenseNumber,
+    facilityName:  brand.facility?.facilityName,
+    murabba:       brand.facility?.murabba,
+  }), [brand]);
+
+  /* The centre's head is a row in center_officials, not a column on the centre
+     — the centres screen has managed it that way since the table existed. The
+     minute asks for the head by name and number, so it is fetched and folded
+     onto the centre rather than duplicated into a second copy that would drift
+     from the first. */
+  const [head, setHead] = useState(null);
+  useEffect(() => {
+    if (!center?.id) { setHead(null); return; }
+    let alive = true;
+    db.center_officials
+      .list({ filter: { centerId: center.id, isPrimary: true } })
+      .then(rows => { if (alive) setHead(rows[0] || null); });
+    return () => { alive = false; };
+  }, [center?.id]);
+
+  const centerWithHead = useMemo(
+    () => (center ? { ...center, headName: head?.name, headPhone: head?.phone } : center),
+    [center, head],
+  );
+
   /* Autofilled values are recomputed from the live records on every open rather
      than frozen at assignment time: if a caterer's CR number is corrected in
      the registry, the form should show the correction, not the old value. */
   const auto = useMemo(
-    () => resolveSources(definition.fields, { caterer, center, season }),
-    [definition.fields, caterer, center, season],
+    () => resolveSources(definition.fields, { caterer, center: centerWithHead, season, company }),
+    [definition.fields, caterer, centerWithHead, season, company],
   );
 
   useEffect(() => {
@@ -108,8 +142,15 @@ export default function FormFill({
       setNotice(`أكمل ${Object.keys(forUser).length} حقلاً مطلوباً قبل التسليم.`);
       return;
     }
-    if (template?.requiresSignature && !values.signature) {
-      setNotice('التوقيع مطلوب قبل التسليم.');
+    /* Whatever this sheet calls the caterer's slots. Falls back to the plain
+       `signature` key for the company's own letters, which have no owner on
+       their slots and predate the notion. */
+    const sigKeys = signatureKeysFor(definition, 'caterer');
+    const signed = sigKeys.length ? sigKeys.every(k => values[k]) : !!values.signature;
+    if (template?.requiresSignature && !signed) {
+      const missing = sigKeys.filter(k => !values[k])
+        .map(k => definition.fields?.[k]?.label || k);
+      setNotice(missing.length ? `مطلوب قبل التسليم: ${missing.join('، ')}.` : 'التوقيع مطلوب قبل التسليم.');
       return;
     }
 

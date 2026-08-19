@@ -85,8 +85,8 @@ function TaskGate({ profile, centerId, catererName, tasks, completions, loading,
               </div>
             </div>
             <div>
-              <p className="text-primary text-[10px] font-black uppercase tracking-widest">مهام التقييم — مشرف</p>
-              <h2 className="text-base font-bold">اختر الوجبة للتقييم</h2>
+              <p className="text-primary text-[10px] font-black uppercase tracking-widest">مهام التقييم</p>
+              <h2 className="text-base font-bold">الوجبات</h2>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2">

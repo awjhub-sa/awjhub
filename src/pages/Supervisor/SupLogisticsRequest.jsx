@@ -169,7 +169,7 @@ export default function SupLogisticsRequest() {
               </div>
               <div>
                 <p className="text-primary text-[10px] font-black uppercase tracking-widest mb-1">الخطوة الأولى</p>
-                <h2 className="text-white text-lg font-bold leading-snug">اختر البلاغ الذي تطلب الإسناد له</h2>
+                <h2 className="text-white text-lg font-bold leading-snug">البلاغات</h2>
                 <p className="text-white/60 text-xs mt-1.5 leading-relaxed">
                   بلاغات <span className="font-bold text-primary">{selectedCenter}</span> <span className="text-amber-300 font-bold">قيد الانتظار</span> فقط.
                 </p>

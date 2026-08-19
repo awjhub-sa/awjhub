@@ -292,9 +292,6 @@ function Toolbar() {
         <X size={14} weight="bold" />
         إغلاق
       </button>
-      <div className="text-xs text-muted mr-auto leading-relaxed max-w-md">
-        💡 عند الطباعة، فعّل خيار <span className="font-bold text-primary">«Background graphics»</span> في إعدادات المتصفح ليطبع التنسيق الملوّن.
-      </div>
     </div>
   );
 }
@@ -629,7 +626,7 @@ function SectionPage({ center, type, records, detailed }) {
         <div className="mt-5 space-y-4">
           <div className="rounded-xl py-2 px-4 text-white font-bold text-sm"
             style={{ background: meta.color }}>
-            التفاصيل الفردية — {records.length} سجل
+            التفاصيل الفردية · {records.length} سجل
           </div>
           {records.map(rec => (
             <DetailCard key={rec.id} record={rec} type={type} accent={meta.color} />

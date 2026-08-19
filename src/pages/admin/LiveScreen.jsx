@@ -242,7 +242,7 @@ export default function LiveScreen() {
         {/* 2 — every centre at once */}
         <section className="ls-panel">
           <header className="ls-ph">
-            <span>خريطة الجاهزية — {AR(centers.length)} مركز</span>
+            <span>خريطة الجاهزية · {AR(centers.length)} مركز</span>
             <span className="ls-seg">
               {['mina', 'arafat'].map(k => (
                 <button key={k} className={site === k ? 'on' : ''} onClick={() => setSite(k)}>
@@ -345,7 +345,7 @@ export default function LiveScreen() {
             <div className="ls-late ls-late-idle">
               <span className="ls-late-t">لم تبدأ مراحل {MEAL_LABEL[meal]} بعد</span>
               <span className="ls-late-s">
-                {AR(mealPhases[0].done)} من {AR(mealPhases[0].total)} مركز سجّل التجهيز — لا يُحسب تأخّراً قبل أن يبدأ التسجيل
+                {AR(mealPhases[0].done)} من {AR(mealPhases[0].total)} مركز سجّل التجهيز
               </span>
             </div>
           )}

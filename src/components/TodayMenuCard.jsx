@@ -97,10 +97,6 @@ export default function TodayMenuCard({ centerId, centerIds, defaultDay = '7' })
       {/* Nationality switcher — shown when a center hosts multiple nationalities */}
       {nationalities.length > 1 && (
         <div className="px-4 sm:px-5 pt-3 pb-1">
-          <p className="text-[10px] font-bold text-muted mb-1.5 flex items-center gap-1">
-            <UtensilsCrossed size={10} weight="bold" className="text-primary" />
-            هذا المركز يستضيف أكثر من جنسية — اختر الجنسية
-          </p>
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
             {nationalities.map(n => {
               const active = n.key === (nat?.key);

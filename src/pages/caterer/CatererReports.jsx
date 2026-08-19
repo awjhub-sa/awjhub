@@ -86,7 +86,6 @@ export default function CatererReports() {
         kicker={caterer?.name || 'المتعهد'}
         Icon={Siren}
         title="البلاغات"
-        subtitle="المخالفات المسجَّلة على مراكزك وردّك عليها"
         stats={[
           { value: AR(openCount), label: 'مفتوح', tone: openCount ? 'alert' : undefined },
           { value: AR(waiting), label: 'بانتظار ردّك', tone: waiting ? 'gold' : undefined },
@@ -107,7 +106,6 @@ export default function CatererReports() {
               }`}>{AR(n)}</span>
             </button>
           ))}
-          <span className="mr-auto text-[12.5px] font-bold text-muted">اضغط أي صف لقراءته والردّ عليه</span>
         </div>
 
         {loading ? (
@@ -301,7 +299,7 @@ function ReportDrawer({ report, onClose, onSaved }) {
             <p className="text-[11.5px] font-black text-muted/70 tracking-widest mb-1.5">ردّك على البلاغ</p>
             {report.catererResponse && (
               <p className="text-[12px] font-bold text-success mb-1.5">
-                أُرسل {timeAgo(report.catererRespondedAt)} — يمكنك تحديثه
+                أُرسل {timeAgo(report.catererRespondedAt)} 
               </p>
             )}
             <textarea value={text} onChange={e => setText(e.target.value)} rows={5}

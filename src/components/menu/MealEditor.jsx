@@ -138,10 +138,6 @@ export default function MealEditor({
           {seedLines?.length > 0 && (
             <div className="rounded-xl border p-3"
               style={{ borderColor: '#EBCFC3', background: 'color-mix(in srgb, #B4674E 7%, #fff)' }}>
-              <p className="text-[11px] font-black text-ink flex items-center gap-1.5 mb-2">
-                <WarningCircle size={13} weight="bold" style={{ color: '#B4674E' }} />
-                سطور مقروءة من الملف — اضغط على السطر لإضافته للتصنيف المطلوب
-              </p>
               <SeedLines lines={seedLines} onPick={addDish} />
             </div>
           )}
@@ -180,7 +176,7 @@ export default function MealEditor({
                 <input
                   value={draft.time}
                   onChange={e => setDraft(d => ({ ...d, time: e.target.value }))}
-                  placeholder="٠٦:٠٠ ص — ٠٩:٠٠ ص"
+                  placeholder="٠٦:٠٠ ص - ٠٩:٠٠ ص"
                   className="w-full h-9 px-3 rounded-lg border border-line bg-background text-[12px] font-bold text-ink
                              focus:outline-none focus:border-primary/50 focus:bg-white"
                 />
@@ -218,7 +214,7 @@ export default function MealEditor({
                             e.preventDefault(); removeDish(cat, i);
                           }
                         }}
-                        placeholder="اسم الصنف — الكمية"
+                        placeholder="اسم الصنف، الكمية"
                         autoFocus={!dish && i === list.length - 1}
                         className="flex-1 h-8 px-2.5 rounded-lg border border-line bg-background text-[12px] text-ink
                                    focus:outline-none focus:border-primary/50 focus:bg-white"
@@ -243,10 +239,6 @@ export default function MealEditor({
             );
           })}
 
-          <p className="text-[10.5px] text-muted leading-relaxed px-1">
-            يمكنك لصق قائمة كاملة في أي خانة وسيُفصل كل سطر إلى صنف مستقل.
-            اضغط Enter لإضافة صنف جديد.
-          </p>
         </div>
 
         <footer className="px-4 sm:px-6 py-3 bg-white border-t border-line flex items-center gap-2 flex-shrink-0">

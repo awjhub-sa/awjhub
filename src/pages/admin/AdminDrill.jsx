@@ -16,7 +16,6 @@ export default function AdminDrill() {
         kicker="جاهزية المشاعر"
         Icon={ClipboardText}
         title="فرضية الوزارة"
-        subtitle="تمارين المحاكاة والفرضيات الميدانية"
         gradient={{ from: COLORS.primary400, to: COLORS.primary }}
       />
 
@@ -26,16 +25,9 @@ export default function AdminDrill() {
           <ClipboardText size={24} className="text-white" weight="bold" />
         </div>
         <h3 className="font-bold text-ink text-sm mb-1.5">القسم قيد التجهيز</h3>
-        <p className="text-muted text-xs max-w-md mx-auto leading-relaxed">
-          خُصّص هذا القسم لفرضيات الوزارة وتمارين المحاكاة الميدانية.
-          سيُبنى محتواه بعد تحديد نموذج الفرضية والمعايير المطلوبة.
-        </p>
 
         <div className="mt-6 inline-flex items-start gap-2 text-right bg-background rounded-xl border border-line px-4 py-3 max-w-md">
           <Info size={14} className="text-primary mt-0.5 flex-shrink-0" />
-          <p className="text-[11px] text-muted leading-relaxed">
-            التقويم في المرحلة القادمة سيحمل مواعيد الفرضيات، ويربطها بهذا القسم تلقائياً.
-          </p>
         </div>
       </div>
     </div>

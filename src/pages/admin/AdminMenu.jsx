@@ -198,10 +198,6 @@ export default function AdminMenu() {
           <WarningCircle size={17} weight="bold" style={{ color: '#B4674E' }} className="flex-shrink-0 mt-0.5" />
           <div className="min-w-0">
             <p className="text-[12px] font-black text-ink">الحفظ غير مفعّل بعد</p>
-            <p className="text-[11px] text-ink/80 leading-relaxed mt-0.5">
-              {MISSING_TABLE} حتى ذلك الحين يعرض القسم المنيو الافتراضي المرفق مع النظام،
-              ولن تُحفظ أي إضافة.
-            </p>
           </div>
         </div>
       )}
@@ -295,15 +291,6 @@ export default function AdminMenu() {
           </div>
         </>
       )}
-
-      <p className="flex items-start gap-2 text-[11px] text-muted leading-relaxed px-1">
-        <Info size={13} weight="bold" className="text-muted/60 mt-0.5 flex-shrink-0" />
-        كل منيو تحفظه هنا يظهر فوراً للمراقب والمشرف ولتنبيهات المراحل.
-        الوجبات التي لم تُحفظ بعد تعرض المنيو الافتراضي المرفق مع النظام.
-        {savedCount > 0 && (
-          <span className="font-bold text-ink">— محفوظ لهذه الجنسية: {AR(savedCount)} وجبة.</span>
-        )}
-      </p>
 
       {/* ── Write one meal ── */}
       {editing && nat && (

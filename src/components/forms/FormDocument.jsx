@@ -44,6 +44,12 @@ function Blank({ def, fieldKey }) {
   );
 }
 
+/* Day/month/year, the way it is written by hand on a form. */
+const gregorianLabel = (iso) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+  return m ? `${Number(m[3])}/${Number(m[2])}/${m[1]}` : iso;
+};
+
 function Printed({ value, def }) {
   if (value === undefined || value === null || value === '') {
     return <span className="inline-block w-28 border-b border-dotted border-muted/60 mx-1" />;
@@ -51,17 +57,17 @@ function Printed({ value, def }) {
   /* Dates are stored Gregorian and printed Hijri, matching how the paperwork
      reads, unless the template asked for the other calendar. */
   const text = def?.type === 'bool'  ? (value ? 'نعم' : 'لا')
-             : def?.type === 'date'  ? (def.calendar === 'gregorian' ? value : isoToHijriLabel(value) || value)
+             : def?.type === 'date'  ? (def.calendar === 'gregorian' ? gregorianLabel(value) : isoToHijriLabel(value) || value)
              : Array.isArray(value)  ? value.join('، ')
              : String(value);
-  return <span className="font-semibold text-ink mx-1">{text}</span>;
+  return <span className="font-semibold text-ink mx-1 break-words">{text}</span>;
 }
 
-function Input({ fieldKey, def, value, error, onChange, onUpload, disabled }) {
+function Input({ fieldKey, def, value, error, onChange, onUpload, disabled, widthClass }) {
   const base =
     `px-2 py-1 border rounded-lg text-sm text-ink outline-none transition bg-white
      ${error ? 'border-red-400' : 'border-line focus:border-primary'}`;
-  const w = WIDTH_CLS[FIELD_META[def?.type]?.width || 'auto'];
+  const w = widthClass || WIDTH_CLS[FIELD_META[def?.type]?.width || 'auto'];
   const set = (v) => onChange(fieldKey, v);
 
   /* Locked because it is not this role's to answer — either the registry
@@ -86,7 +92,7 @@ function Input({ fieldKey, def, value, error, onChange, onUpload, disabled }) {
     case 'select':
       return (
         <select value={value ?? ''} onChange={e => set(e.target.value)} className={`${base} ${w}`}>
-          <option value="">— اختر —</option>
+          <option value="">اختر</option>
           {(def.options || []).map(o => <option key={o} value={o}>{o}</option>)}
         </select>
       );
@@ -150,7 +156,13 @@ function Slot(props) {
 /* ── Repeating table ──────────────────────────────────────── */
 function TableBlock({ def, fieldKey, mode, value, onChange }) {
   const cols = def?.columns || [];
-  const rows = Array.isArray(value) ? value : [];
+  /* A checklist is a table whose rows the author wrote, not one the caterer
+     builds: the eight readiness items are the form. When `rows` is present
+     they are the table, in order, and nobody may add or drop one — only answer
+     against them. */
+  const preset = Array.isArray(def?.rows) ? def.rows : null;
+  const saved = Array.isArray(value) ? value : [];
+  const rows = preset ? preset.map((r, i) => ({ ...r, ...(saved[i] || {}) })) : saved;
   const editable = mode === 'fill';
 
   const setCell = (i, key, v) => {
@@ -175,7 +187,7 @@ function TableBlock({ def, fieldKey, mode, value, onChange }) {
               {cols.map(c => (
                 <th key={c.key} className="px-2 py-1.5 text-right font-semibold border-b border-line">{c.label}</th>
               ))}
-              {editable && <th className="w-8 border-b border-line" />}
+              {editable && !preset && <th className="w-8 border-b border-line" />}
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -187,7 +199,18 @@ function TableBlock({ def, fieldKey, mode, value, onChange }) {
                 <td className="px-2 py-1.5 text-muted text-center">{i + 1}</td>
                 {cols.map(c => (
                   <td key={c.key} className="px-2 py-1.5">
-                    {editable ? (
+                    {c.fixed ? (
+                      <span className="text-ink leading-relaxed">{row[c.key]}</span>
+                    ) : editable && c.options ? (
+                      <select
+                        value={row[c.key] ?? ''}
+                        onChange={e => setCell(i, c.key, e.target.value)}
+                        className="w-full px-1.5 py-1 border border-line rounded-md text-xs outline-none focus:border-primary bg-white"
+                      >
+                        <option value="">اختر</option>
+                        {c.options.map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    ) : editable ? (
                       <input
                         value={row[c.key] ?? ''}
                         onChange={e => setCell(i, c.key, e.target.value)}
@@ -198,7 +221,7 @@ function TableBlock({ def, fieldKey, mode, value, onChange }) {
                     )}
                   </td>
                 ))}
-                {editable && (
+                {editable && !preset && (
                   <td className="px-1">
                     <button type="button" onClick={() => removeRow(i)}
                       className="text-red-400 hover:text-red-600 text-sm leading-none">×</button>
@@ -209,11 +232,158 @@ function TableBlock({ def, fieldKey, mode, value, onChange }) {
           </tbody>
         </table>
       </div>
-      {editable && (
+      {editable && !preset && (
         <button type="button" onClick={addRow}
           className="mt-1.5 text-xs font-bold text-primary hover:underline">+ إضافة صف</button>
       )}
     </div>
+  );
+}
+
+
+/* ── Ministry grid ────────────────────────────────────────── */
+/**
+ * One bordered table that *is* the document.
+ *
+ * The ministry's minutes are not prose with blanks in them; they are a four
+ * column grid where every label, every value, every section bar and the
+ * signatures all sit on the same ruled lines. Rendering them with the house
+ * blocks would produce a correct form that no ministry inspector recognises,
+ * so this block reproduces the sheet instead of restyling it.
+ *
+ * The palette is written out rather than taken from the brand tokens on
+ * purpose: this sheet belongs to the ministry, and it must not change colour
+ * when a customer changes theirs.
+ */
+const GRID_GREEN = '#D9EAD3';
+const GRID_LINE  = '#111827';
+/* Amber, and only while filling. It marks the two cells this person actually
+   has to touch on a sheet of forty — on screen only, because the printed
+   minute must look like the ministry's, not like a form with highlighting on
+   it. `print` mode never takes this branch. */
+const GRID_MINE  = '#FEF6E0';
+const GRID_MINE_LINE = '#D89B2C';
+
+function GridCell({ cell, mode, as, fields, values, errors, onChange }) {
+  /* Is this blank the acting role's to fill? */
+  const sigKeys = Array.isArray(cell.sig) ? cell.sig : cell.sig ? [cell.sig] : [];
+  const mine = mode === 'fill' && (
+    (cell.field && fieldOwner(fields[cell.field] || {}) === as) ||
+    (sigKeys.length > 0 && (cell.owner ? cell.owner === as : true))
+  );
+  const tone = cell.tone === 'label' ? GRID_GREEN : mine ? GRID_MINE : '#fff';
+  const align = cell.align || (cell.tone === 'label' || cell.field ? 'center' : 'right');
+
+  const body = () => {
+    if (cell.sig) {
+      /* Signature and stamp share one cell, as they do on the paper. */
+      const keys = Array.isArray(cell.sig) ? cell.sig : [cell.sig];
+      return (
+        <div className="nsab-sig flex items-center justify-center gap-4 py-1 min-h-[64px]">
+          {keys.map(k => {
+            const img = values[k];
+            if (img) return <img key={k} src={img} alt="" className="nsab-sig-img max-h-16 object-contain" />;
+            /* Only the side this cell belongs to may put a mark in it. */
+            if (!mine) return <span key={k} className="w-24" />;
+            return (
+              <label key={k} className="cursor-pointer text-[10px] font-bold text-primary hover:underline">
+                <input type="file" accept="image/*" className="hidden"
+                  onChange={e => e.target.files?.[0] && onChange(k, e.target.files[0], { file: true })} />
+                إرفاق {fields[k]?.label || ''}
+              </label>
+            );
+          })}
+        </div>
+      );
+    }
+    if (cell.field) {
+      const def = fields[cell.field] || {};
+      const empty = values[cell.field] === undefined || values[cell.field] === null || values[cell.field] === '';
+
+      /* Outside fill mode a blank cell stays blank: the dotted rule the rest
+         of the app draws for "nothing entered" is not on this sheet. */
+      if (mode !== 'fill' && mode !== 'preview' && empty) return null;
+
+      /* While filling, a blank that is not this role's is *printed*, not drawn
+         as a disabled box. What the caterer receives is a finished sheet with
+         two blanks on it; boxing all forty made it unreadable, and the fixed
+         input widths pushed straight through the rules of the table. */
+      if (mode === 'fill' && !mine) {
+        return empty ? null : <Printed value={values[cell.field]} def={def} />;
+      }
+
+      return (
+        <>
+          <Slot mode={mode} as={as} fieldKey={cell.field} def={def} widthClass="w-full"
+            value={values[cell.field]} error={errors[cell.field]} onChange={onChange}
+            onUpload={(k, file) => onChange(k, file, { file: true })} />
+          {errors[cell.field] && (
+            <span className="block text-[9px] text-red-600 mt-0.5">{errors[cell.field]}</span>
+          )}
+        </>
+      );
+    }
+    if (cell.lines) {
+      return cell.lines.map((l, i) => (
+        <span key={i} className="block leading-[1.9]">{splitTokens(l).map((p, j) =>
+          p.kind === 'text' ? <span key={j}>{p.value}</span> : <ValueOf key={j} k={p.key} values={values} />)}
+        </span>
+      ));
+    }
+    return splitTokens(cell.text || '').map((p, i) =>
+      p.kind === 'text' ? <span key={i}>{p.value}</span> : <ValueOf key={i} k={p.key} values={values} />);
+  };
+
+  return (
+    <td
+      colSpan={cell.span || 1}
+      rowSpan={cell.rowspan || 1}
+      className={`nsab-cell px-2 py-1.5 align-middle ${cell.bold || cell.tone === 'label' ? 'font-bold' : ''}`}
+      style={{
+        border: mine ? `2px solid ${GRID_MINE_LINE}` : `1px solid ${GRID_LINE}`,
+        background: tone,
+        textAlign: align,
+        printColorAdjust: 'exact',
+        WebkitPrintColorAdjust: 'exact',
+      }}
+    >
+      {body()}
+    </td>
+  );
+}
+
+/* A token inside a grid label prints its resolved value, never an input: the
+   title line reads "لموسم حج عام 1447", not a box to type the season into. */
+function ValueOf({ k, values }) {
+  return <span>{values?.[k] ?? ''}</span>;
+}
+
+function GridBlock({ block, mode, as, fields, values, errors, onChange }) {
+  const widths = block.widths || ['17%', '41%', '21%', '21%'];
+  return (
+    <table
+      className="nsab-grid w-full text-[11.5px] text-ink my-2"
+      style={{ borderCollapse: 'collapse', tableLayout: 'fixed',
+               /* The original sheet is printed with Latin digits, and Cairo
+                  swaps them for Arabic-Indic ones inside Arabic text. On this
+                  document the numbers are the record — a licence number that
+                  reads ٤٦٠٧١٨ where the paper reads 460718 is a different
+                  document to whoever checks it. */
+               fontFeatureSettings: '"locl" 0',
+               printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' }}
+    >
+      <colgroup>{widths.map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
+      <tbody>
+        {(block.rows || []).map((row, i) => (
+          <tr key={i}>
+            {(row.cells || []).map((cell, j) => (
+              <GridCell key={j} cell={cell} mode={mode} as={as}
+                fields={fields} values={values} errors={errors} onChange={onChange} />
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
@@ -295,7 +465,10 @@ function Block({ block, fields, mode, as, values, errors, onChange }) {
         );
       }
 
-      const cols = block.columns === 2 ? 'sm:grid-cols-2' : 'grid-cols-1';
+      /* The three-up row is how the official minutes lay out a signatory:
+         name, capacity, ID on one line. Written out rather than interpolated
+         because Tailwind scans source text and never sees a built class. */
+      const cols = { 2: 'sm:grid-cols-2', 3: 'sm:grid-cols-3', 4: 'sm:grid-cols-2 md:grid-cols-4' }[block.columns] || 'grid-cols-1';
       return (
         <div className={`grid ${cols} gap-x-6 gap-y-3 my-3`}>
           {(block.keys || []).map(key => {
@@ -325,6 +498,12 @@ function Block({ block, fields, mode, as, values, errors, onChange }) {
           value={values[block.key]}
           onChange={onChange}
         />
+      );
+
+    case 'grid':
+      return (
+        <GridBlock block={block} mode={mode} as={as}
+          fields={fields} values={values} errors={errors} onChange={onChange} />
       );
 
     case 'note':
@@ -416,6 +595,10 @@ export default function FormDocument({
   /* Print is view, plus the paper treatment. Everything that asks "is this
      read-only?" should say yes for both. */
   const isPaper = mode === 'print';
+  /* A ministry form carries the ministry's masthead, or none — never ours.
+     Putting our letterhead above it would make it a different document, and
+     an inspector is entitled to receive the sheet they issued. */
+  const bare = definition?.chrome === 'none';
   const today = new Date();
   const hijri = (() => { try { return formatHijri(today); } catch { return null; } })();
 
@@ -427,6 +610,7 @@ export default function FormDocument({
     >
       {/* Letterhead — from brand.js, never from the template. Reselling the
           system to another company means swapping brand.js, not the forms. */}
+      {!bare && (
       <header className="px-8 pt-7 pb-4 border-b-2" style={{ borderColor: 'rgb(var(--c-primary))' }}>
         <div className="flex items-start justify-between gap-4">
           <img src={brand.logo.full} alt={brand.companyFullAr} className="h-11 w-auto" />
@@ -441,11 +625,12 @@ export default function FormDocument({
         )}
         {meta && <p className="mt-1 text-center text-[11px] text-muted">{meta}</p>}
       </header>
+      )}
 
-      <div className="px-8 py-6">
+      <div className={bare ? 'nsab-bare px-6 py-6' : 'px-8 py-6'}>
         {blocks.length === 0 ? (
           <p className="py-16 text-center text-muted text-sm">
-            المستند فارغ — أضف أول بلوك من اليمين.
+            المستند فارغ
           </p>
         ) : (
           blocks.map((block, i) => (
@@ -463,6 +648,7 @@ export default function FormDocument({
         )}
       </div>
 
+      {!bare && (
       <footer className="px-8 py-3 border-t border-line text-[9px] text-muted flex justify-between gap-4">
         <span>{brand.companyFullAr}</span>
         <span className="text-center">
@@ -471,6 +657,7 @@ export default function FormDocument({
         </span>
         <span dir="ltr">{brand.companyFullEn}</span>
       </footer>
+      )}
     </div>
   );
 }

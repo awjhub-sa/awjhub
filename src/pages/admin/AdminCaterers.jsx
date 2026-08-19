@@ -276,7 +276,6 @@ export default function AdminCaterers() {
         kicker="إدارة المتعهدين"
         Icon={Building2}
         title="بيانات المتعهدين"
-        subtitle="سجل شركات الإعاشة وبيانات التواصل الرسمية"
         gradient={{ from: 'rgb(var(--c-primary-400))', to: 'rgb(var(--c-primary))' }}
         right={
           <button
@@ -540,7 +539,6 @@ export default function AdminCaterers() {
               <Field
                 label="اسم المتعهد (كما في السجل)"
                 required
-                hint="هذا الاسم هو الرابط مع البلاغات والتقييمات القائمة — غيّره بحذر."
               >
                 <input
                   value={form.name}
@@ -550,7 +548,7 @@ export default function AdminCaterers() {
                 />
               </Field>
 
-              <Field label="الاسم المختصر" hint="يُستخدم في التقارير والجداول الضيقة.">
+              <Field label="الاسم المختصر">
                 <input
                   value={form.nameShort}
                   onChange={(e) => setForm(p => ({ ...p, nameShort: e.target.value }))}
@@ -595,7 +593,7 @@ export default function AdminCaterers() {
                   <input
                     value={form.address}
                     onChange={(e) => setForm(p => ({ ...p, address: e.target.value }))}
-                    placeholder="مكة المكرمة — حي العزيزية، شارع ..."
+                    placeholder="مكة المكرمة، حي العزيزية"
                     className={`${inputCls} pr-9`}
                   />
                 </div>
@@ -624,7 +622,7 @@ export default function AdminCaterers() {
                     onChange={(e) => setForm(p => ({ ...p, ownerCapacity: e.target.value }))}
                     className={inputCls}
                   >
-                    <option value="">— اختر —</option>
+                    <option value="">اختر</option>
                     {CAPACITIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </Field>

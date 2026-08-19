@@ -106,10 +106,6 @@ export default function CatererAccountDialog({ caterer, onClose, onChanged }) {
               <div className="rounded-xl border p-3 flex gap-2"
                 style={{ borderColor: '#BBE7C8', background: 'color-mix(in srgb, #16A34A 7%, #fff)' }}>
                 <CheckCircle size={16} weight="fill" className="text-success flex-shrink-0 mt-0.5" />
-                <p className="text-[11.5px] text-ink leading-relaxed">
-                  أُنشئ الحساب ورُبط بالمتعهد. سلّمه البيانات التالية —
-                  <b> كلمة المرور لن تظهر مرة أخرى.</b>
-                </p>
               </div>
 
               <Cred label="البريد" value={done.email}
@@ -147,11 +143,6 @@ export default function CatererAccountDialog({ caterer, onClose, onChanged }) {
                 </p>
               </div>
 
-              <p className="text-[11px] text-muted leading-relaxed">
-                لتغيير كلمة المرور استخدم «إعادة تعيين» من لوحة مستخدمي Supabase —
-                المتصفح لا يملك مفتاحاً يسمح بتغيير كلمة مرور حساب آخر.
-              </p>
-
               {!confirmUnlink ? (
                 <button onClick={() => setConfirmUnlink(true)} disabled={busy}
                   className="w-full h-9 rounded-lg border border-line text-[12px] font-bold text-error/80
@@ -162,10 +153,6 @@ export default function CatererAccountDialog({ caterer, onClose, onChanged }) {
               ) : (
                 <div className="rounded-xl border p-3"
                   style={{ borderColor: '#EBCFC3', background: 'color-mix(in srgb, #B4674E 7%, #fff)' }}>
-                  <p className="text-[11px] text-ink leading-relaxed mb-2">
-                    يُحذف الربط فقط. حساب المصادقة نفسه يبقى في Supabase —
-                    المتصفح لا يملك صلاحية حذفه.
-                  </p>
                   <div className="flex gap-2">
                     <button onClick={unlink} disabled={busy}
                       className="h-8 px-3 rounded-lg bg-error text-white text-[11px] font-black disabled:opacity-40">
@@ -209,15 +196,8 @@ export default function CatererAccountDialog({ caterer, onClose, onChanged }) {
                     <ArrowsClockwise size={14} weight="bold" />
                   </button>
                 </div>
-                <span className="text-[10px] font-bold text-muted mt-1 block">
-                  مولَّدة عشوائياً — عدّلها إن شئت. لن تُعرض بعد الإنشاء.
-                </span>
               </label>
 
-              <p className="text-[11px] text-muted leading-relaxed">
-                يُنشأ حساب مصادقة ويُربط بـ<b className="text-ink">{caterer.name}</b>،
-                فيدخل على بوابة المتعهد ويرى بلاغات مراكزه ونماذجه فقط.
-              </p>
             </>
           )}
 

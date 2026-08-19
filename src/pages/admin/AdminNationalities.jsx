@@ -239,9 +239,6 @@ export default function AdminNationalities() {
             <WarningCircle size={14} weight="bold" style={{ color: '#B4674E' }} />
             {AR(orphans.length)} مركز بلا جنسية
           </p>
-          <p className="text-[11px] text-ink/80 leading-relaxed mt-1">
-            هذه المراكز لن تظهر في المنيو ولا في تنبيهات المراحل حتى تُسنَد لجنسية.
-          </p>
           <div className="flex flex-wrap gap-1 mt-2">
             {orphans.map(c => (
               <span key={c.id} className="text-[10.5px] font-bold px-2 py-0.5 rounded-md bg-white border border-line text-ink">
@@ -261,9 +258,6 @@ export default function AdminNationalities() {
         <div className="bg-white rounded-2xl border border-line py-14 flex flex-col items-center gap-2">
           <Earth size={26} weight="bold" className="text-muted/40" />
           <p className="text-[13px] font-black text-ink">لا جنسيات في هذا الموسم</p>
-          <p className="text-[11px] font-bold text-muted text-center max-w-sm leading-relaxed">
-            أضف جنسية واختر مراكزها، ثم ادخل قسم المنيو لتعبئة وجباتها.
-          </p>
           <button onClick={() => setEditing({ ...EMPTY })}
             className="mt-2 h-9 px-5 rounded-xl text-white text-[12px] font-black flex items-center gap-1.5"
             style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}>
@@ -314,7 +308,7 @@ export default function AdminNationalities() {
                   <div className="flex flex-wrap gap-1">
                     {codes.length === 0 ? (
                       <p className="text-[11px] font-bold text-muted/70">
-                        لم تُسنَد مراكز — لن تظهر هذه الجنسية للمراقبين.
+                        لم تُسنَد مراكز
                       </p>
                     ) : codes.map(c => (
                       <span key={c.id} className="text-[10.5px] font-bold px-2 py-0.5 rounded-md border border-line bg-background text-ink">
@@ -451,9 +445,6 @@ function NationalityEditor({ draft, centers, links, nats, onClose, onSave, onDel
                 placeholder="بنغلاديش"
                 className="w-full h-9 px-3 rounded-lg border border-line bg-background text-[12.5px] font-bold text-ink
                            focus:outline-none focus:border-primary/50 focus:bg-white" />
-              <span className="text-[10px] font-bold text-muted mt-1 block leading-relaxed">
-                يمكن تكرار الاسم لمجموعتين لهما منيو مختلف — المراكز هي ما يميّزهما.
-              </span>
             </label>
 
             <div>
@@ -537,10 +528,6 @@ function NationalityEditor({ draft, centers, links, nats, onClose, onSave, onDel
             </div>
           </section>
 
-          <p className="text-[10.5px] text-muted leading-relaxed px-1">
-            المركز المُسنَد لجنسية أخرى يظهر باسمها — الإسناد المزدوج مسموح
-            (مركز واحد قد يخدم جنسيتين) لكنه نادر، فتأكّد أنه مقصود.
-          </p>
         </div>
 
         <footer className="px-4 sm:px-6 py-3 bg-white border-t border-line flex items-center gap-2 flex-shrink-0">

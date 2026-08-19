@@ -262,7 +262,7 @@ export default function Report() {
               <label className="text-xs font-bold text-primary mb-3 block tracking-wide">نوع المخالفة/البلاغ</label>
               <select value={selectedReport} onChange={handleReportChange}
                 className="w-full px-4 py-4 border border-line rounded-2xl bg-background font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none">
-                <option value="">اختر نوع البلاغ من القائمة...</option>
+                <option value="">اختر</option>
                 {REPORT_TYPES.map(r => <option key={r.id} value={r.title}>{r.title}</option>)}
               </select>
             </div>
@@ -285,7 +285,7 @@ export default function Report() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div onClick={() => imageInputRef.current.click()} 
+              <div onClick={() => imageInputRef.current.click()}
                    className={`relative border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center transition-all cursor-pointer ${imageFile ? 'border-green-500 bg-green-50' : 'border-line bg-gray-50'}`}>
                 <input type="file" ref={imageInputRef} hidden accept="image/*" onChange={(e) => setImageFile(e.target.files[0])} />
                 {imageFile ? (
@@ -302,7 +302,7 @@ export default function Report() {
                 )}
               </div>
 
-              <div onClick={() => videoInputRef.current.click()} 
+              <div onClick={() => videoInputRef.current.click()}
                    className={`relative border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center transition-all cursor-pointer ${videoFile ? 'border-green-500 bg-green-50' : 'border-line bg-gray-50'}`}>
                 <input type="file" ref={videoInputRef} hidden accept="video/*" onChange={(e) => setVideoFile(e.target.files[0])} />
                 {videoFile ? (

@@ -441,7 +441,7 @@ export default function AdminAnalytics({ site }) {
             style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)) 60%, rgb(var(--c-primary-700)))' }}
           >
             <BarChart3 size={16} weight="bold" />
-            تقرير مراحل — قارن مع التقييمات السابقة
+            تقرير مراحل
             <ChevronRight size={15} weight="bold" className="opacity-70" />
           </button>
 
@@ -895,7 +895,6 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-black text-ink">وضع التعديل</p>
-                  <p className="text-[11px] text-muted font-bold">اضغط نعم/لا لتبديل الإجابات وضع/استبدل الصور</p>
                 </div>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">

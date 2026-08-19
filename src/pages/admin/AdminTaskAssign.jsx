@@ -372,13 +372,10 @@ export default function AdminTaskAssign() {
 
   return (
     <div className="space-y-5">
-
-      {}
       <PageHeader
         kicker="متابعة الوجبات"
         Icon={Target}
         title="إسناد المهام"
-        subtitle="توزيع المهام الميدانية على المراقبين حسب الجنسية والمركز"
         stats={[
           { value: selCenters.length, label: 'مركز محدَّد', tone: selCenters.length ? 'gold' : undefined },
           { value: selTasks.length, label: 'نوع مهمة' },
@@ -681,7 +678,6 @@ export default function AdminTaskAssign() {
           <div className="bg-white rounded-2xl border border-line overflow-hidden sticky top-4">
             <div className="px-4 sm:px-5 py-3 border-b border-line">
               <p className="font-black text-ink text-[13px]">ملخص الإسناد</p>
-              <p className="text-[10px] font-bold text-muted mt-0.5">اضغط × لحذف أي خيار</p>
             </div>
             <div className="p-4 space-y-4">
 
@@ -874,8 +870,6 @@ export default function AdminTaskAssign() {
           </div>
         </div>
       </div>
-
-      {}
       {history.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
