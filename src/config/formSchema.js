@@ -139,6 +139,11 @@ export const SOURCES = [
   { key: 'center.head_name',          label: 'اسم رئيس المركز' },
   { key: 'center.head_phone',         label: 'جوال رئيس المركز' },
   { key: 'season.name',               label: 'الموسم' },
+  /* The date the office set when it assigned the form. It lives on the
+     assignment, not in a field of its own: a second copy would be a second
+     answer to «متى؟», and the two would part company the first time one was
+     corrected. */
+  { key: 'assignment.due_at',         label: 'الموعد النهائي' },
   /* The Hajj season is named by the Hijri year it falls in, and Dhul-Hijjah is
      the last month of that year — so today's Umm al-Qura year is the season's
      name for all but the days after it ends, when the next season has already
@@ -232,6 +237,12 @@ export function resolveSources(fields = {}, ctx = {}) {
     if (def.source === 'today')   { out[key] = localISODate(); continue; }
     if (def.source === 'weekday') { out[key] = AR_WEEKDAYS[new Date().getDay()]; continue; }
     if (def.source === 'hijri_year') { out[key] = String(toHijriParts().y); continue; }
+    /* Stored as a timestamp ending 23:59:59; the document wants the day. */
+    if (def.source === 'assignment.due_at') {
+      const due = scope.assignment?.dueAt;
+      if (due) out[key] = localISODate(new Date(due));
+      continue;
+    }
     const [entity, column] = def.source.split('.');
     const value = scope[entity]?.[SNAKE_TO_CAMEL(column || '')];
     if (value !== undefined && value !== null && value !== '') out[key] = value;
@@ -362,14 +373,18 @@ export function visibleFieldKeys(definition) {
 
 /* ── Assignment status ────────────────────────────────────── */
 /**
- * A filing may be printed once the caterer has signed and sent it.
+ * Any filing may be printed, at any stage.
  *
- * A draft on letterhead asserts something nobody agreed to, so pending,
- * draft and returned print nothing. Submitted does: it is the caterer's own
- * signed sheet, and they are entitled to a copy of what they sent without
- * waiting on the office to review it.
+ * This used to open only at submission, on the reasoning that a sheet on
+ * letterhead asserts something nobody agreed to yet. In practice the office
+ * prints the pending copy precisely because it is not signed: it goes to the
+ * centre already filled, and comes back with ink on it. Withholding the
+ * button did not prevent an unsigned document, it just meant retyping one.
+ *
+ * What each stage means is on the sheet itself — the signature blocks are
+ * empty until they are not.
  */
-export const isPrintable = (status) => status === 'submitted' || status === 'accepted';
+export const isPrintable = () => true;
 
 export const FORM_STATUSES = [
   { value: 'pending',   label: 'في الانتظار', color: '#64748B' },

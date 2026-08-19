@@ -21,7 +21,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { FileText, CheckCircle, WarningCircle, Printer, Eye } from '@phosphor-icons/react';
+import { FileText, CheckCircle, WarningCircle, Printer, Eye, Clock } from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
 import { db } from '../../lib/db.js';
 import { STATUS_META, isPrintable } from '../../config/formSchema.js';
@@ -143,10 +143,28 @@ export default function CatererForms() {
                       <td className="px-5 py-3.5 text-[13.5px] text-muted whitespace-nowrap">
                         {centerById[a.centerId]?.code || 'كل المراكز'}
                       </td>
-                      <td className="px-5 py-3.5 text-[13px] whitespace-nowrap tabular-nums"
-                        style={{ color: overdue ? 'rgb(var(--c-error))' : 'rgb(var(--c-muted))' }}>
-                        {overdue && <WarningCircle size={13} weight="fill" className="inline ml-1" />}
-                        {day(a.dueAt)}
+                      <td className="px-5 py-3.5 whitespace-nowrap">
+                        {a.dueAt ? (
+                          <span
+                            className="inline-flex items-center gap-1.5 text-[12px] font-black tabular-nums
+                                       px-2.5 py-1 rounded-lg border"
+                            style={{
+                              /* Three states, three readings: gone, close, and
+                                 simply booked. */
+                              background: overdue ? 'color-mix(in srgb, #DC2626 10%, #fff)'
+                                : done ? '#fff' : 'color-mix(in srgb, #B99A64 14%, #fff)',
+                              borderColor: overdue ? '#FCA5A5' : done ? 'rgb(var(--c-line))' : '#E0CFA8',
+                              color: overdue ? '#B91C1C' : done ? 'rgb(var(--c-muted))' : '#8A6D2F',
+                            }}
+                          >
+                            {overdue
+                              ? <WarningCircle size={13} weight="fill" />
+                              : <Clock size={13} weight="bold" />}
+                            {overdue ? 'تأخّر عن' : 'موعد أقصاه'} {day(a.dueAt)}
+                          </span>
+                        ) : (
+                          <span className="text-[13px] text-muted">—</span>
+                        )}
                       </td>
                       <td className="px-5 py-3.5">
                         <span className="text-[11.5px] font-black px-2 py-0.5 rounded-full whitespace-nowrap"

@@ -19,6 +19,7 @@
  */
 
 import { splitTokens, FIELD_META, fieldOwner } from '../../config/formSchema.js';
+import { asDownload } from '../../lib/db.js';
 import { useBrand } from '../../context/BrandContext.jsx';
 import { formatHijri, isoToHijriLabel } from '../../lib/hijri.js';
 import HijriDateInput from './HijriDateInput.jsx';
@@ -44,20 +45,49 @@ function Blank({ def, fieldKey }) {
   );
 }
 
+const AR_MONTHS = [
+  'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+  'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+];
+
+/* «2 أبريل 2026» — how a company letter dates itself, as against the
+   «29/4/2026» a ruled government cell has room for. */
+const gregorianLong = (iso) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+  return m ? `${Number(m[3])} ${AR_MONTHS[Number(m[2]) - 1]} ${m[1]}` : iso;
+};
+
 /* Day/month/year, the way it is written by hand on a form. */
 const gregorianLabel = (iso) => {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
   return m ? `${Number(m[3])}/${Number(m[2])}/${m[1]}` : iso;
 };
 
-function Printed({ value, def }) {
+function Printed({ value, def, downloadName }) {
   if (value === undefined || value === null || value === '') {
     return <span className="inline-block w-28 border-b border-dotted border-muted/60 mx-1" />;
+  }
+  /* An attachment is a file, not a string. Printing `value` put the raw
+     storage URL on the page — sixty characters of signed path where a reader
+     expected a document. */
+  if (def?.type === 'file') {
+    return (
+      <a
+        href={asDownload(value, downloadName)}
+        download
+        className="inline-flex items-center gap-1.5 mx-1 px-2.5 py-1 rounded-lg border border-primary/30
+                   text-[12px] font-bold text-primary hover:bg-primary/5 transition-colors no-underline"
+      >
+        تحميل الملف
+      </a>
+    );
   }
   /* Dates are stored Gregorian and printed Hijri, matching how the paperwork
      reads, unless the template asked for the other calendar. */
   const text = def?.type === 'bool'  ? (value ? 'نعم' : 'لا')
-             : def?.type === 'date'  ? (def.calendar === 'gregorian' ? gregorianLabel(value) : isoToHijriLabel(value) || value)
+             : def?.type === 'date'  ? (def.calendar === 'gregorian-long' ? gregorianLong(value)
+                                       : def.calendar === 'gregorian' ? gregorianLabel(value)
+                                       : isoToHijriLabel(value) || value)
              : Array.isArray(value)  ? value.join('، ')
              : String(value);
   return <span className="font-semibold text-ink mx-1 break-words">{text}</span>;
@@ -74,6 +104,17 @@ function Input({ fieldKey, def, value, error, onChange, onUpload, disabled, widt
      already knows it, or another role filled it before this one saw the form. */
   if (disabled) {
     const owner = fieldOwner(def);
+    /* The office opens the caterer's sheet with the caterer's pen locked, and
+       that must not lock away the document they attached. */
+    if (def?.type === 'file' && value) {
+      return (
+        <a href={asDownload(value, undefined)} download
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-primary/30
+                     text-[12px] font-bold text-primary hover:bg-primary/5 transition-colors">
+          تحميل الملف
+        </a>
+      );
+    }
     return (
       <span
         className={`inline-block ${w} px-2 py-1 rounded-lg bg-background text-sm font-semibold text-ink border border-line/60 text-center`}
@@ -106,7 +147,7 @@ function Input({ fieldKey, def, value, error, onChange, onUpload, disabled, widt
     case 'date':
       /* Hijri by default — this is a Hajj system and the paperwork is Hijri.
          A template may opt a field into the Gregorian picker. */
-      return def.calendar === 'gregorian'
+      return String(def.calendar || '').startsWith('gregorian')
         ? <input type="date" value={value ?? ''} onChange={e => set(e.target.value)} {...common} />
         : <HijriDateInput value={value} onChange={set} error={error} />;
     case 'file':
@@ -115,14 +156,16 @@ function Input({ fieldKey, def, value, error, onChange, onUpload, disabled, widt
           <label className={`${base} cursor-pointer hover:border-primary text-muted`}>
             <input
               type="file"
+              accept={def.accept}
               className="hidden"
               onChange={e => e.target.files?.[0] && onUpload?.(fieldKey, e.target.files[0])}
             />
-            {value ? 'استبدال الملف' : 'اختر ملفاً'}
+            {value ? 'استبدال الملف' : (def.accept === 'application/pdf' ? 'اختر ملف PDF' : 'اختر ملفاً')}
           </label>
           {value && (
-            <a href={value} target="_blank" rel="noreferrer" className="text-[11px] font-bold text-primary hover:underline">
-              عرض
+            <a href={asDownload(value, undefined)} download
+              className="text-[11px] font-bold text-primary hover:underline">
+              تحميل
             </a>
           )}
         </span>
@@ -149,7 +192,9 @@ function Input({ fieldKey, def, value, error, onChange, onUpload, disabled, widt
 function Slot(props) {
   const { mode, def, as } = props;
   if (mode === 'preview') return <Blank def={def} fieldKey={props.fieldKey} />;
-  if (mode === 'view' || mode === 'print') return <Printed value={props.value} def={def} />;
+  if (mode === 'view' || mode === 'print') {
+    return <Printed value={props.value} def={def} downloadName={props.downloadName} />;
+  }
   return <Input {...props} disabled={fieldOwner(def) !== as} />;
 }
 
@@ -255,8 +300,17 @@ function TableBlock({ def, fieldKey, mode, value, onChange }) {
  * purpose: this sheet belongs to the ministry, and it must not change colour
  * when a customer changes theirs.
  */
-const GRID_GREEN = '#D9EAD3';
-const GRID_LINE  = '#111827';
+/* Two palettes, because the grid draws two different kinds of document.
+   The ministry sheet is pale green on black rules and must stay exactly that.
+   The company's own letters are neutral on a fine warm rule, with the accent
+   reserved for the headings — so a form that goes out under our letterhead
+   does not arrive looking like a government form. */
+const PALETTES = {
+  ministry: { label: '#D9EAD3', line: '#111827', accent: '#1F2937' },
+  plain:    { label: '#F6F3ED', line: '#CFC7B8', accent: 'rgb(var(--c-accent-600))' },
+};
+const GRID_GREEN = PALETTES.ministry.label;
+const GRID_LINE  = PALETTES.ministry.line;
 /* Amber, and only while filling. It marks the two cells this person actually
    has to touch on a sheet of forty — on screen only, because the printed
    minute must look like the ministry's, not like a form with highlighting on
@@ -264,14 +318,14 @@ const GRID_LINE  = '#111827';
 const GRID_MINE  = '#FEF6E0';
 const GRID_MINE_LINE = '#D89B2C';
 
-function GridCell({ cell, mode, as, fields, values, errors, onChange }) {
+function GridCell({ cell, mode, as, fields, values, errors, onChange, palette = PALETTES.ministry }) {
   /* Is this blank the acting role's to fill? */
   const sigKeys = Array.isArray(cell.sig) ? cell.sig : cell.sig ? [cell.sig] : [];
   const mine = mode === 'fill' && (
     (cell.field && fieldOwner(fields[cell.field] || {}) === as) ||
     (sigKeys.length > 0 && (cell.owner ? cell.owner === as : true))
   );
-  const tone = cell.tone === 'label' ? GRID_GREEN : mine ? GRID_MINE : '#fff';
+  const tone = cell.tone === 'label' ? palette.label : mine ? GRID_MINE : '#fff';
   const align = cell.align || (cell.tone === 'label' || cell.field ? 'center' : 'right');
 
   const body = () => {
@@ -340,8 +394,9 @@ function GridCell({ cell, mode, as, fields, values, errors, onChange }) {
       rowSpan={cell.rowspan || 1}
       className={`nsab-cell px-2 py-1.5 align-middle ${cell.bold || cell.tone === 'label' ? 'font-bold' : ''}`}
       style={{
-        border: mine ? `2px solid ${GRID_MINE_LINE}` : `1px solid ${GRID_LINE}`,
+        border: mine ? `2px solid ${GRID_MINE_LINE}` : `1px solid ${palette.line}`,
         background: tone,
+        color: cell.accent ? palette.accent : undefined,
         textAlign: align,
         printColorAdjust: 'exact',
         WebkitPrintColorAdjust: 'exact',
@@ -360,6 +415,7 @@ function ValueOf({ k, values }) {
 
 function GridBlock({ block, mode, as, fields, values, errors, onChange }) {
   const widths = block.widths || ['17%', '41%', '21%', '21%'];
+  const palette = PALETTES[block.palette] || PALETTES.ministry;
   return (
     <table
       className="nsab-grid w-full text-[11.5px] text-ink my-2"
@@ -377,7 +433,7 @@ function GridBlock({ block, mode, as, fields, values, errors, onChange }) {
         {(block.rows || []).map((row, i) => (
           <tr key={i}>
             {(row.cells || []).map((cell, j) => (
-              <GridCell key={j} cell={cell} mode={mode} as={as}
+              <GridCell key={j} cell={cell} mode={mode} as={as} palette={palette}
                 fields={fields} values={values} errors={errors} onChange={onChange} />
             ))}
           </tr>
@@ -604,7 +660,7 @@ export default function FormDocument({
 
   return (
     <div
-      className={`bg-white mx-auto ${isPaper ? '' : 'shadow-[0_2px_16px_rgb(var(--c-ink)/0.10)] border border-line'}`}
+      className={`nsab-doc bg-white mx-auto ${isPaper ? '' : 'shadow-[0_2px_16px_rgb(var(--c-ink)/0.10)] border border-line'}`}
       style={{ width: '100%', maxWidth: 794, minHeight: 400 }}   /* 794px ≈ A4 at 96dpi */
       dir="rtl"
     >
@@ -627,15 +683,15 @@ export default function FormDocument({
       </header>
       )}
 
-      <div className={bare ? 'nsab-bare px-6 py-6' : 'px-8 py-6'}>
+      <div className={`nsab-body ${bare ? 'nsab-bare px-6 py-6' : 'px-8 py-6'}`}>
         {blocks.length === 0 ? (
           <p className="py-16 text-center text-muted text-sm">
             المستند فارغ
           </p>
         ) : (
           blocks.map((block, i) => (
+            <div key={block.id || i} className={block.pin === 'bottom' ? 'nsab-pin' : undefined}>
             <Block
-              key={block.id || i}
               block={block}
               fields={fields}
               mode={mode}
@@ -644,6 +700,7 @@ export default function FormDocument({
               errors={errors}
               onChange={onChange}
             />
+            </div>
           ))
         )}
       </div>

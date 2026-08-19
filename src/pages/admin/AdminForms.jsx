@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { db, uploadFile, serverTimestamp } from '../../lib/db.js';
+import { db, uploadFile, asDownload, serverTimestamp } from '../../lib/db.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useBrand } from '../../context/BrandContext.jsx';
 import { COLORS } from '../../config/brand.js';
 import {
   FORM_STATUSES, STATUS_META, isOverdue, daysLate, visibleFieldKeys, isPrintable,
+  signatureKeysFor,
   keysOwnedBy, resolveSources, fieldOwner,
 } from '../../config/formSchema.js';
 import FormBuilder from '../../components/forms/FormBuilder.jsx';
@@ -13,7 +14,7 @@ import FormFill from '../../components/forms/FormFill.jsx';
 import HijriDateInput from '../../components/forms/HijriDateInput.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import {
-  FileText, Plus, X, FloppyDisk as Save, Pencil, Trash as Trash2, Copy,
+  FileText, Plus, X, FloppyDisk as Save, Pencil, Trash as Trash2, Copy, DownloadSimple,
   PaperPlaneTilt, MagnifyingGlass as Search, Eye, Warning, CalendarBlank,
   CheckCircle, Clock, Lock, Buildings as Building2, CaretLeft, Sparkle,
   Printer,
@@ -60,8 +61,9 @@ export default function AdminForms() {
   /* Filtering the assignments list. A season produces one row per caterer per
      centre per form, so «كل تكليفات فلان» is the question actually asked of
      this table, and scrolling is not an answer to it. */
-  const [byCaterer, setByCaterer] = useState('');
-  const [byStatus,  setByStatus]  = useState('');
+  const [byCaterer,  setByCaterer]  = useState('');
+  const [byStatus,   setByStatus]   = useState('');
+  const [byTemplate, setByTemplate] = useState('');
 
   /* Builder */
   const [builder, setBuilder] = useState(null);   // the template being authored
@@ -244,9 +246,20 @@ export default function AdminForms() {
   /* Fields the admin owns on this template — what the system cannot answer and
      the caterer should not be asked for. */
   const visibleAssignments = useMemo(() => seasonAssignments.filter(a =>
-    (!byCaterer || a.catererId === byCaterer) &&
-    (!byStatus  || a.status === byStatus)
-  ), [seasonAssignments, byCaterer, byStatus]);
+    (!byCaterer  || a.catererId  === byCaterer) &&
+    (!byStatus   || a.status     === byStatus) &&
+    (!byTemplate || a.templateId === byTemplate)
+  ), [seasonAssignments, byCaterer, byStatus, byTemplate]);
+
+  /* Only documents actually assigned this season, each with how many copies
+     are out — a list of every template would offer choices returning nothing. */
+  const templateOptions = useMemo(() => {
+    const ids = [...new Set(seasonAssignments.map(a => a.templateId).filter(Boolean))];
+    return ids
+      .map(id => ({ id, title: templateById[id]?.title || '—',
+                    n: seasonAssignments.filter(a => a.templateId === id).length }))
+      .sort((a, b) => a.title.localeCompare(b.title, 'ar'));
+  }, [seasonAssignments, templateById]);
 
   /* Only caterers who actually have an assignment this season: a list of every
      caterer would offer choices that return nothing. */
@@ -262,6 +275,26 @@ export default function AdminForms() {
     () => (assign ? keysOwnedBy(assign.template.definition, 'admin') : []),
     [assign],
   );
+
+  /* What the caterer attached, if anything, and what it should be called once
+     it is on somebody's desk. A signature is a file too and is not the
+     attachment — the same distinction the submit guard makes. */
+  const attachmentOf = (a) => {
+    const def = templateById[a.templateId]?.definition;
+    if (!def) return null;
+    const sigs = new Set([
+      ...signatureKeysFor(def, 'caterer'),
+      ...signatureKeysFor(def, 'admin'),
+    ]);
+    const key = [...visibleFieldKeys(def)]
+      .find(k => def.fields?.[k]?.type === 'file' && !sigs.has(k) && a.data?.[k]);
+    if (!key) return null;
+    const url = a.data[key];
+    const ext = (String(url).split('?')[0].split('.').pop() || 'pdf').toLowerCase();
+    const name = [templateById[a.templateId]?.title, catererById[a.catererId]?.name]
+      .filter(Boolean).join(' - ');
+    return { url, filename: `${name || a.formNumber}.${ext}` };
+  };
 
   /* An image cannot be typed into a table cell, so the per-caterer override
      table is offered for everything except the uploads. */
@@ -318,6 +351,8 @@ export default function AdminForms() {
       center: withHead(centersOwned[0] || null),
       season: activeSeason,
       company,
+      /* No row exists yet, but the deadline does — it is on the dialog. */
+      assignment: { dueAt: assign.dueAt ? `${assign.dueAt}T23:59:59` : null },
     });
     return { ...system, ...assign.shared, ...(assign.perCaterer[catererId] || {}) };
   };
@@ -338,8 +373,8 @@ export default function AdminForms() {
         .map(a => `${a.catererId}|${a.centerId || ''}`),
     );
 
-    const rows = [];
-    let skipped = 0;
+    const rows = [];       // what will be created
+    const dupes = [];      // built, but already held open by that caterer
     let withoutCenters = 0;
     for (const catererId of catererIds) {
       const targets = perCenter
@@ -349,7 +384,7 @@ export default function AdminForms() {
          batch reports a success that never reached them. */
       if (perCenter && targets.length === 0) { withoutCenters++; continue; }
       for (const centerId of targets) {
-        if (open.has(`${catererId}|${centerId || ''}`)) { skipped++; continue; }
+        const duplicate = open.has(`${catererId}|${centerId || ''}`);
         /* The document is stored already filled. What reaches the caterer is
            finished work waiting for a signature, not a blank form. Values are
            resolved per center too, so a per-center copy carries that center's
@@ -359,8 +394,9 @@ export default function AdminForms() {
           center:  centerId ? withHead(centerById[centerId]) : null,
           season:  activeSeason,
           company,
+          assignment: { dueAt: dueAt ? `${dueAt}T23:59:59` : null },
         });
-        rows.push({
+        (duplicate ? dupes : rows).push({
           seasonId:   activeSeason.id,
           templateId: template.id,
           catererId,
@@ -373,11 +409,26 @@ export default function AdminForms() {
       }
     }
 
+    /* Holding an open copy is usually a double click, and usually worth
+       stopping. But the same form is sometimes owed twice in one season — a
+       second handover, a centre reinspected — and refusing outright left the
+       button looking broken with no way past it. So it asks. */
+    let skipped = dupes.length;
+    if (!rows.length && dupes.length) {
+      const ok = window.confirm(
+        `لدى ${dupes.length} جهة نسخة مفتوحة من «${template.title}» لم تُقبل بعد.\n\n` +
+        'إسناد نسخة إضافية لهم؟');
+      setAssigning(ok);
+      if (!ok) { setAssigning(false); return; }
+      rows.push(...dupes);
+      skipped = 0;
+    }
+
     if (!rows.length) {
       setAssigning(false);
       setNotice(
-        withoutCenters ? `لا مراكز لـ ${withoutCenters} متعهد في هذا الموسم — والمحضر لا يُسنَد إلا لمركز.`
-          : skipped ? `الجميع لديهم نسخة مفتوحة من «${template.title}» — لم يُسند شيء.`
+        withoutCenters
+          ? `لا مراكز لـ ${withoutCenters} متعهد في هذا الموسم — وهذا النموذج لا يُسنَد إلا لمركز.`
           : 'لا شيء لإسناده.');
       return;
     }
@@ -651,8 +702,8 @@ export default function AdminForms() {
                   ? `${seasonAssignments.length}`
                   : `${visibleAssignments.length} من ${seasonAssignments.length}`}
               </span>
-              {(byCaterer || byStatus) && (
-                <button onClick={() => { setByCaterer(''); setByStatus(''); }}
+              {(byCaterer || byStatus || byTemplate) && (
+                <button onClick={() => { setByCaterer(''); setByStatus(''); setByTemplate(''); }}
                   className="mr-auto text-[12px] font-black text-primary hover:underline">
                   عرض الكل
                 </button>
@@ -660,6 +711,14 @@ export default function AdminForms() {
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
+              <select value={byTemplate} onChange={e => setByTemplate(e.target.value)}
+                className={`${inputCls} w-auto min-w-[240px]`}>
+                <option value="">كل المستندات</option>
+                {templateOptions.map(t => (
+                  <option key={t.id} value={t.id}>{t.title} ({t.n})</option>
+                ))}
+              </select>
+
               <select value={byCaterer} onChange={e => setByCaterer(e.target.value)}
                 className={`${inputCls} w-auto min-w-[220px]`}>
                 <option value="">كل المتعهدين</option>
@@ -686,6 +745,7 @@ export default function AdminForms() {
                   <th className="px-4 py-3 text-right font-semibold">النموذج</th>
                   <th className="px-4 py-3 text-right font-semibold">المتعهد</th>
                   <th className="px-4 py-3 text-right font-semibold">المركز</th>
+                  <th className="px-4 py-3 text-right font-semibold">الموعد النهائي</th>
                   <th className="px-4 py-3 text-right font-semibold">تاريخ التسليم</th>
                   <th className="px-4 py-3 text-right font-semibold">الحالة</th>
                   <th className="px-4 py-3 text-right font-semibold">إجراء</th>
@@ -693,7 +753,7 @@ export default function AdminForms() {
               </thead>
               <tbody className="divide-y divide-line">
                 {visibleAssignments.length === 0 && (
-                  <tr><td colSpan={7} className="p-10 text-center text-muted text-sm">
+                  <tr><td colSpan={8} className="p-10 text-center text-muted text-sm">
                     {seasonAssignments.length === 0
                       ? 'لا تكليفات بعد'
                       : 'لا تكليفات تطابق هذه التصفية'}
@@ -714,6 +774,21 @@ export default function AdminForms() {
                             {new Date(a.dueAt).toISOString().slice(0, 10)}
                           </span>
                         ) : <span className="text-muted/40">—</span>}
+                      </td>
+
+                      {/* When the caterer actually sent it — the other half of
+                          the deadline, and the only one that answers «هل
+                          سلّم؟» without reading the status and the date and
+                          doing the subtraction in your head. */}
+                      <td className="px-4 py-3 text-xs">
+                        {a.submittedAt ? (
+                          <span className="inline-flex items-center gap-1 font-bold text-[#16A34A] whitespace-nowrap" dir="ltr">
+                            <CheckCircle size={12} weight="fill" />
+                            {new Date(a.submittedAt).toISOString().slice(0, 10)}
+                          </span>
+                        ) : (
+                          <span className="text-muted/40">لم يُسلَّم</span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5 flex-wrap">
@@ -745,6 +820,24 @@ export default function AdminForms() {
                               طباعة
                             </Action>
                           )}
+                          {(() => {
+                            /* Shown only when there is a file to hand over, so
+                               the button never promises a document that is not
+                               there. */
+                            const att = attachmentOf(a);
+                            if (!att) return null;
+                            return (
+                              <a
+                                href={asDownload(att.url, att.filename)}
+                                download={att.filename}
+                                className="flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg border
+                                           text-primary border-primary/20 hover:bg-primary hover:border-primary
+                                           hover:text-white transition-all"
+                              >
+                                <DownloadSimple size={11} /> المرفق
+                              </a>
+                            );
+                          })()}
                           {/* The office's alone. Deleting removes the caterer's
                               copy with it — there is one row, and the portal
                               reads the same one. */}
@@ -984,7 +1077,8 @@ export default function AdminForms() {
             </div>
 
             <div className="px-6 py-5 space-y-3">
-              <Field label="تاريخ التسليم">
+              <Field label="الموعد النهائي للتسليم" required
+                hint="يظهر في النموذج نفسه وفي بوابة المتعهد، ومنه يُحتسب التأخير">
                 <div className="relative">
                   <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
                     <CalendarBlank size={14} className="text-primary" />

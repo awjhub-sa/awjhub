@@ -149,3 +149,22 @@
   /* The @page margin is the margin; the sheet adds none of its own. */
   .nsab-bare { padding: 0 !important; }
 }
+
+/* ── a block pinned to the foot of the sheet ────────────────
+ *
+ * On paper the signatures belong at the bottom, above the footer, not floating
+ * halfway down with white space under them — a signature block with a hand's
+ * width of empty page beneath it reads as a page somebody stopped filling in.
+ *
+ * The document becomes a column as tall as the page, the body takes the slack,
+ * and the pinned block pushes itself down with an auto margin. On screen none
+ * of this applies: there is no page to sit at the bottom of. */
+@media print {
+  /* !important because the document root carries min-height as an inline
+     style, and an inline style beats a class rule. Without it the column was
+     only as tall as its own content, there was no free space for the auto
+     margin to absorb, and the pinned block stayed where it fell. */
+  .nsab-doc  { display: flex; flex-direction: column; min-height: 100vh !important; }
+  .nsab-body { flex: 1 1 auto; display: flex; flex-direction: column; }
+  .nsab-pin  { margin-top: auto; }
+}

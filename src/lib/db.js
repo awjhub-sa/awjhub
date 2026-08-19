@@ -272,6 +272,29 @@ export function sanitizeStoragePath(s) {
     .replace(/^_+|_+$/g, '');
 }
 
+/**
+ * Turns a public storage URL into one the browser saves rather than displays.
+ *
+ * The `download` attribute on an anchor is ignored across origins, and storage
+ * is a different origin from the app — so a PDF opened from a form navigated
+ * away to the file instead of landing in the downloads folder. Supabase reads
+ * a `download` query parameter and answers with Content-Disposition, which is
+ * the only thing a cross-origin link will obey.
+ *
+ * @param {string} url       the public URL
+ * @param {string} filename  what it should be called once saved
+ */
+export function asDownload(url, filename) {
+  if (!url) return url;
+  try {
+    const u = new URL(url);
+    u.searchParams.set('download', filename || '');
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
 export async function uploadFile(bucket, path, file, options = {}) {
   path = sanitizeStoragePath(path);
   const { error } = await supabase.storage.from(bucket).upload(path, file, {

@@ -18,11 +18,24 @@
 import { useEffect, useMemo, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
-  House, Siren, FileText, SignOut, List, X, Buildings,
+  House, Siren, FileText, SignOut, List, X, Buildings, WarningCircle, Clock,
 } from '@phosphor-icons/react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useBrand } from '../../context/BrandContext.jsx';
 import { db } from '../../lib/db.js';
+
+/* Arabic-Indic, as the rest of the portal counts. */
+const AR = (n) => String(n ?? '').replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+
+/* One figure and what it counts. The colour carries the urgency, so the number
+   does not have to be read to know whether it matters. */
+const Tile = ({ n, label, tone }) => (
+  <div className="rounded-xl px-2.5 py-2 border"
+    style={{ background: 'rgb(255 255 255 / 0.05)', borderColor: 'rgb(255 255 255 / 0.10)' }}>
+    <p className="text-[20px] font-black leading-none tabular-nums" style={{ color: tone }}>{AR(n)}</p>
+    <p className="text-[10.5px] font-bold text-white/50 mt-1 leading-tight">{label}</p>
+  </div>
+);
 
 const NAV = [
   { to: '/caterer/home',    label: 'الرئيسية', Icon: House },
@@ -37,6 +50,8 @@ export default function CatererLayout() {
 
   const [caterer, setCaterer] = useState(null);
   const [centers, setCenters] = useState([]);
+  const [forms,   setForms]   = useState([]);
+  const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);          // drawer, on narrow screens
 
@@ -46,7 +61,7 @@ export default function CatererLayout() {
     let alive = true;
     (async () => {
       if (!catererId) { setLoading(false); return; }
-      const [c, ce] = await Promise.all([
+      const [c, ce, fm, rp] = await Promise.all([
         db.caterers.get(catererId),
         /* Narrowed on purpose — the portal must never request the office's
            internal notes. The identifiers below are added because the ministry
@@ -59,16 +74,46 @@ export default function CatererLayout() {
           'murabbaMina', 'kitchenLocationMina', 'kitchenLocationArafat',
           'active', 'catererName',
         ] }),
+        db.form_assignments.list({ filter: { catererId },
+          columns: ['id', 'status', 'dueAt'] }),
+        db.reports.list({ columns: ['id', 'caterer', 'status', 'catererResponse'] }),
       ]);
       if (!alive) return;
-      setCaterer(c); setCenters(ce); setLoading(false);
+      setCaterer(c); setCenters(ce);
+      setForms(fm);
+      /* Reports carry the caterer by name, not by id — the field app writes
+         them before a caterer record is ever looked up. */
+      const name = String(c?.name ?? '').trim();
+      setReports(rp.filter(r => String(r.caterer ?? '').trim() === name));
+      setLoading(false);
     })();
     return () => { alive = false; };
   }, [catererId]);
 
+  /* What is outstanding, in the two shapes the portal is about. */
+  const standing = useMemo(() => {
+    const ms = (v) => (v ? new Date(v).getTime() : 0);
+    const now = Date.now();
+    const due = forms.filter(f => !['submitted', 'accepted'].includes(f.status));
+    const overdue = due.filter(f => f.dueAt && ms(f.dueAt) < now);
+    const open = reports.filter(r => r.status !== 'resolved');
+    const unanswered = open.filter(r => !r.catererResponse);
+    /* The soonest thing still owed — a count says how many, a date says when. */
+    const next = due
+      .filter(f => f.dueAt && ms(f.dueAt) >= now)
+      .sort((a, b) => ms(a.dueAt) - ms(b.dueAt))[0];
+    return {
+      due: due.length,
+      overdue: overdue.length,
+      open: open.length,
+      unanswered: unanswered.length,
+      nextDue: next?.dueAt || null,
+    };
+  }, [forms, reports]);
+
   const ctx = useMemo(
-    () => ({ catererId, caterer, centers, loading }),
-    [catererId, caterer, centers, loading],
+    () => ({ catererId, caterer, centers, loading, standing }),
+    [catererId, caterer, centers, loading, standing],
   );
 
   const signOut = async () => { await logout(); nav('/login', { replace: true }); };
@@ -124,12 +169,66 @@ export default function CatererLayout() {
                   <item.Icon size={19} weight={isActive ? 'bold' : 'regular'}
                     color={isActive ? 'rgb(var(--c-accent))' : 'rgba(255,255,255,0.75)'} />
                 </span>
-                <span className="text-[15px]">{item.label}</span>
+                <span className="text-[15px] flex-1">{item.label}</span>
+                {(() => {
+                  /* A badge on the door, so the number is read on the way in
+                     rather than after arriving. */
+                  const n = item.to.endsWith('/forms') ? standing.due
+                    : item.to.endsWith('/reports') ? standing.unanswered
+                    : 0;
+                  if (!n) return null;
+                  const hot = item.to.endsWith('/forms')
+                    ? standing.overdue > 0
+                    : standing.unanswered > 0;
+                  return (
+                    <span
+                      className="min-w-[22px] h-[22px] px-1.5 rounded-full text-[11px] font-black
+                                 flex items-center justify-center tabular-nums flex-shrink-0"
+                      style={{
+                        background: hot ? '#DC2626' : 'rgb(var(--c-accent))',
+                        color: hot ? '#fff' : 'rgb(var(--c-primary-900))',
+                      }}
+                    >
+                      {AR(n)}
+                    </span>
+                  );
+                })()}
               </>
             )}
           </NavLink>
         ))}
       </nav>
+
+      {/* What is on this caterer right now. It sits above the account block
+          because it is the reason they opened the portal. */}
+      {(standing.due > 0 || standing.open > 0) && (
+        <div className="px-3 pb-3">
+          <div className="rounded-2xl border border-white/12 p-3"
+            style={{ background: 'rgb(255 255 255 / 0.06)' }}>
+            <p className="text-[10px] font-black tracking-widest text-white/40 mb-2.5">عليك الآن</p>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Tile n={standing.due}  label="نموذج مستحق"
+                tone={standing.overdue ? '#F87171' : 'rgb(var(--c-accent))'} />
+              <Tile n={standing.open} label="بلاغ مفتوح"
+                tone={standing.unanswered ? '#F87171' : '#7DD3FC'} />
+            </div>
+
+            {standing.overdue > 0 && (
+              <p className="mt-2.5 text-[11px] font-bold text-red-300 flex items-center gap-1.5">
+                <WarningCircle size={13} weight="fill" />
+                {AR(standing.overdue)} تجاوز موعده
+              </p>
+            )}
+            {!standing.overdue && standing.nextDue && (
+              <p className="mt-2.5 text-[11px] font-bold text-white/55 flex items-center gap-1.5">
+                <Clock size={13} weight="bold" />
+                أقرب موعد {AR(new Date(standing.nextDue).toISOString().slice(0, 10))}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="px-3 py-3 border-t border-white/10">
         <div className="flex items-center gap-2.5 px-1 mb-2">
@@ -158,7 +257,10 @@ export default function CatererLayout() {
 
       {/* ── the rail ── */}
       <aside className="hidden lg:flex flex-col w-60 flex-shrink-0"
-        style={{ background: 'rgb(var(--c-primary))' }}>
+        style={{ background:
+                      'radial-gradient(120% 60% at 50% 0%, rgb(var(--c-primary-400) / 0.30) 0%, transparent 60%),' +
+                      'radial-gradient(90% 40% at 50% 100%, rgb(var(--c-accent) / 0.14) 0%, transparent 62%),' +
+                      'linear-gradient(180deg, rgb(var(--c-primary-700)), rgb(var(--c-primary)) 45%, rgb(var(--c-primary-900)))', }}>
         <Rail />
       </aside>
 
@@ -166,7 +268,10 @@ export default function CatererLayout() {
         <>
           <button className="lg:hidden fixed inset-0 z-40 bg-ink/50" onClick={() => setOpen(false)} aria-label="إغلاق" />
           <aside className="lg:hidden fixed inset-y-0 right-0 z-50 w-64 flex flex-col shadow-2xl"
-            style={{ background: 'rgb(var(--c-primary))' }}>
+            style={{ background:
+                      'radial-gradient(120% 60% at 50% 0%, rgb(var(--c-primary-400) / 0.30) 0%, transparent 60%),' +
+                      'radial-gradient(90% 40% at 50% 100%, rgb(var(--c-accent) / 0.14) 0%, transparent 62%),' +
+                      'linear-gradient(180deg, rgb(var(--c-primary-700)), rgb(var(--c-primary)) 45%, rgb(var(--c-primary-900)))', }}>
             <button onClick={() => setOpen(false)}
               className="absolute top-3 left-3 w-8 h-8 rounded-lg bg-white/12 border border-white/20
                          flex items-center justify-center text-white">

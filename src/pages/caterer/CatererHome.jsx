@@ -17,6 +17,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import {
   House, Siren, FileText, CheckCircle, Buildings, WarningCircle, ArrowLeft, Clock,
+  UsersThree, Globe,
 } from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
 import { db } from '../../lib/db.js';
@@ -27,7 +28,7 @@ const ms = (v) => (v?.toMillis?.() ?? (v ? new Date(v).getTime() : 0));
 const day = (v) => (v ? AR(new Date(ms(v)).toISOString().slice(0, 10)) : '—');
 
 export default function CatererHome() {
-  const { caterer, centers, catererId } = useOutletContext();
+  const { caterer, centers, catererId, standing } = useOutletContext();
   const nav = useNavigate();
   const [reports, setReports] = useState([]);
   const [forms, setForms] = useState([]);
@@ -65,6 +66,21 @@ export default function CatererHome() {
 
   const clear = !loading && open.length === 0 && dueForms.length === 0;
 
+  /* Codes are stored variously as «84» and «مركز 84»; the word is the label's
+     job, not the value's. */
+  const codes = useMemo(
+    () => centers.map(c => String(c.code ?? '').replace(/^s*مركزs*/, '').trim()).filter(Boolean),
+    [centers]);
+  const codeList = codes.length === 0 ? '—'
+    : codes.length <= 3 ? codes.map(AR).join(' · ')
+    : `${codes.slice(0, 3).map(AR).join(' · ')} +${AR(codes.length - 3)}`;
+
+  const active   = useMemo(() => centers.filter(c => c.active !== false).length, [centers]);
+  const pilgrims = useMemo(
+    () => centers.reduce((n, c) => n + (Number(c.pilgrimsCount) || 0), 0), [centers]);
+  const nationalities = useMemo(
+    () => [...new Set(centers.map(c => c.pilgrimsNationality).filter(Boolean))], [centers]);
+
   return (
     <div className="space-y-4" dir="rtl">
       <PageHeader
@@ -73,12 +89,30 @@ export default function CatererHome() {
         title="الرئيسية"
         subtitle={clear ? 'لا شيء يحتاج انتباهك الآن' : 'ما يحتاج انتباهك اليوم'}
         stats={[
-          { value: AR(centers.length), label: 'مركز' },
+          { value: codeList, label: codes.length === 1 ? 'مركزك' : 'مراكزك' },
           { value: AR(open.length), label: 'بلاغ مفتوح', tone: open.length ? 'alert' : undefined },
           { value: AR(dueForms.length), label: 'نموذج مستحق',
             tone: overdue.length ? 'alert' : dueForms.length ? 'gold' : undefined },
         ]}
       />
+
+      {/* The operation in four figures. Everything here is already in the
+          portal's own data — it was simply never said. */}
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+        <Stat Icon={Buildings} label={codes.length === 1 ? 'مركزك' : 'مراكزك'} value={codeList}
+          tone="#4E7CB0"
+          note={centers.length
+            ? `${AR(centers.length)} مركز${active < centers.length ? ` · ${AR(active)} نشط` : ''}`
+            : '—'} />
+        <Stat Icon={UsersThree} label="حجاج مراكزك" value={AR(pilgrims)}
+          tone="#5E9070" note={centers.length ? `بمعدّل ${AR(Math.round(pilgrims / centers.length))} للمركز` : '—'} />
+        <Stat Icon={Globe} label="الجنسيات" value={AR(nationalities.length)}
+          tone="#B99A64" note={nationalities.slice(0, 2).join('، ') || '—'} />
+        <Stat Icon={Clock} label="أقرب موعد"
+          value={standing?.nextDue ? day(standing.nextDue) : '—'}
+          tone={standing?.overdue ? '#DC2626' : '#7C6BB0'}
+          note={standing?.overdue ? `${AR(standing.overdue)} تجاوز موعده` : 'لا متأخرات'} />
+      </div>
 
       {loading ? (
         <div className="py-20 flex justify-center">
@@ -152,10 +186,16 @@ export default function CatererHome() {
                     <span className="block text-[14px] font-bold text-ink truncate">
                       {f.formNumber || 'نموذج'}
                     </span>
-                    <span className="block text-[12px] font-bold mt-0.5 flex items-center gap-1"
-                      style={{ color: late ? 'rgb(var(--c-error))' : 'rgb(var(--c-muted))' }}>
-                      <Clock size={12} weight="bold" />
-                      {late ? 'تأخّر عن ' : 'يستحق '}{day(f.dueAt)}
+                    {/* The same chip the forms table carries, so the deadline
+                        reads identically wherever the caterer meets it. */}
+                    <span className="inline-flex items-center gap-1.5 mt-1 text-[11.5px] font-black tabular-nums px-2 py-0.5 rounded-lg border"
+                      style={{
+                        background: late ? 'color-mix(in srgb, #DC2626 10%, #fff)' : 'color-mix(in srgb, #B99A64 14%, #fff)',
+                        borderColor: late ? '#FCA5A5' : '#E0CFA8',
+                        color: late ? '#B91C1C' : '#8A6D2F',
+                      }}>
+                      {late ? <WarningCircle size={12} weight="fill" /> : <Clock size={12} weight="bold" />}
+                      {late ? 'تأخّر عن' : 'موعد أقصاه'} {day(f.dueAt)}
                     </span>
                   </span>
                   {late && <WarningCircle size={17} weight="fill" className="text-error flex-shrink-0" />}
@@ -204,6 +244,35 @@ export default function CatererHome() {
           </div>
         )}
       </section>
+    </div>
+  );
+}
+
+/* A figure, what it counts, and one line of context under it. The colour is
+   the tile's own — four grey cards say nothing that one grey card would not. */
+function Stat({ Icon, label, value, note, tone }) {
+  return (
+    <div className="bg-white rounded-2xl border border-line p-4 relative overflow-hidden">
+      <span aria-hidden className="absolute inset-x-0 top-0 h-1" style={{ background: tone }} />
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-[11.5px] font-bold text-muted">{label}</p>
+          <p
+            className={`font-black tabular-nums leading-none mt-1.5 truncate ${
+              String(value).length > 9 ? 'text-[17px]' : 'text-[24px]'
+            }`}
+            style={{ color: tone }}
+            title={String(value)}
+          >
+            {value}
+          </p>
+          {note && <p className="text-[11px] font-bold text-muted/80 mt-1.5 truncate">{note}</p>}
+        </div>
+        <span className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{ background: `color-mix(in srgb, ${tone} 12%, #fff)` }}>
+          <Icon size={19} weight="duotone" style={{ color: tone }} />
+        </span>
+      </div>
     </div>
   );
 }

@@ -13,9 +13,10 @@ import { useEffect, useMemo, useState } from 'react';
 import FormDocument from './FormDocument.jsx';
 import { useBrand } from '../../context/BrandContext.jsx';
 import { db, uploadFile, serverTimestamp } from '../../lib/db.js';
+import { toHijriParts } from '../../lib/hijri.js';
 import {
   resolveSources, validateForm, STATUS_META, isOverdue, daysLate, keysOwnedBy,
-  signatureKeysFor,
+  signatureKeysFor, visibleFieldKeys,
 } from '../../config/formSchema.js';
 import {
   X, FloppyDisk as Save, PaperPlaneTilt, CheckCircle, ArrowUUpLeft,
@@ -78,8 +79,8 @@ export default function FormFill({
      than frozen at assignment time: if a caterer's CR number is corrected in
      the registry, the form should show the correction, not the old value. */
   const auto = useMemo(
-    () => resolveSources(definition.fields, { caterer, center: centerWithHead, season, company }),
-    [definition.fields, caterer, centerWithHead, season, company],
+    () => resolveSources(definition.fields, { caterer, center: centerWithHead, season, company, assignment }),
+    [definition.fields, caterer, centerWithHead, season, company, assignment],
   );
 
   useEffect(() => {
@@ -152,6 +153,24 @@ export default function FormFill({
         .map(k => definition.fields?.[k]?.label || k);
       setNotice(missing.length ? `مطلوب قبل التسليم: ${missing.join('، ')}.` : 'التوقيع مطلوب قبل التسليم.');
       return;
+    }
+
+    /* `requires_attachment` has been a column since the forms table was
+       created and nothing ever read it, so a template could ask for a document
+       and accept a submission without one. A signature is a file too, and is
+       checked above — it does not count as the attachment. */
+    if (template?.requiresAttachment) {
+      const sigs = new Set([
+        ...signatureKeysFor(definition, 'caterer'),
+        ...signatureKeysFor(definition, 'admin'),
+      ]);
+      const attachments = [...visibleFieldKeys(definition)]
+        .filter(k => definition.fields?.[k]?.type === 'file' && !sigs.has(k));
+      if (!attachments.some(k => values[k])) {
+        const what = attachments.map(k => definition.fields[k]?.label).filter(Boolean);
+        setNotice(what.length ? `أرفق ${what[0]} قبل التسليم.` : 'أرفق الملف المطلوب قبل التسليم.');
+        return;
+      }
     }
 
     setBusy('submit');
@@ -286,7 +305,14 @@ export default function FormFill({
           onChange={change}
           title={template?.title}
           formNumber={assignment?.formNumber}
-          meta={[caterer?.name, center?.code, season?.name].filter(Boolean).join(' · ')}
+          /* The season is named by its Hijri year. Taken from the value the
+             document was filled with, or the calendar — never from the label
+             typed on the season record, which still reads ١٤٤٦هـ. */
+          meta={[
+            caterer?.name,
+            center?.code,
+            `${values.hijri_year || toHijriParts().y}هـ`,
+          ].filter(Boolean).join(' · ')}
         />
       </div>
     </div>

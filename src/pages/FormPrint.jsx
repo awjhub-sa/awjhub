@@ -8,9 +8,10 @@
  * drawer to escape. The toolbar is the only thing on screen that is not the
  * document, and `@media print` removes it.
  *
- * Only accepted forms print. A draft on company letterhead, stamped and filed,
- * is a document asserting something that was never agreed — and once it is on
- * paper nothing on it says which it was.
+ * Any stage prints. The office sends the pending copy to the centre already
+ * filled so it comes back with ink on it, and the caterer keeps a copy of what
+ * they signed. What stage a sheet is at is legible on the sheet: the signature
+ * blocks are empty until they are not.
  *
  * The ownership check is not decoration: the route carries an id, and a caterer
  * who edits that id must not be handed another company's filing. It is enforced
@@ -25,6 +26,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import FormDocument from '../components/forms/FormDocument.jsx';
 import { useBrand } from '../context/BrandContext.jsx';
 import { resolveSources, isPrintable } from '../config/formSchema.js';
+import { toHijriParts } from '../lib/hijri.js';
 import './form-print.css';
 import { usePrintPage, closeDocumentTab } from '../lib/printPage.js';
 
@@ -136,7 +138,7 @@ export default function FormPrint() {
 
   const printedValues = {
     ...resolveSources(derivable, {
-      caterer, center, season,
+      caterer, center, season, assignment,
       company: {
         name: brand.companyFullAr,
         short: brand.companyName,
@@ -171,7 +173,15 @@ export default function FormPrint() {
           title={template?.title}
           formNumber={assignment.formNumber}
           values={printedValues}
-          meta={[caterer?.name, center?.code, season?.name].filter(Boolean).join(' · ')}
+          /* The season is named by its Hijri year, and the caption used to
+              take that name from the season record — which still reads ١٤٤٦هـ
+              long after 1446 ended. It takes the year the document itself was
+              filled with, or today's, and never the label somebody typed. */
+          meta={[
+            caterer?.name,
+            center?.code,
+            `${printedValues.hijri_year || toHijriParts().y}هـ`,
+          ].filter(Boolean).join(' · ')}
         />
       </div>
     </div>

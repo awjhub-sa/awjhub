@@ -223,6 +223,191 @@ function readinessMinute(site) {
   };
 }
 
+/* ── إقرار استلام ثلاجات ──────────────────────────────────
+ *
+ * The company's own handover receipt, unlike the ministry minute: it goes out
+ * on our letterhead, so it keeps the document chrome the rest of the letters
+ * use. Only the ruled blocks — the header details and the two signatories —
+ * are drawn as a grid, because that is how the paper reads them.
+ *
+ * Who fills what:
+ *   the system   shakhis, centre number, caterer, the owner's name, the date
+ *   the office   how many fridges, its own representative, and that signature
+ *   the caterer  one signature, and nothing else
+ *
+ * It is scoped to a centre: the shakhis and the centre number are the point of
+ * the receipt, and a copy assigned to a caterer rather than to a centre would
+ * have nothing to put in them.
+ */
+function fridgeReceipt(site) {
+  const mina = site === 'منى';
+  return {
+    key: `fridge_receipt_${mina ? 'mina' : 'arafat'}`,
+    title: `إقرار استلام ثلاجات (${site})`,
+    category: 'تشغيلي',
+    description:
+      `إقرار المتعهد باستلام ثلاجات المركز بمشعر ${site} سليمةً وعاملة، بعد المعاينة والفحص.`,
+    requiresSignature: true,
+    requiresAttachment: false,
+
+    definition: {
+      scope: 'center',
+      blocks: [
+        {
+          id: 'head', type: 'grid', palette: 'plain', widths: ['17%', '33%', '17%', '33%'],
+          rows: [
+            { cells: [lbl('رقم الشاخص'), val('shakhis'), lbl('رقم المركز'), val('center_code')] },
+            { cells: [lbl('الموقع'), { text: site, align: 'center' }, lbl('التاريخ'), val('receipt_date')] },
+            { cells: [lbl('اسم المتعهد'), val('caterer_name', { span: 3 })] },
+          ],
+        },
+
+        { id: 'h1', type: 'heading', text: 'تفاصيل الإقرار' },
+
+        { id: 'p1', type: 'paragraph',
+          text: 'نفيدكم بأنه تم تسليم واستلام الثلاجات المخصصة للمركز المذكور أعلاه من قبل المتعهد، وذلك بحضور كل من (ممثل لجنة التغذية، ممثل متعهد الإعاشة و ممثل لجنة المشاعر). ونؤكد أنه تم تسليمها وفق الموعد وآلية التسليم المحددة، وبعد إجراء المعاينة والفحص اللازمين للعهد، نقر بما يلي:' },
+
+        { id: 'l1', type: 'list', ordered: false, items: [
+          'عدد الثلاجات المستلمة: ({{fridge_count}}) ثلاجة.',
+          'حالة الثلاجات: الثلاجات سليمة وتعمل بحالة جيدة.',
+          'حالة الهيكل: الهيكل الخارجي والداخلي سليم وخالٍ من الكسور أو الانبعاجات.',
+          'المفاتيح: تم تسليم نسخة واحدة من المفاتيح.',
+        ] },
+
+        { id: 'p2', type: 'paragraph',
+          text: 'وهذا إقرار منا بالاستلام وبسلامة العهدة المذكورة أعلاه.' },
+
+        { id: 'f1', type: 'fields', style: 'list', keys: ['notes'] },
+
+        /* Pinned: on paper this section sits above the footer, not adrift in
+           the middle of the sheet. */
+        { id: 'h2', type: 'heading', text: 'التوقيعات والاعتماد', pin: 'bottom' },
+
+        {
+          id: 'sign', type: 'grid', palette: 'plain', widths: ['12%', '38%', '12%', '38%'],
+          rows: [
+            { cells: [
+              { text: 'ممثل لجنة التغذية', tone: 'label', accent: true, span: 2, align: 'center' },
+              { text: 'ممثل متعهد الإعاشة', tone: 'label', accent: true, span: 2, align: 'center' },
+            ] },
+            { cells: [lbl('الاسم'), val('committee_rep_name'), lbl('الاسم'), val('caterer_rep_name')] },
+            { cells: [
+              lbl('التوقيع'), { sig: ['committee_signature'], owner: 'admin' },
+              lbl('التوقيع'), { sig: ['caterer_signature'], owner: 'caterer' },
+            ] },
+          ],
+        },
+      ],
+
+      fields: {
+        /* On record against the centre and the caterer. */
+        shakhis:      { label: 'رقم الشاخص',  type: 'text', source: `center.shakhis_${mina ? 'mina' : 'arafat'}`, readonly: true },
+        center_code:  { label: 'رقم المركز',  type: 'text', source: 'center.code',  readonly: true },
+        caterer_name: { label: 'اسم المتعهد', type: 'text', source: 'caterer.name', readonly: true },
+        /* Dated the way a company letter dates itself, not the way a ruled cell does. */
+        receipt_date: { label: 'التاريخ',     type: 'date', source: 'today', calendar: 'gregorian-long', readonly: true },
+
+        /* The office counts what it handed over. */
+        fridge_count: { label: 'عدد الثلاجات المستلمة', type: 'number', owner: 'admin', required: true,
+                        group: 'تفاصيل التسليم' },
+        notes:        { label: 'ملاحظات', type: 'textarea', owner: 'admin', group: 'تفاصيل التسليم' },
+
+        /* Who signs for the company. */
+        committee_rep_name:  { label: 'الاسم',   type: 'text', owner: 'admin', required: true,
+                               group: 'التوقيعات · ممثل لجنة التغذية' },
+        committee_signature: { label: 'التوقيع', type: 'file', owner: 'admin',
+                               group: 'التوقيعات · ممثل لجنة التغذية' },
+
+        /* And who signs for the caterer: named from the registry, signing by
+           hand. That signature is the whole of what this form asks of them. */
+        caterer_rep_name:  { label: 'الاسم',   type: 'text', source: 'caterer.owner_name', readonly: true },
+        caterer_signature: { label: 'التوقيع', type: 'file', owner: 'caterer', required: true },
+      },
+    },
+  };
+}
+
+/* ── مستندات مطلوبة ───────────────────────────────────────
+ *
+ * Four documents the caterer owes the company at fixed points in the season.
+ * Each is already a scored criterion in the evaluation workbook — الخطة
+ * التشغيلية, شهادة الكيروسين, محضر الإتلاف, التقرير الختامي — and until now
+ * nothing in the system knew whether one had arrived, so the marks were given
+ * from memory.
+ *
+ * They are ordinary form templates rather than a module of their own, because
+ * an assignment already carries a due date, a submission time, a status and an
+ * event log, and the portal already shows the caterer what is owed and colours
+ * the late ones. A second section would rebuild all of that to hold a PDF.
+ *
+ * The wording of each request is taken from the pledge the caterer signed, so
+ * what is asked for here and what they undertook are the same sentence.
+ */
+function requiredDocument({ key, title, description, clause, category }) {
+  return {
+    key,
+    title,
+    category: category || 'مستندات مطلوبة',
+    description,
+    /* Nothing to sign — the document is the deliverable. */
+    requiresSignature: false,
+    requiresAttachment: true,
+
+    definition: {
+      blocks: [
+        { id: 'p1', type: 'paragraph', text: 'السادة/ {{caterer_name}}   المحترمين' },
+        { id: 'p2', type: 'paragraph', text: 'تحية طيبة وبعد،،' },
+        { id: 'p3', type: 'paragraph', text: clause },
+        { id: 'p4', type: 'paragraph',
+          text: 'يُرجى رفع المستند بصيغة PDF من خلال هذه الصفحة في موعد أقصاه {{due_date}}، ويُعدّ تاريخ الرفع هو تاريخ التسليم المعتمد.' },
+        { id: 'f1', type: 'fields', style: 'list', keys: ['document_file', 'caterer_note'] },
+      ],
+
+      fields: {
+        caterer_name: { label: 'اسم المتعهد', type: 'text', source: 'caterer.name',  readonly: true },
+        company_name: { label: 'اسم الشركة',  type: 'text', source: 'company.name',  readonly: true },
+        hijri_year:   { label: 'السنة',       type: 'text', source: 'hijri_year',    readonly: true },
+        /* Set by the office when it assigned this copy, and read from there —
+           the form states the same date the portal counts lateness against. */
+        due_date:     { label: 'الموعد النهائي', type: 'date', source: 'assignment.due_at',
+                        calendar: 'gregorian-long', readonly: true },
+
+        /* The whole of what this form asks for. */
+        document_file: { label: 'الملف', type: 'file', owner: 'caterer', required: true,
+                         accept: 'application/pdf' },
+        caterer_note:  { label: 'ملاحظة (اختياري)', type: 'textarea', owner: 'caterer' },
+      },
+    },
+  };
+}
+
+const REQUIRED_DOCUMENTS = [
+  {
+    key: 'doc_ops_plan',
+    title: 'الخطة التشغيلية',
+    description: 'خطة المتعهد لتنفيذ نطاق الأعمال المطلوبة خلال الموسم، تُسلَّم قبل انطلاقه.',
+    clause: 'إلحاقاً بتعهدكم الموقّع مع شركة {{company_name}} لموسم حج عام {{hijri_year}}هـ، وبالإشارة إلى التزامكم بتقديم الخطة التشغيلية لتنفيذ نطاق الأعمال المطلوبة؛ نرجو تزويدنا بالخطة معتمدة من المنشأة.',
+  },
+  {
+    key: 'doc_kerosene_certificate',
+    title: 'شهادات تدريب الكيروسين',
+    description: 'شهادات تأهيل الطهاة على استخدام الكيروسين، بحد أدنى متدرب واحد لكل مطبخ.',
+    clause: 'إلحاقاً بتعهدكم الموقّع مع شركة {{company_name}} لموسم حج عام {{hijri_year}}هـ، وبالإشارة إلى التزامكم بحصول الطهاة على دورة تأهيل وتدريب على استخدام الكيروسين بعدد (10) ساعات تدريبية وبحد أدنى متدرب واحد لكل مطبخ؛ نرجو تزويدنا بشهادات التدريب.',
+  },
+  {
+    key: 'doc_sample_disposal',
+    title: 'محضر إتلاف العينات المرجعية',
+    description: 'توثيق إتلاف العينات المرجعية بعد انتهاء الموسم وبعد موافقة إدارة قطاع التغذية.',
+    clause: 'إلحاقاً بتعهدكم الموقّع مع شركة {{company_name}} لموسم حج عام {{hijri_year}}هـ، وبالإشارة إلى التزامكم بسحب العينات المرجعية وحفظها طيلة أيام الموسم ثم توثيق إتلافها بمحضر بعد أخذ الموافقة؛ نرجو تزويدنا بمحضر الإتلاف.',
+  },
+  {
+    key: 'doc_final_report',
+    title: 'التقرير الختامي',
+    description: 'التقرير المفصّل بتنفيذ الأعمال بعد نهاية الموسم، ويشمل نتائج استبيان رضا الحاج.',
+    clause: 'إلحاقاً بتعهدكم الموقّع مع شركة {{company_name}} لموسم حج عام {{hijri_year}}هـ، وبالإشارة إلى التزامكم بتقديم التقرير المفصّل بتنفيذ الأعمال بعد نهاية الموسم متضمناً نتائج استبيان رضا الحاج؛ نرجو تزويدنا بالتقرير الختامي.',
+  },
+];
+
 export const STANDARD_FORMS = [
   {
     key: 'caterer_pledge',
@@ -373,4 +558,9 @@ export const STANDARD_FORMS = [
 
   readinessMinute('منى'),
   readinessMinute('عرفات'),
+
+  fridgeReceipt('منى'),
+  fridgeReceipt('عرفة'),
+
+  ...REQUIRED_DOCUMENTS.map(requiredDocument),
 ];
