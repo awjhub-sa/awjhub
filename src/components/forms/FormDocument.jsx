@@ -63,6 +63,42 @@ const gregorianLabel = (iso) => {
   return m ? `${Number(m[3])}/${Number(m[2])}/${m[1]}` : iso;
 };
 
+const IMAGE_RE = /\.(png|jpe?g|gif|webp|bmp|avif|heic)(\?|$)/i;
+
+/* Attachments as they read on paper: the pictures laid out, the rest listed. */
+function Attachments({ list, downloadName }) {
+  const files = (Array.isArray(list) ? list : [list]).filter(Boolean);
+  if (!files.length) return null;
+  const pics = files.filter(u => IMAGE_RE.test(String(u)));
+  const docs = files.filter(u => !IMAGE_RE.test(String(u)));
+  return (
+    <span className="block mx-1 mt-1.5 space-y-1.5">
+      {pics.length > 0 && (
+        <span className="nsab-shots grid gap-1.5"
+          style={{ gridTemplateColumns: `repeat(${Math.min(pics.length, 3)}, minmax(0, 1fr))` }}>
+          {pics.map((u, i) => (
+            <span key={i} className="nsab-shot block rounded-lg border border-line overflow-hidden bg-white">
+              <img src={u} alt={`مرفق ${i + 1}`} className="w-full h-auto object-contain block"
+                style={{ maxHeight: 190 }} />
+            </span>
+          ))}
+        </span>
+      )}
+      {docs.length > 0 && (
+        <span className="inline-flex flex-wrap gap-1.5">
+          {docs.map((u, i) => (
+            <a key={i} href={asDownload(u, downloadName)} download
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border border-primary/30
+                         text-[11.5px] font-bold text-primary no-underline">
+              تحميل المرفق {docs.length > 1 ? i + 1 : ''}
+            </a>
+          ))}
+        </span>
+      )}
+    </span>
+  );
+}
+
 function Printed({ value, def, downloadName }) {
   if (value === undefined || value === null || value === '') {
     return <span className="inline-block w-28 border-b border-dotted border-muted/60 mx-1" />;
@@ -70,20 +106,18 @@ function Printed({ value, def, downloadName }) {
   /* An attachment is a file, not a string. Printing `value` put the raw
      storage URL on the page — sixty characters of signed path where a reader
      expected a document. */
-  if (def?.type === 'file') {
-    return (
-      <a
-        href={asDownload(value, downloadName)}
-        download
-        className="inline-flex items-center gap-1.5 mx-1 px-2.5 py-1 rounded-lg border border-primary/30
-                   text-[12px] font-bold text-primary hover:bg-primary/5 transition-colors no-underline"
-      >
-        تحميل الملف
-      </a>
-    );
+  if (def?.type === 'files' || def?.type === 'file') {
+    return <Attachments list={value} downloadName={downloadName} />;
   }
   /* Dates are stored Gregorian and printed Hijri, matching how the paperwork
      reads, unless the template asked for the other calendar. */
+  if (def?.type === 'textarea') {
+    return (
+      <span className="block font-semibold text-ink whitespace-pre-wrap leading-[1.9] break-words">
+        {String(value)}
+      </span>
+    );
+  }
   const text = def?.type === 'bool'  ? (value ? 'نعم' : 'لا')
              : def?.type === 'date'  ? (def.calendar === 'gregorian-long' ? gregorianLong(value)
                                        : def.calendar === 'gregorian' ? gregorianLabel(value)
@@ -104,16 +138,12 @@ function Input({ fieldKey, def, value, error, onChange, onUpload, disabled, widt
      already knows it, or another role filled it before this one saw the form. */
   if (disabled) {
     const owner = fieldOwner(def);
-    /* The office opens the caterer's sheet with the caterer's pen locked, and
-       that must not lock away the document they attached. */
-    if (def?.type === 'file' && value) {
-      return (
-        <a href={asDownload(value, undefined)} download
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-primary/30
-                     text-[12px] font-bold text-primary hover:bg-primary/5 transition-colors">
-          تحميل الملف
-        </a>
-      );
+    /* A blank this role cannot answer is still a blank they must read. The
+       caterer replying to a notice is looking at the photographs of what they
+       are accused of — a locked box saying «مُعبَّأ من بيانات النظام» hid the
+       only part of the sheet that carries the accusation. */
+    if ((def?.type === 'file' || def?.type === 'files') && (Array.isArray(value) ? value.length : value)) {
+      return <Attachments list={value} />;
     }
     return (
       <span
@@ -129,7 +159,10 @@ function Input({ fieldKey, def, value, error, onChange, onUpload, disabled, widt
 
   switch (def.type) {
     case 'textarea':
-      return <textarea rows={3} value={value ?? ''} onChange={e => set(e.target.value)} className={`${base} w-full resize-none`} />;
+      return (
+        <textarea rows={5} value={value ?? ''} onChange={e => set(e.target.value)}
+          className={`${base} w-full resize-y leading-[1.9] block`} />
+      );
     case 'select':
       return (
         <select value={value ?? ''} onChange={e => set(e.target.value)} className={`${base} ${w}`}>
@@ -170,6 +203,34 @@ function Input({ fieldKey, def, value, error, onChange, onUpload, disabled, widt
           )}
         </span>
       );
+    case 'files': {
+      const list = Array.isArray(value) ? value : [];
+      return (
+        <span className="inline-flex flex-wrap items-center gap-2 align-middle">
+          {list.map((u, i) => (
+            <span key={i} className="inline-flex items-center gap-1 pl-1 pr-2 py-1 rounded-lg
+                                     border border-line bg-white text-[11.5px] font-bold text-ink">
+              <a href={asDownload(u, undefined)} download className="text-primary hover:underline">
+                مرفق {i + 1}
+              </a>
+              <button type="button" aria-label="إزالة"
+                onClick={() => set(list.filter((_, j) => j !== i))}
+                className="w-4 h-4 rounded-md text-muted hover:text-red-600 leading-none">×</button>
+            </span>
+          ))}
+          <label className={`${base} cursor-pointer hover:border-primary text-muted text-[12px] py-1.5`}>
+            <input type="file" accept={def.accept} multiple className="hidden"
+              onChange={e => {
+                /* One at a time: each upload resolves on its own, so a failure
+                   halfway through does not lose the ones that worked. */
+                [...(e.target.files || [])].forEach(f => onUpload?.(fieldKey, f));
+                e.target.value = '';
+              }} />
+            + إضافة مرفق
+          </label>
+        </span>
+      );
+    }
     case 'number':
     case 'id':
     case 'phone':
@@ -507,12 +568,14 @@ function Block({ block, fields, mode, as, values, errors, onChange }) {
           <ul className="my-3 space-y-2 pr-5">
             {(block.keys || []).map(key => {
               const def = fields[key] || {};
+              /* Prose and attachments break; a short answer stays inline. */
+              const stacked = ['textarea', 'files', 'file', 'table'].includes(def.type);
               return (
                 <li key={key} className="relative text-[13px] leading-[2.2] text-ink">
                   <span className="absolute -right-4 top-[0.7em] w-1.5 h-1.5 rounded-full bg-ink/70" />
                   <span className="font-medium">{def.label || key}</span>
                   <span className="mx-1">:</span>
-                  {slot(key)}
+                  {stacked ? <span className="block mt-1 mr-0">{slot(key)}</span> : slot(key)}
                   {errors[key] && <span className="text-[10px] text-red-600 mr-2">{errors[key]}</span>}
                 </li>
               );

@@ -148,6 +148,11 @@
   .nsab-sig-img { max-height: 44px !important; }
   /* The @page margin is the margin; the sheet adds none of its own. */
   .nsab-bare { padding: 0 !important; }
+
+  /* A photograph split down the middle by a page break proves nothing. */
+  .nsab-shot  { break-inside: avoid !important; page-break-inside: avoid !important; }
+  .nsab-shots { break-inside: avoid !important; page-break-inside: avoid !important; }
+  .nsab-shot img { max-height: 150px !important; }
 }
 
 /* ── a block pinned to the foot of the sheet ────────────────

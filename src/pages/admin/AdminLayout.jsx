@@ -11,6 +11,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   SquaresFour as LayoutDashboard,
+  Warning,
   Siren,
   Stack as Boxes,
   Gauge,
@@ -44,6 +45,7 @@ import {
 } from '@phosphor-icons/react';
 import { getCaterer } from '../../config/centers.js';
 import UploadToastListener from '../../components/UploadToastListener.jsx';
+import ToastStack from '../../components/ToastStack.jsx';
 import { useBrand } from '../../context/BrandContext.jsx';
 import { formatHijri, toHijriParts } from '../../lib/hijri.js';
 
@@ -78,6 +80,7 @@ const NAV = [
     { to: '/admin/centers',  label: 'المراكز',    icon: MapPinArea },
     { to: '/admin/nationalities', label: 'جنسيات الحجاج', icon: Earth },
     { to: '/admin/forms',    label: 'النماذج',    icon: FileText   },
+    { to: '/admin/violations', label: 'المخالفات', icon: Warning },
     { to: '/admin/evaluations', label: 'التقييمات', icon: Clipboard },
   ]},
 
@@ -675,6 +678,7 @@ export default function AdminLayout() {
 
       {/* Global toast notifications for new readiness uploads */}
       <UploadToastListener />
+      <ToastStack />
 
       <style>{`
         @keyframes badgePulse {

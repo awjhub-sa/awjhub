@@ -408,6 +408,121 @@ const REQUIRED_DOCUMENTS = [
   },
 ];
 
+/* ── محضر مخالفة ──────────────────────────────────────────
+ *
+ * The company states a breach and asks the caterer to answer it. It is the
+ * mirror of the required documents: there the office asks for something and
+ * the caterer supplies it; here the office asserts something and the caterer
+ * responds.
+ *
+ * The office writes the substance — what was breached, where, how serious,
+ * what must be done, with photographs. The caterer writes one thing back: an
+ * account of what they did about it, with photographs of their own. Nothing
+ * else on the sheet is theirs to touch.
+ *
+ * The remedy deadline is the assignment's own due date, so «متى؟» has one
+ * answer that the portal, the lateness figure and the sheet all read from.
+ */
+const violationNotice = () => ({
+  key: 'violation_notice',
+  title: 'محضر مخالفة',
+  category: 'مخالفات',
+  description: 'محضر تُحرّره الإدارة برصد مخالفة على المتعهد، ويردّ عليه بإفادة ومرفقات تُثبت المعالجة.',
+  requiresSignature: true,
+  requiresAttachment: false,
+
+  definition: {
+    /* Its own section on both sides. */
+    kind: 'violation',
+    blocks: [
+      {
+        id: 'head', type: 'grid', palette: 'plain', widths: ['17%', '33%', '17%', '33%'],
+        rows: [
+          { cells: [lbl('رقم المحضر'), val('notice_number'), lbl('التاريخ'), val('notice_date')] },
+          { cells: [lbl('المتعهد'), val('caterer_name'), lbl('المركز'), val('center_code')] },
+        ],
+      },
+
+      { id: 'h1', type: 'heading', text: 'بيانات المخالفة' },
+      {
+        id: 'about', type: 'grid', palette: 'plain', widths: ['17%', '33%', '17%', '33%'],
+        rows: [
+          { cells: [lbl('رقم الشاخص'), val('shakhis'), lbl('تاريخ الرصد'), val('observed_on')] },
+          { cells: [lbl('الموقع'), val('site'), lbl('درجة الخطورة'), val('severity')] },
+        ],
+      },
+
+      { id: 'h2', type: 'heading', text: 'وصف المخالفة' },
+      { id: 'f1', type: 'fields', style: 'list', keys: ['description', 'evidence'] },
+
+      { id: 'p1', type: 'paragraph',
+        text: 'يُرجى معالجة المخالفة المذكورة أعلاه في موعد أقصاه {{remedy_deadline}}، وتزويد الإدارة بإفادة وما يُثبت المعالجة.' },
+
+      { id: 'h4', type: 'heading', text: 'إفادة المتعهد' },
+      { id: 'f3', type: 'fields', style: 'list', keys: ['caterer_statement', 'remedy_evidence'] },
+
+      { id: 'h5', type: 'heading', text: 'التوقيعات', pin: 'bottom' },
+      {
+        id: 'sign', type: 'grid', palette: 'plain', widths: ['12%', '38%', '12%', '38%'],
+        rows: [
+          { cells: [
+            { text: 'ممثل شركة تقديم الخدمة', tone: 'label', accent: true, span: 2, align: 'center' },
+            { text: 'ممثل متعهد الإعاشة', tone: 'label', accent: true, span: 2, align: 'center' },
+          ] },
+          { cells: [lbl('الاسم'), val('company_rep_name'), lbl('الاسم'), val('caterer_rep_name')] },
+          { cells: [
+            lbl('التوقيع'), { sig: ['company_signature'], owner: 'admin' },
+            lbl('التوقيع'), { sig: ['caterer_signature'], owner: 'caterer' },
+          ] },
+        ],
+      },
+    ],
+
+    fields: {
+      /* On record, or on the clock. */
+      notice_number:   { label: 'رقم المحضر',   type: 'text', source: 'assignment.form_number', readonly: true },
+      notice_date:     { label: 'التاريخ',      type: 'date', source: 'today', calendar: 'gregorian-long', readonly: true },
+      caterer_name:    { label: 'المتعهد',      type: 'text', source: 'caterer.name', readonly: true },
+      center_code:     { label: 'المركز',       type: 'text', source: 'center.code',  readonly: true },
+      remedy_deadline: { label: 'مهلة المعالجة', type: 'date', source: 'assignment.due_at',
+                         calendar: 'gregorian-long', readonly: true },
+
+      /* The shakhis is the centre's, and the centre is chosen when the notice
+         is issued — the office does not retype a number the system holds. */
+      shakhis:         { label: 'رقم الشاخص', type: 'text', source: 'center.shakhis', readonly: true },
+
+      /* The substance, and all of it the office's. */
+      observed_on:    { label: 'تاريخ الرصد', type: 'date', owner: 'admin', calendar: 'gregorian',
+                        group: 'بيانات المخالفة' },
+      site:           { label: 'الموقع', type: 'select', owner: 'admin', group: 'بيانات المخالفة',
+                        options: ['منى', 'عرفة', 'المطبخ الرئيسي', 'أثناء النقل'] },
+      severity:       { label: 'درجة الخطورة', type: 'select', owner: 'admin', required: true,
+                        options: ['عالية', 'متوسطة', 'منخفضة'], group: 'بيانات المخالفة' },
+      /* One box, and the whole account of the violation in it. */
+      description:    { label: 'وصف المخالفة', type: 'textarea', owner: 'admin', required: true,
+                        group: 'وصف المخالفة' },
+      evidence:       { label: 'صور المخالفة', type: 'files', owner: 'admin', accept: 'image/*',
+                        group: 'وصف المخالفة' },
+
+      company_rep_name:  { label: 'الاسم', type: 'text', owner: 'admin', required: true,
+                           group: 'التوقيعات · ممثل شركة تقديم الخدمة' },
+      company_signature: { label: 'التوقيع', type: 'file', owner: 'admin',
+                           group: 'التوقيعات · ممثل شركة تقديم الخدمة' },
+
+      /* The caterer's answer, printed with the minute it answers. */
+      caterer_statement: { label: 'إفادة المتعهد بما تم', type: 'textarea', owner: 'caterer', required: true },
+      remedy_evidence:   { label: 'مرفقات تُثبت المعالجة', type: 'files', owner: 'caterer',
+                           accept: 'image/*,application/pdf' },
+
+      /* A word to the office about the minute — never on the minute. Optional
+         by design: a remark nobody has to make is a remark worth reading. */
+      notes:             { label: 'ملاحظات على المحضر', type: 'textarea', owner: 'caterer', aside: true },
+      caterer_rep_name:  { label: 'الاسم', type: 'text', source: 'caterer.owner_name', readonly: true },
+      caterer_signature: { label: 'التوقيع', type: 'file', owner: 'caterer', required: true },
+    },
+  },
+});
+
 export const STANDARD_FORMS = [
   {
     key: 'caterer_pledge',
@@ -563,4 +678,6 @@ export const STANDARD_FORMS = [
   fridgeReceipt('عرفة'),
 
   ...REQUIRED_DOCUMENTS.map(requiredDocument),
+
+  violationNotice(),
 ];

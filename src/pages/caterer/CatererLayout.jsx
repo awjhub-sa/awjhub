@@ -17,12 +17,13 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import {
+import { Warning,
   House, Siren, FileText, SignOut, List, X, Buildings, WarningCircle, Clock,
 } from '@phosphor-icons/react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useBrand } from '../../context/BrandContext.jsx';
 import { db } from '../../lib/db.js';
+import ToastStack from '../../components/ToastStack.jsx';
 
 /* Arabic-Indic, as the rest of the portal counts. */
 const AR = (n) => String(n ?? '').replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
@@ -41,6 +42,7 @@ const NAV = [
   { to: '/caterer/home',    label: 'الرئيسية', Icon: House },
   { to: '/caterer/reports', label: 'البلاغات', Icon: Siren },
   { to: '/caterer/forms',   label: 'النماذج',  Icon: FileText },
+  { to: '/caterer/violations', label: 'المخالفات', Icon: Warning },
 ];
 
 export default function CatererLayout() {
@@ -61,7 +63,7 @@ export default function CatererLayout() {
     let alive = true;
     (async () => {
       if (!catererId) { setLoading(false); return; }
-      const [c, ce, fm, rp] = await Promise.all([
+      const [c, ce, fm, rp, tp] = await Promise.all([
         db.caterers.get(catererId),
         /* Narrowed on purpose — the portal must never request the office's
            internal notes. The identifiers below are added because the ministry
@@ -75,12 +77,15 @@ export default function CatererLayout() {
           'active', 'catererName',
         ] }),
         db.form_assignments.list({ filter: { catererId },
-          columns: ['id', 'status', 'dueAt'] }),
+          columns: ['id', 'status', 'dueAt', 'templateId'] }),
         db.reports.list({ columns: ['id', 'caterer', 'status', 'catererResponse'] }),
+        /* Two columns, to tell a minute from a form. */
+        db.form_templates.list({ columns: ['id', 'category'] }),
       ]);
       if (!alive) return;
       setCaterer(c); setCenters(ce);
-      setForms(fm);
+      const violationTemplates = new Set(tp.filter(t => t.category === 'مخالفات').map(t => t.id));
+      setForms(fm.map(f => ({ ...f, isViolation: violationTemplates.has(f.templateId) })));
       /* Reports carry the caterer by name, not by id — the field app writes
          them before a caterer record is ever looked up. */
       const name = String(c?.name ?? '').trim();
@@ -94,8 +99,11 @@ export default function CatererLayout() {
   const standing = useMemo(() => {
     const ms = (v) => (v ? new Date(v).getTime() : 0);
     const now = Date.now();
-    const due = forms.filter(f => !['submitted', 'accepted'].includes(f.status));
+    const answered = (f) => ['submitted', 'accepted'].includes(f.status);
+    const due = forms.filter(f => !f.isViolation && !answered(f));
     const overdue = due.filter(f => f.dueAt && ms(f.dueAt) < now);
+    const violations = forms.filter(f => f.isViolation && !answered(f));
+    const violationsLate = violations.filter(f => f.dueAt && ms(f.dueAt) < now);
     const open = reports.filter(r => r.status !== 'resolved');
     const unanswered = open.filter(r => !r.catererResponse);
     /* The soonest thing still owed — a count says how many, a date says when. */
@@ -107,6 +115,8 @@ export default function CatererLayout() {
       overdue: overdue.length,
       open: open.length,
       unanswered: unanswered.length,
+      violations: violations.length,
+      violationsLate: violationsLate.length,
       nextDue: next?.dueAt || null,
     };
   }, [forms, reports]);
@@ -175,10 +185,13 @@ export default function CatererLayout() {
                      rather than after arriving. */
                   const n = item.to.endsWith('/forms') ? standing.due
                     : item.to.endsWith('/reports') ? standing.unanswered
+                    : item.to.endsWith('/violations') ? standing.violations
                     : 0;
                   if (!n) return null;
-                  const hot = item.to.endsWith('/forms')
-                    ? standing.overdue > 0
+                  /* A violation past its remedy date is always red — it is the
+                     one number here that carries a consequence. */
+                  const hot = item.to.endsWith('/forms') ? standing.overdue > 0
+                    : item.to.endsWith('/violations') ? true
                     : standing.unanswered > 0;
                   return (
                     <span
@@ -305,6 +318,8 @@ export default function CatererLayout() {
             : <Outlet context={ctx} />}
         </main>
       </div>
+
+      <ToastStack />
     </div>
   );
 }

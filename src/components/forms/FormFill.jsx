@@ -13,6 +13,7 @@ import { useEffect, useMemo, useState } from 'react';
 import FormDocument from './FormDocument.jsx';
 import { useBrand } from '../../context/BrandContext.jsx';
 import { db, uploadFile, serverTimestamp } from '../../lib/db.js';
+import { toast } from '../../lib/toast.js';
 import { toHijriParts } from '../../lib/hijri.js';
 import {
   resolveSources, validateForm, STATUS_META, isOverdue, daysLate, keysOwnedBy,
@@ -22,6 +23,7 @@ import {
   X, FloppyDisk as Save, PaperPlaneTilt, CheckCircle, ArrowUUpLeft,
   Warning, Clock, CircleNotch, Sparkle,
 } from '@phosphor-icons/react';
+
 
 export default function FormFill({
   assignment,
@@ -110,10 +112,19 @@ export default function FormFill({
     setBusy(key);
     try {
       const ext = (value.name.split('.').pop() || 'png').toLowerCase();
-      const url = await uploadFile('forms', `${assignment.id}/${key}.${ext}`, value);
-      setValues(p => ({ ...p, [key]: url }));
+      const many = definition.fields?.[key]?.type === 'files';
+      /* A multi-attachment field must not overwrite itself, so each file gets
+         its own path — a fixed one would leave only the last photo uploaded. */
+      const path = many
+        ? `${assignment.id}/${key}-${Date.now()}-${Math.floor(performance.now() % 1000)}.${ext}`
+        : `${assignment.id}/${key}.${ext}`;
+      const url = await uploadFile('forms', path, value);
+      setValues(p => (many
+        ? { ...p, [key]: [...(Array.isArray(p[key]) ? p[key] : []), url] }
+        : { ...p, [key]: url }));
     } catch (ex) {
       setNotice(`تعذّر رفع الملف: ${ex.message}`);
+      toast.fail('تعذّر رفع الملف', ex.message);
     }
     setBusy(null);
   };
@@ -128,6 +139,7 @@ export default function FormFill({
       await db.form_assignments.update(assignment.id, { data: values, status: 'draft' });
       log('saved');
       setNotice('حُفظت المسودة.');
+      toast.info('حُفظت المسودة', template?.title);
     } catch (ex) { setNotice(ex.message); }
     setBusy(null);
   };
@@ -165,8 +177,9 @@ export default function FormFill({
         ...signatureKeysFor(definition, 'admin'),
       ]);
       const attachments = [...visibleFieldKeys(definition)]
-        .filter(k => definition.fields?.[k]?.type === 'file' && !sigs.has(k));
-      if (!attachments.some(k => values[k])) {
+        .filter(k => ['file', 'files'].includes(definition.fields?.[k]?.type) && !sigs.has(k));
+      const filled = (v) => (Array.isArray(v) ? v.length > 0 : !!v);
+      if (!attachments.some(k => filled(values[k]))) {
         const what = attachments.map(k => definition.fields[k]?.label).filter(Boolean);
         setNotice(what.length ? `أرفق ${what[0]} قبل التسليم.` : 'أرفق الملف المطلوب قبل التسليم.');
         return;
@@ -182,6 +195,8 @@ export default function FormFill({
       });
       log('submitted');
       setNotice('تم التسليم.');
+      toast.ok(`تم تسليم «${template?.title || 'النموذج'}»`,
+        as === 'caterer' ? 'وصل إلى الإدارة وبانتظار المراجعة' : null);
     } catch (ex) { setNotice(ex.message); }
     setBusy(null);
   };
@@ -199,6 +214,8 @@ export default function FormFill({
       });
       log(status === 'accepted' ? 'accepted' : 'returned', note);
       setNotice(status === 'accepted' ? 'قُبل النموذج.' : 'أُعيد للتعديل.');
+      if (status === 'accepted') toast.ok(`قُبل «${template?.title || 'النموذج'}»`, 'أُغلق الطلب');
+      else toast.warn(`أُعيد «${template?.title || 'النموذج'}» للتعديل`, note);
     } catch (ex) { setNotice(ex.message); }
     setBusy(null);
   };
@@ -295,7 +312,7 @@ export default function FormFill({
         </div>
       )}
 
-      <div className="p-4 sm:p-6 flex justify-center">
+      <div className="p-4 sm:p-6 flex flex-col items-center gap-4">
         <FormDocument
           definition={definition}
           mode={readOnly ? 'view' : 'fill'}

@@ -57,6 +57,9 @@ export const FIELD_TYPES = [
   { type: 'multi',    label: 'اختيار متعدد',  width: 'full' },
   { type: 'bool',     label: 'نعم / لا',      width: 'sm'   },
   { type: 'file',     label: 'مرفق',          width: 'full' },
+  /* Several files under one key. A violation is photographed from more than
+     one angle, and a remedy is proved with more than one picture. */
+  { type: 'files',    label: 'مرفقات',        width: 'full' },
   { type: 'table',    label: 'جدول متكرر',    width: 'full' },
 ];
 export const FIELD_META = Object.fromEntries(FIELD_TYPES.map(f => [f.type, f]));
@@ -135,6 +138,9 @@ export const SOURCES = [
   { key: 'center.category',           label: 'فئة المركز' },
   { key: 'center.shakhis_mina',       label: 'الشاخص (منى)' },
   { key: 'center.shakhis_arafat',     label: 'الشاخص (عرفة)' },
+  /* Whichever the centre actually has. A form that does not know which مشعر it
+     is about still has to print a shakhis. */
+  { key: 'center.shakhis',            label: 'الشاخص' },
   { key: 'center.murabba_mina',       label: 'رقم المربع (منى)' },
   { key: 'center.head_name',          label: 'اسم رئيس المركز' },
   { key: 'center.head_phone',         label: 'جوال رئيس المركز' },
@@ -144,6 +150,7 @@ export const SOURCES = [
      answer to «متى؟», and the two would part company the first time one was
      corrected. */
   { key: 'assignment.due_at',         label: 'الموعد النهائي' },
+  { key: 'assignment.form_number',    label: 'رقم المستند' },
   /* The Hajj season is named by the Hijri year it falls in, and Dhul-Hijjah is
      the last month of that year — so today's Umm al-Qura year is the season's
      name for all but the days after it ends, when the next season has already
@@ -238,6 +245,16 @@ export function resolveSources(fields = {}, ctx = {}) {
     if (def.source === 'weekday') { out[key] = AR_WEEKDAYS[new Date().getDay()]; continue; }
     if (def.source === 'hijri_year') { out[key] = String(toHijriParts().y); continue; }
     /* Stored as a timestamp ending 23:59:59; the document wants the day. */
+    if (def.source === 'center.shakhis') {
+      const c = scope.center;
+      const v = c?.shakhisMina || c?.shakhisArafat;
+      if (v) out[key] = v;
+      continue;
+    }
+    if (def.source === 'assignment.form_number') {
+      if (scope.assignment?.formNumber) out[key] = scope.assignment.formNumber;
+      continue;
+    }
     if (def.source === 'assignment.due_at') {
       const due = scope.assignment?.dueAt;
       if (due) out[key] = localISODate(new Date(due));
@@ -307,6 +324,9 @@ export function validateForm(definition, values = {}, { owner } = {}) {
     if (def.type === 'table' && def.required && !(Array.isArray(value) && value.length)) {
       errors[key] = `${def.label || key} — أضف صفاً واحداً على الأقل`;
     }
+    if (def.type === 'files' && def.required && !(Array.isArray(value) && value.length)) {
+      errors[key] = `${def.label || key} مطلوب`;
+    }
   }
 
   /* A token pointing at a field that was deleted prints as a raw {{key}} in the
@@ -351,9 +371,19 @@ export function signatureKeysFor(definition, owner) {
 }
 
 /** Field keys the rendered document actually puts in front of the user. */
+/* Keys the record carries but the document does not print: an answer filed
+   against the sheet rather than written on it. They still validate, still
+   belong to an owner, and still count as attachments. */
+export function asideFieldKeys(definition) {
+  return Object.entries(definition?.fields || {})
+    .filter(([, def]) => def?.aside)
+    .map(([k]) => k);
+}
+
 export function visibleFieldKeys(definition) {
   const { blocks = [] } = definition || {};
   const keys = new Set(tokensIn(blocks));
+  for (const k of asideFieldKeys(definition)) keys.add(k);
   for (const b of blocks) {
     if (b.type === 'fields') (b.keys || []).forEach(k => keys.add(k));
     if (b.type === 'table' && b.key) keys.add(b.key);

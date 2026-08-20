@@ -25,6 +25,7 @@ import { FileText, CheckCircle, WarningCircle, Printer, Eye, Clock } from '@phos
 import PageHeader from '../../components/PageHeader.jsx';
 import { db } from '../../lib/db.js';
 import { STATUS_META, isPrintable } from '../../config/formSchema.js';
+import { LATE, CALM, FORM_STATE, formToneOf } from '../../config/tones.js';
 import FormFill from '../../components/forms/FormFill.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 
@@ -129,11 +130,11 @@ export default function CatererForms() {
                   const st = STATUS_META[a.status] || STATUS_META.pending;
                   const done = isDone(a.status);
                   const overdue = !done && a.dueAt && ms(a.dueAt) < Date.now();
+                  const tone = overdue ? LATE : formToneOf(a.status);
                   return (
                     <tr key={a.id} onClick={() => setOpenId(a.id)}
                       className="hover:bg-background/70 cursor-pointer transition-colors"
-                      style={{ borderInlineStart: `3px solid ${
-                        overdue ? '#DC2626' : done ? '#16A34A' : '#B99A64'}` }}>
+                      style={{ borderInlineStart: `3px solid ${tone.bar}` }}>
                       <td className="px-5 py-3.5 font-bold text-ink text-[14px]">
                         {t?.title || 'نموذج'}
                       </td>
@@ -148,14 +149,12 @@ export default function CatererForms() {
                           <span
                             className="inline-flex items-center gap-1.5 text-[12px] font-black tabular-nums
                                        px-2.5 py-1 rounded-lg border"
-                            style={{
-                              /* Three states, three readings: gone, close, and
-                                 simply booked. */
-                              background: overdue ? 'color-mix(in srgb, #DC2626 10%, #fff)'
-                                : done ? '#fff' : 'color-mix(in srgb, #B99A64 14%, #fff)',
-                              borderColor: overdue ? '#FCA5A5' : done ? 'rgb(var(--c-line))' : '#E0CFA8',
-                              color: overdue ? '#B91C1C' : done ? 'rgb(var(--c-muted))' : '#8A6D2F',
-                            }}
+                            /* Three states, three readings: gone, settled,
+                               and simply booked. */
+                            style={overdue ? { background: LATE.bg, borderColor: LATE.line, color: LATE.ink }
+                              : done ? { background: CALM.bg, borderColor: CALM.line, color: CALM.ink }
+                              : { background: FORM_STATE.pending.bg, borderColor: FORM_STATE.pending.line,
+                                  color: FORM_STATE.pending.ink }}
                           >
                             {overdue
                               ? <WarningCircle size={13} weight="fill" />
@@ -167,14 +166,17 @@ export default function CatererForms() {
                         )}
                       </td>
                       <td className="px-5 py-3.5">
-                        <span className="text-[11.5px] font-black px-2 py-0.5 rounded-full whitespace-nowrap"
-                          style={{ background: `color-mix(in srgb, ${st.color} 14%, #fff)`, color: st.color }}>
+                        <span className="inline-flex items-center gap-1.5 text-[11.5px] font-black px-2.5 py-1
+                                         rounded-full whitespace-nowrap border"
+                          style={{ background: tone.bg, color: tone.ink, borderColor: tone.line }}>
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ background: tone.bar }} />
                           {st.label}
                         </span>
                       </td>
                       <td className="px-5 py-3.5 text-[13px] text-muted whitespace-nowrap tabular-nums">
                         {a.submittedAt
-                          ? <span className="text-success font-bold inline-flex items-center gap-1">
+                          ? <span className="font-black inline-flex items-center gap-1"
+                              style={{ color: FORM_STATE.accepted.ink }}>
                               <CheckCircle size={13} weight="fill" />{day(a.submittedAt)}
                             </span>
                           : '—'}

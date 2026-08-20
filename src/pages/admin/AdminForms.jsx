@@ -8,6 +8,7 @@ import {
   signatureKeysFor,
   keysOwnedBy, resolveSources, fieldOwner,
 } from '../../config/formSchema.js';
+import { LATE, CALM, FORM_STATE, formToneOf, ACTION, actionTone, templateTone } from '../../config/tones.js';
 import FormBuilder from '../../components/forms/FormBuilder.jsx';
 import FormDocument from '../../components/forms/FormDocument.jsx';
 import FormFill from '../../components/forms/FormFill.jsx';
@@ -299,7 +300,7 @@ export default function AdminForms() {
   /* An image cannot be typed into a table cell, so the per-caterer override
      table is offered for everything except the uploads. */
   const perCatererKeys = useMemo(
-    () => adminKeys.filter(k => assign?.template.definition.fields[k]?.type !== 'file'),
+    () => adminKeys.filter(k => !['file', 'files', 'textarea'].includes(assign?.template.definition.fields[k]?.type)),
     [adminKeys, assign],
   );
 
@@ -309,12 +310,18 @@ export default function AdminForms() {
      filed under the template rather than an assignment id. It is the same
      image on every copy the batch produces, which is the point of asking for
      it once here instead of on each form. */
-  const uploadShared = async (key, file) => {
+  const uploadShared = async (key, file, many = false) => {
     setUploading(key);
     try {
       const ext = (file.name.split('.').pop() || 'png').toLowerCase();
-      const url = await uploadFile('forms', `templates/${assign.template.id}/${key}.${ext}`, file);
-      setAssign(p => ({ ...p, shared: { ...p.shared, [key]: url } }));
+      /* A set of photographs must not overwrite itself into one. */
+      const path = many
+        ? `templates/${assign.template.id}/${key}-${Date.now()}-${Math.floor(performance.now() % 1000)}.${ext}`
+        : `templates/${assign.template.id}/${key}.${ext}`;
+      const url = await uploadFile('forms', path, file);
+      setAssign(p => (many
+        ? { ...p, shared: { ...p.shared, [key]: [...(p.shared[key] || []), url] } }
+        : { ...p, shared: { ...p.shared, [key]: url } }));
     } catch (e) {
       setNotice(`تعذّر رفع الملف: ${e.message}`);
     } finally {
@@ -644,16 +651,25 @@ export default function AdminForms() {
               const byAdmin = keysOwnedBy(def, 'admin').length;
               const byCat   = keysOwnedBy(def, 'caterer').length;
               const count = seasonAssignments.filter(a => a.templateId === t.id).length;
+              const hue = templateTone(t.key || t.id);
               return (
                 <div key={t.id}
-                  className="group/card bg-white rounded-2xl border border-line p-4 flex flex-col gap-3 hover:shadow-[0_6px_24px_rgb(var(--c-primary)/0.14)] transition-shadow">
+                  className="group/card bg-white rounded-2xl border overflow-hidden flex flex-col
+                             transition-shadow hover:shadow-[0_8px_28px_rgb(var(--c-ink)/0.12)]"
+                  style={{ borderColor: hue.line }}>
+                  {/* The spine. Fixed to the template's key, so the form you
+                      reached for last week is in the same colour today. */}
+                  <span className="block h-1.5 flex-shrink-0"
+                    style={{ background: `linear-gradient(90deg, ${hue.bar}, ${hue.ink})` }} />
+                  <div className="p-4 flex flex-col gap-3 flex-1">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <h3 className="font-bold text-ink text-sm leading-snug">{t.title}</h3>
                       {t.description && <p className="text-[11px] text-muted mt-1 line-clamp-2">{t.description}</p>}
                     </div>
                     {t.isStandard && (
-                      <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-accent/10 text-accent-600 flex-shrink-0"
+                      <span className="flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full flex-shrink-0 border"
+                        style={{ background: hue.bg, color: hue.ink, borderColor: hue.line }}
                         title="نموذج جاهز — محمي من الحذف والتعديل">
                         <Lock size={10} weight="fill" /> جاهز
                       </span>
@@ -661,7 +677,12 @@ export default function AdminForms() {
                   </div>
 
                   <div className="flex flex-wrap gap-1.5 text-[10px]">
-                    {t.category && <Tag>{t.category}</Tag>}
+                    {t.category && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full font-black border"
+                        style={{ background: hue.bg, color: hue.ink, borderColor: hue.line }}>
+                        {t.category}
+                      </span>
+                    )}
                     {auto > 0    && <Tag tone="accent">{auto} تلقائي</Tag>}
                     {byAdmin > 0 && <Tag tone="primary">{byAdmin} تعبّيه الإدارة</Tag>}
                     {byCat > 0
@@ -673,17 +694,18 @@ export default function AdminForms() {
                   {/* A library form offers use and copy; only a template the
                       customer owns offers edit and delete. */}
                   <div className="flex items-center gap-1.5 mt-auto pt-1 flex-wrap">
-                    <Action onClick={() => setPreview(t)} Icon={Eye}>معاينة</Action>
-                    <Action onClick={() => openAssign(t)} Icon={PaperPlaneTilt} tone="primary">إسناد</Action>
+                    <Action onClick={() => setPreview(t)} Icon={Eye} tone="view">معاينة</Action>
+                    <Action onClick={() => openAssign(t)} Icon={PaperPlaneTilt} tone="assign">إسناد</Action>
                     {t.isStandard ? (
-                      <Action onClick={() => duplicate(t)} Icon={Copy}>نسخة قابلة للتعديل</Action>
+                      <Action onClick={() => duplicate(t)} Icon={Copy} tone="copy">نسخة قابلة للتعديل</Action>
                     ) : (
                       <>
-                        <Action onClick={() => openEdit(t)} Icon={Pencil}>تعديل</Action>
-                        <Action onClick={() => duplicate(t)} Icon={Copy}>نسخ</Action>
+                        <Action onClick={() => openEdit(t)} Icon={Pencil} tone="edit">تعديل</Action>
+                        <Action onClick={() => duplicate(t)} Icon={Copy} tone="copy">نسخ</Action>
                         <Action onClick={() => removeTemplate(t)} Icon={Trash2} tone="danger">حذف</Action>
                       </>
                     )}
+                  </div>
                   </div>
                 </div>
               );
@@ -762,15 +784,20 @@ export default function AdminForms() {
                 {visibleAssignments.map(a => {
                   const meta = STATUS_META[a.status] || STATUS_META.pending;
                   const late = isOverdue(a) && a.status !== 'accepted';
+                  const tone = late ? LATE : formToneOf(a.status);
                   return (
-                    <tr key={a.id} className="hover:bg-background transition-colors">
+                    <tr key={a.id} className="hover:bg-background transition-colors"
+                      style={{ borderInlineStart: `3px solid ${tone.bar}` }}>
                       <td className="px-4 py-3 text-xs text-muted" dir="ltr">{a.formNumber}</td>
                       <td className="px-4 py-3 text-xs text-ink font-medium">{templateById[a.templateId]?.title || '—'}</td>
                       <td className="px-4 py-3 text-xs text-ink max-w-[200px]">{catererById[a.catererId]?.name || '—'}</td>
                       <td className="px-4 py-3 text-xs text-muted">{centerById[a.centerId]?.code || '—'}</td>
                       <td className="px-4 py-3 text-xs">
                         {a.dueAt ? (
-                          <span className={late ? 'text-red-600 font-bold' : 'text-muted'} dir="ltr">
+                          <span className="inline-block px-2 py-1 rounded-lg border font-black tabular-nums" dir="ltr"
+                            style={late
+                              ? { background: LATE.bg, color: LATE.ink, borderColor: LATE.line }
+                              : { background: CALM.bg, color: CALM.ink, borderColor: CALM.line }}>
                             {new Date(a.dueAt).toISOString().slice(0, 10)}
                           </span>
                         ) : <span className="text-muted/40">—</span>}
@@ -782,7 +809,8 @@ export default function AdminForms() {
                           doing the subtraction in your head. */}
                       <td className="px-4 py-3 text-xs">
                         {a.submittedAt ? (
-                          <span className="inline-flex items-center gap-1 font-bold text-[#16A34A] whitespace-nowrap" dir="ltr">
+                          <span className="inline-flex items-center gap-1 font-black whitespace-nowrap" dir="ltr"
+                            style={{ color: FORM_STATE.accepted.ink }}>
                             <CheckCircle size={12} weight="fill" />
                             {new Date(a.submittedAt).toISOString().slice(0, 10)}
                           </span>
@@ -792,12 +820,14 @@ export default function AdminForms() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="inline-flex items-center text-[11px] font-bold px-2.5 py-1 rounded-full text-white whitespace-nowrap"
-                            style={{ background: `linear-gradient(135deg, ${meta.color}, ${meta.color}DD)` }}>
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-black px-2.5 py-1
+                                           rounded-full whitespace-nowrap border"
+                            style={{ background: tone.bg, color: tone.ink, borderColor: tone.line }}>
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ background: tone.bar }} />
                             {meta.label}
                           </span>
                           {late && (
-                            <span className="text-[10px] font-bold text-red-600 whitespace-nowrap">
+                            <span className="text-[10px] font-black whitespace-nowrap" style={{ color: LATE.ink }}>
                               متأخر {daysLate(a)} يوم
                             </span>
                           )}
@@ -805,7 +835,7 @@ export default function AdminForms() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5">
-                          <Action onClick={() => setOpenId(a.id)} Icon={Eye} tone="primary">
+                          <Action onClick={() => setOpenId(a.id)} Icon={Eye} tone="view">
                             {['submitted'].includes(a.status) ? 'مراجعة' : 'فتح'}
                           </Action>
                           {/* Offered from submission onward, and to both
@@ -815,7 +845,7 @@ export default function AdminForms() {
                           {isPrintable(a.status) && (
                             <Action
                               onClick={() => window.open(`/forms/print/${a.id}`, '_blank')}
-                              Icon={Printer}
+                              Icon={Printer} tone="print"
                             >
                               طباعة
                             </Action>
@@ -830,11 +860,12 @@ export default function AdminForms() {
                               <a
                                 href={asDownload(att.url, att.filename)}
                                 download={att.filename}
-                                className="flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg border
-                                           text-primary border-primary/20 hover:bg-primary hover:border-primary
-                                           hover:text-white transition-all"
+                                style={{ background: ACTION.attach.bg, color: ACTION.attach.ink,
+                                         borderColor: ACTION.attach.line }}
+                                className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg border
+                                           transition-colors hover:brightness-95"
                               >
-                                <DownloadSimple size={11} /> المرفق
+                                <DownloadSimple size={11} weight="bold" /> المرفق
                               </a>
                             );
                           })()}
@@ -929,7 +960,44 @@ export default function AdminForms() {
                         const def = assign.template.definition.fields[key] || {};
                         return (
                           <Field key={key} label={def.label || key} required={def.required}>
-                            {def.type === 'file' ? (
+                            {def.type === 'files' ? (
+                              <div className="flex flex-wrap items-center gap-2">
+                                {(assign.shared[key] || []).map((u, i) => (
+                                  <span key={i} className="inline-flex items-center gap-1.5 pl-1 pr-2 py-1 rounded-lg
+                                                           border border-line bg-white">
+                                    <img src={u} alt="" className="h-8 w-8 object-cover rounded" />
+                                    <button type="button" aria-label="إزالة"
+                                      onClick={() => setAssign(p => ({
+                                        ...p,
+                                        shared: { ...p.shared, [key]: (p.shared[key] || []).filter((_, j) => j !== i) },
+                                      }))}
+                                      className="w-4 h-4 rounded text-muted hover:text-red-600 leading-none">×</button>
+                                  </span>
+                                ))}
+                                <label className={`${inputCls} w-auto cursor-pointer text-muted flex items-center text-[12.5px]`}>
+                                  <input type="file" accept={def.accept || 'image/*'} multiple className="hidden"
+                                    onChange={e => {
+                                      [...(e.target.files || [])].forEach(f => uploadShared(key, f, true));
+                                      e.target.value = '';
+                                    }} />
+                                  {uploading === key ? 'جارٍ الرفع…' : '+ إضافة صورة'}
+                                </label>
+                              </div>
+                            ) : def.type === 'textarea' ? (
+                              <textarea rows={4}
+                                value={assign.shared[key] ?? ''}
+                                onChange={e => setAssign(p => ({ ...p, shared: { ...p.shared, [key]: e.target.value } }))}
+                                placeholder="اكتب هنا…"
+                                className={`${inputCls} resize-y leading-relaxed`} />
+                            ) : def.type === 'select' ? (
+                              <select
+                                value={assign.shared[key] ?? ''}
+                                onChange={e => setAssign(p => ({ ...p, shared: { ...p.shared, [key]: e.target.value } }))}
+                                className={inputCls}>
+                                <option value="">اختر</option>
+                                {(def.options || []).map(o => <option key={o} value={o}>{o}</option>)}
+                              </select>
+                            ) : def.type === 'file' ? (
                               <div className="flex items-center gap-3">
                                 {assign.shared[key] && (
                                   <img src={assign.shared[key]} alt=""
@@ -1190,15 +1258,16 @@ const Tag = ({ children, tone }) => (
 );
 
 function Action({ onClick, Icon, tone, children }) {
-  const cls = tone === 'danger'
-    ? 'text-red-500 border-red-200 hover:bg-red-500 hover:border-red-500 hover:text-white'
-    : tone === 'primary'
-      ? 'text-primary border-primary/20 hover:bg-primary hover:border-primary hover:text-white'
-      : 'text-muted border-line hover:border-primary/40 hover:text-primary';
+  const t = actionTone(tone);
   return (
     <button onClick={onClick}
-      className={`flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg border transition-all ${cls}`}>
-      <Icon size={11} /> {children}
+      onMouseEnter={e => { e.currentTarget.style.background = t.ink; e.currentTarget.style.color = '#fff';
+                           e.currentTarget.style.borderColor = t.ink; }}
+      onMouseLeave={e => { e.currentTarget.style.background = t.bg; e.currentTarget.style.color = t.ink;
+                           e.currentTarget.style.borderColor = t.line; }}
+      style={{ background: t.bg, color: t.ink, borderColor: t.line }}
+      className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg border transition-colors">
+      <Icon size={11} weight="bold" /> {children}
     </button>
   );
 }

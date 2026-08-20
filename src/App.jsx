@@ -29,6 +29,7 @@ import CatererLayout       from './pages/caterer/CatererLayout';
 import CatererHome         from './pages/caterer/CatererHome';
 import CatererReports      from './pages/caterer/CatererReports';
 import CatererForms        from './pages/caterer/CatererForms';
+import CatererViolations   from './pages/caterer/CatererViolations';
 import AdminLayout         from './pages/admin/AdminLayout';
 import AdminDashboard      from './pages/admin/AdminDashboard';
 import AdminReports        from './pages/admin/AdminReports';
@@ -39,6 +40,7 @@ import AdminCenters        from './pages/admin/AdminCenters';
 import AdminNationalities  from './pages/admin/AdminNationalities';
 import AdminEvaluations    from './pages/admin/AdminEvaluations';
 import AdminForms          from './pages/admin/AdminForms';
+import AdminViolations     from './pages/admin/AdminViolations';
 import AdminBrand          from './pages/admin/AdminBrand';
 import AdminDrill          from './pages/admin/AdminDrill';
 import AdminReportsCenter  from './pages/admin/AdminReportsCenter';
@@ -146,6 +148,7 @@ export default function App() {
           <Route path="home"    element={<CatererHome />} />
           <Route path="reports" element={<CatererReports />} />
           <Route path="forms"   element={<CatererForms />} />
+          <Route path="violations" element={<CatererViolations />} />
         </Route>
 
         {/* Admin Routes */}
@@ -165,6 +168,7 @@ export default function App() {
           <Route path="evaluations"   element={<AdminEvaluations />} />
           <Route path="caterers"      element={<AdminCaterers />} />
           <Route path="forms"         element={<AdminForms />} />
+          <Route path="violations"    element={<AdminViolations />} />
           <Route path="observers"     element={<AdminObservers />} />
           <Route path="supervisors"   element={<AdminSupervisors />} />
           {/* The two roles used to share one screen behind a filter. */}
