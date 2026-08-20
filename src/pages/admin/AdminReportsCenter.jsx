@@ -8,6 +8,8 @@ import {
   stashReportRequest, pruneReportRequests,
 } from '../../lib/reportQuery.js';
 import PageHeader from '../../components/PageHeader.jsx';
+import { seasonLabel } from '../../lib/hijri.js';
+import DataTable from '../../components/DataTable.jsx';
 import {
   FileArrowDown, ArrowSquareOut, MagnifyingGlass as Search, X, Warning,
   Columns, Funnel, Table as TableIcon, CalendarBlank, ListChecks,
@@ -353,7 +355,7 @@ export default function AdminReportsCenter() {
             <Field label="الموسم">
               <select value={filters.season} onChange={e => setFilters(f => ({ ...f, season: e.target.value }))} className={inputCls}>
                 <option value="">كل المواسم</option>
-                {seasons.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                {seasons.map(s => <option key={s.id} value={s.id}>{seasonLabel(s)}</option>)}
               </select>
             </Field>
           )}
@@ -516,7 +518,7 @@ export default function AdminReportsCenter() {
           </div>
         )}
 
-        <div className="overflow-x-auto max-h-[520px] overflow-y-auto mt-3">
+        <DataTable className="max-h-[520px] overflow-y-auto mt-3">
           <table className="w-full text-xs">
             <thead className="text-muted border-b border-line sticky top-0 z-10"
               style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 60%)' }}>
@@ -554,7 +556,7 @@ export default function AdminReportsCenter() {
               ))}
             </tbody>
           </table>
-        </div>
+        </DataTable>
 
               </section>
     </div>

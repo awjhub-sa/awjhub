@@ -28,6 +28,7 @@ import {
 import PageHeader from '../../components/PageHeader.jsx';
 import DetailDrawer from '../../components/DetailDrawer.jsx';
 import { db } from '../../lib/db.js';
+import DataTable from '../../components/DataTable.jsx';
 import {
   reportType, severityOf, reportStatus, timeAgo, fullDate, HOLY_SITE_LABEL,
 } from '../../config/fieldRecords.js';
@@ -123,7 +124,7 @@ export default function CatererReports() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <DataTable>
             <table className="w-full text-sm">
               <thead className="text-muted text-[12.5px] bg-background border-b border-line">
                 <tr>
@@ -185,7 +186,7 @@ export default function CatererReports() {
                 })}
               </tbody>
             </table>
-          </div>
+          </DataTable>
         )}
       </section>
 

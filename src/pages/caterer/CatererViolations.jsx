@@ -21,7 +21,8 @@ import { daysLate } from '../../config/formSchema.js';
 import FormFill from '../../components/forms/FormFill.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import { toast } from '../../lib/toast.js';
-import { SEVERITY, STATE, stateOf, LATE, ATTACH, NOTE, extOf } from '../../config/tones.js';
+import { ACTION, SEVERITY, STATE, stateOf, LATE, ATTACH, NOTE, extOf } from '../../config/tones.js';
+import DataTable from '../../components/DataTable.jsx';
 
 /* The photographs the office attached, as files rather than as a view. Reading
    them inside the sheet is not the same as having them: an answer often has to
@@ -199,7 +200,7 @@ export default function CatererViolations() {
         </section>
       ) : (
         <section className="bg-white rounded-2xl border border-line overflow-hidden">
-          <div className="overflow-x-auto">
+          <DataTable>
             <table className="w-full text-[13.5px]">
               <thead className="text-muted text-[12px] border-b border-line bg-bg">
                 <tr>
@@ -302,15 +303,17 @@ export default function CatererViolations() {
                         <div className="flex items-center gap-1.5">
                           <button
                             onClick={(e) => { e.stopPropagation(); setOpenId(a.id); }}
-                            className="inline-flex items-center gap-1.5 text-[12.5px] font-bold px-2.5 py-1.5 rounded-lg
-                                       border border-primary/25 text-primary hover:bg-primary/5 transition-colors">
+                            style={{ background: ACTION.view.bg, color: ACTION.view.ink, borderColor: ACTION.view.line }}
+                            className="inline-flex items-center gap-1.5 text-[12.5px] font-black px-2.5 py-1.5 rounded-lg
+                                       border transition-colors hover:brightness-95">
                             <Eye size={14} weight="bold" />
                             {done ? 'عرض' : 'الردّ'}
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); window.open(`/forms/print/${a.id}`, '_blank'); }}
-                            className="inline-flex items-center gap-1.5 text-[12.5px] font-bold px-2.5 py-1.5 rounded-lg
-                                       border border-line text-muted hover:border-primary/40 hover:text-primary transition-colors">
+                            style={{ background: ACTION.print.bg, color: ACTION.print.ink, borderColor: ACTION.print.line }}
+                            className="inline-flex items-center gap-1.5 text-[12.5px] font-black px-2.5 py-1.5 rounded-lg
+                                       border transition-colors hover:brightness-95">
                             <Printer size={14} weight="bold" />
                             طباعة
                           </button>
@@ -321,7 +324,7 @@ export default function CatererViolations() {
                 })}
               </tbody>
             </table>
-          </div>
+          </DataTable>
         </section>
       )}
 

@@ -25,9 +25,10 @@ import { FileText, CheckCircle, WarningCircle, Printer, Eye, Clock } from '@phos
 import PageHeader from '../../components/PageHeader.jsx';
 import { db } from '../../lib/db.js';
 import { STATUS_META, isPrintable } from '../../config/formSchema.js';
-import { LATE, CALM, FORM_STATE, formToneOf } from '../../config/tones.js';
+import { ACTION, LATE, CALM, FORM_STATE, formToneOf } from '../../config/tones.js';
 import FormFill from '../../components/forms/FormFill.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
+import DataTable from '../../components/DataTable.jsx';
 
 const AR = (n) => String(n ?? '').replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
 const ms = (v) => (v?.toMillis?.() ?? (v ? new Date(v).getTime() : 0));
@@ -111,7 +112,7 @@ export default function CatererForms() {
             <p className="text-[15px] font-black text-ink">لا نماذج مسنَدة إليك</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <DataTable>
             <table className="w-full text-sm">
               <thead className="text-muted text-[12.5px] bg-background border-b border-line">
                 <tr>
@@ -191,8 +192,9 @@ export default function CatererForms() {
                           <button
                             onClick={(e) => { e.stopPropagation(); setOpenId(a.id); }}
                             title="فتح النموذج"
-                            className="inline-flex items-center gap-1.5 text-[12.5px] font-bold px-2.5 py-1.5 rounded-lg
-                                       border border-primary/25 text-primary hover:bg-primary/5 transition-colors">
+                            style={{ background: ACTION.view.bg, color: ACTION.view.ink, borderColor: ACTION.view.line }}
+                            className="inline-flex items-center gap-1.5 text-[12.5px] font-black px-2.5 py-1.5 rounded-lg
+                                       border transition-colors hover:brightness-95">
                             <Eye size={14} weight="bold" />
                             فتح
                           </button>
@@ -200,8 +202,9 @@ export default function CatererForms() {
                             <button
                               onClick={(e) => { e.stopPropagation(); window.open(`/forms/print/${a.id}`, '_blank'); }}
                               title="طباعة النموذج"
-                              className="inline-flex items-center gap-1.5 text-[12.5px] font-bold px-2.5 py-1.5 rounded-lg
-                                         border border-line text-muted hover:border-primary/40 hover:text-primary transition-colors">
+                              style={{ background: ACTION.print.bg, color: ACTION.print.ink, borderColor: ACTION.print.line }}
+                            className="inline-flex items-center gap-1.5 text-[12.5px] font-black px-2.5 py-1.5 rounded-lg
+                                       border transition-colors hover:brightness-95">
                               <Printer size={14} weight="bold" />
                               طباعة
                             </button>
@@ -213,7 +216,7 @@ export default function CatererForms() {
                 })}
               </tbody>
             </table>
-          </div>
+          </DataTable>
         )}
       </section>
 

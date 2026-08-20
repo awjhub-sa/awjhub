@@ -20,6 +20,7 @@ import {
   Lock,
 } from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
+import DataTable from '../../components/DataTable.jsx';
 
 /* Create the staff/admin account end-to-end:
    1. Save the current admin's auth tokens so we can restore the session
@@ -468,7 +469,7 @@ export default function AdminStaff() {
             </div>
           )}
 
-          <div className="overflow-x-auto">
+          <DataTable>
             <table className="w-full text-sm">
               <thead className="text-muted text-xs border-b border-line"
                 style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 60%)' }}>
@@ -555,7 +556,7 @@ export default function AdminStaff() {
                 })}
               </tbody>
             </table>
-          </div>
+          </DataTable>
         </section>
       </div>
 

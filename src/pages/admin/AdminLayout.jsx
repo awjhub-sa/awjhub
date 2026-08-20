@@ -7,6 +7,7 @@ import {
   subscribe as wsSubscribe, getPins as wsGetPins, togglePin as wsTogglePin,
 } from '../../lib/workspace.js';
 import { db } from '../../lib/db.js';
+import { useSectionAlerts, groupAlert, rowTime } from '../../lib/sectionAlerts.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -124,7 +125,32 @@ const iconBox = (isActive) => ({
   boxShadow: isActive ? 'inset 0 1px 0 rgb(255 255 255 / 0.16)' : 'none',
 });
 
-function NavItem({ item, idx, onNavigate, pendingCount, nested }) {
+/* One badge, three readings: how many, whether any of it is new, and — by
+   colour — whether it is work owed or merely something that arrived. Gold for
+   uploads you have not looked at, red for a queue with your name on it, and
+   a ring only while it is still unseen. */
+function Badge({ alert }) {
+  if (!alert) return null;
+  const owed = alert.kind !== 'new';
+  const bg = alert.fresh ? (owed ? '#DC2626' : 'rgb(var(--c-accent))') : 'rgba(255,255,255,0.16)';
+  const fg = alert.fresh ? (owed ? '#fff' : 'rgb(var(--c-primary-900))') : 'rgba(255,255,255,0.82)';
+  return (
+    <motion.span
+      initial={{ scale: 0 }}
+      animate={{ scale: 1 }}
+      title={owed ? 'بانتظار مراجعتك' : 'وصل ولم تطّلع عليه'}
+      className="text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[19px] text-center tabular-nums flex-shrink-0"
+      style={{
+        background: bg, color: fg,
+        boxShadow: alert.fresh ? `0 0 0 3px ${owed ? 'rgb(220 38 38 / 0.22)' : 'rgb(var(--c-accent) / 0.22)'}` : 'none',
+      }}
+    >
+      {alert.n > 99 ? '99+' : alert.n}
+    </motion.span>
+  );
+}
+
+function NavItem({ item, idx, onNavigate, alerts, nested }) {
   const { to, label, icon: Icon } = item;
   return (
     <NavLink
@@ -164,17 +190,9 @@ function NavItem({ item, idx, onNavigate, pendingCount, nested }) {
 
           <span className={`flex-1 ${nested ? 'text-[12px]' : 'text-[13px]'}`}>{label}</span>
 
-          {/* Reports carries what is still pending — the one count that belongs
-              beside a destination rather than in the bell. */}
-          {to === '/admin/reports' && pendingCount > 0 && (
-            <motion.span
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center"
-            >
-              {pendingCount > 99 ? '99+' : pendingCount}
-            </motion.span>
-          )}
+          {/* Whatever this section is holding. The bell keeps the feed; this
+              keeps the count, beside the door it belongs to. */}
+          <Badge alert={alerts?.[to]} />
 
           {isActive && (
             <span aria-hidden className="absolute inset-y-2 right-0 w-[3px] rounded-full"
@@ -269,9 +287,13 @@ function HeaderStat({ count, label, Icon, onClick }) {
   );
 }
 
-function NavGroup({ item, idx, openGroups, toggle, onNavigate, pendingCount }) {
+function NavGroup({ item, idx, openGroups, toggle, onNavigate, alerts }) {
   const { key, label, icon: Icon, children } = item;
   const location = useLocation();
+  /* Collapsed, a group is a lid. Without this the two counts that matter most
+     — a form filed, a violation answered — sit under «إدارة المتعهدين» and are
+     invisible until someone opens it. */
+  const rollup = groupAlert(alerts || {}, children);
   /* A group holding the current page stays open regardless of what the admin
      last collapsed — otherwise the sidebar hides where you are. */
   const hasActive = children.some(c => location.pathname.startsWith(c.to));
@@ -299,6 +321,7 @@ function NavGroup({ item, idx, openGroups, toggle, onNavigate, pendingCount }) {
         </motion.div>
 
         <span className="flex-1 text-[13px] text-right">{label}</span>
+        {!expanded && <Badge alert={rollup} />}
         <CaretDown size={11} weight="bold"
           className={`opacity-50 flex-shrink-0 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
       </button>
@@ -317,7 +340,7 @@ function NavGroup({ item, idx, openGroups, toggle, onNavigate, pendingCount }) {
             <div className="mr-5 pr-3 my-0.5 space-y-0.5 border-r border-white/12">
               {children.map((child, i) => (
                 <NavItem key={child.to} item={child} idx={i} nested
-                  onNavigate={onNavigate} pendingCount={pendingCount} />
+                  onNavigate={onNavigate} alerts={alerts} />
               ))}
             </div>
           </motion.div>
@@ -343,7 +366,7 @@ export default function AdminLayout() {
      sidebar and by the tab strip, so they are resolved once here. */
   const pins = useSyncExternalStore(wsSubscribe, wsGetPins);
   const labelFor = useCallback((path) => LABEL_BY_PATH[path] || null, []);
-  const [pendingCount, setPendingCount] = useState(0);
+  const { alerts, see } = useSectionAlerts();
   const [newCount,     setNewCount]     = useState(0);
   const [logisticsCount, setLogisticsCount] = useState(0);
   const [today,        setToday]        = useState(() => new Date());
@@ -355,13 +378,6 @@ export default function AdminLayout() {
   const [lastSeen,     setLastSeen]     = useState(
     () => Number(localStorage.getItem('notif_last_seen') || 0)
   );
-
-  /* Reports sidebar badge */
-  useEffect(() => {
-    return db.reports.subscribe(rows =>
-      setPendingCount(rows.filter(r => (r.status || 'pending') === 'pending').length)
-    );
-  }, []);
 
   /* Header figures: what an operations lead checks without being asked. */
   useEffect(() => db.logistics_requests.subscribe(rows =>
@@ -381,12 +397,16 @@ export default function AdminLayout() {
     const unsubs = NOTIF_COLS.map(col => {
       counts[col] = 0;
       return db[col].subscribe(rows => {
-        counts[col] = rows.filter(d => (d.timestamp?.toMillis?.() ?? 0) > lastSeen).length;
+        counts[col] = rows.filter(d => rowTime(d) > lastSeen).length;
         setNewCount(Object.values(counts).reduce((a, b) => a + b, 0));
       });
     });
     return () => unsubs.forEach(u => u());
   }, [lastSeen]);
+
+  /* Opening a section is what «seen» means. For a queue this only calms the
+     colour; for a feed of uploads it clears the count. */
+  useEffect(() => { see(location.pathname); }, [location.pathname, see]);
 
   /* Reset badge on notifications page */
   useEffect(() => {
@@ -443,7 +463,7 @@ export default function AdminLayout() {
               .map((to, i) => (
                 <NavItem key={`pin-${to}`} idx={i} nested
                   item={{ to, label: LABEL_BY_PATH[to], icon: PushPin }}
-                  onNavigate={() => setOpen(false)} pendingCount={pendingCount} />
+                  onNavigate={() => setOpen(false)} alerts={alerts} />
               ))}
           </div>
         )}
@@ -451,9 +471,9 @@ export default function AdminLayout() {
         {NAV.map((item, idx) =>
           item.children
             ? <NavGroup key={item.key} item={item} idx={idx} openGroups={openGroups}
-                toggle={toggleGroup} onNavigate={() => setOpen(false)} pendingCount={pendingCount} />
+                toggle={toggleGroup} onNavigate={() => setOpen(false)} alerts={alerts} />
             : <NavItem key={item.to} item={item} idx={idx}
-                onNavigate={() => setOpen(false)} pendingCount={pendingCount} />,
+                onNavigate={() => setOpen(false)} alerts={alerts} />,
         )}
       </nav>
 
@@ -620,7 +640,7 @@ export default function AdminLayout() {
               them. Two counts an operations lead checks first thing, each a
               shortcut to the screen that clears it. */}
           <div className="relative flex-1 hidden md:flex items-center justify-center gap-2.5">
-            <HeaderStat count={pendingCount}   label="بلاغ معلّق"  Icon={Siren}
+            <HeaderStat count={alerts['/admin/reports']?.n || 0} label="بلاغ معلّق"  Icon={Siren}
               onClick={() => navigate('/admin/reports')} />
             <HeaderStat count={logisticsCount} label="إسناد معلّق" Icon={Boxes}
               onClick={() => navigate('/admin/logistics')} />

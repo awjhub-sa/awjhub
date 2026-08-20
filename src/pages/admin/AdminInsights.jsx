@@ -28,6 +28,7 @@ import {
 import { compareCenters } from '../../lib/reportQuery.js';
 import { MINA_SECTIONS } from '../../config/minaQuestions.js';
 import { ARAFAT_SECTIONS } from '../../config/arafatQuestions.js';
+import DataTable from '../../components/DataTable.jsx';
 
 const NAVY = 'rgb(var(--c-primary))';
 const GOLD = 'rgb(var(--c-accent-600))';
@@ -559,7 +560,7 @@ function Scorecards({ rows }) {
   if (!shown.length) return <Empty label="لا توجد تقييمات كافية لحساب الأداء" />;
 
   return (
-    <div className="overflow-x-auto -m-1 p-1">
+    <DataTable className="-m-1 p-1">
       <table className="w-full text-[11px]">
         <thead>
           <tr className="text-muted border-b border-line">
@@ -613,6 +614,6 @@ function Scorecards({ rows }) {
           })}
         </tbody>
       </table>
-    </div>
+    </DataTable>
   );
 }

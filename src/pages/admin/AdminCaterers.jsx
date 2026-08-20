@@ -24,6 +24,8 @@ import PageHeader from '../../components/PageHeader.jsx';
 import CatererAccountDialog from '../../components/caterers/CatererAccountDialog.jsx';
 import { Key } from '@phosphor-icons/react';
 import { COLORS } from '../../config/brand.js';
+import { seasonLabel } from '../../lib/hijri.js';
+import DataTable from '../../components/DataTable.jsx';
 
 /* Hex, not rgb(var(--token)) — these colours get an alpha suffix appended
    (`${color}DD`) to build gradients, and that only works on hex. */
@@ -295,7 +297,7 @@ export default function AdminCaterers() {
         <StatCard label="نشط"              value={counts.active}    Icon={CircleCheck} color={COLORS.success} />
         <StatCard label="موقوف"            value={counts.suspended} Icon={PauseCircle} color={COLORS.warning} />
         <StatCard
-          label={activeSeason ? `مراكز مُسندة · ${activeSeason.name}` : 'مراكز مُسندة'}
+          label={activeSeason ? `مراكز مُسندة · ${seasonLabel(activeSeason)}` : 'مراكز مُسندة'}
           value={linkedCenters} Icon={MapPinArea} color={COLORS.accent600} />
       </div>
 
@@ -348,7 +350,7 @@ export default function AdminCaterers() {
           </div>
         )}
 
-        <div className="overflow-x-auto">
+        <DataTable>
           <table className="w-full text-sm">
             <thead className="text-muted text-xs border-b border-line"
               style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 60%)' }}>
@@ -510,7 +512,7 @@ export default function AdminCaterers() {
               })}
             </tbody>
           </table>
-        </div>
+        </DataTable>
       </section>
 
       {/* ── Add / edit modal ───────────────────── */}

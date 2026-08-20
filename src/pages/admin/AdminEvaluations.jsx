@@ -27,6 +27,8 @@ import { db } from '../../lib/db.js';
 import { PHASES, ALL_CRITERIA, GRADES } from '../../config/catererScoring.js';
 import { buildScorecards, seasonSummary } from '../../lib/catererScore.js';
 import { exportCsv } from '../../lib/reportQuery.js';
+import { seasonLabel } from '../../lib/hijri.js';
+import DataTable from '../../components/DataTable.jsx';
 
 const AR = (n) => String(n ?? '').replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
 const N = (v) => (v == null ? '—' : AR(Number(v) % 1 === 0 ? String(v) : v.toFixed(2)));
@@ -134,7 +136,7 @@ export default function AdminEvaluations() {
       c.filled + '/' + ALL_CRITERIA.length,
       c.notes || '',
     ]);
-    exportCsv({ columns, rows, fileName: 'تقييم-المتعهدين-' + (season ? season.name : 'الموسم') + '.csv' });
+    exportCsv({ columns, rows, fileName: 'تقييم-المتعهدين-' + (season ? seasonLabel(season) : 'الموسم') + '.csv' });
   };
 
   return (
@@ -143,7 +145,7 @@ export default function AdminEvaluations() {
         kicker="أداء المتعهدين"
         Icon={ClipboardText}
         title="التقييمات"
-        subtitle={season ? `تقييم أداء المتعهدين — موسم ${season.name}` : 'تقييم أداء المتعهدين عبر الموسم'}
+        subtitle={season ? `تقييم أداء المتعهدين — موسم ${seasonLabel(season)}` : 'تقييم أداء المتعهدين عبر الموسم'}
         heroActions={cards.length > 0 && (
           <button onClick={exportSeason}
             className="h-9 px-4 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25
@@ -179,7 +181,7 @@ export default function AdminEvaluations() {
                 }`}
                 style={s.id === seasonId
                   ? { background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' } : undefined}>
-                {s.name}{s.isActive && <span className="mr-1.5 text-[9px] opacity-70">نشط</span>}
+                {seasonLabel(s)}{s.isActive && <span className="mr-1.5 text-[9px] opacity-70">نشط</span>}
               </button>
             ))}
           </div>
@@ -286,7 +288,7 @@ export default function AdminEvaluations() {
             <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <DataTable>
             <table className="w-full text-sm">
               <thead className="text-muted text-[11px] bg-background border-b border-line">
                 <tr>
@@ -358,7 +360,7 @@ export default function AdminEvaluations() {
                 )}
               </tbody>
             </table>
-          </div>
+          </DataTable>
         )}
       </section>
 

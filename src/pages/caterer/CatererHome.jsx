@@ -22,6 +22,7 @@ import {
 import PageHeader from '../../components/PageHeader.jsx';
 import { db } from '../../lib/db.js';
 import { reportType, severityOf, timeAgo } from '../../config/fieldRecords.js';
+import DataTable from '../../components/DataTable.jsx';
 
 const AR = (n) => String(n ?? '').replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
 const ms = (v) => (v?.toMillis?.() ?? (v ? new Date(v).getTime() : 0));
@@ -218,7 +219,7 @@ export default function CatererHome() {
         {centers.length === 0 ? (
           <p className="py-10 text-center text-[13.5px] font-bold text-muted">لا مراكز مسنَدة</p>
         ) : (
-          <div className="overflow-x-auto">
+          <DataTable>
             <table className="w-full text-sm">
               <thead className="text-muted text-[12.5px] bg-background border-b border-line">
                 <tr>
@@ -241,7 +242,7 @@ export default function CatererHome() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </DataTable>
         )}
       </section>
     </div>

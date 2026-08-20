@@ -20,6 +20,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { db, serverTimestamp } from '../../lib/db.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { CENTERS, getCaterer } from '../../config/centers.js';
+import DataTable from '../../components/DataTable.jsx';
 import {
   Users,
   Plus,
@@ -848,7 +849,7 @@ export default function UsersPage({ role }) {
             </div>
           )}
 
-          <div className="overflow-x-auto">
+          <DataTable>
             <table className="w-full text-sm">
               <thead
                 className="text-muted text-xs border-b border-line"
@@ -991,7 +992,7 @@ export default function UsersPage({ role }) {
                 })}
               </tbody>
             </table>
-          </div>
+          </DataTable>
         </section>
       </div>
       {editTarget && (

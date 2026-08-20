@@ -14,6 +14,8 @@ import FormDocument from '../../components/forms/FormDocument.jsx';
 import FormFill from '../../components/forms/FormFill.jsx';
 import HijriDateInput from '../../components/forms/HijriDateInput.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
+import { seasonLabel } from '../../lib/hijri.js';
+import DataTable from '../../components/DataTable.jsx';
 import {
   FileText, Plus, X, FloppyDisk as Save, Pencil, Trash as Trash2, Copy, DownloadSimple,
   PaperPlaneTilt, MagnifyingGlass as Search, Eye, Warning, CalendarBlank,
@@ -717,7 +719,7 @@ export default function AdminForms() {
           <div className="p-4 border-b border-line space-y-3">
             <div className="flex items-center gap-3 flex-wrap">
               <h2 className="text-lg font-bold text-primary">
-                {activeSeason ? `تكليفات ${activeSeason.name}` : 'التكليفات'}
+                {activeSeason ? `تكليفات ${seasonLabel(activeSeason)}` : 'التكليفات'}
               </h2>
               <span className="text-[12px] font-bold text-muted tabular-nums">
                 {visibleAssignments.length === seasonAssignments.length
@@ -732,7 +734,7 @@ export default function AdminForms() {
               )}
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="nsab-filters flex items-center gap-2 flex-wrap">
               <select value={byTemplate} onChange={e => setByTemplate(e.target.value)}
                 className={`${inputCls} w-auto min-w-[240px]`}>
                 <option value="">كل المستندات</option>
@@ -758,7 +760,7 @@ export default function AdminForms() {
               </select>
             </div>
           </div>
-          <div className="overflow-x-auto">
+          <DataTable>
             <table className="w-full text-sm">
               <thead className="text-muted text-xs border-b border-line"
                 style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 60%)' }}>
@@ -882,7 +884,7 @@ export default function AdminForms() {
                 })}
               </tbody>
             </table>
-          </div>
+          </DataTable>
         </section>
       )}
 
@@ -1039,7 +1041,7 @@ export default function AdminForms() {
                 <summary className="px-4 py-2.5 text-xs font-bold text-ink cursor-pointer select-none">
                   تخصيص لكل متعهد على حدة
                 </summary>
-                <div className="px-4 pb-4 overflow-x-auto">
+                <DataTable className="px-4 pb-4">
                   <table className="w-full text-xs">
                     <thead className="text-muted border-b border-line">
                       <tr>
@@ -1078,7 +1080,7 @@ export default function AdminForms() {
                       })}
                     </tbody>
                   </table>
-                </div>
+                </DataTable>
               </details>
 
               {/* Exactly what the first caterer will receive. */}
@@ -1135,7 +1137,7 @@ export default function AdminForms() {
                 </div>
                 <div>
                   <h2 className="font-bold text-ink text-sm">إسناد «{assign.template.title}»</h2>
-                  <p className="text-[10px] text-muted">موسم {activeSeason?.name || '—'}</p>
+                  <p className="text-[10px] text-muted">موسم {activeSeason ? seasonLabel(activeSeason) : '—'}</p>
                 </div>
               </div>
               <button onClick={() => setAssign(null)}

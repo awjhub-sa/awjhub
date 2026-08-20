@@ -84,3 +84,25 @@ export function isoToHijriLabel(iso) {
   const { y, m, d } = toHijriParts(date);
   return `${d} ${HIJRI_MONTHS[m - 1]} ${y} هـ`;
 }
+
+/* ── The season, as it should be read ───────────────────────
+ *
+ * `seasons.name` is free text typed when the record was created, and it drifts:
+ * a season opened in ١٤٤٦ keeps that label into ١٤٤٨ and every screen repeats
+ * it. The stored `hijri_year` drifts the same way, for the same reason.
+ *
+ * The active season is by definition the one running now, so its year is the
+ * calendar's — read at render, never stored. A season that is no longer active
+ * is history and keeps its own year; only when it has none do we fall back.
+ *
+ * Arabic-Indic digits, because this is a heading and the rest of the heading
+ * is Arabic. Anything tabular should format the number itself.
+ */
+export function seasonYear(season) {
+  if (season && !season.isActive && season.hijriYear) return season.hijriYear;
+  return toHijriParts().y;
+}
+
+export function seasonLabel(season) {
+  return `${String(seasonYear(season)).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d])}هـ`;
+}

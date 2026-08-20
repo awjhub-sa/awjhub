@@ -312,7 +312,7 @@ export default function FormFill({
         </div>
       )}
 
-      <div className="p-4 sm:p-6 flex flex-col items-center gap-4">
+      <div className="nsab-doc-scroll p-4 sm:p-6 flex flex-col items-center gap-4">
         <FormDocument
           definition={definition}
           mode={readOnly ? 'view' : 'fill'}

@@ -193,3 +193,95 @@
 .row-pulse-blue  { animation: rowPulseBlue  2.2s ease-in-out infinite; }
 .card-pulse-red  { animation: cardPulseRed  2.2s ease-in-out infinite; }
 .card-pulse-blue { animation: cardPulseBlue 2.2s ease-in-out infinite; }
+
+/* ── Registers on a phone ────────────────────────────────────
+ *
+ * A wide table inside a horizontal scroll is a desktop answer. On a handset it
+ * hides the columns that carry the decision — status, deadline, the buttons —
+ * behind a gesture most people never make.
+ *
+ * Under 768px every row becomes a card and every cell a labelled line. Labels
+ * come from `data-th`, which DataTable lifts from the table's own header after
+ * render, so nothing is written twice.
+ */
+@media (max-width: 767px) {
+  .nsab-rt { overflow-x: visible; }
+
+  .nsab-rt table,
+  .nsab-rt tbody,
+  .nsab-rt tr,
+  .nsab-rt td { display: block; width: 100%; }
+
+  .nsab-rt thead { display: none; }
+
+  .nsab-rt tbody { display: block; padding: 10px; }
+
+  .nsab-rt tr {
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 16px;
+    background: #fff;
+    margin-bottom: 10px;
+    overflow: hidden;
+    /* The coloured edge every register uses to encode state reads as a top
+       band here — a 3px sliver on a card is lost. */
+    border-inline-start-width: 4px !important;
+  }
+  .nsab-rt tbody > tr:last-child { margin-bottom: 0; }
+
+  .nsab-rt td {
+    display: grid;
+    grid-template-columns: 6.5rem 1fr;
+    align-items: start;
+    /* A grid item stretches by default, which turned every status chip and
+       date pill into a full-width bar. A chip is sized by its own words. */
+    justify-items: start;
+    gap: 10px;
+    padding: 8px 12px !important;
+    border-bottom: 1px solid rgb(var(--c-line) / 0.5);
+    text-align: start;
+    max-width: none !important;
+    white-space: normal !important;
+  }
+  .nsab-rt tr > td:last-child { border-bottom: 0; }
+
+  .nsab-rt td[data-th]::before {
+    content: attr(data-th);
+    font-size: 11px;
+    font-weight: 800;
+    color: rgb(var(--c-muted));
+    line-height: 1.7;
+  }
+
+  /* A full-width row keeps the full width. */
+  .nsab-rt td[colspan] { grid-template-columns: 1fr; }
+
+  /* Anything constrained for a column has no reason to be on a card. */
+  .nsab-rt td > .line-clamp-2 { -webkit-line-clamp: unset; }
+}
+
+/* Fine phones: a label column of 6.5rem eats the value. */
+@media (max-width: 380px) {
+  .nsab-rt td { grid-template-columns: 1fr; gap: 2px; }
+}
+
+/* ── Filters and controls on a phone ─────────────────────────
+ * A `min-w-[240px]` select is a reasonable desktop measure and an overflow on
+ * a 390px screen once two of them sit in a row. On a handset a filter takes
+ * the width it has.
+ */
+@media (max-width: 767px) {
+  .nsab-filters > select,
+  .nsab-filters > .nsab-grow { width: 100% !important; min-width: 0 !important; }
+  .nsab-filters { flex-direction: column; align-items: stretch; }
+}
+
+/* ── The sheet on a phone ────────────────────────────────────
+ * A register can become cards because its rows are data. A form cannot: it is
+ * a document with a fixed shape that someone will print and sign, and squeezing
+ * an A4 grid into 390px collides its labels with its blanks. So the sheet keeps
+ * its real width and the page scrolls to it — what you fill is what prints.
+ */
+@media (max-width: 767px) {
+  .nsab-doc-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 8px !important; }
+  .nsab-doc-scroll > .nsab-doc { width: 794px !important; max-width: none !important; flex: 0 0 auto; }
+}

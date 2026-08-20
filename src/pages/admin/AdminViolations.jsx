@@ -28,6 +28,8 @@ import FormFill from '../../components/forms/FormFill.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import { toast } from '../../lib/toast.js';
 import { SEVERITY, STATE, stateOf, LATE, ATTACH, NOTE, extOf , actionTone } from '../../config/tones.js';
+import { seasonLabel } from '../../lib/hijri.js';
+import DataTable from '../../components/DataTable.jsx';
 import {
   NotePencil, Warning, Plus, X, Eye, Printer, Trash as Trash2,
   CircleNotch, CheckCircle, Buildings,
@@ -311,7 +313,7 @@ export default function AdminViolations() {
           <div className="p-4 border-b border-line space-y-3">
             <div className="flex items-center gap-3 flex-wrap">
               <h2 className="text-lg font-bold text-primary">
-                {activeSeason ? `مخالفات ${activeSeason.name}` : 'المخالفات'}
+                {activeSeason ? `مخالفات ${seasonLabel(activeSeason)}` : 'المخالفات'}
               </h2>
               <span className="text-[12px] font-bold text-muted tabular-nums">
                 {visible.length === rows.length ? AR(rows.length) : `${AR(visible.length)} من ${AR(rows.length)}`}
@@ -321,7 +323,7 @@ export default function AdminViolations() {
                   className="mr-auto text-[12px] font-black text-primary hover:underline">عرض الكل</button>
               )}
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="nsab-filters flex items-center gap-2 flex-wrap">
               <select value={byCaterer} onChange={e => setByCaterer(e.target.value)}
                 className={`${inputCls} w-auto min-w-[220px]`}>
                 <option value="">كل المتعهدين</option>
@@ -335,7 +337,7 @@ export default function AdminViolations() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <DataTable>
             <table className="w-full text-sm">
               <thead className="text-muted text-xs border-b border-line bg-bg">
                 <tr>
@@ -471,7 +473,7 @@ export default function AdminViolations() {
                 })}
               </tbody>
             </table>
-          </div>
+          </DataTable>
         </section>
       )}
 

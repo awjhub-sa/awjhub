@@ -16,6 +16,7 @@ import PageHeader from '../../components/PageHeader.jsx';
 import { db } from '../../lib/db.js';
 import { extractCenterNum } from '../../config/nationalities.js';
 import { refreshNationalities } from '../../lib/nationalityStore.js';
+import { seasonLabel } from '../../lib/hijri.js';
 
 const AR = (n) => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
 
@@ -182,7 +183,7 @@ export default function AdminNationalities() {
         kicker="إدارة المتعهدين"
         Icon={Earth}
         title="جنسيات الحجاج"
-        subtitle={season ? `موسم ${season.name}` : 'اختر موسماً'}
+        subtitle={season ? `موسم ${seasonLabel(season)}` : 'اختر موسماً'}
         stats={[
           { value: AR(nats.length), label: 'جنسية' },
           { value: AR(centers.length), label: 'مركز' },
@@ -223,7 +224,7 @@ export default function AdminNationalities() {
                 style={s.id === seasonId
                   ? { background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }
                   : undefined}>
-                {s.name}
+                {seasonLabel(s)}
                 {s.isActive && <span className="mr-1.5 text-[9px] opacity-70">نشط</span>}
               </button>
             ))}

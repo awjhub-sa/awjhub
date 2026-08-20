@@ -22,6 +22,8 @@ import {
   Certificate,
 } from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
+import { seasonLabel } from '../../lib/hijri.js';
+import DataTable from '../../components/DataTable.jsx';
 
 /* Grading bands the customer uses. Colour runs green → red so a season's
    quality mix is readable from the column alone, without reading each cell. */
@@ -189,7 +191,7 @@ export default function AdminCenters() {
     const dupe = seasonCenters.some(
       c => c.id !== f.id && String(c.code).trim() === f.code.trim(),
     );
-    if (dupe) return `المركز "${f.code.trim()}" مسجّل مسبقاً في ${season?.name || 'هذا الموسم'}`;
+    if (dupe) return `المركز "${f.code.trim()}" مسجّل مسبقاً في ${season ? seasonLabel(season) : 'هذا الموسم'}`;
     if (f.pilgrimsCount !== '' && Number(f.pilgrimsCount) < 0)
       return 'عدد الحجاج لا يكون سالباً';
     if (f.headPhone && !/^05\d{8}$/.test(f.headPhone))
@@ -246,7 +248,7 @@ export default function AdminCenters() {
   };
 
   const handleDelete = async (c) => {
-    if (!confirm(`حذف "${c.code}" من موسم ${season?.name}؟\nالبلاغات والتقييمات المسجّلة عليه تبقى كما هي.`)) return;
+    if (!confirm(`حذف "${c.code}" من موسم ${seasonLabel(season)}؟\nالبلاغات والتقييمات المسجّلة عليه تبقى كما هي.`)) return;
     setListError(null);
     try {
       await db.centers.delete(c.id);   // officials cascade
@@ -308,7 +310,7 @@ export default function AdminCenters() {
                 {seasons.length === 0 && <option value="">لا مواسم</option>}
                 {seasons.map(s => (
                   <option key={s.id} value={s.id}>
-                    {s.name}{s.isActive ? ' • نشط' : ''}
+                    {seasonLabel(s)}{s.isActive ? ' • نشط' : ''}
                   </option>
                 ))}
               </select>
@@ -357,7 +359,7 @@ export default function AdminCenters() {
           <section className="bg-gradient-to-br from-white via-white to-background/40 rounded-2xl border border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgb(var(--c-primary)/0.14)]">
             <div className="p-4 border-b border-line flex items-center justify-between gap-3 flex-wrap">
               <h2 className="text-lg font-bold text-primary">
-                {season?.name} — {visible.length} مركز
+                {seasonLabel(season)} — {visible.length} مركز
               </h2>
               <div className="relative flex-1 min-w-[200px] max-w-xs">
                 <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
@@ -382,7 +384,7 @@ export default function AdminCenters() {
               </div>
             )}
 
-            <div className="overflow-x-auto">
+            <DataTable>
               <table className="w-full text-sm">
                 <thead className="text-muted text-xs border-b border-line"
                   style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 60%)' }}>
@@ -407,7 +409,7 @@ export default function AdminCenters() {
                         <MapPinArea size={34} className="mx-auto text-muted/30 mb-2" />
                         <p className="text-muted text-sm">
                           {seasonCenters.length === 0
-                            ? `لا مراكز في ${season?.name} بعد — أضف أول مركز.`
+                            ? `لا مراكز في ${seasonLabel(season)} بعد — أضف أول مركز.`
                             : 'لا نتائج مطابقة للبحث'}
                         </p>
                       </td>
@@ -529,7 +531,7 @@ export default function AdminCenters() {
                   })}
                 </tbody>
               </table>
-            </div>
+            </DataTable>
           </section>
         </>
       )}
@@ -550,7 +552,7 @@ export default function AdminCenters() {
                   <h2 className="font-bold text-ink text-sm">
                     {form.id ? 'تعديل بيانات المركز' : 'إضافة مركز جديد'}
                   </h2>
-                  <p className="text-[10px] text-muted">موسم {season?.name}</p>
+                  <p className="text-[10px] text-muted">موسم {seasonLabel(season)}</p>
                 </div>
               </div>
               <button onClick={closeModal}
