@@ -65,7 +65,13 @@ function logErr(op, error) {
 function createTableApi(table, { pk = 'id' } = {}) {
   return {
     async list(options = {}) {
-      let q = supabase.from(table).select('*');
+      /* `columns` narrows the select. Used by the caterer portal, which must
+         never request the office's internal notes — discarding them in the
+         browser would be too late, they would already have been sent. */
+      const projection = options.columns
+        ? options.columns.map(toSnake).join(',')
+        : '*';
+      let q = supabase.from(table).select(projection);
       if (options.filter) {
         for (const [k, v] of Object.entries(options.filter)) {
           q = q.eq(toSnake(k), v);
@@ -77,6 +83,15 @@ function createTableApi(table, { pk = 'id' } = {}) {
       const { data, error } = await q;
       logErr(`${table}.list`, error);
       return (data || []).map(rowFromDb);
+    },
+
+    /* Does this table exist and can we read it?
+       list() deliberately swallows errors and returns [] so a blip never blanks
+       a screen — which also means a caller cannot tell "no rows" from "no
+       table". A screen that needs to say which one it is asks here. */
+    async probe() {
+      const { error } = await supabase.from(table).select(pk).limit(1);
+      return { ok: !error, code: error?.code || null, message: error?.message || null };
     },
 
     async get(id) {
@@ -106,6 +121,20 @@ function createTableApi(table, { pk = 'id' } = {}) {
       return rowFromDb(data);
     },
 
+    /* One round trip for a batch. Bulk-assigning a form to fifty caterers as
+       fifty inserts would be fifty requests, and a failure halfway would leave
+       the batch half-applied. */
+    async insertMany(rows) {
+      if (!rows?.length) return [];
+      const { data, error } = await supabase
+        .from(table)
+        .insert(rows.map(rowToDb))
+        .select();
+      logErr(`${table}.insertMany`, error);
+      if (error) throw error;
+      return (data || []).map(rowFromDb);
+    },
+
     async upsert(row, { onConflict = pk } = {}) {
       const { data, error } = await supabase
         .from(table)
@@ -132,6 +161,20 @@ function createTableApi(table, { pk = 'id' } = {}) {
     async delete(id) {
       const { error } = await supabase.from(table).delete().eq(pk, id);
       logErr(`${table}.delete`, error);
+      if (error) throw error;
+    },
+
+    /* Deletes by column match rather than by primary key. A join table has no
+       id of its own — its key is the pair of columns — so removing one link
+       has to be expressed as a where clause. */
+    async deleteWhere(filter) {
+      if (!filter || !Object.keys(filter).length) {
+        throw new Error(`db.${table}.deleteWhere needs a filter`);
+      }
+      let q = supabase.from(table).delete();
+      for (const [k, v] of Object.entries(filter)) q = q.eq(toSnake(k), v);
+      const { error } = await q;
+      logErr(`${table}.deleteWhere`, error);
       if (error) throw error;
     },
 
@@ -185,6 +228,15 @@ function createTableApi(table, { pk = 'id' } = {}) {
 
 export const db = {
   users:              createTableApi('users', { pk: 'uid' }),
+  /* Tenant identity — one row, id = 1. See docs/ROADMAP.md and 005. */
+  org_settings:       createTableApi('org_settings'),
+  seasons:            createTableApi('seasons'),
+  caterers:           createTableApi('caterers'),
+  /* A center belongs to one season. Its `code` is the Arabic label
+     ('مركز 5') that every other table already stores in `center text`, so the
+     same label in two seasons is two different rows — which is the point. */
+  centers:            createTableApi('centers'),
+  center_officials:   createTableApi('center_officials'),
   reports:            createTableApi('reports'),
   logistics_requests: createTableApi('logistics_requests'),
   meal_evaluations:   createTableApi('meal_evaluations'),
@@ -193,6 +245,20 @@ export const db = {
   meal_phases:        createTableApi('meal_phases'),
   assigned_tasks:     createTableApi('assigned_tasks'),
   task_completions:   createTableApi('task_completions'),
+  /* One row per nationality × day × meal. See 008_menus.sql — the menu used
+     to be compiled in, which only works for one customer. */
+  menus:              createTableApi('menus'),
+  /* The season's pilgrim groups, and which centres feed each. See
+     009_nationalities.sql — centre 26 serves two, so the link is its own row. */
+  nationalities:        createTableApi('nationalities'),
+  center_nationalities: createTableApi('center_nationalities'),
+  /* Season-long scorecard per caterer. See 010_caterer_evaluations.sql. */
+  caterer_evaluations:  createTableApi('caterer_evaluations'),
+  /* Forms are three layers: what a form is, who owes it, and what happened.
+     See docs/FORMS_MODULE.md. */
+  form_templates:     createTableApi('form_templates'),
+  form_assignments:   createTableApi('form_assignments'),
+  form_events:        createTableApi('form_events'),
 };
 
 export { supabase } from '../config/supabase.js';
@@ -204,6 +270,29 @@ export function sanitizeStoragePath(s) {
     .replace(/[^\w./-]+/g, '_')
     .replace(/_+/g, '_')
     .replace(/^_+|_+$/g, '');
+}
+
+/**
+ * Turns a public storage URL into one the browser saves rather than displays.
+ *
+ * The `download` attribute on an anchor is ignored across origins, and storage
+ * is a different origin from the app — so a PDF opened from a form navigated
+ * away to the file instead of landing in the downloads folder. Supabase reads
+ * a `download` query parameter and answers with Content-Disposition, which is
+ * the only thing a cross-origin link will obey.
+ *
+ * @param {string} url       the public URL
+ * @param {string} filename  what it should be called once saved
+ */
+export function asDownload(url, filename) {
+  if (!url) return url;
+  try {
+    const u = new URL(url);
+    u.searchParams.set('download', filename || '');
+    return u.toString();
+  } catch {
+    return url;
+  }
 }
 
 export async function uploadFile(bucket, path, file, options = {}) {

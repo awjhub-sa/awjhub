@@ -13,11 +13,11 @@ export default function NotificationBadge({
       pulse: 'badge-pulse-red',
     },
     blue:  {
-      bg:    'linear-gradient(135deg, #3B82F6, #2563EB)',
+      bg:    'linear-gradient(135deg, #4E7CB0, #3D6795)',
       pulse: 'badge-pulse-blue',
     },
     gold:  {
-      bg:    'linear-gradient(135deg, #C4A46E, #A98159)',
+      bg:    'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))',
       pulse: 'badge-pulse-gold',
     },
   };

@@ -1,394 +1,276 @@
+/**
+ * src/pages/Login.jsx
+ *
+ * Two doors, and nothing else on the page.
+ *
+ * The field roles used to sign in here with a national ID; they moved to the
+ * mobile app, and the entrances that remain both authenticate the same way —
+ * an email and a password against Supabase Auth. What differs is which kind of
+ * account is allowed through, and that check happens after the credentials are
+ * accepted, never before: signing a caterer into the admin console would be a
+ * far worse failure than refusing a valid login.
+ *
+ * The screen is split. Identity sits on the right, where Arabic begins; the
+ * form on the left, where the eye settles to act. The navy half moves — slowly
+ * — and the white half does not, because a field that drifts while you type
+ * into it is a field you mistype.
+ *
+ * Choosing a door changes the accent of the whole card. That is not decoration:
+ * on a page with two entrances that take the same two fields, the colour is the
+ * only thing telling you which one you are about to walk through.
+ */
+
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import logo from '../assets/logo.png';
-import { Fingerprint } from 'lucide-react';
+import {
+  ShieldCheck, Storefront, EnvelopeSimple, LockKey, Eye, EyeSlash,
+  ArrowLeft, CircleNotch, WarningCircle, DeviceMobile,
+} from '@phosphor-icons/react';
+import { BRAND } from '../config/brand.js';
+import './login.css';
 
-
-const GoldOrnament = () => (
-  <svg width="120" height="8" viewBox="0 0 120 8" fill="none" className="mx-auto">
-    <line x1="0" y1="4" x2="42" y2="4" stroke="#A98159" strokeWidth="0.75" />
-    <circle cx="52" cy="4" r="1.5" fill="#A98159" opacity="0.6" />
-    <circle cx="60" cy="4" r="3" fill="#A98159" />
-    <circle cx="68" cy="4" r="1.5" fill="#A98159" opacity="0.6" />
-    <line x1="78" y1="4" x2="120" y2="4" stroke="#A98159" strokeWidth="0.75" />
-  </svg>
-);
+/* The two entrances. `roles` is the guard: what this door is allowed to open
+   for, checked against the account the credentials actually belong to. */
+const DOORS = {
+  admin: {
+    label:  'الإدارة',
+    Icon:   ShieldCheck,
+    accent: 'rgb(var(--c-primary))',
+    title:  'دخول الإدارة',
+    hint:   'لوحة تشغيل الموسم والمتابعة الميدانية',
+    roles:  ['admin', 'staff'],
+    reject: 'هذا الحساب غير مسجّل كمسؤول إداري',
+    home:   '/admin/dashboard',
+  },
+  caterer: {
+    label:  'المتعهد',
+    Icon:   Storefront,
+    accent: 'rgb(var(--c-accent-600))',
+    title:  'دخول المتعهد',
+    hint:   'بلاغات مراكزك والنماذج المطلوبة منك',
+    roles:  ['caterer'],
+    reject: 'هذا الحساب غير مسجّل كمتعهد',
+    home:   '/caterer/home',
+  },
+};
 
 export default function Login() {
   const navigate = useNavigate();
-  const { role, loading, loginAsMonitor, loginAsAdmin, logout } = useAuth();
+  const { role, loading, loginAsAdmin, logout } = useAuth();
 
-  const [idNumber,     setIdNumber]     = useState('');
-  const [selectedType, setSelectedType] = useState('observer');
-  const [error,        setError]        = useState('');
-  const [busy,         setBusy]         = useState(false);
+  const [door,     setDoor]     = useState('admin');
+  const [email,    setEmail]    = useState('');
+  const [password, setPassword] = useState('');
+  const [reveal,   setReveal]   = useState(false);
+  const [error,    setError]    = useState('');
+  const [busy,     setBusy]     = useState(false);
 
-  
-  const [adminModal,    setAdminModal]    = useState(false);
-  const [adminEmail,    setAdminEmail]    = useState('');
-  const [adminPassword, setAdminPassword] = useState('');
-  const [adminError,    setAdminError]    = useState('');
-  const [adminBusy,     setAdminBusy]     = useState(false);
+  /* Set while a sign-in is in flight, so the effect below can tell an arrival
+     it caused from a session that was already open when the page loaded. */
+  const attempt = useRef(null);
 
-  /* loginFlow tracks the admin path — observer/supervisor are resolved synchronously */
-  const loginFlow = useRef(null);
+  const d = DOORS[door];
 
-  
   useEffect(() => {
     if (loading || !role) return;
-    const flow = loginFlow.current;
 
-    /* Admin path: role mismatch */
-    if (flow === 'admin' && role !== 'admin' && role !== 'staff') {
-      logout();
-      setAdminBusy(false);
-      setAdminError('هذا الحساب غير مسجّل كمسؤول إداري');
-      loginFlow.current = null;
-      return;
+    const asked = attempt.current;
+    if (asked) {
+      attempt.current = null;
+      if (!DOORS[asked].roles.includes(role)) {
+        /* Right password, wrong kind of account. Out again, and say which. */
+        logout();
+        setBusy(false);
+        setError(DOORS[asked].reject);
+        return;
+      }
     }
 
-    loginFlow.current = null;
-    if (role === 'admin' || role === 'staff') navigate('/admin/dashboard',  { replace: true });
-    else if (role === 'supervisor')           navigate('/supervisor-home',  { replace: true });
-    else if (role === 'observer')             navigate('/home',             { replace: true });
     setBusy(false);
-    setAdminBusy(false);
-  }, [role, loading, navigate]);
+    if (role === 'admin' || role === 'staff') navigate('/admin/dashboard', { replace: true });
+    else if (role === 'caterer')              navigate('/caterer/home',    { replace: true });
+    else if (role === 'supervisor')           navigate('/supervisor-home', { replace: true });
+    else if (role === 'observer')             navigate('/home',            { replace: true });
+  }, [role, loading, navigate, logout]);
 
-  const handleAdminLogin = async (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    if (!adminEmail || !adminPassword) { setAdminError('يرجى تعبئة جميع الحقول'); return; }
-    setAdminBusy(true);
-    setAdminError('');
-    loginFlow.current = 'admin';
-    try {
-      await loginAsAdmin(adminEmail, adminPassword);
-    } catch (err) {
-      loginFlow.current = null;
-      setAdminBusy(false);
-      setAdminError(err.message || 'حدث خطأ غير متوقع');
-    }
-  };
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError('');
-    const id = idNumber.trim();
-    if (!id)             { setError('أدخل رقم الهوية'); return; }
-    if (id.length !== 10){ setError('رقم الهوية يجب أن يكون 10 أرقام'); return; }
-
+    if (!email.trim() || !password) { setError('أدخل البريد وكلمة المرور'); return; }
     setBusy(true);
+    setError('');
+    attempt.current = door;
     try {
-      await loginAsMonitor(id, selectedType);
-      /* AuthContext sets role → the useEffect above will redirect */
+      await loginAsAdmin(email.trim(), password);
+      /* The role arrives through context; the effect above decides. */
     } catch (err) {
+      attempt.current = null;
       setBusy(false);
-      setError(err.message || 'تعذّر التحقق، حاول مرة أخرى');
+      setError(err.message || 'تعذّر تسجيل الدخول');
     }
   };
 
-  const numOnly = (v) => v.replace(/\D/g, '');
-
-  const idProgress = Math.min(idNumber.length / 10, 1);
+  const pick = (next) => {
+    if (next === door) return;
+    setDoor(next);
+    setError('');
+  };
 
   return (
     <div
+      className="lg-page"
       dir="rtl"
-      className="min-h-screen flex flex-col items-center justify-center px-4 py-10 font-arabic relative overflow-hidden bg-[#FDFCFB]"
-      style={{ fontFamily: "'IBM Plex Sans Arabic', Tahoma, sans-serif" }}
+      style={{ '--lg-accent': d.accent }}
     >
-      {/* Mesh gradient — drifting warm blobs */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="mesh-blob mesh-blob-1" />
-        <div className="mesh-blob mesh-blob-2" />
-        <div className="mesh-blob mesh-blob-3" />
-        <div className="mesh-blob mesh-blob-4" />
-      </div>
 
-      {/* الشعار والهوية */}
-      <div className="mb-8 text-center" style={{ animation: 'fadeUp 0.5s ease forwards' }}>
-        <img src={logo} alt="شعار ضيوف البيت" className="w-36 h-36 mx-auto mb-4 object-contain drop-shadow-lg" />
-        <h1 className="text-2xl font-bold text-[#2D2926]">ضيوف البيت</h1>
-        <p className="text-[#6D6E71] text-sm mt-1">منظومة المراقبة الميدانية — موسم ١٤٤٧ هـ</p>
-        <div className="mt-3"><GoldOrnament /></div>
-      </div>
+      {/* ── identity ─────────────────────────────────────── */}
+      <aside className="lg-brand">
+        <span aria-hidden className="lg-aurora lg-aurora-1" />
+        <span aria-hidden className="lg-aurora lg-aurora-2" />
+        <span aria-hidden className="lg-aurora lg-aurora-3" />
+        <span aria-hidden className="lg-grid" />
+        <span aria-hidden className="lg-seam" />
 
-      {/* بطاقة تسجيل الدخول */}
-      <form
-        onSubmit={handleLogin}
-        className="relative w-full max-w-sm rounded-3xl overflow-hidden backdrop-blur-xl"
-        style={{
-          background: 'linear-gradient(160deg, rgba(255,255,255,0.85), rgba(253,248,240,0.75))',
-          border: '1px solid rgba(209,196,185,0.6)',
-          boxShadow: '0 20px 50px -12px rgba(169,129,89,0.25), 0 8px 24px -6px rgba(45,41,38,0.08)',
-          animation: 'fadeUp 0.6s ease 0.1s both',
-        }}
-      >
-        <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg,#C4A46E,#A98159,#8B6840)' }} />
-
-        <div className="px-7 py-8 space-y-5">
-          <div>
-            <h2 className="text-xl font-bold text-[#2D2926]">تسجيل الدخول</h2>
-            <p className="text-[#6D6E71] text-sm mt-1">أدخل بيانات حسابك للمتابعة</p>
+        <div className="relative max-w-lg mx-auto lg:mx-0 text-center lg:text-right">
+          {/* Lockup, name, line. One block, sized so it reads as the masthead
+              of the system rather than a logo with captions under it. */}
+          <div className="lg-rise" style={{ animationDelay: '.05s' }}>
+            <img
+              src={BRAND.logo.fullOnDark}
+              alt={BRAND.companyFullAr}
+              className="w-[400px] max-w-[82vw] h-auto mx-auto lg:mx-0"
+            />
           </div>
 
-          {/* أزرار اختيار نوع الدخول (مراقب / مشرف) */}
-          <div className="flex bg-[#F5EDE0] p-1 rounded-xl mb-4">
-            <button
-              type="button"
-              onClick={() => { setSelectedType('observer'); setError(''); }}
-              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
-                selectedType === 'observer'
-                  ? 'bg-white text-[#A98159] shadow-sm'
-                  : 'text-[#6D6E71] hover:text-[#2D2926]'
-              }`}
-            >
-              مراقب ميداني
-            </button>
-            <button
-              type="button"
-              onClick={() => { setSelectedType('supervisor'); setError(''); }}
-              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
-                selectedType === 'supervisor'
-                  ? 'bg-white text-[#A98159] shadow-sm'
-                  : 'text-[#6D6E71] hover:text-[#2D2926]'
-              }`}
-            >
-              مشرف ميداني
-            </button>
+          <div className="lg-rise mt-8 flex items-center gap-3 justify-center lg:justify-start"
+            style={{ animationDelay: '.12s' }}>
+            <span className="h-px w-10 bg-accent/70" />
+            <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+            <span className="h-px flex-1 max-w-[9rem] bg-gradient-to-l from-accent/50 to-transparent" />
           </div>
 
-          {/* حقل رقم الهوية */}
-          <div>
-            <label className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-[#2D2926]">رقم الهوية</span>
-              <span className="text-[11px] font-bold tabular-nums text-[#A98159]">
-                {idNumber.length} / 10
-              </span>
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 right-3.5 flex items-center pointer-events-none">
-                <Fingerprint size={19} className="text-[#A98159]" strokeWidth={2} />
-              </div>
+          <h2 className="lg-rise mt-6 text-[30px] lg:text-[42px] font-black text-white leading-[1.35] tracking-tight"
+            style={{ animationDelay: '.18s' }}>
+            منظومة إدارة الإعاشة
+            <span className="block text-accent">في المشاعر المقدّسة</span>
+          </h2>
+
+          <p className="lg-rise mt-5 text-[15px] lg:text-[17px] font-bold text-white/60 leading-[2.1] max-w-lg mx-auto lg:mx-0"
+            style={{ animationDelay: '.26s' }}>
+            من تجهيز الوجبة إلى تسليمها، ومن بلاغ المراقب إلى قرار الإدارة —
+            في مكان واحد، ولحظة بلحظة.
+          </p>
+        </div>
+      </aside>
+
+      {/* ── the form ─────────────────────────────────────── */}
+      <main className="lg-form">
+        <span aria-hidden className="lg-warm" style={{ opacity: door === 'caterer' ? 1 : 0 }} />
+        <span aria-hidden className="lg-orb lg-orb-1" />
+        <span aria-hidden className="lg-orb lg-orb-2" />
+        <span aria-hidden className="lg-orb lg-orb-3" />
+        <span aria-hidden className="lg-orb lg-orb-4" />
+        <form onSubmit={submit} className="lg-card lg-rise" style={{ animationDelay: '.12s' }}>
+
+          <div className="text-center mb-6">
+            <span
+              className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-3 transition-colors duration-300"
+              style={{ background: `color-mix(in srgb, ${d.accent} 12%, #fff)` }}
+            >
+              <d.Icon size={26} weight="duotone" style={{ color: d.accent }} />
+            </span>
+            <h1 className="text-[21px] font-black text-ink">{d.title}</h1>
+            <p className="text-[12.5px] font-bold text-muted mt-1">{d.hint}</p>
+          </div>
+
+          {/* which door */}
+          <div className="lg-seg mb-5" role="tablist">
+            <span
+              aria-hidden
+              className="lg-seg-pill"
+              style={{ transform: door === 'admin' ? 'translateX(0)' : 'translateX(-100%)' }}
+            />
+            {Object.entries(DOORS).map(([key, meta]) => (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                aria-selected={door === key}
+                data-on={door === key}
+                onClick={() => pick(key)}
+                className="lg-seg-btn"
+              >
+                <meta.Icon size={15} weight={door === key ? 'fill' : 'regular'} />
+                {meta.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="space-y-3">
+            <div className="lg-field">
+              <EnvelopeSimple size={17} weight="bold" className="lg-input-icon" />
               <input
-                type="text"
-                value={idNumber}
-                onChange={e => {
-                  const v = numOnly(e.target.value);
-                  if (v.length <= 10) { setIdNumber(v); setError(''); }
-                }}
-                placeholder="1xxxxxxxxx"
-                inputMode="numeric"
-                maxLength={10}
-                autoFocus
-                className="w-full pr-11 pl-4 py-4 border-2 border-[#D1C4B9] rounded-2xl text-xl text-[#2D2926] placeholder-[#6D6E71]/30 focus:border-[#A98159] focus:ring-4 focus:ring-[#A98159]/15 outline-none transition-all tabular-nums tracking-[0.2em] text-center font-bold bg-white/70"
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="البريد الإلكتروني"
+                autoComplete="username"
                 dir="ltr"
+                className="lg-input text-left"
               />
             </div>
-            {/* Progress bar */}
-            <div className="mt-2 h-1.5 bg-[#F5EDE0] rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-300"
-                style={{
-                  width: `${idProgress * 100}%`,
-                  background: idProgress === 1
-                    ? 'linear-gradient(90deg, #16A34A, #15803D)'
-                    : 'linear-gradient(90deg, #C4A46E, #A98159)',
-                }}
+
+            <div className="lg-field">
+              <LockKey size={17} weight="bold" className="lg-input-icon" />
+              <input
+                type={reveal ? 'text' : 'password'}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="كلمة المرور"
+                autoComplete="current-password"
+                dir="ltr"
+                className="lg-input text-left"
               />
+              <button
+                type="button"
+                onClick={() => setReveal(v => !v)}
+                className="lg-eye"
+                aria-label={reveal ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+              >
+                {reveal ? <EyeSlash size={17} weight="bold" /> : <Eye size={17} weight="bold" />}
+              </button>
             </div>
-            <p className="text-[10px] text-[#9D8F85] mt-2 text-center">
-              أدخل رقم هويتك المسجل في النظام (10 أرقام)
-            </p>
           </div>
 
           {error && (
-            <p className="text-[#BA1A1A] text-sm text-center bg-red-50 border border-red-100 rounded-xl py-2 px-3 animate-shake">
-              {error}
-            </p>
+            <div className="mt-4 flex items-start gap-2 rounded-xl px-3 py-2.5 border border-red-200 bg-red-50">
+              <WarningCircle size={16} weight="fill" className="text-red-500 flex-shrink-0 mt-px" />
+              <p className="text-[12.5px] font-bold text-red-700 leading-relaxed">{error}</p>
+            </div>
           )}
 
-          <button
-            type="submit"
-            disabled={busy}
-            className="w-full py-4 rounded-xl font-bold text-white text-base transition-all hover:opacity-95 active:scale-[0.98] disabled:opacity-60 flex items-center justify-center gap-3"
-            style={{ 
-              background: 'linear-gradient(135deg,#C4A46E,#A98159,#8B6840)', 
-              boxShadow: '0 4px 20px rgba(169,129,89,0.25)' 
-            }}
-          >
-            {busy ? (
-              <>
-                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>جارٍ التحقق...</span>
-              </>
-            ) : 'تسجيل الدخول'}
+          <button type="submit" disabled={busy} className="lg-submit mt-5">
+            {busy
+              ? <CircleNotch size={19} weight="bold" className="lg-spin" />
+              : <>
+                  دخول {d.label}
+                  <ArrowLeft size={17} weight="bold" />
+                </>}
           </button>
-        </div>
-      </form>
 
-      <button
-        type="button"
-        onClick={() => { setAdminModal(true); setAdminError(''); setAdminEmail(''); setAdminPassword(''); }}
-        className="mt-6 w-full max-w-sm py-3 rounded-xl font-bold text-sm text-white transition-all hover:opacity-95 active:scale-[0.98] flex items-center justify-center gap-2"
-        style={{
-          background: 'linear-gradient(135deg,#4B4B4B,#2D2926)',
-          boxShadow: '0 4px 16px rgba(45,41,38,0.25)',
-          animation: 'fadeUp 0.7s ease 0.2s both'
-        }}
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="11" width="18" height="11" rx="2" />
-          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-        </svg>
-        دخول الإدارة
-      </button>
+          {/* The field team is not turned away without being told where to go. */}
+          <div className="mt-5 pt-4 border-t border-line flex items-start gap-2.5">
+            <DeviceMobile size={16} weight="duotone" className="text-muted flex-shrink-0 mt-0.5" />
+            <p className="text-[11.5px] font-bold text-muted leading-relaxed">
+              المراقبون والمشرفون يدخلون من تطبيق الجوال
+            </p>
+          </div>
 
-      <p className="mt-6 text-xs text-[#6D6E71]/60 text-center">© ١٤٤٧ هـ — ضيوف البيت لخدمات الحج والعمرة</p>
-
-      {/* Admin Login Modal */}
-      {adminModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center px-4"
-          style={{ background: 'rgba(45,41,38,0.45)', backdropFilter: 'blur(4px)' }}
-          onClick={e => { if (e.target === e.currentTarget) setAdminModal(false); }}
-        >
-          <form
-            onSubmit={handleAdminLogin}
-            className="w-full max-w-sm bg-white rounded-2xl shadow-[0_16px_48px_rgba(45,41,38,0.2)] border border-[#D1C4B9] overflow-hidden"
-            style={{ animation: 'fadeUp 0.25s ease forwards' }}
-          >
-            <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg,#4B4B4B,#2D2926)' }} />
-            <div className="px-7 py-7 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-bold text-[#2D2926]">دخول الإدارة</h2>
-                  <p className="text-[#6D6E71] text-xs mt-0.5">للمسؤولين المخوّلين فقط</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setAdminModal(false)}
-                  className="w-8 h-8 rounded-xl border border-[#D1C4B9] flex items-center justify-center text-[#6D6E71] hover:bg-[#F5EDE0] transition-colors text-lg leading-none"
-                >
-                  ×
-                </button>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#2D2926] mb-1.5">البريد الإلكتروني</label>
-                <input
-                  type="email"
-                  value={adminEmail}
-                  onChange={e => { setAdminEmail(e.target.value); setAdminError(''); }}
-                  placeholder="admin@domain.sa"
-                  className="w-full px-4 py-3 border-2 border-[#D1C4B9] rounded-xl text-sm text-[#2D2926] placeholder-[#6D6E71]/30 focus:border-[#2D2926] focus:ring-2 focus:ring-[#2D2926]/10 outline-none transition-all"
-                  dir="ltr"
-                  autoFocus
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#2D2926] mb-1.5">كلمة المرور</label>
-                <input
-                  type="password"
-                  value={adminPassword}
-                  onChange={e => { setAdminPassword(e.target.value); setAdminError(''); }}
-                  placeholder="••••••••"
-                  className="w-full px-4 py-3 border-2 border-[#D1C4B9] rounded-xl text-sm text-[#2D2926] placeholder-[#6D6E71]/30 focus:border-[#2D2926] focus:ring-2 focus:ring-[#2D2926]/10 outline-none transition-all"
-                  dir="ltr"
-                />
-              </div>
-
-              {adminError && (
-                <p className="text-[#BA1A1A] text-sm text-center bg-red-50 border border-red-100 rounded-xl py-2 px-3 animate-shake">
-                  {adminError}
-                </p>
-              )}
-
-              <button
-                type="submit"
-                disabled={adminBusy}
-                className="w-full py-3.5 rounded-xl font-bold text-white text-sm transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-60 flex items-center justify-center gap-3"
-                style={{ background: 'linear-gradient(135deg,#4B4B4B,#2D2926)' }}
-              >
-                {adminBusy ? (
-                  <>
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>جارٍ التحقق...</span>
-                  </>
-                ) : 'دخول'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* تأثيرات CSS للحركة */}
-      <style>{`
-        @keyframes fadeUp {
-          from { opacity:0; transform:translateY(12px); }
-          to   { opacity:1; transform:translateY(0); }
-        }
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          20%, 60% { transform: translateX(-3px); }
-          40%, 80% { transform: translateX(3px); }
-        }
-        .animate-shake { animation: shake 0.3s ease-in-out; }
-
-        .mesh-blob {
-          position: absolute;
-          border-radius: 50%;
-          filter: blur(80px);
-          opacity: 0.7;
-          will-change: transform;
-        }
-        .mesh-blob-1 {
-          width: 520px; height: 520px;
-          top: -150px; right: -120px;
-          background: radial-gradient(circle, #E8C99B 0%, transparent 70%);
-          animation: drift1 22s ease-in-out infinite;
-        }
-        .mesh-blob-2 {
-          width: 460px; height: 460px;
-          top: 30%; left: -140px;
-          background: radial-gradient(circle, #D4A574 0%, transparent 70%);
-          animation: drift2 28s ease-in-out infinite;
-        }
-        .mesh-blob-3 {
-          width: 580px; height: 580px;
-          bottom: -180px; right: 10%;
-          background: radial-gradient(circle, #F2D9B5 0%, transparent 70%);
-          animation: drift3 26s ease-in-out infinite;
-        }
-        .mesh-blob-4 {
-          width: 380px; height: 380px;
-          bottom: 20%; left: 30%;
-          background: radial-gradient(circle, #C4A46E 0%, transparent 70%);
-          opacity: 0.45;
-          animation: drift4 32s ease-in-out infinite;
-        }
-        @keyframes drift1 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          50%      { transform: translate(-40px, 60px) scale(1.1); }
-        }
-        @keyframes drift2 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          50%      { transform: translate(50px, -40px) scale(0.95); }
-        }
-        @keyframes drift3 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          50%      { transform: translate(-30px, -50px) scale(1.05); }
-        }
-        @keyframes drift4 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          50%      { transform: translate(40px, 40px) scale(1.1); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .mesh-blob { animation: none; }
-        }
-      `}</style>
+          <p className="mt-5 text-center text-[10.5px] font-bold text-muted/60">
+            © {new Date().getFullYear()} {BRAND.companyFullAr}
+          </p>
+        </form>
+      </main>
     </div>
   );
 }

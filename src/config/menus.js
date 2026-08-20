@@ -1,4 +1,4 @@
-import { NATIONALITIES } from './nationalities.js';
+import { NATIONALITIES, NAT_LOOKUP } from './nationalities.js';
 
 export const HAJJ_DAYS = [
   { value: '7',  dayAr: '٧',  label: '٧ ذو الحجة ١٤٤٧'  },
@@ -16,9 +16,9 @@ export const MEAL_LABEL = { breakfast: 'الإفطار', lunch: 'الغداء', 
 export const CATEGORY_KEYS = ['main', 'side', 'drinks', 'snacks'];
 export const CATEGORY_META = {
   main:   { label: 'الطبق الرئيسي', color: '#DC2626', bg: '#FEF2F2', border: '#FECACA' },
-  side:   { label: 'الأصناف الجانبية', color: '#10B981', bg: '#F0FDF4', border: '#86EFAC' },
-  drinks: { label: 'المشروبات',     color: '#3B82F6', bg: '#EFF6FF', border: '#BFDBFE' },
-  snacks: { label: 'السناكات',      color: '#8B5CF6', bg: '#F5F3FF', border: '#DDD6FE' },
+  side:   { label: 'الأصناف الجانبية', color: '#5E9070', bg: '#F1F6F2', border: '#CADFD1' },
+  drinks: { label: 'المشروبات',     color: '#4E7CB0', bg: '#EFF6FF', border: '#BFDBFE' },
+  snacks: { label: 'السناكات',      color: '#B4674E', bg: '#FBF3EF', border: '#EBCFC3' },
 };
 
 /**
@@ -1442,9 +1442,56 @@ MENUS.bangladesh2['13'] = {
   dinner: { main: [], side: [], drinks: [], snacks: [] },
 };
 
+/* ── Saved menus ──────────────────────────────────────────────────────────
+   Everything above is what ships in the box: one operator's dishes, changed by
+   changing this file. That is no longer who uses the system — every company
+   brings its own nationalities and its own kitchen, and none of them can cut a
+   release to add a soup.
+
+   Menus the customer saves live in the `menus` table and are laid over the
+   built-in ones here, at the meal. Laying them over at this level rather than
+   at the reader means the observer's card, the phase alerts and the admin
+   screen all see a saved menu without one of them being changed — they call
+   getMeal(), and getMeal() answers with whatever is current.
+
+   A meal the customer has not touched still answers from the block above, so a
+   half-entered season is never half-blank. */
+let OVERLAY = {};
+
+/** @param {Array<{nationalityId,day,meal,main,side,drinks,snacks,location,time}>} rows */
+export function setMenuOverlay(rows) {
+  const next = {};
+  for (const r of rows || []) {
+    const natKey = r?.nationalityId ?? r?.nationality;
+    if (!natKey || r.day == null || !r.meal) continue;
+    const nat = (next[natKey] ||= {});
+    const day = (nat[String(r.day)] ||= {});
+    day[r.meal] = {
+      main:     r.main   || [],
+      side:     r.side   || [],
+      drinks:   r.drinks || [],
+      snacks:   r.snacks || [],
+      location: r.location || null,
+      time:     r.time     || null,
+    };
+  }
+  OVERLAY = next;
+}
+
+/** True when this exact meal was authored by the customer. */
+export function isSavedMeal(nationalityKey, day, mealKey) {
+  return Boolean(OVERLAY?.[nationalityKey]?.[String(day)]?.[mealKey]);
+}
+
 /** Returns the meal object for (nationality, day, meal) — always a defined shape */
 export function getMeal(nationalityKey, day, mealKey) {
-  const raw = MENUS?.[nationalityKey]?.[String(day)]?.[mealKey] || {};
+  const saved = OVERLAY?.[nationalityKey]?.[String(day)]?.[mealKey];
+  /* Once a season's roster is loaded, the key is a row id rather than a name
+     like 'indonesia'. legacyKey is what still points that row at a menu
+     compiled in above; a group the customer created has none, and correctly
+     falls through to an empty meal rather than borrowing someone else's food. */
+  const builtinKey = NAT_LOOKUP?.[nationalityKey]?.legacyKey || nationalityKey;
+  const raw = saved || MENUS?.[builtinKey]?.[String(day)]?.[mealKey] || {};
   return {
     main:     raw.main     || [],
     side:     raw.side     || [],

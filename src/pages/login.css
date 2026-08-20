@@ -1,0 +1,352 @@
+/* src/pages/login.css
+ *
+ * The sign-in page, and only it.
+ *
+ * The screen is split: identity on the right, where the eye enters in Arabic,
+ * and the form on the left, where it settles to act. The navy half carries the
+ * brand and does the moving; the white half stays still, because a field that
+ * drifts while you type into it is a field you mistype.
+ *
+ * All motion here is slow — twenty to thirty seconds a cycle. Anything faster
+ * on a page people see several times a day stops being atmosphere and starts
+ * being a distraction.
+ */
+
+/* ── the two halves ── */
+.lg-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 1024px) {
+  .lg-page { grid-template-columns: 1.05fr 1fr; }
+}
+
+/* ── the navy half ── */
+.lg-brand {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 3rem 2rem;
+  /* Four layers, darkest last: a wide highlight where the light would fall, a
+     warm one opposite it, then the navy ramp underneath. A single flat gradient
+     is the thing that dates an interface fastest. */
+  background:
+    radial-gradient(120% 80% at 78% 8%, rgb(var(--c-primary-400) / 0.34) 0%, transparent 55%),
+    radial-gradient(90% 70% at 12% 92%, rgb(var(--c-accent) / 0.16) 0%, transparent 58%),
+    linear-gradient(150deg,
+      rgb(var(--c-primary-700)) 0%,
+      rgb(var(--c-primary)) 45%,
+      rgb(var(--c-primary-900)) 100%);
+}
+
+/* A vignette pulls the eye back to the middle, where the lockup sits. */
+.lg-brand::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 78% 66% at 50% 45%, transparent 40%, rgb(var(--c-primary-900) / 0.42) 100%);
+}
+@media (min-width: 1024px) {
+  .lg-brand { padding: 4rem 4.5rem; }
+}
+
+/* Aurora — three fields of colour drifting past each other. Blurred far past
+   their own edges so no shape is ever legible as a shape. */
+.lg-aurora {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(72px);
+  pointer-events: none;
+  will-change: transform;
+}
+.lg-aurora-1 {
+  width: 30rem; height: 30rem;
+  top: -8rem; right: -6rem;
+  background: rgb(var(--c-accent) / 0.30);
+  animation: lgDrift1 26s ease-in-out infinite;
+}
+.lg-aurora-2 {
+  width: 26rem; height: 26rem;
+  bottom: -7rem; left: -5rem;
+  background: rgb(var(--c-primary-400) / 0.42);
+  animation: lgDrift2 32s ease-in-out infinite;
+}
+.lg-aurora-3 {
+  width: 20rem; height: 20rem;
+  top: 42%; left: 28%;
+  background: rgb(var(--c-accent) / 0.14);
+  animation: lgDrift3 24s ease-in-out infinite;
+}
+
+@keyframes lgDrift1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(-3rem, 2.5rem) scale(1.12); }
+}
+@keyframes lgDrift2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(3.5rem, -2rem) scale(1.08); }
+}
+@keyframes lgDrift3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(2rem, 2rem) scale(0.9); }
+}
+
+/* A fine rule grid, barely there — it gives the blur something to be measured
+   against, which is what stops it reading as a smear. */
+.lg-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.045) 1px, transparent 1px);
+  background-size: 62px 62px;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 40%, #000 30%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 40%, #000 30%, transparent 78%);
+}
+
+/* The seam where the two halves meet. */
+.lg-seam {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, rgb(var(--c-accent) / 0.5), transparent);
+}
+
+/* ── the white half ── */
+/* The form half used to be one flat fill, which left the card floating on
+   nothing. It now carries light of its own: a gold bloom low on the outer
+   edge, a cool one high on the inner edge, and a warm paper tone under both —
+   enough to break the white without ever competing with the card. The gold
+   deepens when the caterer's door is chosen, so the background answers the
+   segmented control too. */
+.lg-form {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.25rem;
+  isolation: isolate;
+  overflow: hidden;
+  background: linear-gradient(168deg, #FDFBF7 0%, rgb(var(--c-bg)) 48%, #F4EEE3 100%);
+}
+
+/* Light in the room. Four of them, drifting on different clocks so the pattern
+   never repeats within a session — and blurred past their own edges, so what
+   the eye registers is warmth moving, not four circles going round. */
+.lg-orb {
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(64px);
+  will-change: transform;
+}
+.lg-orb-1 {
+  width: 30rem; height: 30rem;
+  bottom: -9rem; inset-inline-start: -8rem;
+  background: rgb(var(--c-accent) / 0.38);
+  animation: lgFloat1 30s ease-in-out infinite;
+}
+.lg-orb-2 {
+  width: 24rem; height: 24rem;
+  top: -7rem; inset-inline-end: -6rem;
+  background: rgb(var(--c-primary-400) / 0.26);
+  animation: lgFloat2 36s ease-in-out infinite;
+}
+.lg-orb-3 {
+  width: 19rem; height: 19rem;
+  top: 46%; inset-inline-start: 52%;
+  background: rgb(var(--c-accent) / 0.22);
+  animation: lgFloat3 28s ease-in-out infinite;
+}
+.lg-orb-4 {
+  width: 15rem; height: 15rem;
+  bottom: 12%; inset-inline-end: 8%;
+  background: color-mix(in srgb, var(--lg-accent) 22%, transparent);
+  animation: lgFloat4 34s ease-in-out infinite;
+}
+
+@keyframes lgFloat1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(4rem, -3rem) scale(1.14); }
+}
+@keyframes lgFloat2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(-3.5rem, 3.5rem) scale(1.1); }
+}
+@keyframes lgFloat3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(-4rem, 2rem) scale(0.88); }
+  66%      { transform: translate(2.5rem, -3rem) scale(1.06); }
+}
+@keyframes lgFloat4 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(-2.5rem, -2.5rem) scale(1.2); }
+}
+
+/* A second, tighter bloom that only the gold door lights.
+
+   A real element with an inline opacity rather than a pseudo-element reading a
+   custom property — one place, one owner, and the transition belongs to the
+   thing that changes. */
+.lg-warm {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(38% 30% at 14% 82%, color-mix(in srgb, var(--lg-accent) 24%, transparent) 0%, transparent 70%);
+  transition: opacity .55s ease;
+}
+
+/* Grain. A flat gradient on a modern screen bands visibly; a little noise is
+   what stops the eye finding the steps. Generated inline so the page carries
+   no request for it. */
+.lg-form::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.55;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+}
+@media (min-width: 1024px) {
+  .lg-form { padding: 3rem 3rem; }
+}
+
+.lg-card {
+  width: 100%;
+  max-width: 25rem;
+  background: #fff;
+  border: 1px solid rgb(var(--c-line));
+  border-radius: 1.75rem;
+  padding: 2rem 1.75rem 1.75rem;
+  box-shadow:
+    0 1px 2px rgb(var(--c-ink) / 0.04),
+    0 2px 8px -2px rgb(var(--c-ink) / 0.05),
+    0 28px 60px -28px rgb(var(--c-ink) / 0.28);
+  backdrop-filter: blur(2px);
+}
+
+/* ── the segmented control ──────────────────────────────────
+   Two doors, and the page says which one you are standing at: the pill slides,
+   and the accent it carries is the accent the whole card takes on. */
+.lg-seg {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 0.3rem;
+  border-radius: 1rem;
+  background: rgb(var(--c-bg));
+  border: 1px solid rgb(var(--c-line));
+}
+.lg-seg-pill {
+  position: absolute;
+  top: 0.3rem;
+  bottom: 0.3rem;
+  width: calc(50% - 0.3rem);
+  border-radius: 0.75rem;
+  background: var(--lg-accent);
+  box-shadow: 0 4px 14px -4px var(--lg-accent);
+  transition: transform .38s cubic-bezier(.4, 0, .2, 1), background .3s ease;
+}
+.lg-seg-btn {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.5rem;
+  border-radius: 0.75rem;
+  font-size: 13px;
+  font-weight: 800;
+  color: rgb(var(--c-muted));
+  transition: color .25s ease;
+}
+.lg-seg-btn[data-on='true'] { color: #fff; }
+
+/* ── fields ──────────────────────────────────────────────── */
+.lg-field { position: relative; }
+.lg-input {
+  width: 100%;
+  height: 3.25rem;
+  padding-inline: 2.75rem 1rem;
+  border-radius: 1rem;
+  border: 1.5px solid rgb(var(--c-line));
+  background: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  color: rgb(var(--c-ink));
+  outline: none;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.lg-input::placeholder { color: rgb(var(--c-muted) / 0.55); font-weight: 600; }
+.lg-input:focus {
+  border-color: var(--lg-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--lg-accent) 16%, transparent);
+}
+.lg-input-icon {
+  position: absolute;
+  inset-inline-start: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgb(var(--c-muted));
+  pointer-events: none;
+  transition: color .2s ease;
+}
+.lg-field:focus-within .lg-input-icon { color: var(--lg-accent); }
+.lg-eye {
+  position: absolute;
+  inset-inline-end: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgb(var(--c-muted));
+  padding: 0.35rem;
+  border-radius: 0.5rem;
+  transition: color .2s ease, background .2s ease;
+}
+.lg-eye:hover { color: var(--lg-accent); background: rgb(var(--c-bg)); }
+
+/* ── the button ──────────────────────────────────────────── */
+.lg-submit {
+  width: 100%;
+  height: 3.25rem;
+  border-radius: 1rem;
+  background: var(--lg-accent);
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 10px 26px -12px var(--lg-accent);
+  transition: transform .15s ease, box-shadow .25s ease, filter .2s ease, background .3s ease;
+}
+.lg-submit:hover:not(:disabled) { filter: brightness(1.06); box-shadow: 0 14px 32px -12px var(--lg-accent); }
+.lg-submit:active:not(:disabled) { transform: translateY(1px); }
+.lg-submit:disabled { opacity: .6; cursor: not-allowed; }
+
+/* ── entrances ───────────────────────────────────────────── */
+@keyframes lgRise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+.lg-rise { animation: lgRise .55s cubic-bezier(.2, .7, .3, 1) both; }
+
+@keyframes lgSpin { to { transform: rotate(360deg); } }
+.lg-spin { animation: lgSpin .8s linear infinite; }
+
+/* Nobody asked the page to move. */
+@media (prefers-reduced-motion: reduce) {
+  .lg-aurora, .lg-orb, .lg-rise, .lg-spin { animation: none !important; }
+  .lg-seg-pill { transition: none; }
+}

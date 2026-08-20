@@ -1,15 +1,14 @@
 /* Print-specific layout for /admin/report-view */
 
-@page {
-  size: A4;
-  margin: 1.2cm;
-}
+/* The page size is injected by the route (see lib/printPage.js), not declared
+   here: @page takes no selector, every stylesheet lands in one document, and
+   the last rule parsed would win for every printable page in the app. */
 
 .report-view {
-  background: #F5EFE3;
+  background: rgb(var(--c-bg));
   min-height: 100vh;
   padding: 2rem 0;
-  font-family: 'IBM Plex Sans Arabic', 'Cairo', Tahoma, sans-serif;
+  font-family: 'Cairo', Tahoma, sans-serif;
   direction: rtl;
 }
 
@@ -18,12 +17,12 @@
   top: 0;
   z-index: 30;
   background: #fff;
-  border-bottom: 1px solid #EDE5DC;
+  border-bottom: 1px solid rgb(var(--c-line));
   padding: 0.85rem 1.25rem;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  box-shadow: 0 2px 12px rgba(45, 41, 38, 0.06);
+  box-shadow: 0 2px 12px rgb(var(--c-ink) / 0.06);
   flex-wrap: wrap;
 }
 
@@ -33,7 +32,7 @@
   min-height: 29.7cm;
   margin: 1.5rem auto;
   padding: 1.5cm;
-  box-shadow: 0 6px 28px rgba(45, 41, 38, 0.08);
+  box-shadow: 0 6px 28px rgb(var(--c-ink) / 0.08);
   page-break-after: always;
   break-after: page;
   display: flex;

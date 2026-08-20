@@ -1,6 +1,20 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronRight, Save, CheckCircle2, AlertCircle, Mountain, ArrowLeft, Ban, Calendar, Camera, Loader2, X, Search, Check } from 'lucide-react';
+import {
+  CaretRight as ChevronRight,
+  FloppyDisk as Save,
+  CheckCircle as CheckCircle2,
+  WarningCircle as AlertCircle,
+  Mountains as Mountain,
+  ArrowLeft,
+  Prohibit as Ban,
+  CalendarBlank as Calendar,
+  Camera,
+  CircleNotch as Loader2,
+  X,
+  MagnifyingGlass as Search,
+  Check,
+} from '@phosphor-icons/react';
 import { db, serverTimestamp, uploadFile, STORAGE_BUCKETS } from '../../lib/db.js';
 import { compressImage } from '../../lib/imageCompression.js';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -33,7 +47,6 @@ export default function SupArafatReadiness() {
   const [selectedTask, setSelectedTask] = useState(null);
   const photoInputRefs = useRef({});
 
-  
   const [tasks,        setTasks]        = useState([]);
   const [completions,  setCompletions]  = useState([]);
   const [tasksLoading, setTasksLoading] = useState(true);
@@ -188,44 +201,44 @@ export default function SupArafatReadiness() {
   /* Sweep mode — center picker (shown before the form when no center is picked) */
   if (sweepMode && !sweepCenter) {
     return (
-      <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-28 font-arabic px-4 md:px-8">
-        <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 md:px-8 py-3 mb-6 shadow-sm">
+      <div dir="rtl" className="min-h-screen bg-canvas pb-28 font-arabic px-4 md:px-8">
+        <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-line w-full px-4 md:px-8 py-3 mb-6 shadow-sm">
           <div className="max-w-5xl mx-auto flex items-center justify-between">
             <button onClick={() => navigate('/supervisor-home')} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition shrink-0">
-              <ChevronRight className="text-[#A98159]" size={22} strokeWidth={2.5} />
+              <ChevronRight className="text-primary" size={22} weight="bold" />
             </button>
-            <h1 className="text-base font-bold text-[#2D2926] absolute left-1/2 -translate-x-1/2 whitespace-nowrap">جاهزية عرفة — اختر المركز</h1>
+            <h1 className="text-base font-bold text-ink absolute left-1/2 -translate-x-1/2 whitespace-nowrap">جاهزية عرفة</h1>
             <div className="w-10 shrink-0" />
           </div>
         </header>
 
         <div className="max-w-3xl mx-auto space-y-4">
-          <div className="bg-gradient-to-br from-[#3D3330] via-[#2D2926] to-[#1F1A17] rounded-3xl p-5 shadow-lg flex items-center gap-3">
-            <div className="bg-gradient-to-br from-[#0E7C66] to-[#065F4E] p-3 rounded-2xl shadow-md">
-              <Mountain size={22} className="text-white" strokeWidth={2.25} />
+          <div className="bg-gradient-to-br from-ink-800 via-ink to-[#1F1A17] rounded-3xl p-5 shadow-lg flex items-center gap-3">
+            <div className="bg-gradient-to-br from-[#5E9070] to-[#3D6349] p-3 rounded-2xl shadow-md">
+              <Mountain size={22} className="text-white" weight="bold" />
             </div>
             <div>
-              <p className="text-[#0E7C66] text-[10px] font-black uppercase tracking-widest mb-0.5">جاهزية عرفة</p>
-              <h2 className="text-white text-lg font-bold leading-snug">اختر المركز لرفع تقييم الجاهزية</h2>
+              <p className="text-[#5E9070] text-[10px] font-black uppercase tracking-widest mb-0.5">جاهزية عرفة</p>
+              <h2 className="text-white text-lg font-bold leading-snug">المراكز</h2>
               <p className="text-white/60 text-xs mt-1">تقدر تختار أي مركز بدون الحاجة لإسناد مسبق.</p>
             </div>
           </div>
 
           <div className="relative">
-            <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A98159]" strokeWidth={2.25} />
+            <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-primary" weight="bold" />
             <input
               type="text"
               value={centerSearch}
               onChange={e => setCenterSearch(e.target.value)}
               placeholder="ابحث برقم المركز أو المتعهد..."
-              className="w-full pr-10 pl-4 py-3 bg-white border border-[#D1C4B9] rounded-2xl text-sm font-bold outline-none focus:border-[#A98159] focus:ring-2 focus:ring-[#A98159]/20 transition-all"
+              className="w-full pr-10 pl-4 py-3 bg-white border border-line rounded-2xl text-sm font-bold outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
             />
           </div>
 
           {filteredCenters.length === 0 ? (
-            <div className="bg-white rounded-2xl py-14 text-center border border-[#EDE5DC]">
-              <Ban size={32} className="mx-auto text-[#D1C4B9] mb-2" strokeWidth={1.5} />
-              <p className="text-[#9D8F85] text-sm font-bold">لا توجد مراكز مطابقة للبحث</p>
+            <div className="bg-white rounded-2xl py-14 text-center border border-line">
+              <Ban size={32} className="mx-auto text-line mb-2" weight="light" />
+              <p className="text-muted text-sm font-bold">لا توجد مراكز مطابقة للبحث</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
@@ -240,24 +253,24 @@ export default function SupArafatReadiness() {
                     className={`group/ctr relative rounded-2xl p-3 text-right border-2 transition-all active:scale-[0.98] ${
                       done
                         ? 'bg-gradient-to-br from-green-50 to-white border-green-300 hover:border-green-500 hover:shadow-[0_6px_18px_rgba(34,197,94,0.20)]'
-                        : 'bg-gradient-to-br from-white to-[#FDF8F0]/60 border-[#EDE5DC] hover:border-[#0E7C66] hover:shadow-[0_6px_18px_rgba(14,124,102,0.18)]'
+                        : 'bg-gradient-to-br from-white to-background/60 border-line hover:border-[#5E9070] hover:shadow-[0_6px_18px_rgba(14,124,102,0.18)]'
                     }`}>
                     {done && (
                       <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-green-500 border-2 border-white flex items-center justify-center shadow-md">
-                        <Check size={11} strokeWidth={3} className="text-white" />
+                        <Check size={11} weight="bold" className="text-white" />
                       </div>
                     )}
                     <div className="flex items-center gap-2.5">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
-                        done ? 'bg-green-50 border-green-200' : 'bg-[#F0FDF4] border-[#0E7C66]/20'
+                        done ? 'bg-green-50 border-green-200' : 'bg-[#F0FDF4] border-[#5E9070]/20'
                       }`}>
-                        <span className={`text-[12px] font-black tabular-nums ${done ? 'text-green-700' : 'text-[#0E7C66]'}`}>
+                        <span className={`text-[12px] font-black tabular-nums ${done ? 'text-green-700' : 'text-[#5E9070]'}`}>
                           {(c.id.match(/\d+/) || ['—'])[0]}
                         </span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-sm text-[#2D2926] truncate">{c.id}</p>
-                        <p className={`text-[10px] font-bold truncate ${done ? 'text-green-700' : 'text-[#A98159]'}`}>
+                        <p className="font-bold text-sm text-ink truncate">{c.id}</p>
+                        <p className={`text-[10px] font-bold truncate ${done ? 'text-green-700' : 'text-primary'}`}>
                           {done ? 'تم الرفع اليوم' : (c.caterer || '—')}
                         </p>
                       </div>
@@ -272,16 +285,15 @@ export default function SupArafatReadiness() {
     );
   }
 
-
   if (!selectedTask) {
     return (
-      <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-28 font-arabic px-4 md:px-8">
-        <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 md:px-8 py-3 mb-6 shadow-sm">
+      <div dir="rtl" className="min-h-screen bg-canvas pb-28 font-arabic px-4 md:px-8">
+        <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-line w-full px-4 md:px-8 py-3 mb-6 shadow-sm">
           <div className="max-w-5xl mx-auto flex items-center justify-between">
             <button onClick={() => navigate('/supervisor-home')} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition shrink-0">
-              <ChevronRight className="text-[#A98159]" size={22} strokeWidth={2.5} />
+              <ChevronRight className="text-primary" size={22} weight="bold" />
             </button>
-            <h1 className="text-base font-bold text-[#2D2926] absolute left-1/2 -translate-x-1/2 whitespace-nowrap">جاهزية مشعر عرفة</h1>
+            <h1 className="text-base font-bold text-ink absolute left-1/2 -translate-x-1/2 whitespace-nowrap">جاهزية مشعر عرفة</h1>
             <div className="w-10 shrink-0" />
           </div>
         </header>
@@ -289,18 +301,18 @@ export default function SupArafatReadiness() {
         <div className="max-w-2xl mx-auto mt-4">
           {tasksLoading ? (
             <div className="flex flex-col items-center justify-center py-24 gap-4">
-              <div className="w-10 h-10 border-4 border-[#A98159]/30 border-t-[#A98159] rounded-full animate-spin" />
-              <p className="text-[#6D6E71] font-bold text-sm">جاري التحميل...</p>
+              <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+              <p className="text-muted font-bold text-sm">جاري التحميل...</p>
             </div>
           ) : arafatTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-              <div className="w-20 h-20 bg-[#F5F0EB] rounded-full flex items-center justify-center mb-2">
-                <Ban size={36} className="text-[#D1C4B9]" strokeWidth={1.5} />
+              <div className="w-20 h-20 bg-[rgb(var(--c-primary-50))] rounded-full flex items-center justify-center mb-2">
+                <Ban size={36} className="text-line" weight="light" />
               </div>
-              <p className="text-[#2D2926] font-bold text-lg">لا توجد مهام حالياً</p>
-              <p className="text-[#9D8F85] text-sm max-w-xs">لم يتم إسناد مهام جاهزية عرفة لهذا المركز بعد</p>
+              <p className="text-ink font-bold text-lg">لا توجد مهام حالياً</p>
+              <p className="text-muted text-sm max-w-xs">لم يتم إسناد مهام جاهزية عرفة لهذا المركز بعد</p>
               <button onClick={() => navigate('/supervisor-home')}
-                className="mt-4 flex items-center gap-2 text-[#A98159] font-bold text-sm border border-[#A98159]/30 px-5 py-2.5 rounded-xl hover:bg-[#FDF8F0] transition">
+                className="mt-4 flex items-center gap-2 text-primary font-bold text-sm border border-primary/30 px-5 py-2.5 rounded-xl hover:bg-background transition">
                 <ArrowLeft size={16} /> العودة للرئيسية
               </button>
             </div>
@@ -308,27 +320,27 @@ export default function SupArafatReadiness() {
             <div className="space-y-3">
               {pendingTasks.length > 0 && (
                 <>
-                  <p className="text-sm font-black text-[#2D2926] px-1 mb-2">المهام المعلقة</p>
+                  <p className="text-sm font-black text-ink px-1 mb-2">المهام المعلقة</p>
                   {pendingTasks.map(task => (
                     <button key={task.id}
                       onClick={() => setSelectedTask({ taskId: task.id, scheduledDate: task.scheduledDate })}
-                      className="w-full bg-gradient-to-br from-white to-[#FDF8F0]/60 border border-[#D1C4B9] rounded-3xl p-5 text-right flex items-center gap-4 hover:border-[#A98159] hover:shadow-[0_8px_24px_rgba(169,129,89,0.18)] hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98]">
-                      <div className="w-12 h-12 bg-[#FDF8F0] border border-[#A98159]/20 rounded-2xl flex items-center justify-center shrink-0">
-                        <Mountain className="text-[#A98159]" size={22} />
+                      className="w-full bg-gradient-to-br from-white to-background/60 border border-line rounded-3xl p-5 text-right flex items-center gap-4 hover:border-primary hover:shadow-[0_8px_24px_rgb(var(--c-primary)/0.18)] hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98]">
+                      <div className="w-12 h-12 bg-background border border-primary/20 rounded-2xl flex items-center justify-center shrink-0">
+                        <Mountain className="text-primary" size={22} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="font-bold text-[#2D2926] text-sm">جاهزية مشعر عرفة</p>
-                          <span className="text-[9px] font-black text-[#A98159] bg-[#FDF8F0] border border-[#A98159]/30 px-1.5 py-0.5 rounded-full">معلقة</span>
+                          <p className="font-bold text-ink text-sm">جاهزية مشعر عرفة</p>
+                          <span className="text-[9px] font-black text-primary bg-background border border-primary/30 px-1.5 py-0.5 rounded-full">معلقة</span>
                         </div>
                         {task.scheduledDate && (
                           <div className="flex items-center gap-1.5 mt-1">
-                            <Calendar size={12} className="text-[#A98159]" />
-                            <span className="text-xs text-[#A98159] font-bold">{task.scheduledDate}</span>
+                            <Calendar size={12} className="text-primary" />
+                            <span className="text-xs text-primary font-bold">{task.scheduledDate}</span>
                           </div>
                         )}
                       </div>
-                      <ChevronRight size={18} className="text-[#A98159] shrink-0" />
+                      <ChevronRight size={18} className="text-primary shrink-0" />
                     </button>
                   ))}
                 </>
@@ -336,7 +348,7 @@ export default function SupArafatReadiness() {
 
               {arafatTasks.length > 0 && pendingTasks.length === 0 && (
                 <div className="bg-green-50 border border-green-200 rounded-2xl py-10 text-center">
-                  <CheckCircle2 size={32} className="mx-auto text-green-400 mb-2" strokeWidth={1.5} />
+                  <CheckCircle2 size={32} className="mx-auto text-green-400 mb-2" weight="light" />
                   <p className="text-green-700 font-bold text-sm">جميع مهام هذا المركز مكتملة</p>
                   <p className="text-green-600 text-xs mt-1">تحقق من سجل نشاط المراقبين في الصفحة الرئيسية</p>
                 </div>
@@ -348,34 +360,33 @@ export default function SupArafatReadiness() {
     );
   }
 
-  
   return (
-    <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-28 font-arabic px-4 md:px-8">
-      <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 md:px-8 py-3 mb-6 shadow-sm">
+    <div dir="rtl" className="min-h-screen bg-canvas pb-28 font-arabic px-4 md:px-8">
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-line w-full px-4 md:px-8 py-3 mb-6 shadow-sm">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <button onClick={() => {
               setSelectedTask(null); setAnswers({}); setDetails({}); setPhotos({});
               if (sweepMode) setSweepCenter(null);
             }}
             className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition shrink-0">
-            <ChevronRight className="text-[#A98159]" size={22} strokeWidth={2.5} />
+            <ChevronRight className="text-primary" size={22} weight="bold" />
           </button>
-          <h1 className="text-base font-bold text-[#2D2926] absolute left-1/2 -translate-x-1/2 whitespace-nowrap">جاهزية عرفة</h1>
+          <h1 className="text-base font-bold text-ink absolute left-1/2 -translate-x-1/2 whitespace-nowrap">جاهزية عرفة</h1>
           <div className="w-10 shrink-0" />
         </div>
       </header>
 
-      <div className="rounded-[2.5rem] p-6 my-6 text-white shadow-lg relative overflow-hidden bg-[#2D2926]">
+      <div className="rounded-[2.5rem] p-6 my-6 text-white shadow-lg relative overflow-hidden bg-ink">
         <div className="flex justify-between items-center mb-6 relative z-10">
           <div className="flex items-center gap-3">
-            <div className="bg-white/10 p-3 rounded-2xl"><Mountain className="text-[#A98159]" size={28} /></div>
+            <div className="bg-white/10 p-3 rounded-2xl"><Mountain className="text-primary" size={28} /></div>
             <div>
-              <p className="text-[#A98159] text-xs font-bold">نموذج الفحص الميداني</p>
+              <p className="text-primary text-xs font-bold">نموذج الفحص الميداني</p>
               <h2 className="text-xl font-bold">{ALL_CRITERIA.length} بندًا للجاهزية</h2>
               {selectedTask?.scheduledDate && (
                 <div className="flex items-center gap-1.5 mt-1">
-                  <Calendar size={12} className="text-[#A98159]" />
-                  <span className="text-xs text-[#A98159] font-bold">{selectedTask.scheduledDate}</span>
+                  <Calendar size={12} className="text-primary" />
+                  <span className="text-xs text-primary font-bold">{selectedTask.scheduledDate}</span>
                 </div>
               )}
             </div>
@@ -384,7 +395,7 @@ export default function SupArafatReadiness() {
         <div className="flex flex-wrap justify-center gap-3 mt-4 w-full">
           {[
             { lbl: 'المشرف',  val: profile?.nameAr || '—', cls: 'text-white' },
-            { lbl: 'المركز',  val: centerId,                 cls: 'text-[#A98159]' },
+            { lbl: 'المركز',  val: centerId,                 cls: 'text-primary' },
             { lbl: 'المتعهد', val: catererName,              cls: 'text-white' },
           ].map(c => (
             <div key={c.lbl} className="bg-white/5 rounded-2xl px-4 py-3 flex-1 min-w-[120px] flex flex-col items-center justify-center border border-white/10 shadow-sm">
@@ -398,12 +409,12 @@ export default function SupArafatReadiness() {
       {SECTIONS.map(section => (
         <div key={section.id} className="mb-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="h-px flex-1 bg-gradient-to-l from-transparent via-[#A98159]/40 to-transparent" />
-            <span className="px-5 py-2 rounded-full text-white text-xs font-black shadow-[0_4px_14px_rgba(169,129,89,0.35)]"
-              style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
+            <div className="h-px flex-1 bg-gradient-to-l from-transparent via-primary/40 to-transparent" />
+            <span className="px-5 py-2 rounded-full text-white text-xs font-black shadow-[0_4px_14px_rgb(var(--c-primary)/0.35)]"
+              style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
               {section.title}
             </span>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#A98159]/40 to-transparent" />
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {section.criteria.map(c => {
@@ -411,10 +422,10 @@ export default function SupArafatReadiness() {
               const isYes = ans === 'نعم';
               const isNo  = ans === 'لا';
               return (
-                <div key={c.id} className={`group/q relative bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-3xl shadow-[0_2px_12px_rgba(45,41,38,0.05)] overflow-hidden transition-all duration-300 ${
+                <div key={c.id} className={`group/q relative bg-gradient-to-br from-white via-white to-background/40 rounded-3xl shadow-[0_2px_12px_rgb(var(--c-ink)/0.05)] overflow-hidden transition-all duration-300 ${
                   ans
-                    ? 'border-2 border-[#A98159]/40 shadow-[0_6px_24px_rgba(169,129,89,0.18)]'
-                    : 'border border-[#EDE5DC] hover:shadow-[0_4px_18px_rgba(45,41,38,0.08)]'
+                    ? 'border-2 border-primary/40 shadow-[0_6px_24px_rgb(var(--c-primary)/0.18)]'
+                    : 'border border-line hover:shadow-[0_4px_18px_rgb(var(--c-ink)/0.08)]'
                 }`}>
                   {ans && (
                     <div className="absolute top-0 right-0 left-0 h-1"
@@ -422,14 +433,14 @@ export default function SupArafatReadiness() {
                         ? 'linear-gradient(90deg, #16A34A, #22C55E, #16A34A)'
                         : isNo
                           ? 'linear-gradient(90deg, #DC2626, #EF4444, #DC2626)'
-                          : 'linear-gradient(90deg, #A98159, #C4A46E, #A98159)' }} />
+                          : 'linear-gradient(90deg, rgb(var(--c-primary)), rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }} />
                   )}
                   <div className="p-5">
                     <div className="flex items-start gap-3 mb-3">
                       <div className="relative flex-shrink-0">
-                        <div className="absolute inset-0 rounded-2xl blur-md bg-[#A98159] opacity-30 group-hover/q:opacity-50 transition-opacity" />
+                        <div className="absolute inset-0 rounded-2xl blur-md bg-primary opacity-30 group-hover/q:opacity-50 transition-opacity" />
                         <div className="relative w-10 h-10 rounded-2xl flex items-center justify-center text-white font-black text-sm shadow-md tabular-nums"
-                          style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
+                          style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
                           {c.id}
                         </div>
                       </div>
@@ -437,12 +448,12 @@ export default function SupArafatReadiness() {
                         {ans && (
                           <div className="mb-1.5">
                             <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-green-50 border border-green-200 text-green-700">
-                              <CheckCircle2 size={9} strokeWidth={2.5} />
+                              <CheckCircle2 size={9} weight="bold" />
                               مُجاب
                             </span>
                           </div>
                         )}
-                        <p className="text-[#2D2926] font-bold text-[15px] leading-relaxed">{c.text}</p>
+                        <p className="text-ink font-bold text-[15px] leading-relaxed">{c.text}</p>
                       </div>
                     </div>
 
@@ -453,10 +464,10 @@ export default function SupArafatReadiness() {
                           return (
                             <button key={choice} onClick={() => handleAnswer(c.id, choice)}
                               className={`py-3 rounded-2xl text-sm font-bold transition-all duration-300 ${
-                                sel ? 'text-white scale-[1.02] shadow-[0_4px_14px_rgba(169,129,89,0.4)]'
-                                    : 'bg-white text-[#6D6E71] border-2 border-[#E8DDD4] hover:border-[#A98159]/40 hover:bg-[#FDF8F0]'
+                                sel ? 'text-white scale-[1.02] shadow-[0_4px_14px_rgb(var(--c-primary)/0.4)]'
+                                    : 'bg-white text-muted border-2 border-line hover:border-primary/40 hover:bg-background'
                               }`}
-                              style={sel ? { background: 'linear-gradient(135deg, #C4A46E, #A98159)' } : undefined}
+                              style={sel ? { background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' } : undefined}
                             >
                               {choice}
                             </button>
@@ -472,13 +483,13 @@ export default function SupArafatReadiness() {
                             onClick={() => handleAnswer(c.id, 'نعم')}
                             className={`min-h-[52px] py-3.5 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-2.5 active:scale-[0.98] ${
                               isYes
-                                ? 'text-white scale-[1.02] shadow-[0_6px_20px_rgba(56,107,65,0.4)]'
-                                : 'bg-white text-[#6D6E71] border-2 border-[#E8DDD4] hover:border-[#A98159]/40 hover:bg-[#FDF8F0]'
+                                ? 'text-white scale-[1.02] shadow-[0_6px_20px_rgb(var(--c-success)/0.4)]'
+                                : 'bg-white text-muted border-2 border-line hover:border-primary/40 hover:bg-background'
                             }`}
                             style={isYes ? { background: 'linear-gradient(135deg, #16A34A, #15803D)' } : undefined}
                           >
-                            <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-transform ${isYes ? 'bg-white/25 scale-110' : 'bg-[#386B41]/10'}`}>
-                              <CheckCircle2 size={16} strokeWidth={2.5} className={isYes ? 'text-white' : 'text-[#386B41]'} />
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-transform ${isYes ? 'bg-white/25 scale-110' : 'bg-success/10'}`}>
+                              <CheckCircle2 size={16} weight="bold" className={isYes ? 'text-white' : 'text-success'} />
                             </div>
                             <span className="text-[15px]">نعم</span>
                           </button>
@@ -486,13 +497,13 @@ export default function SupArafatReadiness() {
                             onClick={() => handleAnswer(c.id, 'لا')}
                             className={`min-h-[52px] py-3.5 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-2.5 active:scale-[0.98] ${
                               isNo
-                                ? 'text-white scale-[1.02] shadow-[0_6px_20px_rgba(186,26,26,0.4)]'
-                                : 'bg-white text-[#6D6E71] border-2 border-[#E8DDD4] hover:border-red-300 hover:bg-red-50/30'
+                                ? 'text-white scale-[1.02] shadow-[0_6px_20px_rgb(var(--c-error)/0.4)]'
+                                : 'bg-white text-muted border-2 border-line hover:border-red-300 hover:bg-red-50/30'
                             }`}
                             style={isNo ? { background: 'linear-gradient(135deg, #DC2626, #B91C1C)' } : undefined}
                           >
-                            <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-transform ${isNo ? 'bg-white/25 scale-110' : 'bg-[#BA1A1A]/10'}`}>
-                              <AlertCircle size={16} strokeWidth={2.5} className={isNo ? 'text-white' : 'text-[#BA1A1A]'} />
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-transform ${isNo ? 'bg-white/25 scale-110' : 'bg-error/10'}`}>
+                              <AlertCircle size={16} weight="bold" className={isNo ? 'text-white' : 'text-error'} />
                             </div>
                             <span className="text-[15px]">لا</span>
                           </button>
@@ -500,7 +511,7 @@ export default function SupArafatReadiness() {
 
                         {c.type === 'yesno_detail' && answers[c.id] === 'نعم' && (
                           <input type="text" value={details[c.id] || ''} onChange={e => handleDetail(c.id, e.target.value)}
-                            className="w-full mt-3 border-2 border-[#E8DDD4] rounded-xl px-4 py-3 text-sm focus:border-[#A98159] focus:ring-2 focus:ring-[#A98159]/15 outline-none transition-all"
+                            className="w-full mt-3 border-2 border-line rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none transition-all"
                             placeholder={c.detailLabel} />
                         )}
                         {c.type === 'yesno_multi_detail' && answers[c.id] === 'نعم' && (
@@ -508,7 +519,7 @@ export default function SupArafatReadiness() {
                             {c.fields.map(field => (
                               <input key={field.key} type={field.type} value={details[`${c.id}_${field.key}`] || ''}
                                 onChange={e => handleDetail(`${c.id}_${field.key}`, e.target.value)}
-                                className="w-full border-2 border-[#E8DDD4] rounded-xl px-4 py-3 text-sm focus:border-[#A98159] focus:ring-2 focus:ring-[#A98159]/15 outline-none transition-all"
+                                className="w-full border-2 border-line rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none transition-all"
                                 placeholder={field.label} />
                             ))}
                           </div>
@@ -527,7 +538,7 @@ export default function SupArafatReadiness() {
                                 <img src={photos[c.id]} alt="" className="w-14 h-14 rounded-lg object-cover border border-green-300" />
                                 <div className="flex-1 min-w-0">
                                   <p className="text-xs font-black text-green-700 flex items-center gap-1.5">
-                                    <CheckCircle2 size={13} strokeWidth={2.5} /> تم رفع الصورة
+                                    <CheckCircle2 size={13} weight="bold" /> تم رفع الصورة
                                   </p>
                                   <p className="text-[10px] text-green-600 mt-0.5">اضغط للتغيير</p>
                                 </div>
@@ -538,7 +549,7 @@ export default function SupArafatReadiness() {
                                   </button>
                                   <button onClick={() => removePhoto(c.id)}
                                     className="w-7 h-7 rounded-lg flex items-center justify-center text-red-500 bg-white border border-red-200 hover:bg-red-50">
-                                    <X size={13} strokeWidth={2.5} />
+                                    <X size={13} weight="bold" />
                                   </button>
                                 </div>
                               </div>
@@ -546,11 +557,11 @@ export default function SupArafatReadiness() {
                               <button
                                 onClick={() => !uploadingPhotos[c.id] && photoInputRefs.current[c.id]?.click()}
                                 disabled={uploadingPhotos[c.id]}
-                                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-[#A98159]/40 bg-[#FDF8F0] text-[#A98159] font-bold text-sm hover:bg-[#FDF1E0] hover:border-[#A98159] transition-all disabled:opacity-60 disabled:cursor-wait"
+                                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-primary/40 bg-background text-primary font-bold text-sm hover:bg-primary-50 hover:border-primary transition-all disabled:opacity-60 disabled:cursor-wait"
                               >
                                 {uploadingPhotos[c.id]
                                   ? <><Loader2 size={16} className="animate-spin" /> جارٍ رفع الصورة...</>
-                                  : <><Camera size={16} strokeWidth={2.25} /> رفع صورة مرفقة (مطلوبة)</>}
+                                  : <><Camera size={16} weight="bold" /> رفع صورة مرفقة (مطلوبة)</>}
                               </button>
                             )}
                           </div>
@@ -565,9 +576,9 @@ export default function SupArafatReadiness() {
         </div>
       ))}
 
-      <div className="fixed bottom-0 left-0 right-0 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-white/90 backdrop-blur-md border-t border-[#D1C4B9] z-[100]">
+      <div className="fixed bottom-0 left-0 right-0 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-white/90 backdrop-blur-md border-t border-line z-[100]">
         <button onClick={handleSubmit} disabled={loading}
-          className="w-full max-w-md mx-auto min-h-[56px] bg-gradient-to-br from-[#C4A46E] to-[#A98159] text-white py-4 rounded-2xl font-bold text-lg active:scale-[0.98] shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 transition-all">
+          className="w-full max-w-md mx-auto min-h-[56px] bg-gradient-to-br from-primary-400 to-primary text-white py-4 rounded-2xl font-bold text-lg active:scale-[0.98] shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 transition-all">
           {loading ? 'جاري الإرسال...' : <><Save size={22} /> حفظ وإرسال التقرير</>}
         </button>
       </div>

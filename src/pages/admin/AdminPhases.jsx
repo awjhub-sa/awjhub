@@ -2,11 +2,27 @@ import { useEffect, useState, useMemo } from 'react';
 import { db } from '../../lib/db.js';
 import { CENTERS } from '../../config/centers.js';
 import {
-  Activity, CheckCircle2, Clock, Layers, RotateCcw, ImageIcon, X, Trash2,
-  Flame, Package, ShieldCheck, Sparkles, AlertCircle, User,
-} from 'lucide-react';
+  Pulse as Activity,
+  CheckCircle as CheckCircle2,
+  Clock,
+  Stack as Layers,
+  ArrowCounterClockwise as RotateCcw,
+  Image as ImageIcon,
+  X,
+  Trash as Trash2,
+  Fire as Flame,
+  Package,
+  ShieldCheck,
+  Sparkle as Sparkles,
+  WarningCircle as AlertCircle,
+  User,
+} from '@phosphor-icons/react';
 import { MEAL_QUESTIONS } from '../../config/mealQuestions.js';
-import { Coffee, ForkKnife, Moon } from '@phosphor-icons/react';
+import {
+  SunHorizon as Sunrise,
+  Sun as SunMedium,
+  MoonStars as MoonStar,
+} from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
 import { extractCenterNum, extractDay } from '../../hooks/useAssignedTasks.js';
 import { computePhaseAlerts, gregorianForDhulHijjah } from '../../lib/phaseAlerts.js';
@@ -24,8 +40,8 @@ function centerHasMealInMenu(centerId, day, mealKey) {
 /* Meal category metadata — matches what's stored under assigned_tasks.mealCategories */
 const MEAL_CATEGORY_META = {
   cooked:     { label: 'مطبوخة', Icon: Flame,       color: '#DC2626', bg: '#FEF2F2', border: '#FECACA' },
-  dry:        { label: 'جافة',   Icon: Package,     color: '#A98159', bg: '#FDF8F0', border: '#E8DDD4' },
-  sterilized: { label: 'معقمة',  Icon: ShieldCheck, color: '#2563EB', bg: '#EFF6FF', border: '#BFDBFE' },
+  dry:        { label: 'جافة',   Icon: Package,     color: 'rgb(var(--c-primary))', bg: 'rgb(var(--c-bg))', border: 'rgb(var(--c-line))' },
+  sterilized: { label: 'معقمة',  Icon: ShieldCheck, color: '#3D6795', bg: '#EFF6FF', border: '#BFDBFE' },
 };
 
 /* Normalize a meal_evaluation record's score to /10 — same 3-way fallback
@@ -41,7 +57,7 @@ function getEvalScore(rec) {
   return null;
 }
 function scoreStyle(score) {
-  if (score == null) return { color: '#9D8F85', bg: '#F5F0EB', border: '#E8DDD4' };
+  if (score == null) return { color: 'rgb(var(--c-muted))', bg: 'rgb(var(--c-primary-50))', border: 'rgb(var(--c-line))' };
   if (score >= 8)    return { color: '#15803D', bg: '#F0FDF4', border: '#86EFAC' };
   if (score >= 5)    return { color: '#B45309', bg: '#FFFBEB', border: '#FCD34D' };
   return                     { color: '#B91C1C', bg: '#FEF2F2', border: '#FCA5A5' };
@@ -49,14 +65,14 @@ function scoreStyle(score) {
 
 const PHASES = [
   { id: 1, label: 'التجهيز',  short: 'تجهيز', color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A', glow: 'rgba(245,158,11,0.45)' },
-  { id: 2, label: 'الطبخ',    short: 'طبخ',   color: '#EF4444', bg: '#FEF2F2', border: '#FCA5A5', glow: 'rgba(239,68,68,0.45)'  },
-  { id: 3, label: 'التوزيع',  short: 'توزيع', color: '#10B981', bg: '#F0FDF4', border: '#6EE7B7', glow: 'rgba(16,185,129,0.45)' },
+  { id: 2, label: 'الطبخ',    short: 'طبخ',   color: '#4E7CB0', bg: '#EEF4FB', border: '#C4D8ED', glow: 'rgba(239,68,68,0.45)'  },
+  { id: 3, label: 'التوزيع',  short: 'توزيع', color: '#5E9070', bg: '#F1F6F2', border: '#CADFD1', glow: 'rgba(94,144,112,0.45)' },
 ];
 
 const MEALS = [
-  { id: 'breakfast', label: 'الإفطار', icon: Coffee,    color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A' },
-  { id: 'lunch',     label: 'الغداء',  icon: ForkKnife, color: '#EF4444', bg: '#FEF2F2', border: '#FCA5A5' },
-  { id: 'dinner',    label: 'العشاء',  icon: Moon,      color: '#6366F1', bg: '#EEF2FF', border: '#C7D2FE' },
+  { id: 'breakfast', label: 'الإفطار', icon: Sunrise,   color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A' },
+  { id: 'lunch',     label: 'الغداء',  icon: SunMedium, color: '#4E7CB0', bg: '#EEF4FB', border: '#C4D8ED' },
+  { id: 'dinner',    label: 'العشاء',  icon: MoonStar,  color: '#B4674E', bg: '#FBF3EF', border: '#EBCFC3' },
 ];
 
 const DAYS = [
@@ -68,6 +84,56 @@ const DAYS = [
   { id: '12', label: '١٢ ذو الحجة' },
   { id: '13', label: '١٣ ذو الحجة' },
 ];
+
+/* Milliseconds out of whatever shape the timestamp arrived in. */
+const tsMs = (v) => {
+  if (!v) return null;
+  try {
+    const d = v.toDate ? v.toDate() : (v.seconds ? new Date(v.seconds * 1000) : new Date(v));
+    return isNaN(d.getTime()) ? null : d.getTime();
+  } catch { return null; }
+};
+
+/* Where a centre stands this minute: the last step it completed, how long ago,
+   and therefore what it is waiting on. */
+function liveState(data, nowMs) {
+  const marks = [1, 2, 3].map(i => tsMs(data?.[`phase${i}`]));
+  const done = marks.filter(Boolean).length;
+  const lastAt = marks.filter(Boolean).length ? Math.max(...marks.filter(Boolean)) : null;
+  const sinceMin = lastAt ? Math.floor((nowMs - lastAt) / 60000) : null;
+  return {
+    done,
+    lastAt,
+    sinceMin,
+    /* The step it is on now — 0 means it has not started. */
+    current: done >= 3 ? null : done + 1,
+    complete: done >= 3,
+  };
+}
+
+/* A stall is time without movement, and how much is too much depends on what
+   is being waited for.
+
+   Waiting on distribution is the short one — the food is already cooked and
+   sitting, and that is a temperature problem before it is a scheduling one.
+   Waiting on cooking is slower to matter: prepared trays keep.
+
+   There is no entry for 1: a stall needs at least one completed step to
+   measure from, so a centre that has not started is "لم يبدأ", never
+   "متوقّف" — the two look identical in a percentage and are not the same
+   problem. */
+const STALL_MIN = { 2: 60, 3: 30 };
+const isStalled = (st) =>
+  !st.complete && st.done > 0 && st.sinceMin != null
+  && st.sinceMin >= (STALL_MIN[st.current] ?? 60);
+
+const sinceLabel = (min) => {
+  if (min == null) return null;
+  if (min < 1) return 'الآن';
+  if (min < 60) return `منذ ${min} د`;
+  const h = Math.floor(min / 60), m = min % 60;
+  return m ? `منذ ${h} س ${m} د` : `منذ ${h} س`;
+};
 
 // دالة الوقت المحسنة لمنع الانهيار
 function fmtTime(ts) {
@@ -86,7 +152,7 @@ function PhotoLightbox({ src, onClose }) {
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm" onClick={onClose}>
       <button onClick={onClose}
         className="absolute top-4 left-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors">
-        <X size={20} strokeWidth={2} />
+        <X size={20} weight="regular" />
       </button>
       <div onClick={e => e.stopPropagation()}>
         <img src={src} alt="" className="max-w-full max-h-[88vh] rounded-2xl shadow-2xl object-contain" />
@@ -111,8 +177,8 @@ function PhaseDot({ done, phase, small, photoUrl, onViewPhoto, late }) {
         title={late && !done ? (phase.id === 1 ? 'متأخر في التجهيز' : phase.id === 3 ? 'متأخر في التوزيع' : '') : undefined}
       >
         {done
-          ? <CheckCircle2 size={small ? 11 : 13} strokeWidth={2.5} />
-          : (late ? <AlertCircle size={small ? 11 : 13} strokeWidth={2.5} /> : phase.id)
+          ? <CheckCircle2 size={small ? 11 : 13} weight="bold" />
+          : (late ? <AlertCircle size={small ? 11 : 13} weight="bold" /> : phase.id)
         }
       </div>
       {done && photoUrl && (
@@ -121,7 +187,7 @@ function PhaseDot({ done, phase, small, photoUrl, onViewPhoto, late }) {
           title="عرض الصورة"
           className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10"
           style={{ background: phase.color }}>
-          <ImageIcon size={8} strokeWidth={2.5} className="text-white" />
+          <ImageIcon size={8} weight="bold" className="text-white" />
         </button>
       )}
     </div>
@@ -134,11 +200,15 @@ export default function AdminPhases() {
   const [selectedDay,  setSelectedDay]  = useState('7');
   const [selectedMeal, setSelectedMeal] = useState('breakfast');
   const [sortBy,       setSortBy]       = useState('progress');
+  /* null | 1 | 2 | 3 | 'stalled' — set by the cards above the table. A card
+     that names a group and does not show it on click is a label pretending to
+     be a control. */
+  const [waitFilter,   setWaitFilter]   = useState(null);
   const [lightboxSrc,  setLightboxSrc]  = useState(null);
   const [evalDetail,   setEvalDetail]   = useState(null);
   const [view,         setView]         = useState('phases');  // 'phases' | 'reports'
   const [reportCenter, setReportCenter] = useState(null);      // center selected in reports view
-  
+
   // حالات المسح (التي كانت ناقصة وتسبب الخطأ)
   const [clearConfirm,    setClearConfirm]    = useState(false);
   const [clearing,        setClearing]        = useState(false);
@@ -265,11 +335,26 @@ export default function AdminPhases() {
             now, dateOnly: selectedDateOnly,
           })
         : { phase1Late: false, phase3Late: false, prepStart: null, distStart: null, hasMenuTime: false };
-      return { center: c.id, caterer: c.caterer, total, data, evalDoc, alerts, hasMeal };
+      const live = liveState(data, now.getTime());
+      return { center: c.id, caterer: c.caterer, total, data, evalDoc, alerts, hasMeal, live,
+               stalled: hasMeal && isStalled(live) };
     });
+    /* Stalled first, longest-stopped at the top — the order someone working
+       the phones needs. Centres with no meal on the menu sink to the bottom
+       whatever the sort, because nothing is expected of them. */
+    if (sortBy === 'stalled') {
+      return [...list].sort((a, b) =>
+        (a.hasMeal === b.hasMeal ? 0 : a.hasMeal ? -1 : 1)
+        || (b.stalled ? 1 : 0) - (a.stalled ? 1 : 0)
+        || (b.live.sinceMin ?? -1) - (a.live.sinceMin ?? -1));
+    }
     if (sortBy === 'progress') return [...list].sort((a, b) => b.total - a.total);
     return list;
   }, [phasesData, selectedDay, selectedMeal, sortBy, evalLookup, now, selectedDateOnly]);
+
+  /* The filter belongs to one meal on one day: the same words name a different
+     set of centres once either changes. */
+  useEffect(() => { setWaitFilter(null); }, [selectedDay, selectedMeal]);
 
   const maxDone = PHASES.length; // 3 phases for a single meal
   /* Eligible = centers that actually have this meal in their menu. */
@@ -282,6 +367,21 @@ export default function AdminPhases() {
     ? Math.round((eligibleRows.reduce((s, r) => s + r.total, 0) / (totalEligible * maxDone)) * 100)
     : 0;
 
+  const visibleRows = useMemo(() => {
+    if (!waitFilter) return rows;
+    if (waitFilter === 'stalled') return rows.filter(r => r.stalled);
+    return rows.filter(r => r.hasMeal && !r.live.complete && r.live.current === waitFilter);
+  }, [rows, waitFilter]);
+
+  /* Where the fleet is standing this minute. Two centres at "50%" can be in
+     different phases; percentage averages that away, and during service the
+     phase is the thing you act on. */
+  const waiting = PHASES.map(p => ({
+    ...p,
+    n: eligibleRows.filter(r => !r.live.complete && r.live.current === p.id).length,
+  }));
+  const stalledCount = eligibleRows.filter(r => r.stalled).length;
+
   /* Selected-meal meta (label, icon, color) for the header strip + progress bar */
   const mealMeta = MEALS.find(m => m.id === selectedMeal) || MEALS[0];
 
@@ -289,24 +389,31 @@ export default function AdminPhases() {
     <div className="space-y-5 pb-6" dir="rtl">
       {/* Header */}
       <PageHeader
+        kicker="متابعة الوجبات"
         Icon={Activity}
         title="المراحل الميدانية"
-        subtitle="متابعة مراحل تجهيز وطبخ وتوزيع الوجبات — تحديث فوري"
+        stats={[
+          { value: `${fullyDone}/${totalEligible}`, label: 'مركز مكتمل', tone: 'gold' },
+          { value: inProgress, label: 'قيد التنفيذ' },
+          { value: notStarted, label: 'لم يبدأ', tone: notStarted > 0 ? 'alert' : undefined },
+        ]}
         right={
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setSortBy(s => s === 'progress' ? 'center' : 'progress')}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[#D9CEBC] bg-white text-[#2D2926] text-xs font-bold hover:border-[#A98159] hover:bg-[#FDF8F0] transition-all flex-shrink-0"
+              onClick={() => setSortBy(s =>
+                s === 'stalled' ? 'progress' : s === 'progress' ? 'center' : 'stalled')}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl border border-line bg-white text-ink text-xs font-bold hover:border-primary hover:bg-background transition-all flex-shrink-0"
             >
-              <RotateCcw size={13} strokeWidth={2} className="text-[#A98159]" />
-              {sortBy === 'progress' ? 'ترتيب حسب التقدم' : 'ترتيب حسب المركز'}
+              <RotateCcw size={13} weight="regular" className="text-primary" />
+              {sortBy === 'stalled' ? 'الأطول توقّفاً أولاً'
+                : sortBy === 'progress' ? 'ترتيب حسب التقدم' : 'ترتيب حسب المركز'}
             </button>
             {!clearConfirm ? (
               <button
                 onClick={() => setClearConfirm(true)}
                 className="flex items-center gap-2 px-3 py-2 rounded-xl border border-red-200 bg-white text-red-500 text-xs font-bold hover:border-red-400 hover:bg-red-50 transition-all flex-shrink-0"
               >
-                <Trash2 size={13} strokeWidth={2} />
+                <Trash2 size={13} weight="regular" />
                 مسح بيانات اليوم
               </button>
             ) : (
@@ -316,12 +423,12 @@ export default function AdminPhases() {
                   disabled={clearing}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500 text-white text-xs font-bold hover:bg-red-600 transition-all disabled:opacity-60 flex-shrink-0"
                 >
-                  <Trash2 size={12} strokeWidth={2} />
+                  <Trash2 size={12} weight="regular" />
                   {clearing ? 'جاري...' : 'تأكيد'}
                 </button>
                 <button
                   onClick={() => setClearConfirm(false)}
-                  className="px-3 py-2 rounded-xl border border-[#D9CEBC] bg-white text-[#6D6E71] text-xs font-bold hover:bg-[#F5F0EB] transition-all flex-shrink-0"
+                  className="px-3 py-2 rounded-xl border border-line bg-white text-muted text-xs font-bold hover:bg-[rgb(var(--c-primary-50))] transition-all flex-shrink-0"
                 >
                   إلغاء
                 </button>
@@ -332,7 +439,7 @@ export default function AdminPhases() {
       />
 
       {/* View switcher: المتابعة (phases) vs التقارير (reports) */}
-      <div className="bg-white border border-[#EDE5DC] rounded-2xl p-1.5 flex w-fit shadow-[0_2px_8px_rgba(45,41,38,0.05)]">
+      <div className="bg-white border border-line rounded-2xl p-1.5 flex w-fit shadow-[0_2px_8px_rgb(var(--c-ink)/0.05)]">
         {[
           { id: 'phases',  label: 'المتابعة الميدانية', Icon: Activity },
           { id: 'reports', label: 'التقارير',           Icon: ImageIcon },
@@ -344,12 +451,12 @@ export default function AdminPhases() {
               onClick={() => { setView(t.id); setReportCenter(null); }}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
                 active
-                  ? 'text-white shadow-[0_3px_10px_rgba(169,129,89,0.4)]'
-                  : 'text-[#6D6E71] hover:text-[#2D2926] hover:bg-[#FDF8F0]'
+                  ? 'text-white shadow-[0_3px_10px_rgb(var(--c-primary)/0.4)]'
+                  : 'text-muted hover:text-ink hover:bg-background'
               }`}
-              style={active ? { background: 'linear-gradient(135deg, #C4A46E, #A98159)' } : undefined}
+              style={active ? { background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' } : undefined}
             >
-              <TIcon size={15} strokeWidth={2.25} className={active ? 'scale-110' : ''} />
+              <TIcon size={15} weight="bold" className={active ? 'scale-110' : ''} />
               {t.label}
             </button>
           );
@@ -364,8 +471,8 @@ export default function AdminPhases() {
             onClick={() => setSelectedDay(day.id)}
             className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
               selectedDay === day.id
-                ? 'bg-[#2D2926] text-white border-[#2D2926] shadow-md'
-                : 'bg-white text-[#6D6E71] border-[#D9CEBC] hover:border-[#A98159] hover:text-[#A98159]'
+                ? 'bg-ink text-white border-ink shadow-md'
+                : 'bg-white text-muted border-line hover:border-primary hover:text-primary'
             }`}
           >
             {day.label}
@@ -399,11 +506,11 @@ export default function AdminPhases() {
                     color: '#fff',
                     boxShadow: `0 4px 16px ${meal.color}40`,
                   }
-                : { borderColor: '#E8DDD4', color: '#6D6E71' }}
+                : { borderColor: 'rgb(var(--c-line))', color: 'rgb(var(--c-muted))' }}
             >
               <MIcon
                 size={18}
-                weight={active ? 'fill' : 'bold'}
+                weight={active ? 'bold' : 'regular'}
                 className={`transition-transform ${active ? 'scale-110' : 'group-hover/meal:scale-110'}`}
                 style={!active ? { color: meal.color } : undefined}
               />
@@ -422,28 +529,31 @@ export default function AdminPhases() {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'مراكز هذه الوجبة', value: totalEligible, color: '#6366F1', icon: Layers       },
-          { label: 'مكتمل الوجبات',   value: fullyDone,    color: '#10B981', icon: CheckCircle2 },
+          { label: 'مراكز هذه الوجبة', value: totalEligible, color: '#B4674E', icon: Layers       },
+          { label: 'مكتمل الوجبات',   value: fullyDone,    color: '#5E9070', icon: CheckCircle2 },
           { label: 'قيد التنفيذ',     value: inProgress,   color: '#F59E0B', icon: Activity     },
-          { label: 'لم يبدأ',         value: notStarted,   color: '#9D8F85', icon: Clock        },
+          { label: 'لم يبدأ',         value: notStarted,   color: '#64748B', icon: Clock        },
         ].map(c => (
+          /* The accent runs along the top edge, as it does on every other
+             section — three takes on one card is what made the app read as
+             three apps. */
           <div key={c.label}
-            className="bg-white rounded-2xl p-4 border border-[#EDE5DC] shadow-[0_2px_8px_rgba(45,41,38,0.07)] flex items-center gap-3"
-            style={{ borderRight: `3px solid ${c.color}` }}>
+            className="relative bg-white rounded-2xl p-4 pt-5 border border-line overflow-hidden flex items-center gap-3">
+            <span className="absolute inset-x-0 top-0 h-1" style={{ background: c.color }} />
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-semibold text-[#9D8F85] mb-0.5">{c.label}</p>
-              <p className="text-2xl font-bold tabular-nums" style={{ color: c.color }}>{c.value}</p>
+              <p className="text-[10px] font-bold text-muted mb-1 truncate">{c.label}</p>
+              <p className="text-2xl font-black tabular-nums leading-none" style={{ color: c.color }}>{c.value}</p>
             </div>
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: `${c.color}18` }}>
-              <c.icon size={18} style={{ color: c.color }} strokeWidth={1.75} />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: `color-mix(in srgb, ${c.color} 12%, #fff)` }}>
+              <c.icon size={19} style={{ color: c.color }} weight="bold" />
             </div>
           </div>
         ))}
       </div>
 
       {/* Progress Bar */}
-      <div className="bg-white rounded-2xl px-6 py-4 border border-[#EDE5DC] shadow-[0_2px_8px_rgba(45,41,38,0.07)]"
+      <div className="bg-white rounded-2xl px-6 py-4 border border-line shadow-[0_2px_8px_rgb(var(--c-ink)/0.07)]"
         style={{ borderRight: `4px solid ${mealMeta.color}` }}>
         <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
           <div className="flex items-center gap-2">
@@ -451,28 +561,92 @@ export default function AdminPhases() {
               style={{ background: `${mealMeta.color}15` }}>
               <mealMeta.icon size={16} weight="bold" style={{ color: mealMeta.color }} />
             </div>
-            <p className="text-sm font-bold text-[#2D2926]">
+            <p className="text-sm font-bold text-ink">
               {mealMeta.label} — {DAYS.find(d => d.id === selectedDay)?.label}
             </p>
           </div>
           <p className="text-lg font-black tabular-nums" style={{ color: mealMeta.color }}>{overallPct}%</p>
         </div>
-        <div className="h-3 bg-[#F5F0EB] rounded-full overflow-hidden">
+        <div className="h-3 bg-[rgb(var(--c-primary-50))] rounded-full overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-700"
             style={{
               width: `${overallPct}%`,
-              background: overallPct === 100 ? '#10B981' : overallPct > 50 ? '#F59E0B' : mealMeta.color,
+              background: overallPct === 100 ? '#5E9070' : overallPct > 50 ? '#F59E0B' : mealMeta.color,
             }}
           />
         </div>
       </div>
 
+      {/* Where everyone is standing, before the detail of who */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {waiting.map(p => {
+          const on = waitFilter === p.id;
+          return (
+            <button
+              key={p.id}
+              onClick={() => setWaitFilter(on ? null : p.id)}
+              disabled={p.n === 0}
+              aria-pressed={on}
+              className={`rounded-2xl border p-4 text-right transition-all ${
+                p.n === 0 ? 'opacity-55 cursor-default' : 'hover:shadow-lift cursor-pointer'
+              }`}
+              style={{
+                borderTop: `3px solid ${p.color}`,
+                borderColor: on ? p.color : 'rgb(var(--c-line))',
+                background: on ? `color-mix(in srgb, ${p.color} 9%, #fff)` : '#fff',
+                boxShadow: on ? `0 0 0 2px color-mix(in srgb, ${p.color} 35%, transparent)` : undefined,
+              }}
+            >
+              <p className="text-[26px] font-black tabular-nums leading-none" style={{ color: p.color }}>
+                {p.n}
+              </p>
+              <p className="text-[11.5px] font-bold text-ink mt-1.5">بانتظار {p.label}</p>
+              <p className="text-[10px] font-bold mt-0.5"
+                style={{ color: on ? p.color : 'rgb(var(--c-muted))' }}>
+                {on ? 'معروضون في الجدول' : p.n ? `من ${totalEligible} مركز` : 'لا أحد'}
+              </p>
+            </button>
+          );
+        })}
+        {(() => {
+          const on = waitFilter === 'stalled';
+          return (
+            <button
+              onClick={() => setWaitFilter(on ? null : 'stalled')}
+              disabled={stalledCount === 0}
+              aria-pressed={on}
+              className={`rounded-2xl border p-4 text-right transition-all ${
+                stalledCount === 0 ? 'opacity-55 cursor-default' : 'hover:shadow-lift cursor-pointer'
+              }`}
+              style={{
+                borderTop: `3px solid ${stalledCount ? '#DC2626' : '#5E9070'}`,
+                borderColor: on ? '#DC2626' : stalledCount ? '#FECACA' : 'rgb(var(--c-line))',
+                background: on ? 'color-mix(in srgb, #DC2626 10%, #fff)'
+                  : stalledCount ? 'color-mix(in srgb, #DC2626 5%, #fff)' : '#fff',
+                boxShadow: on ? '0 0 0 2px rgb(220 38 38 / 0.35)' : undefined,
+              }}
+            >
+              <p className="text-[26px] font-black tabular-nums leading-none"
+                style={{ color: stalledCount ? '#DC2626' : '#5E9070' }}>
+                {stalledCount}
+              </p>
+              <p className="text-[11.5px] font-bold text-ink mt-1.5">متوقّف</p>
+              <p className="text-[10px] font-bold mt-0.5"
+                style={{ color: on ? '#DC2626' : 'rgb(var(--c-muted))' }}>
+                {on ? 'معروضون في الجدول'
+                  : stalledCount ? 'لم يتحرّك منذ مدة' : 'كل شيء يتقدّم'}
+              </p>
+            </button>
+          );
+        })()}
+      </div>
+
       {/* Table — one row per center, columns for each of the 3 phases of the selected meal */}
-      <div className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgba(169,129,89,0.14)] overflow-hidden">
-        <div className="grid gap-3 px-5 py-3 border-b border-[#EDE5DC] bg-[#FAFAF8]"
-          style={{ gridTemplateColumns: '1.6fr repeat(3, 1fr) 0.7fr 0.9fr 0.5fr' }}>
-          <p className="text-[11px] font-bold text-[#9D8F85]">المركز / المتعهد</p>
+      <div className="bg-gradient-to-br from-white via-white to-background/40 rounded-2xl border border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgb(var(--c-primary)/0.14)] overflow-hidden">
+        <div className="grid gap-3 px-5 py-3 border-b border-line bg-bg sticky top-0 z-20"
+          style={{ gridTemplateColumns: '1.5fr repeat(3, 1fr) 1fr 0.6fr 0.8fr 0.5fr' }}>
+          <p className="text-[11px] font-bold text-muted">المركز / المتعهد</p>
           {PHASES.map(phase => (
             <div key={phase.id} className="flex items-center justify-center gap-1.5">
               <span
@@ -480,16 +654,40 @@ export default function AdminPhases() {
                 style={{ background: phase.color }}>
                 {phase.id}
               </span>
-              <p className="text-[11px] font-bold text-[#9D8F85]">{phase.label}</p>
+              <p className="text-[11px] font-bold text-muted">{phase.label}</p>
             </div>
           ))}
-          <p className="text-[11px] font-bold text-[#9D8F85] text-center">التقدم</p>
-          <p className="text-[11px] font-bold text-[#9D8F85] text-center">تقييم الوجبة</p>
-          <p className="text-[11px] font-bold text-[#9D8F85] text-center">إجراء</p>
+          <p className="text-[11px] font-bold text-muted text-center">الحالة الآن</p>
+          <p className="text-[11px] font-bold text-muted text-center">التقدم</p>
+          <p className="text-[11px] font-bold text-muted text-center">تقييم الوجبة</p>
+          <p className="text-[11px] font-bold text-muted text-center">إجراء</p>
         </div>
 
-        {rows.map((row, idx) => {
-          const isLast = idx === rows.length - 1;
+        {waitFilter && (
+          <div className="flex items-center gap-2 px-5 py-2.5 border-b border-line bg-primary/[0.04]">
+            <p className="text-[11.5px] font-bold text-ink">
+              يُعرض {visibleRows.length} من {rows.length} مركزاً ·{' '}
+              {waitFilter === 'stalled'
+                ? 'المتوقّفون'
+                : `بانتظار ${PHASES[waitFilter - 1].label}`}
+            </p>
+            <button
+              onClick={() => setWaitFilter(null)}
+              className="mr-auto text-[11.5px] font-black text-primary hover:underline"
+            >
+              عرض الكل
+            </button>
+          </div>
+        )}
+
+        {visibleRows.length === 0 && (
+          <p className="py-12 text-center text-[12.5px] font-bold text-muted">
+            لا مراكز في هذه الحالة الآن
+          </p>
+        )}
+
+        {visibleRows.map((row, idx) => {
+          const isLast = idx === visibleRows.length - 1;
           const pct = Math.round((row.total / maxDone) * 100);
           const data = row.data;
           const isTarget = mealClearTarget?.center === row.center && mealClearTarget?.mealId === selectedMeal;
@@ -498,8 +696,8 @@ export default function AdminPhases() {
           return (
             <div
               key={row.center}
-              className={`grid gap-3 px-5 py-3.5 items-center group/row transition-colors ${!isLast ? 'border-b border-[#EDE5DC]' : ''} ${isLate ? 'row-pulse-red' : noMeal ? 'bg-[#FAFAF8]/60' : 'hover:bg-[#FDFAF7]'}`}
-              style={{ gridTemplateColumns: '1.6fr repeat(3, 1fr) 0.7fr 0.9fr 0.5fr' }}
+              className={`grid gap-3 px-5 py-3.5 items-center group/row transition-colors ${!isLast ? 'border-b border-line' : ''} ${isLate ? 'row-pulse-red' : row.stalled ? 'bg-red-50/70' : noMeal ? 'bg-bg/60' : 'hover:bg-[#FDFAF7]'}`}
+              style={{ gridTemplateColumns: '1.5fr repeat(3, 1fr) 1fr 0.6fr 0.8fr 0.5fr' }}
             >
               {/* Center info */}
               <div className="min-w-0 flex items-center gap-2.5">
@@ -511,7 +709,7 @@ export default function AdminPhases() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <p className="font-bold text-sm text-[#2D2926] truncate">{row.center}</p>
+                    <p className="font-bold text-sm text-ink truncate">{row.center}</p>
                     {/* Meal category chips for this center on this day */}
                     {[...(centerCategories.get(extractCenterNum(row.center)) || [])].map(cat => {
                       const meta = MEAL_CATEGORY_META[cat];
@@ -523,21 +721,21 @@ export default function AdminPhases() {
                           style={{ background: meta.bg, borderColor: meta.border, color: meta.color }}
                           title={`نوع الوجبة: ${meta.label}`}
                         >
-                          <CIcon size={9} strokeWidth={2.5} />
+                          <CIcon size={9} weight="bold" />
                           {meta.label}
                         </span>
                       );
                     })}
                     {noMeal && (
-                      <span className="inline-flex items-center gap-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border bg-[#F5F0EB] border-[#E8DDD4] text-[#9D8F85]"
+                      <span className="inline-flex items-center gap-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border bg-[rgb(var(--c-primary-50))] border-line text-muted"
                         title="لا توجد وجبة لهذا المركز في المنيو لهذا اليوم"
                       >
-                        <AlertCircle size={9} strokeWidth={2.5} />
+                        <AlertCircle size={9} weight="bold" />
                         لا توجد وجبة {mealMeta.label} في المنيو
                       </span>
                     )}
                   </div>
-                  <p className="text-[10px] text-[#A98159] font-bold truncate">{row.caterer}</p>
+                  <p className="text-[10px] text-primary font-bold truncate">{row.caterer}</p>
                 </div>
               </div>
 
@@ -570,11 +768,11 @@ export default function AdminPhases() {
                     {done && photoUrl && (
                       <button
                         onClick={() => setLightboxSrc(photoUrl)}
-                        className="text-[9px] font-bold flex items-center gap-0.5 px-1.5 py-0.5 rounded-md hover:bg-[#FDF8F0] transition-colors"
+                        className="text-[9px] font-bold flex items-center gap-0.5 px-1.5 py-0.5 rounded-md hover:bg-background transition-colors"
                         style={{ color: phase.color }}
                         title="عرض الصورة"
                       >
-                        <ImageIcon size={9} strokeWidth={2.5} />
+                        <ImageIcon size={9} weight="bold" />
                         صورة
                       </button>
                     )}
@@ -582,13 +780,38 @@ export default function AdminPhases() {
                 );
               })}
 
+              {/* Where it stands this minute */}
+              <div className="text-center min-w-0">
+                {noMeal ? (
+                  <span className="text-[10px] font-bold text-muted/60">—</span>
+                ) : row.live.complete ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-black text-[#5E9070]">
+                    <CheckCircle2 size={12} weight="fill" />
+                    اكتملت
+                  </span>
+                ) : row.live.done === 0 ? (
+                  <span className="text-[11px] font-bold text-muted">لم يبدأ</span>
+                ) : (
+                  <>
+                    <p className="text-[11.5px] font-black truncate"
+                      style={{ color: row.stalled ? '#DC2626' : PHASES[row.live.current - 1].color }}>
+                      بانتظار {PHASES[row.live.current - 1].label}
+                    </p>
+                    <p className="text-[10px] font-bold tabular-nums mt-0.5"
+                      style={{ color: row.stalled ? '#DC2626' : 'rgb(var(--c-muted))' }}>
+                      {sinceLabel(row.live.sinceMin)}
+                    </p>
+                  </>
+                )}
+              </div>
+
               {/* Progress */}
               <div className="text-center">
                 <p className="text-base font-black tabular-nums"
-                  style={{ color: pct === 100 ? '#10B981' : pct > 0 ? '#F59E0B' : '#D1D5DB' }}>
+                  style={{ color: pct === 100 ? '#5E9070' : pct > 0 ? '#F59E0B' : '#D1D5DB' }}>
                   {pct}%
                 </p>
-                <p className="text-[9px] text-[#9D8F85] mt-0.5">{row.total}/{maxDone}</p>
+                <p className="text-[9px] text-muted mt-0.5">{row.total}/{maxDone}</p>
               </div>
 
               {/* Meal evaluation score */}
@@ -643,23 +866,23 @@ export default function AdminPhases() {
                         className="w-7 h-7 rounded-lg bg-red-500 hover:bg-red-600 flex items-center justify-center disabled:opacity-60 transition-colors"
                         title="تأكيد الحذف"
                       >
-                        <Trash2 size={11} className="text-white" strokeWidth={2.5} />
+                        <Trash2 size={11} className="text-white" weight="bold" />
                       </button>
                       <button
                         onClick={() => setMealClearTarget(null)}
-                        className="w-7 h-7 rounded-lg border border-[#D9CEBC] flex items-center justify-center hover:bg-[#F5F0EB] transition-colors"
+                        className="w-7 h-7 rounded-lg border border-line flex items-center justify-center hover:bg-[rgb(var(--c-primary-50))] transition-colors"
                         title="إلغاء"
                       >
-                        <X size={11} className="text-[#9D8F85]" strokeWidth={2.5} />
+                        <X size={11} className="text-muted" weight="bold" />
                       </button>
                     </div>
                   ) : (
                     <button
                       onClick={() => setMealClearTarget({ center: row.center, mealId: selectedMeal })}
-                      className="w-7 h-7 rounded-lg border border-[#EDE5DC] flex items-center justify-center hover:border-red-300 hover:bg-red-50 transition-colors"
+                      className="w-7 h-7 rounded-lg border border-line flex items-center justify-center hover:border-red-300 hover:bg-red-50 transition-colors"
                       title="حذف بيانات هذه الوجبة"
                     >
-                      <Trash2 size={11} className="text-[#C9B8A8] hover:text-red-400 transition-colors" strokeWidth={2} />
+                      <Trash2 size={11} className="text-muted hover:text-red-400 transition-colors" weight="regular" />
                     </button>
                   )
                 ) : (
@@ -672,8 +895,6 @@ export default function AdminPhases() {
       </div>
 
       </>}
-
-      {}
       {view === 'reports' && !reportCenter && (
         <ReportsCenterList
           centers={CENTERS}
@@ -744,7 +965,7 @@ function EvalDetailModal({ record, onClose, onDelete }) {
   const mealLabel = MEALS.find(m => m.id === record.mealType)?.label || record.mealType;
 
   const style = (s) => {
-    if (s == null) return { color: '#9D8F85', bg: '#F5F0EB' };
+    if (s == null) return { color: 'rgb(var(--c-muted))', bg: 'rgb(var(--c-primary-50))' };
     if (s >= 8)    return { color: '#15803D', bg: '#F0FDF4' };
     if (s >= 5)    return { color: '#B45309', bg: '#FFFBEB' };
     return            { color: '#B91C1C', bg: '#FEF2F2' };
@@ -756,7 +977,7 @@ function EvalDetailModal({ record, onClose, onDelete }) {
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-br from-[#FDF8F0] to-white px-6 py-4 border-b border-[#EDE5DC] flex items-center justify-between z-10">
+        <div className="sticky top-0 bg-gradient-to-br from-background to-white px-6 py-4 border-b border-line flex items-center justify-between z-10">
           <div className="flex items-center gap-3 min-w-0">
             <div className="relative shrink-0">
               <div className="absolute inset-0 rounded-2xl blur-md opacity-50"
@@ -767,8 +988,8 @@ function EvalDetailModal({ record, onClose, onDelete }) {
               </div>
             </div>
             <div className="min-w-0">
-              <h2 className="text-base font-bold text-[#2D2926] truncate">تقييم الوجبة</h2>
-              <p className="text-[11px] text-[#9D8F85] mt-0.5 truncate">
+              <h2 className="text-base font-bold text-ink truncate">تقييم الوجبة</h2>
+              <p className="text-[11px] text-muted mt-0.5 truncate">
                 {record.center} · {mealLabel} · {record.scheduledDate}
               </p>
             </div>
@@ -777,11 +998,11 @@ function EvalDetailModal({ record, onClose, onDelete }) {
             <button onClick={() => onDelete?.(record.id)}
               title="حذف التقييم"
               className="w-9 h-9 rounded-xl border border-red-200 bg-red-50 flex items-center justify-center hover:bg-red-500 hover:border-red-500 group/del transition-colors">
-              <Trash2 size={14} className="text-red-500 group-hover/del:text-white" strokeWidth={2.25} />
+              <Trash2 size={14} className="text-red-500 group-hover/del:text-white" weight="bold" />
             </button>
             <button onClick={onClose}
-              className="w-9 h-9 rounded-xl border border-[#EDE5DC] flex items-center justify-center hover:bg-[#F5F0EB] transition-colors">
-              <X size={15} className="text-[#6D6E71]" />
+              className="w-9 h-9 rounded-xl border border-line flex items-center justify-center hover:bg-[rgb(var(--c-primary-50))] transition-colors">
+              <X size={15} className="text-muted" />
             </button>
           </div>
         </div>
@@ -791,36 +1012,36 @@ function EvalDetailModal({ record, onClose, onDelete }) {
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-2xl border-2 p-3 text-center"
               style={{ background: st.bg, borderColor: `${st.color}40` }}>
-              <p className="text-[10px] font-semibold text-[#9D8F85] mb-1">الدرجة /10</p>
+              <p className="text-[10px] font-semibold text-muted mb-1">الدرجة /10</p>
               <p className="text-2xl font-extrabold tabular-nums" style={{ color: st.color }}>
                 {score != null ? score.toFixed(1) : '—'}
               </p>
             </div>
             <div className="rounded-2xl border-2 border-green-200 bg-green-50 p-3 text-center">
-              <p className="text-[10px] font-semibold text-[#9D8F85] mb-1">إجابة «نعم»</p>
+              <p className="text-[10px] font-semibold text-muted mb-1">إجابة «نعم»</p>
               <p className="text-2xl font-extrabold tabular-nums text-green-700">{yes}</p>
             </div>
             <div className="rounded-2xl border-2 border-red-200 bg-red-50 p-3 text-center">
-              <p className="text-[10px] font-semibold text-[#9D8F85] mb-1">إجابة «لا»</p>
+              <p className="text-[10px] font-semibold text-muted mb-1">إجابة «لا»</p>
               <p className="text-2xl font-extrabold tabular-nums text-red-700">{no}</p>
             </div>
           </div>
 
           {/* Meta */}
-          <div className="bg-[#FDF8F0] border border-[#E8DDD4] rounded-2xl p-4 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-white border border-[#A98159]/30 flex items-center justify-center shrink-0">
-              <User size={15} className="text-[#A98159]" strokeWidth={2.25} />
+          <div className="bg-background border border-line rounded-2xl p-4 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-white border border-primary/30 flex items-center justify-center shrink-0">
+              <User size={15} className="text-primary" weight="bold" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] text-[#9D8F85] font-semibold">المراقب</p>
-              <p className="text-sm font-bold text-[#2D2926] truncate">
+              <p className="text-[10px] text-muted font-semibold">المراقب</p>
+              <p className="text-sm font-bold text-ink truncate">
                 {record.observer || record.observerName || '—'}
               </p>
             </div>
             {record.caterer && (
               <div className="min-w-0 flex-1 hidden sm:block">
-                <p className="text-[10px] text-[#9D8F85] font-semibold">المتعهد</p>
-                <p className="text-sm font-bold text-[#A98159] truncate">{record.caterer}</p>
+                <p className="text-[10px] text-muted font-semibold">المتعهد</p>
+                <p className="text-sm font-bold text-primary truncate">{record.caterer}</p>
               </div>
             )}
           </div>
@@ -838,7 +1059,7 @@ function EvalDetailModal({ record, onClose, onDelete }) {
             </div>
             {noQs.length === 0 ? (
               <div className="bg-gradient-to-br from-green-50 to-emerald-50/40 border-2 border-green-200 rounded-2xl p-5 text-center">
-                <CheckCircle2 size={26} className="mx-auto text-green-600 mb-2" strokeWidth={2} />
+                <CheckCircle2 size={26} className="mx-auto text-green-600 mb-2" weight="regular" />
                 <p className="text-green-700 font-bold text-sm">لا توجد مخالفات في هذا التقييم 🎉</p>
                 <p className="text-green-600 text-xs mt-1">جميع الأسئلة أُجيب عنها بنعم</p>
               </div>
@@ -850,9 +1071,9 @@ function EvalDetailModal({ record, onClose, onDelete }) {
                       {q.id}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-[#2D2926] font-medium leading-relaxed">{q.text}</p>
+                      <p className="text-sm text-ink font-medium leading-relaxed">{q.text}</p>
                       {q.category && (
-                        <p className="text-[10px] text-[#A98159] font-bold mt-1">{q.category}</p>
+                        <p className="text-[10px] text-primary font-bold mt-1">{q.category}</p>
                       )}
                     </div>
                   </li>
@@ -864,9 +1085,9 @@ function EvalDetailModal({ record, onClose, onDelete }) {
           {/* All answered questions with photos */}
           <div>
             <div className="flex items-center gap-2 mb-2.5">
-              <div className="w-1.5 h-5 rounded-full bg-[#A98159]" />
-              <p className="text-sm font-black text-[#2D2926]">جميع الإجابات والصور</p>
-              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#FDF8F0] border border-[#E8DDD4] text-[#A98159] tabular-nums">
+              <div className="w-1.5 h-5 rounded-full bg-primary" />
+              <p className="text-sm font-black text-ink">جميع الإجابات والصور</p>
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-background border border-line text-primary tabular-nums">
                 {MEAL_QUESTIONS.filter(q => ans[q.id]).length} سؤال
               </span>
             </div>
@@ -882,16 +1103,16 @@ function EvalDetailModal({ record, onClose, onDelete }) {
                     className={`rounded-xl px-3 py-2.5 border ${
                       isYes ? 'bg-green-50/40 border-green-200/60'
                     : isNo  ? 'bg-red-50/40 border-red-200/60'
-                    :         'bg-white border-[#EDE5DC]'
+                    :         'bg-white border-line'
                     }`}>
                     <div className="flex items-start gap-2">
                       <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md text-white tabular-nums shrink-0 mt-0.5"
-                        style={{ background: '#A98159' }}>
+                        style={{ background: 'rgb(var(--c-primary))' }}>
                         {q.id}
                       </span>
-                      <p className="text-[12px] text-[#2D2926] leading-relaxed flex-1">{q.text}</p>
+                      <p className="text-[12px] text-ink leading-relaxed flex-1">{q.text}</p>
                       <span className={`text-[10px] font-black flex-shrink-0 flex items-center gap-0.5 ${
-                        isYes ? 'text-green-700' : isNo ? 'text-red-700' : 'text-[#6D6E71]'
+                        isYes ? 'text-green-700' : isNo ? 'text-red-700' : 'text-muted'
                       }`}>
                         {a}
                       </span>
@@ -899,7 +1120,7 @@ function EvalDetailModal({ record, onClose, onDelete }) {
                     {photoUrl && (
                       <a href={photoUrl} target="_blank" rel="noreferrer" className="mt-2 block">
                         <img src={photoUrl} alt={`q${q.id}`}
-                          className="rounded-lg border border-[#EDE5DC] max-h-48 object-cover hover:opacity-90 transition-opacity" />
+                          className="rounded-lg border border-line max-h-48 object-cover hover:opacity-90 transition-opacity" />
                       </a>
                     )}
                   </div>
@@ -952,14 +1173,13 @@ function ReportsCenterList({ centers, selectedDay, phasesData, evalLookup, cente
 
   return (
     <div className="space-y-4">
-      <div className="bg-gradient-to-br from-[#FDF8F0] to-white border border-[#E8DDD4] rounded-2xl p-4 flex items-center gap-3">
+      <div className="bg-gradient-to-br from-background to-white border border-line rounded-2xl p-4 flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md"
-          style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
-          <ImageIcon size={18} className="text-white" strokeWidth={2.25} />
+          style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
+          <ImageIcon size={18} className="text-white" weight="bold" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-black text-[#2D2926]">تقارير المراكز — {DAYS.find(d => d.id === selectedDay)?.label}</p>
-          <p className="text-[11px] text-[#6D6E71] mt-0.5">اختر مركزاً لعرض المراحل والصور والتقييمات الخاصة به</p>
+          <p className="text-sm font-black text-ink">تقارير المراكز · {DAYS.find(d => d.id === selectedDay)?.label}</p>
         </div>
       </div>
 
@@ -972,22 +1192,22 @@ function ReportsCenterList({ centers, selectedDay, phasesData, evalLookup, cente
             <button
               key={s.center}
               onClick={() => onSelect(s.center)}
-              className="text-right group bg-white rounded-2xl border border-[#EDE5DC] p-4 shadow-[0_2px_8px_rgba(45,41,38,0.07)] hover:shadow-[0_6px_24px_rgba(169,129,89,0.18)] hover:border-[#D9CEBC] hover:-translate-y-0.5 transition-all"
+              className="text-right group bg-white rounded-2xl border border-line p-4 shadow-[0_2px_8px_rgb(var(--c-ink)/0.07)] hover:shadow-[0_6px_24px_rgb(var(--c-primary)/0.18)] hover:border-line hover:-translate-y-0.5 transition-all"
             >
               {/* Header */}
               <div className="flex items-start gap-3 mb-3">
                 <div className="relative shrink-0">
-                  <div className="absolute inset-0 rounded-xl blur-md opacity-40 bg-[#A98159] group-hover:opacity-60 transition-opacity" />
+                  <div className="absolute inset-0 rounded-xl blur-md opacity-40 bg-primary group-hover:opacity-60 transition-opacity" />
                   <div className="relative w-11 h-11 rounded-xl flex items-center justify-center shadow-md"
-                    style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
+                    style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
                     <span className="text-white text-sm font-black tabular-nums">
                       {(s.center.match(/\d+/) || ['—'])[0]}
                     </span>
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-black text-[#2D2926] truncate">{s.center}</p>
-                  <p className="text-[10px] text-[#A98159] font-bold truncate mt-0.5">{s.caterer}</p>
+                  <p className="text-sm font-black text-ink truncate">{s.center}</p>
+                  <p className="text-[10px] text-primary font-bold truncate mt-0.5">{s.caterer}</p>
                   <div className="flex items-center gap-1 mt-1.5 flex-wrap">
                     {cats.map(cat => {
                       const meta = MEAL_CATEGORY_META[cat];
@@ -998,7 +1218,7 @@ function ReportsCenterList({ centers, selectedDay, phasesData, evalLookup, cente
                           className="inline-flex items-center gap-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border"
                           style={{ background: meta.bg, borderColor: meta.border, color: meta.color }}
                         >
-                          <CIcon size={9} strokeWidth={2.5} />
+                          <CIcon size={9} weight="bold" />
                           {meta.label}
                         </span>
                       );
@@ -1032,17 +1252,17 @@ function ReportsCenterList({ centers, selectedDay, phasesData, evalLookup, cente
 
               {/* Stats row */}
               <div className="grid grid-cols-3 gap-1.5">
-                <div className="rounded-lg border border-[#EDE5DC] bg-[#FAFAF8] p-1.5 text-center">
-                  <div className="flex items-center justify-center gap-1 text-[#A98159]">
-                    <ImageIcon size={10} strokeWidth={2.5} />
+                <div className="rounded-lg border border-line bg-bg p-1.5 text-center">
+                  <div className="flex items-center justify-center gap-1 text-primary">
+                    <ImageIcon size={10} weight="bold" />
                     <span className="text-[8px] font-bold">صور</span>
                   </div>
-                  <p className="text-sm font-black text-[#2D2926] tabular-nums mt-0.5">{s.photoCount}</p>
+                  <p className="text-sm font-black text-ink tabular-nums mt-0.5">{s.photoCount}</p>
                 </div>
                 <div className="rounded-lg border p-1.5 text-center"
                   style={{ background: sst.bg, borderColor: sst.border }}>
                   <div className="flex items-center justify-center gap-1" style={{ color: sst.color }}>
-                    <Sparkles size={10} strokeWidth={2.5} />
+                    <Sparkles size={10} weight="bold" />
                     <span className="text-[8px] font-bold">متوسط</span>
                   </div>
                   <p className="text-sm font-black tabular-nums mt-0.5" style={{ color: sst.color }}>
@@ -1055,7 +1275,7 @@ function ReportsCenterList({ centers, selectedDay, phasesData, evalLookup, cente
                     : { background: '#F0FDF4', borderColor: '#86EFAC' }}>
                   <div className="flex items-center justify-center gap-1"
                     style={{ color: s.violations > 0 ? '#B91C1C' : '#15803D' }}>
-                    <AlertCircle size={10} strokeWidth={2.5} />
+                    <AlertCircle size={10} weight="bold" />
                     <span className="text-[8px] font-bold">مخالفات</span>
                   </div>
                   <p className="text-sm font-black tabular-nums mt-0.5"
@@ -1068,17 +1288,17 @@ function ReportsCenterList({ centers, selectedDay, phasesData, evalLookup, cente
               {/* Overall progress bar */}
               <div className="mt-3">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[9px] font-bold text-[#9D8F85]">إجمالي المراحل</span>
+                  <span className="text-[9px] font-bold text-muted">إجمالي المراحل</span>
                   <span className="text-[10px] font-black tabular-nums"
-                    style={{ color: pct === 100 ? '#10B981' : pct > 0 ? '#F59E0B' : '#9D8F85' }}>
+                    style={{ color: pct === 100 ? '#5E9070' : pct > 0 ? '#F59E0B' : 'rgb(var(--c-muted))' }}>
                     {s.phasesDone}/{s.maxPhases} · {pct}%
                   </span>
                 </div>
-                <div className="h-1.5 bg-[#F5F0EB] rounded-full overflow-hidden">
+                <div className="h-1.5 bg-[rgb(var(--c-primary-50))] rounded-full overflow-hidden">
                   <div className="h-full rounded-full transition-all"
                     style={{
                       width: `${pct}%`,
-                      background: pct === 100 ? '#10B981' : pct > 0 ? '#F59E0B' : '#E8DDD4',
+                      background: pct === 100 ? '#5E9070' : pct > 0 ? '#F59E0B' : 'rgb(var(--c-line))',
                     }} />
                 </div>
               </div>
@@ -1097,17 +1317,17 @@ function CenterReport({ center, selectedDay, phasesData, evalLookup, centerCateg
   return (
     <div className="space-y-4">
       {/* Header bar */}
-      <div className="bg-gradient-to-br from-white to-[#FDF8F0] border border-[#E8DDD4] rounded-2xl p-4 flex items-center gap-3 shadow-[0_2px_8px_rgba(45,41,38,0.07)]">
+      <div className="bg-gradient-to-br from-white to-background border border-line rounded-2xl p-4 flex items-center gap-3 shadow-[0_2px_8px_rgb(var(--c-ink)/0.07)]">
         <button onClick={onBack}
-          className="min-w-[40px] min-h-[40px] rounded-xl border border-[#D9CEBC] bg-white text-[#A98159] flex items-center justify-center hover:bg-[#FDF8F0] hover:border-[#A98159] transition-all shrink-0"
+          className="min-w-[40px] min-h-[40px] rounded-xl border border-line bg-white text-primary flex items-center justify-center hover:bg-background hover:border-primary transition-all shrink-0"
           title="رجوع"
         >
-          <X size={16} strokeWidth={2.25} />
+          <X size={16} weight="bold" />
         </button>
         <div className="relative shrink-0">
-          <div className="absolute inset-0 rounded-2xl blur-md opacity-50 bg-[#A98159]" />
+          <div className="absolute inset-0 rounded-2xl blur-md opacity-50 bg-primary" />
           <div className="relative w-12 h-12 rounded-2xl flex items-center justify-center shadow-md"
-            style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
+            style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
             <span className="text-white text-sm font-black tabular-nums">
               {(center.match(/\d+/) || ['—'])[0]}
             </span>
@@ -1115,7 +1335,7 @@ function CenterReport({ center, selectedDay, phasesData, evalLookup, centerCateg
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-base font-black text-[#2D2926] truncate">{center}</p>
+            <p className="text-base font-black text-ink truncate">{center}</p>
             {cats.map(cat => {
               const meta = MEAL_CATEGORY_META[cat];
               if (!meta) return null;
@@ -1125,13 +1345,13 @@ function CenterReport({ center, selectedDay, phasesData, evalLookup, centerCateg
                   className="inline-flex items-center gap-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border"
                   style={{ background: meta.bg, borderColor: meta.border, color: meta.color }}
                 >
-                  <CIcon size={9} strokeWidth={2.5} />
+                  <CIcon size={9} weight="bold" />
                   {meta.label}
                 </span>
               );
             })}
           </div>
-          <p className="text-[11px] text-[#A98159] font-bold mt-0.5 truncate">
+          <p className="text-[11px] text-primary font-bold mt-0.5 truncate">
             {centerObj.caterer} · {DAYS.find(d => d.id === selectedDay)?.label}
           </p>
         </div>
@@ -1152,7 +1372,7 @@ function CenterReport({ center, selectedDay, phasesData, evalLookup, centerCateg
 
           return (
             <div key={m.id}
-              className="bg-white rounded-2xl border-2 overflow-hidden shadow-[0_2px_12px_rgba(45,41,38,0.07)]"
+              className="bg-white rounded-2xl border-2 overflow-hidden shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)]"
               style={{ borderColor: m.border }}
             >
               {/* Meal header */}
@@ -1164,7 +1384,7 @@ function CenterReport({ center, selectedDay, phasesData, evalLookup, centerCateg
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-black" style={{ color: m.color }}>{m.label}</p>
-                  <p className="text-[10px] font-bold text-[#6D6E71] mt-0.5">
+                  <p className="text-[10px] font-bold text-muted mt-0.5">
                     {done}/{PHASES.length} مراحل مكتملة
                   </p>
                 </div>
@@ -1175,7 +1395,7 @@ function CenterReport({ center, selectedDay, phasesData, evalLookup, centerCateg
                     style={{ background: sst.bg, borderColor: sst.border }}
                     title="عرض تفاصيل التقييم"
                   >
-                    <Sparkles size={11} style={{ color: sst.color }} strokeWidth={2.5} />
+                    <Sparkles size={11} style={{ color: sst.color }} weight="bold" />
                     <span className="text-sm font-black tabular-nums" style={{ color: sst.color }}>
                       {score != null ? score.toFixed(1) : '—'}
                       <span className="text-[9px] opacity-70">/10</span>
@@ -1187,7 +1407,7 @@ function CenterReport({ center, selectedDay, phasesData, evalLookup, centerCateg
                     )}
                   </button>
                 ) : (
-                  <span className="text-[10px] font-bold text-[#9D8F85] px-2.5 py-1.5 rounded-lg border border-[#EDE5DC] bg-white">
+                  <span className="text-[10px] font-bold text-muted px-2.5 py-1.5 rounded-lg border border-line bg-white">
                     لم يُقيَّم
                   </span>
                 )}
@@ -1203,29 +1423,29 @@ function CenterReport({ center, selectedDay, phasesData, evalLookup, centerCateg
                     return (
                       <div key={p.id}
                         className="rounded-xl border-2 overflow-hidden"
-                        style={{ borderColor: isDone ? p.border : '#EDE5DC', background: isDone ? p.bg : '#FAFAF8' }}
+                        style={{ borderColor: isDone ? p.border : 'rgb(var(--c-line))', background: isDone ? p.bg : 'rgb(var(--c-bg))' }}
                       >
                         {/* Phase label strip */}
                         <div className="px-3 py-2 flex items-center justify-between"
-                          style={{ background: isDone ? `${p.color}10` : '#F5F0EB' }}>
+                          style={{ background: isDone ? `${p.color}10` : 'rgb(var(--c-primary-50))' }}>
                           <div className="flex items-center gap-2">
                             <span className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black text-white shrink-0"
-                              style={{ background: isDone ? p.color : '#C9B8A8' }}>
+                              style={{ background: isDone ? p.color : 'rgb(var(--c-muted))' }}>
                               {p.id}
                             </span>
                             <span className="text-[11px] font-black"
-                              style={{ color: isDone ? p.color : '#9D8F85' }}>
+                              style={{ color: isDone ? p.color : 'rgb(var(--c-muted))' }}>
                               {p.label}
                             </span>
                           </div>
                           {isDone ? (
                             <span className="flex items-center gap-1 text-[10px] font-bold tabular-nums"
                               style={{ color: p.color }}>
-                              <CheckCircle2 size={11} strokeWidth={2.5} />
+                              <CheckCircle2 size={11} weight="bold" />
                               {time || '—'}
                             </span>
                           ) : (
-                            <span className="text-[10px] font-bold text-[#C9B8A8]">لم يبدأ</span>
+                            <span className="text-[10px] font-bold text-muted">لم يبدأ</span>
                           )}
                         </div>
                         {/* Photo */}
@@ -1239,16 +1459,16 @@ function CenterReport({ center, selectedDay, phasesData, evalLookup, centerCateg
                               className="w-full h-44 object-cover transition-transform group-hover/photo:scale-105" />
                             <div className="absolute inset-0 bg-black/0 group-hover/photo:bg-black/30 transition-colors flex items-center justify-center">
                               <div className="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover/photo:opacity-100 transition-opacity shadow-lg">
-                                <ImageIcon size={15} className="text-[#2D2926]" strokeWidth={2.25} />
+                                <ImageIcon size={15} className="text-ink" weight="bold" />
                               </div>
                             </div>
                           </button>
                         ) : (
-                          <div className="w-full h-44 flex flex-col items-center justify-center gap-1.5 bg-[#FAFAF8]">
-                            <div className="w-10 h-10 rounded-full bg-[#F5F0EB] border border-[#E8DDD4] flex items-center justify-center">
-                              <ImageIcon size={16} className="text-[#C9B8A8]" strokeWidth={2} />
+                          <div className="w-full h-44 flex flex-col items-center justify-center gap-1.5 bg-bg">
+                            <div className="w-10 h-10 rounded-full bg-[rgb(var(--c-primary-50))] border border-line flex items-center justify-center">
+                              <ImageIcon size={16} className="text-muted" weight="regular" />
                             </div>
-                            <span className="text-[10px] font-bold text-[#C9B8A8]">
+                            <span className="text-[10px] font-bold text-muted">
                               {isDone ? 'بدون صورة' : 'لم تُرفع بعد'}
                             </span>
                           </div>

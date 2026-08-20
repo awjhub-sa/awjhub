@@ -2,11 +2,33 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { db, uploadFile, STORAGE_BUCKETS } from '../../lib/db.js';
 import { compressImage } from '../../lib/imageCompression.js';
 import {
-  ShieldCheck, Mountain, ChevronRight, CheckCircle2, XCircle,
-  Sparkles, AlertCircle, User, Calendar, Building2, X, Search, Award,
-  TrendingUp, ClipboardList, Trash2, ListChecks, Sun, Hourglass, UserCog,
-  BarChart3, Pencil, Save, Camera, ImageIcon, RotateCcw,
-} from 'lucide-react';
+  ShieldCheck,
+  Mountains as Mountain,
+  CaretRight as ChevronRight,
+  CheckCircle as CheckCircle2,
+  XCircle,
+  Sparkle as Sparkles,
+  WarningCircle as AlertCircle,
+  User,
+  CalendarBlank as Calendar,
+  Buildings as Building2,
+  X,
+  MagnifyingGlass as Search,
+  Medal as Award,
+  TrendUp as TrendingUp,
+  ClipboardText as ClipboardList,
+  Trash as Trash2,
+  ListChecks,
+  Sun,
+  Hourglass,
+  UserGear as UserCog,
+  ChartBar as BarChart3,
+  Pencil,
+  FloppyDisk as Save,
+  Camera,
+  Image as ImageIcon,
+  ArrowCounterClockwise as RotateCcw,
+} from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
 import { CENTERS, getCaterer } from '../../config/centers.js';
 import { MINA_ALL_CRITERIA } from '../../config/minaQuestions.js';
@@ -22,24 +44,24 @@ const TABS = [
     label: 'مشعر منى',
     short: 'منى',
     col:  'mina_readiness',
-    color: '#386B41',
+    color: '#16A34A',
     bg:    '#F0FDF4',
     border:'#86EFAC',
     icon:  Mountain,
     allQs: MINA_Qs,
-    gradient: 'linear-gradient(135deg, #4F8856, #386B41)',
+    gradient: 'linear-gradient(135deg, #4F8856, rgb(var(--c-success)))',
   },
   {
     key:  'arafat',
     label: 'مشعر عرفة',
     short: 'عرفة',
     col:  'arafat_readiness',
-    color: '#1D6FA4',
+    color: '#2F5580',
     bg:    '#EFF6FF',
     border:'#BFDBFE',
     icon:  Mountain,
     allQs: ARAFAT_Qs,
-    gradient: 'linear-gradient(135deg, #2D87C2, #1D6FA4)',
+    gradient: 'linear-gradient(135deg, #6595C4, #2F5580)',
   },
 ];
 
@@ -73,7 +95,7 @@ function getScore(doc) {
   return null;
 }
 function scoreStyle(score) {
-  if (score == null) return { color: '#9D8F85', bg: '#F5F0EB', border: '#E8DDD4' };
+  if (score == null) return { color: 'rgb(var(--c-muted))', bg: 'rgb(var(--c-primary-50))', border: 'rgb(var(--c-line))' };
   if (score >= 8)    return { color: '#15803D', bg: '#F0FDF4', border: '#86EFAC' };
   if (score >= 5)    return { color: '#B45309', bg: '#FFFBEB', border: '#FCD34D' };
   return                     { color: '#B91C1C', bg: '#FEF2F2', border: '#FCA5A5' };
@@ -99,8 +121,16 @@ const docTimestampMs = d =>
   d?.timestamp?.toMillis?.()
     ?? (d?.timestamp ? new Date(d.timestamp).getTime() : 0);
 
-export default function AdminAnalytics() {
-  const [activeTab, setActiveTab] = useState('mina');
+/**
+ * `site` pins the page to one mash'ar, which is how the sidebar now presents
+ * it: جاهزية منى and جاهزية عرفة are separate destinations. Passing a prop
+ * rather than forking the file keeps one implementation of the loading,
+ * realtime and scoring logic — two copies would diverge on the first fix.
+ * Called with no prop, the two-tab view still works.
+ */
+export default function AdminAnalytics({ site }) {
+  const [activeTab, setActiveTab] = useState(site || 'mina');
+  useEffect(() => { if (site) setActiveTab(site); }, [site]);
   const [data,      setData]      = useState({ mina: null, arafat: null });
   const [selectedCenter, setSelectedCenter] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -293,13 +323,20 @@ export default function AdminAnalytics() {
   return (
     <div className="space-y-5 pb-6" dir="rtl">
       <PageHeader
+        kicker="جاهزية المشاعر"
         Icon={ShieldCheck}
-        title="الجاهزية"
-        subtitle="جاهزية مشعر منى ومشعر عرفة — موسم الحج ١٤٤٧ هـ"
+        title={site ? `جاهزية ${tab?.short}` : 'الجاهزية'}
+        subtitle={site ? `تقييمات مشعر ${tab?.short} — آخر درجة لكل مركز` : 'جاهزية مشعر منى ومشعر عرفة'}
+        stats={[
+          { value: `${evaluated}/${CENTERS.length}`, label: 'مركز مقيّم' },
+          { value: overallAvg ? `${overallAvg}` : '—', label: 'متوسط الجاهزية', tone: 'gold' },
+          { value: totalViols, label: 'مخالفة', tone: totalViols > 0 ? 'alert' : undefined },
+        ]}
       />
 
-      {/* ── Mash'ar tab selector ── */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* Hidden when the route already names the mash'ar — a selector with one
+          reachable option is just noise. */}
+      <div className={`grid grid-cols-2 gap-3 ${site ? 'hidden' : ''}`}>
         {TABS.map(t => {
           const Icon  = t.icon;
           const active = activeTab === t.key;
@@ -309,12 +346,12 @@ export default function AdminAnalytics() {
               onClick={() => { setActiveTab(t.key); setSelectedCenter(null); setSearchTerm(''); }}
               className={`group/tab relative overflow-hidden flex items-center gap-3 px-4 py-4 rounded-3xl border-2 transition-all duration-300 ${
                 active
-                  ? 'shadow-[0_8px_32px_rgba(45,41,38,0.18)] scale-[1.02]'
-                  : 'bg-white border-[#E8E0D8] shadow-[0_2px_12px_rgba(45,41,38,0.04)] hover:shadow-[0_4px_20px_rgba(45,41,38,0.08)] hover:scale-[1.01]'
+                  ? 'shadow-[0_8px_32px_rgb(var(--c-ink)/0.18)] scale-[1.02]'
+                  : 'bg-white border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.04)] hover:shadow-[0_4px_20px_rgb(var(--c-ink)/0.08)] hover:scale-[1.01]'
               }`}
               style={active
                 ? { background: t.gradient, borderColor: t.color }
-                : { borderColor: '#E8E0D8' }}
+                : { borderColor: 'rgb(var(--c-line))' }}
             >
               {active && (
                 <>
@@ -333,17 +370,17 @@ export default function AdminAnalytics() {
                   <Icon
                     size={22}
                     style={{ color: active ? '#fff' : t.color }}
-                    strokeWidth={active ? 2.25 : 1.75}
+                    weight={active ? 'bold' : 'regular'}
                   />
                 </div>
               </div>
               <div className="flex-1 text-right">
                 <p className="text-base font-black leading-snug"
-                  style={{ color: active ? '#fff' : '#2D2926' }}>
+                  style={{ color: active ? '#fff' : 'rgb(var(--c-ink))' }}>
                   جاهزية {t.short}
                 </p>
                 <p className="text-[11px] font-bold mt-0.5"
-                  style={{ color: active ? 'rgba(255,255,255,0.85)' : '#6D6E71' }}>
+                  style={{ color: active ? 'rgba(255,255,255,0.85)' : 'rgb(var(--c-muted))' }}>
                   {count} تقييم · {evaluated} مركز مُقيَّم
                 </p>
               </div>
@@ -356,9 +393,9 @@ export default function AdminAnalytics() {
       </div>
 
       {data[activeTab] === null ? (
-        <div className="bg-white rounded-3xl border border-[#E8E0D8] py-16 text-center shadow-[0_2px_20px_rgba(45,41,38,0.06)]">
-          <div className="w-6 h-6 border-2 border-[#A98159]/30 border-t-[#A98159] rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-[#6D6E71] text-sm">جارٍ التحميل...</p>
+        <div className="bg-white rounded-3xl border border-line py-16 text-center shadow-[0_2px_20px_rgb(var(--c-ink)/0.06)]">
+          <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-muted text-sm">جارٍ التحميل...</p>
         </div>
       ) : selectedCenter && activeSummary ? (
         /* ─── Center Detail View ─── */
@@ -375,20 +412,23 @@ export default function AdminAnalytics() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
               { label: 'مراكز مُقيَّمة',  value: `${evaluated}/${CENTERS.length}`, color: tab.color, icon: ClipboardList },
-              { label: 'متوسط الدرجات',  value: overallAvg ? `${overallAvg}/10` : '—', color: '#A98159', icon: TrendingUp },
+              { label: 'متوسط الدرجات',  value: overallAvg ? `${overallAvg}/10` : '—', color: 'rgb(var(--c-primary))', icon: TrendingUp },
               { label: 'تقييمات ممتازة', value: perfectCnt,                      color: '#15803D', icon: Award },
               { label: 'إجمالي مخالفات', value: totalViols,                      color: totalViols > 0 ? '#B91C1C' : '#15803D', icon: AlertCircle },
             ].map(c => (
+              /* Same tile as the dashboard and the analytics section: the
+                 accent is a bar on the top edge, so the three screens read as
+                 one system rather than three takes on a card. */
               <div key={c.label}
-                className="bg-white rounded-2xl p-4 border border-[#EDE5DC] shadow-[0_2px_8px_rgba(45,41,38,0.07)] flex items-center gap-3"
-                style={{ borderRight: `3px solid ${c.color}` }}>
+                className="relative bg-white rounded-2xl p-4 pt-5 border border-line overflow-hidden flex items-center gap-3">
+                <span className="absolute inset-x-0 top-0 h-1" style={{ background: c.color }} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-semibold text-[#9D8F85] mb-0.5">{c.label}</p>
-                  <p className="text-xl font-bold tabular-nums" style={{ color: c.color }}>{c.value}</p>
+                  <p className="text-[10px] font-bold text-muted mb-1 truncate">{c.label}</p>
+                  <p className="text-2xl font-black tabular-nums leading-none" style={{ color: c.color }}>{c.value}</p>
                 </div>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: `${c.color}18` }}>
-                  <c.icon size={18} style={{ color: c.color }} strokeWidth={1.75} />
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: `color-mix(in srgb, ${c.color} 12%, #fff)` }}>
+                  <c.icon size={19} style={{ color: c.color }} weight="bold" />
                 </div>
               </div>
             ))}
@@ -396,21 +436,21 @@ export default function AdminAnalytics() {
 
           {/* ── Stages report button ── */}
           <button
-            onClick={() => window.open(`/admin/stages-report?tab=${activeTab}`, '_blank', 'noopener')}
+            onClick={() => window.open(`/admin/stages-report?tab=${activeTab}`, '_blank')}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-white text-sm font-black transition-all shadow-md hover:shadow-lg active:scale-[0.99]"
-            style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159 60%, #8B6840)' }}
+            style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)) 60%, rgb(var(--c-primary-700)))' }}
           >
-            <BarChart3 size={16} strokeWidth={2.5} />
-            تقرير مراحل — قارن مع التقييمات السابقة
-            <ChevronRight size={15} strokeWidth={2.5} className="opacity-70" />
+            <BarChart3 size={16} weight="bold" />
+            تقرير مراحل
+            <ChevronRight size={15} weight="bold" className="opacity-70" />
           </button>
 
           {/* ── Date filter chips ── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {[
-              { key: 'all',       label: 'الكل',      Icon: ListChecks,  count: CENTERS.length, color: '#6D6E71' },
+              { key: 'all',       label: 'الكل',      Icon: ListChecks,  count: CENTERS.length, color: '#2F5580' },
               { key: 'uploaded',  label: 'تم رفعها',  Icon: CheckCircle2, count: uploadedCount,  color: '#15803D' },
-              { key: 'today',     label: 'اليوم',     Icon: Sun,         count: todayCount,     color: '#0E7C66' },
+              { key: 'today',     label: 'اليوم',     Icon: Sun,         count: todayCount,     color: '#5E9070' },
               { key: 'remaining', label: 'المتبقي',   Icon: Hourglass,   count: remainingCount, color: '#B91C1C' },
             ].map(f => {
               const active = dateFilter === f.key;
@@ -419,18 +459,18 @@ export default function AdminAnalytics() {
                 <button key={f.key}
                   onClick={() => setDateFilter(f.key)}
                   className={`group/flt flex items-center justify-center gap-2 px-3 py-2.5 rounded-2xl border-2 text-xs font-black transition-all ${
-                    active ? 'shadow-md scale-[1.02] text-white' : 'bg-white text-[#6D6E71] border-[#EDE5DC] hover:border-[#A98159]/50'
+                    active ? 'shadow-md scale-[1.02] text-white' : 'bg-white text-muted border-line hover:border-primary/50'
                   }`}
                   style={active
-                    ? { background: `linear-gradient(135deg, ${f.color}, ${f.color}D0)`, borderColor: f.color }
+                    ? { background: `linear-gradient(135deg, ${f.color}, color-mix(in srgb, ${f.color} 78%, #000))`, borderColor: f.color }
                     : undefined}
                 >
-                  <FIcon size={13} strokeWidth={2.5} />
+                  <FIcon size={13} weight="bold" />
                   <span>{f.label}</span>
                   <span className={`tabular-nums text-[10px] px-1.5 py-0.5 rounded-md ${
-                    active ? 'bg-white/25' : 'text-[#9D8F85]'
+                    active ? 'bg-white/25' : 'text-muted'
                   }`}
-                    style={!active ? { background: `${f.color}15` } : undefined}>
+                    style={!active ? { background: `color-mix(in srgb, ${f.color} 12%, #fff)`, color: f.color } : undefined}>
                     {f.count}
                   </span>
                 </button>
@@ -440,36 +480,36 @@ export default function AdminAnalytics() {
 
           {/* ── Search bar ── */}
           <div className="relative">
-            <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9D8F85]" strokeWidth={2} />
+            <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted" weight="regular" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="بحث بالمركز أو المتعهد..."
-              className="w-full pr-11 pl-4 py-3 rounded-2xl border-2 border-[#EDE5DC] bg-white text-sm font-medium text-[#2D2926] placeholder:text-[#C9B8A8] focus:border-[#A98159] focus:outline-none transition-colors shadow-[0_2px_8px_rgba(45,41,38,0.05)]"
+              className="w-full pr-11 pl-4 py-3 rounded-2xl border-2 border-line bg-white text-sm font-medium text-ink placeholder:text-muted focus:border-primary focus:outline-none transition-colors shadow-[0_2px_8px_rgb(var(--c-ink)/0.05)]"
             />
             {searchTerm && (
               <button onClick={() => setSearchTerm('')}
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center text-[#9D8F85] hover:bg-[#F5F0EB] transition-colors">
-                <X size={14} strokeWidth={2.25} />
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:bg-[rgb(var(--c-primary-50))] transition-colors">
+                <X size={14} weight="bold" />
               </button>
             )}
           </div>
 
           {/* ── Centers grid ── */}
           {filteredSummaries.length === 0 ? (
-            <div className="bg-white rounded-3xl border border-[#E8E0D8] py-16 text-center shadow-[0_2px_20px_rgba(45,41,38,0.06)]">
+            <div className="bg-white rounded-3xl border border-line py-16 text-center shadow-[0_2px_20px_rgb(var(--c-ink)/0.06)]">
               <div className="relative w-fit mx-auto mb-3 group">
                 <div className="absolute inset-0 rounded-2xl blur-xl opacity-30 group-hover:opacity-60 transition-opacity"
                   style={{ background: tab.color }} />
                 <div className="relative w-12 h-12 rounded-2xl flex items-center justify-center"
                   style={{ background: `${tab.color}1A` }}>
                   {dateFilter === 'remaining'
-                    ? <CheckCircle2 size={22} style={{ color: '#15803D' }} strokeWidth={1.75} />
-                    : <Search size={22} style={{ color: tab.color }} strokeWidth={1.75} />}
+                    ? <CheckCircle2 size={22} style={{ color: '#15803D' }} weight="regular" />
+                    : <Search size={22} style={{ color: tab.color }} weight="regular" />}
                 </div>
               </div>
-              <p className="text-[#6D6E71] font-medium">
+              <p className="text-muted font-medium">
                 {dateFilter === 'remaining'
                   ? '🎉 جميع المراكز رُفعت لها تقييمات اليوم'
                   : dateFilter === 'today'
@@ -494,132 +534,105 @@ export default function AdminAnalytics() {
   );
 }
 
+/* A centre, led by its score.
+ *
+ * The card used to give the score a two-tone chip, the centre number a glowing
+ * gradient tile, and the observer and the violations a tile each — four boxes
+ * for four facts, and the one that decides whether anyone visits the centre was
+ * no louder than the rest. Now the band colour runs along the top edge, the
+ * score is the largest thing on the card, and everything else is a line of
+ * quiet meta beneath it. */
 function CenterCard({ summary, tab, onSelect, isRecent }) {
   const sst = scoreStyle(summary.avgScore);
   const hasData = summary.count > 0;
   const centerNum = (summary.center.match(/\d+\S*/) || ['—'])[0];
+  const tone = hasData ? sst.color : 'rgb(var(--c-muted))';
 
   return (
     <button
       onClick={onSelect}
       disabled={!hasData}
-      className={`relative text-right group bg-white rounded-2xl border-2 p-4 transition-all ${
+      className={`relative text-right group bg-white rounded-2xl border overflow-hidden p-4 pt-5 transition-all ${
         hasData
-          ? 'border-[#EDE5DC] shadow-[0_2px_8px_rgba(45,41,38,0.07)] hover:shadow-[0_6px_24px_rgba(169,129,89,0.18)] hover:border-[#D9CEBC] hover:-translate-y-0.5 cursor-pointer'
-          : 'border-dashed border-[#EDE5DC] bg-[#FAFAF8] opacity-70 cursor-not-allowed'
+          ? 'border-line hover:shadow-[0_8px_24px_rgb(var(--c-ink)/0.10)] hover:-translate-y-0.5 cursor-pointer'
+          : 'border-dashed border-line bg-bg opacity-70 cursor-not-allowed'
       }`}
     >
-      {/* Pulsing red dot for newly-arrived evaluations */}
+      {hasData && <span className="absolute inset-x-0 top-0 h-1" style={{ background: tone }} />}
+
       {isRecent && (
-        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 border-2 border-white badge-pulse-red z-10" />
+        <span className="absolute top-2.5 left-2.5 w-2.5 h-2.5 rounded-full bg-red-500 badge-pulse-red z-10" />
       )}
-      {/* Header */}
-      <div className="flex items-start gap-3 mb-3">
-        <div className="relative shrink-0">
-          {hasData && (
-            <div className="absolute inset-0 rounded-xl blur-md opacity-40 group-hover:opacity-60 transition-opacity"
-              style={{ background: tab.color }} />
-          )}
-          <div className="relative w-11 h-11 rounded-xl flex items-center justify-center shadow-md"
-            style={hasData
-              ? { background: tab.gradient }
-              : { background: '#F5F0EB', border: '1px dashed #D9CEBC' }}>
-            <span className="text-sm font-black tabular-nums"
-              style={{ color: hasData ? '#fff' : '#9D8F85' }}>
-              {centerNum}
-            </span>
-          </div>
-        </div>
+
+      <div className="flex items-start gap-3">
+        <span className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 border"
+          style={hasData
+            ? { background: `color-mix(in srgb, ${tone} 12%, #fff)`, borderColor: `color-mix(in srgb, ${tone} 30%, #fff)` }
+            : { background: 'rgb(var(--c-primary-50))', borderStyle: 'dashed', borderColor: 'rgb(var(--c-line))' }}>
+          <span className="text-sm font-black tabular-nums" style={{ color: tone }}>{centerNum}</span>
+        </span>
+
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <p className="text-sm font-black text-[#2D2926] truncate">{summary.center}</p>
+            <p className="text-[13px] font-black text-ink truncate">{summary.center}</p>
             {summary.supervisorCount > 0 && (
-              <span className="inline-flex items-center gap-1 text-[8.5px] font-black px-1.5 py-0.5 rounded-md text-white"
+              <span className="inline-flex items-center gap-1 text-[8.5px] font-black px-1.5 py-0.5 rounded-md"
                 title={`${summary.supervisorCount} تقييم من المشرف`}
-                style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}>
-                <UserCog size={9} strokeWidth={2.5} />
+                style={{ background: '#FBF3EF', color: '#9E5741', border: '1px solid #EBCFC3' }}>
+                <UserCog size={9} weight="bold" />
                 مشرف
                 {summary.supervisorCount > 1 && (
-                  <span className="bg-white/20 rounded px-1 tabular-nums">{summary.supervisorCount}</span>
+                  <span className="tabular-nums">{summary.supervisorCount}</span>
                 )}
               </span>
             )}
           </div>
-          <p className="text-[10px] text-[#A98159] font-bold truncate mt-0.5">{summary.caterer || '—'}</p>
-          {hasData && summary.latestDoc?.timestamp && (
-            <p className="text-[9px] text-[#9D8F85] font-bold mt-1 flex items-center gap-1">
-              <Calendar size={9} strokeWidth={2.25} />
-              {timeAgo(summary.latestDoc.timestamp)}
-            </p>
-          )}
+          <p className="text-[10px] text-primary font-bold truncate mt-0.5">{summary.caterer || '—'}</p>
         </div>
-        {hasData && (
-          <ChevronRight size={16} className="text-[#C9B8A8] group-hover:text-[#A98159] transition-colors shrink-0 mt-1"
-            strokeWidth={2.25} />
+
+        {/* The score, and nothing competing with it. */}
+        {hasData ? (
+          <div className="text-left flex-shrink-0">
+            <p className="text-2xl font-black tabular-nums leading-none" style={{ color: tone }}>
+              {summary.avgScore != null ? summary.avgScore.toFixed(1) : '—'}
+            </p>
+            <p className="text-[9px] font-bold text-muted mt-1">من ١٠</p>
+          </div>
+        ) : (
+          <ClipboardList size={16} className="text-muted flex-shrink-0" weight="regular" />
         )}
       </div>
 
-      {/* Body */}
       {hasData ? (
-        <>
-          {/* Score chip */}
-          <div className="rounded-xl p-3 border-2 flex items-center justify-between mb-2.5"
-            style={{ background: sst.bg, borderColor: sst.border }}>
-            <div className="flex items-center gap-2">
-              <Sparkles size={13} style={{ color: sst.color }} strokeWidth={2.25} />
-              <div>
-                <p className="text-[9px] font-bold" style={{ color: sst.color, opacity: 0.85 }}>متوسط الدرجة</p>
-                <p className="text-xl font-black tabular-nums leading-tight" style={{ color: sst.color }}>
-                  {summary.avgScore != null ? summary.avgScore.toFixed(1) : '—'}
-                  <span className="text-[10px] opacity-70">/10</span>
-                </p>
-              </div>
-            </div>
-            <div className="text-left">
-              <p className="text-[9px] font-bold" style={{ color: sst.color, opacity: 0.85 }}>تقييمات</p>
-              <p className="text-xl font-black tabular-nums leading-tight" style={{ color: sst.color }}>{summary.count}</p>
-            </div>
-          </div>
-
-          {/* Sub stats */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-lg border border-[#EDE5DC] bg-[#FAFAF8] p-2">
-              <div className="flex items-center gap-1 text-[#A98159] mb-0.5">
-                <User size={9} strokeWidth={2.5} />
-                <span className="text-[9px] font-bold">المراقب</span>
-              </div>
-              <p className="text-[10px] font-bold text-[#2D2926] truncate">
-                {getObserver(summary.latestDoc)}
-              </p>
-            </div>
-            <div className="rounded-lg border p-2"
-              style={summary.totalViolations > 0
-                ? { background: '#FEF2F2', borderColor: '#FCA5A5' }
-                : { background: '#F0FDF4', borderColor: '#86EFAC' }}>
-              <div className="flex items-center gap-1 mb-0.5"
-                style={{ color: summary.totalViolations > 0 ? '#B91C1C' : '#15803D' }}>
-                <AlertCircle size={9} strokeWidth={2.5} />
-                <span className="text-[9px] font-bold">مخالفات</span>
-              </div>
-              <p className="text-[10px] font-black tabular-nums"
-                style={{ color: summary.totalViolations > 0 ? '#B91C1C' : '#15803D' }}>
-                {summary.totalViolations}
-              </p>
-            </div>
-          </div>
-        </>
-      ) : (
-        <div className="rounded-xl border border-dashed border-[#E8DDD4] bg-white p-3 text-center">
-          <div className="w-8 h-8 rounded-full bg-[#F5F0EB] flex items-center justify-center mx-auto mb-1.5">
-            <ClipboardList size={14} className="text-[#C9B8A8]" strokeWidth={2} />
-          </div>
-          <p className="text-[10px] font-bold text-[#9D8F85]">لم يُقيَّم بعد</p>
+        <div className="mt-3 pt-3 border-t border-line flex items-center gap-3 flex-wrap text-[10px] font-bold">
+          <span className="flex items-center gap-1 text-muted">
+            <Sparkles size={10} weight="bold" style={{ color: tone }} />
+            {summary.count} تقييم
+          </span>
+          <span className="flex items-center gap-1 text-muted min-w-0">
+            <User size={10} weight="bold" className="text-primary flex-shrink-0" />
+            <span className="truncate max-w-[7rem] text-ink">{getObserver(summary.latestDoc)}</span>
+          </span>
+          <span className="flex items-center gap-1"
+            style={{ color: summary.totalViolations > 0 ? '#B91C1C' : '#15803D' }}>
+            <AlertCircle size={10} weight="bold" />
+            {summary.totalViolations} مخالفة
+          </span>
+          {summary.latestDoc?.timestamp && (
+            <span className="flex items-center gap-1 text-muted/70 mr-auto">
+              <Calendar size={10} weight="bold" />
+              {timeAgo(summary.latestDoc.timestamp)}
+            </span>
+          )}
         </div>
+      ) : (
+        <p className="mt-3 pt-3 border-t border-dashed border-line text-[10px] font-bold text-muted text-center">
+          لم يُقيَّم بعد
+        </p>
       )}
     </button>
   );
 }
-
 function CenterDetail({ tab, summary, onBack, onDelete, recentDocIds }) {
   const [openEval, setOpenEval] = useState(summary.evaluations[0]?.id || null);
   const centerNum = (summary.center.match(/\d+\S*/) || ['—'])[0];
@@ -628,11 +641,11 @@ function CenterDetail({ tab, summary, onBack, onDelete, recentDocIds }) {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="bg-gradient-to-br from-white to-[#FDF8F0] border border-[#E8DDD4] rounded-2xl p-4 flex items-center gap-3 shadow-[0_2px_8px_rgba(45,41,38,0.07)]">
+      <div className="bg-gradient-to-br from-white to-background border border-line rounded-2xl p-4 flex items-center gap-3 shadow-[0_2px_8px_rgb(var(--c-ink)/0.07)]">
         <button onClick={onBack}
-          className="min-w-[40px] min-h-[40px] rounded-xl border border-[#D9CEBC] bg-white text-[#A98159] flex items-center justify-center hover:bg-[#FDF8F0] hover:border-[#A98159] transition-all shrink-0"
+          className="min-w-[40px] min-h-[40px] rounded-xl border border-line bg-white text-primary flex items-center justify-center hover:bg-background hover:border-primary transition-all shrink-0"
           title="رجوع">
-          <X size={16} strokeWidth={2.25} />
+          <X size={16} weight="bold" />
         </button>
         <div className="relative shrink-0">
           <div className="absolute inset-0 rounded-2xl blur-md opacity-50" style={{ background: tab.color }} />
@@ -643,14 +656,14 @@ function CenterDetail({ tab, summary, onBack, onDelete, recentDocIds }) {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-base font-black text-[#2D2926] truncate">{summary.center}</p>
+            <p className="text-base font-black text-ink truncate">{summary.center}</p>
             <span className="inline-flex items-center gap-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border"
               style={{ background: tab.bg, borderColor: tab.border, color: tab.color }}>
-              <tab.icon size={9} strokeWidth={2.5} />
+              <tab.icon size={9} weight="bold" />
               {tab.label}
             </span>
           </div>
-          <p className="text-[11px] text-[#A98159] font-bold mt-0.5 truncate">{summary.caterer || '—'}</p>
+          <p className="text-[11px] text-primary font-bold mt-0.5 truncate">{summary.caterer || '—'}</p>
         </div>
         {/* Avg score chip */}
         <div className="rounded-xl border-2 px-3 py-1.5 text-center shrink-0"
@@ -784,8 +797,8 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
   };
 
   return (
-    <div className="relative bg-white rounded-2xl border-2 overflow-hidden shadow-[0_2px_12px_rgba(45,41,38,0.07)]"
-      style={{ borderColor: isOpen ? sst.border : '#EDE5DC' }}>
+    <div className="relative bg-white rounded-2xl border-2 overflow-hidden shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)]"
+      style={{ borderColor: isOpen ? sst.border : 'rgb(var(--c-line))' }}>
       {/* Pulsing red dot for newly-arrived evaluations */}
       {isRecent && (
         <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 border-2 border-white badge-pulse-red z-10" />
@@ -814,39 +827,39 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
             </span>
             {isSupervisorDoc(evalDoc) && (
               <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md text-white"
-                style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}>
-                <UserCog size={10} strokeWidth={2.5} />
+                style={{ background: 'linear-gradient(135deg, #9E5741, #7F4534)' }}>
+                <UserCog size={10} weight="bold" />
                 مشرف
               </span>
             )}
             {no > 0 && (
               <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md bg-red-50 border border-red-200 text-red-700">
-                <AlertCircle size={10} strokeWidth={2.5} />
+                <AlertCircle size={10} weight="bold" />
                 {no} مخالفة
               </span>
             )}
             {no === 0 && score != null && (
               <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md bg-green-50 border border-green-200 text-green-700">
-                <CheckCircle2 size={10} strokeWidth={2.5} />
+                <CheckCircle2 size={10} weight="bold" />
                 بدون مخالفات
               </span>
             )}
           </div>
-          <div className="flex items-center gap-3 flex-wrap text-[11px] text-[#6D6E71]">
+          <div className="flex items-center gap-3 flex-wrap text-[11px] text-muted">
             <span className="flex items-center gap-1">
-              <User size={11} strokeWidth={2.25} className="text-[#A98159]" />
-              <span className="font-bold text-[#2D2926]">{getObserver(evalDoc)}</span>
+              <User size={11} weight="bold" className="text-primary" />
+              <span className="font-bold text-ink">{getObserver(evalDoc)}</span>
             </span>
             <span className="flex items-center gap-1">
-              <Calendar size={11} strokeWidth={2.25} className="text-[#A98159]" />
+              <Calendar size={11} weight="bold" className="text-primary" />
               <span className="font-bold">{fullDate(evalDoc.timestamp)}</span>
             </span>
           </div>
         </div>
         {/* Chevron stays inside the toggle button */}
-        <div className="w-8 h-8 rounded-lg border border-[#EDE5DC] flex items-center justify-center transition-transform shrink-0"
+        <div className="w-8 h-8 rounded-lg border border-line flex items-center justify-center transition-transform shrink-0"
           style={{ transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>
-          <ChevronRight size={14} className="text-[#A98159]" strokeWidth={2.25} />
+          <ChevronRight size={14} className="text-primary" weight="bold" />
         </div>
       </button>
 
@@ -857,20 +870,20 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
             title="تعديل التقييم"
             style={{ borderColor: `${tab.color}40`, background: `${tab.color}10`, color: tab.color }}
             className="w-9 h-9 rounded-lg border-2 flex items-center justify-center hover:scale-105 transition-transform">
-            <Pencil size={14} strokeWidth={2.25} />
+            <Pencil size={14} weight="bold" />
           </button>
         )}
         <button onClick={onDelete}
           title="حذف التقييم"
           className="w-9 h-9 rounded-lg border border-red-200 bg-red-50 flex items-center justify-center hover:bg-red-500 hover:border-red-500 group/del transition-colors">
-          <Trash2 size={14} className="text-red-500 group-hover/del:text-white" strokeWidth={2.25} />
+          <Trash2 size={14} className="text-red-500 group-hover/del:text-white" weight="bold" />
         </button>
       </div>
       </div>
 
       {/* Expanded details */}
       {isOpen && (
-        <div className="border-t border-[#EDE5DC] bg-[#FDFCFB] px-4 sm:px-5 py-4 space-y-4">
+        <div className="border-t border-line bg-background px-4 sm:px-5 py-4 space-y-4">
           {/* Edit-mode toolbar */}
           {isEditing && (
             <div className="rounded-2xl border-2 p-3 flex items-center justify-between gap-3"
@@ -878,16 +891,15 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
               <div className="flex items-center gap-2 min-w-0">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                   style={{ background: tab.gradient }}>
-                  <Pencil size={15} className="text-white" strokeWidth={2.5} />
+                  <Pencil size={15} className="text-white" weight="bold" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-black text-[#2D2926]">وضع التعديل</p>
-                  <p className="text-[11px] text-[#6D6E71] font-bold">اضغط نعم/لا لتبديل الإجابات وضع/استبدل الصور</p>
+                  <p className="text-sm font-black text-ink">وضع التعديل</p>
                 </div>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
                 <button onClick={cancelEdit} disabled={savingEdit}
-                  className="px-3 py-2 rounded-xl border border-[#EDE5DC] text-[#6D6E71] text-xs font-bold hover:bg-[#F5F0EB] transition-colors disabled:opacity-60">
+                  className="px-3 py-2 rounded-xl border border-line text-muted text-xs font-bold hover:bg-[rgb(var(--c-primary-50))] transition-colors disabled:opacity-60">
                   إلغاء
                 </button>
                 <button onClick={saveEdit} disabled={savingEdit}
@@ -900,7 +912,7 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
                     </>
                   ) : (
                     <>
-                      <Save size={13} strokeWidth={2.5} />
+                      <Save size={13} weight="bold" />
                       حفظ التعديلات
                     </>
                   )}
@@ -932,18 +944,18 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
           {/* Meta info */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {[
-              { label: 'المراقب',  val: getObserver(evalDoc),                                 Icon: User,     color: '#A98159' },
+              { label: 'المراقب',  val: getObserver(evalDoc),                                 Icon: User,     color: 'rgb(var(--c-primary))' },
               { label: 'المركز',   val: getCenter(evalDoc),                                   Icon: Building2,color: tab.color },
-              { label: 'الوقت',    val: fullDate(evalDoc.timestamp),                          Icon: Calendar, color: '#6D6E71' },
+              { label: 'الوقت',    val: fullDate(evalDoc.timestamp),                          Icon: Calendar, color: 'rgb(var(--c-muted))' },
             ].map(m => (
-              <div key={m.label} className="bg-white rounded-xl border border-[#EDE5DC] p-2.5 flex items-center gap-2">
+              <div key={m.label} className="bg-white rounded-xl border border-line p-2.5 flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                   style={{ background: `${m.color}15` }}>
-                  <m.Icon size={12} style={{ color: m.color }} strokeWidth={2.25} />
+                  <m.Icon size={12} style={{ color: m.color }} weight="bold" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[9px] text-[#9D8F85] font-bold">{m.label}</p>
-                  <p className="text-[11px] font-bold text-[#2D2926] truncate">{m.val || '—'}</p>
+                  <p className="text-[9px] text-muted font-bold">{m.label}</p>
+                  <p className="text-[11px] font-bold text-ink truncate">{m.val || '—'}</p>
                 </div>
               </div>
             ))}
@@ -951,12 +963,12 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
 
           {/* Score progress bar */}
           {score != null && (
-            <div className="bg-white rounded-xl border border-[#EDE5DC] p-3">
+            <div className="bg-white rounded-xl border border-line p-3">
               <div className="flex justify-between text-xs mb-1.5">
-                <span className="text-[#6D6E71] font-bold">الدرجة الإجمالية</span>
+                <span className="text-muted font-bold">الدرجة الإجمالية</span>
                 <span className="font-black tabular-nums" style={{ color: sst.color }}>{score.toFixed(2)} / 10</span>
               </div>
-              <div className="h-2 bg-[#F5F0EB] rounded-full overflow-hidden">
+              <div className="h-2 bg-[rgb(var(--c-primary-50))] rounded-full overflow-hidden">
                 <div className="h-full rounded-full transition-all duration-700"
                   style={{ width: `${Math.min(score * 10, 100)}%`, background: sst.color }} />
               </div>
@@ -979,7 +991,7 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
                     <span className="w-6 h-6 rounded-md bg-red-500 text-white text-[10px] font-black flex items-center justify-center shrink-0 mt-0.5 tabular-nums">
                       {q.id}
                     </span>
-                    <p className="text-sm text-[#2D2926] font-medium leading-relaxed flex-1">{q.text}</p>
+                    <p className="text-sm text-ink font-medium leading-relaxed flex-1">{q.text}</p>
                   </li>
                 ))}
               </ul>
@@ -990,7 +1002,7 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
           <div>
             <div className="flex items-center gap-2 mb-2.5">
               <div className="w-1.5 h-5 rounded-full" style={{ background: tab.color }} />
-              <p className="text-sm font-black text-[#2D2926]">جميع الإجابات</p>
+              <p className="text-sm font-black text-ink">جميع الإجابات</p>
               <span className="text-[10px] font-black px-2 py-0.5 rounded-full tabular-nums"
                 style={{ background: tab.bg, color: tab.color, border: `1px solid ${tab.border}` }}>
                 {tab.allQs.filter(q => ans[q.id]).length} سؤال
@@ -1013,22 +1025,22 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
                     className={`rounded-xl px-3 py-2 border ${
                       isYes ? 'bg-green-50/60 border-green-200/70'
                       : isNo ? 'bg-red-50/60 border-red-200/70'
-                      :        'bg-white border-[#EDE5DC]'
+                      :        'bg-white border-line'
                     }`}>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[10px] font-black flex-shrink-0 tabular-nums"
-                        style={{ color: isYes ? '#15803D' : isNo ? '#B91C1C' : '#6D6E71' }}>
+                        style={{ color: isYes ? '#15803D' : isNo ? '#B91C1C' : 'rgb(var(--c-muted))' }}>
                         #{q.id}
                       </span>
                       <p className="text-xs flex-1 min-w-[180px] leading-relaxed"
-                        style={{ color: isYes ? '#166534' : isNo ? '#991B1B' : '#2D2926' }}>
+                        style={{ color: isYes ? '#166534' : isNo ? '#991B1B' : 'rgb(var(--c-ink))' }}>
                         {q.text}
                       </p>
                       {isEditing ? (
                         isChoice ? (
                           <select value={a || ''} onChange={(e) => setAnswer(q.id, e.target.value)}
-                            className="text-[11px] font-black px-2 py-1 rounded-md border-2 bg-white outline-none focus:border-[#A98159]"
-                            style={{ borderColor: '#EDE5DC' }}>
+                            className="text-[11px] font-black px-2 py-1 rounded-md border-2 bg-white outline-none focus:border-primary"
+                            style={{ borderColor: 'rgb(var(--c-line))' }}>
                             <option value="">—</option>
                             {(q.choices || []).map(c => <option key={c} value={c}>{c}</option>)}
                           </select>
@@ -1037,14 +1049,14 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
                             <button onClick={() => setAnswer(q.id, 'نعم')}
                               className={`px-2.5 py-1 rounded-md text-[10px] font-black border-2 transition-all ${
                                 isYes ? 'bg-green-600 border-green-600 text-white shadow-sm'
-                                      : 'bg-white border-[#EDE5DC] text-[#6D6E71] hover:border-green-400'
+                                      : 'bg-white border-line text-muted hover:border-green-400'
                               }`}>
                               نعم
                             </button>
                             <button onClick={() => setAnswer(q.id, 'لا')}
                               className={`px-2.5 py-1 rounded-md text-[10px] font-black border-2 transition-all ${
                                 isNo ? 'bg-red-600 border-red-600 text-white shadow-sm'
-                                     : 'bg-white border-[#EDE5DC] text-[#6D6E71] hover:border-red-400'
+                                     : 'bg-white border-line text-muted hover:border-red-400'
                               }`}>
                               لا
                             </button>
@@ -1052,11 +1064,11 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
                         )
                       ) : (
                         <span className={`text-[10px] font-black flex-shrink-0 flex items-center gap-0.5 ${
-                          isYes ? 'text-green-700' : isNo ? 'text-red-700' : 'text-[#6D6E71]'
+                          isYes ? 'text-green-700' : isNo ? 'text-red-700' : 'text-muted'
                         }`}>
                           {isYes
-                            ? <CheckCircle2 size={12} strokeWidth={2.25} />
-                            : isNo ? <XCircle size={12} strokeWidth={2.25} /> : null}
+                            ? <CheckCircle2 size={12} weight="bold" />
+                            : isNo ? <XCircle size={12} weight="bold" /> : null}
                           {a || '—'}
                         </span>
                       )}
@@ -1067,10 +1079,10 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
                         <input type="text" value={detail || ''}
                           onChange={(e) => setDetail(q.id, e.target.value)}
                           placeholder={q.detailLabel || 'تفاصيل...'}
-                          className="mt-1.5 w-full text-[11px] px-2 py-1 rounded border border-[#EDE5DC] outline-none focus:border-[#A98159]" />
+                          className="mt-1.5 w-full text-[11px] px-2 py-1 rounded border border-line outline-none focus:border-primary" />
                       ) : (
                         detail && (
-                          <p className="mt-1.5 text-[11px] text-[#6D6E71] bg-white border border-[#EDE5DC] rounded px-2 py-1 leading-snug">
+                          <p className="mt-1.5 text-[11px] text-muted bg-white border border-line rounded px-2 py-1 leading-snug">
                             {detail}
                           </p>
                         )
@@ -1086,20 +1098,20 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
                           if (isEditing) {
                             return (
                               <div key={field.key} className="flex flex-col gap-0.5">
-                                <label className="text-[9px] font-bold text-[#9D8F85]">{field.label}</label>
+                                <label className="text-[9px] font-bold text-muted">{field.label}</label>
                                 <input type={field.type === 'number' ? 'number' : 'text'}
                                   value={fieldVal || ''}
                                   onChange={(e) => setDetail(fieldKey, e.target.value)}
                                   placeholder={field.label}
-                                  className="w-full text-[11px] px-2 py-1 rounded border border-[#EDE5DC] outline-none focus:border-[#A98159]" />
+                                  className="w-full text-[11px] px-2 py-1 rounded border border-line outline-none focus:border-primary" />
                               </div>
                             );
                           }
                           return (
                             <div key={field.key}
-                              className="bg-white border border-[#EDE5DC] rounded px-2 py-1 flex items-baseline gap-1.5 min-w-0">
-                              <span className="text-[9px] font-bold text-[#9D8F85] shrink-0">{field.label}:</span>
-                              <span className="text-[11px] font-bold text-[#2D2926] truncate tabular-nums">
+                              className="bg-white border border-line rounded px-2 py-1 flex items-baseline gap-1.5 min-w-0">
+                              <span className="text-[9px] font-bold text-muted shrink-0">{field.label}:</span>
+                              <span className="text-[11px] font-bold text-ink truncate tabular-nums">
                                 {fieldVal != null && fieldVal !== '' ? fieldVal : '—'}
                               </span>
                             </div>
@@ -1113,12 +1125,12 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
                         {photoUrl ? (
                           <a href={photoUrl} target="_blank" rel="noreferrer" className="block">
                             <img src={photoUrl} alt={`q${q.id}`}
-                              className="rounded-lg border border-[#EDE5DC] max-h-44 object-cover hover:opacity-90 transition-opacity" />
+                              className="rounded-lg border border-line max-h-44 object-cover hover:opacity-90 transition-opacity" />
                           </a>
                         ) : isEditing && (
-                          <div className="rounded-lg border-2 border-dashed border-[#D9CEBC] bg-[#FAFAF8] p-3 text-center">
-                            <ImageIcon size={20} className="text-[#A98159] mx-auto mb-1" strokeWidth={2} />
-                            <p className="text-[10px] text-[#9D8F85] font-bold">لا توجد صورة بعد</p>
+                          <div className="rounded-lg border-2 border-dashed border-line bg-bg p-3 text-center">
+                            <ImageIcon size={20} className="text-primary mx-auto mb-1" weight="regular" />
+                            <p className="text-[10px] text-muted font-bold">لا توجد صورة بعد</p>
                           </div>
                         )}
                         {isEditing && (
@@ -1137,7 +1149,7 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
                                 </>
                               ) : (
                                 <>
-                                  <Camera size={11} strokeWidth={2.5} />
+                                  <Camera size={11} weight="bold" />
                                   {photoUrl ? 'استبدال الصورة' : 'إضافة صورة'}
                                 </>
                               )}
@@ -1145,7 +1157,7 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
                             {photoUrl && (
                               <button onClick={() => removePhoto(q.id)}
                                 className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-black border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors">
-                                <X size={11} strokeWidth={2.5} />
+                                <X size={11} weight="bold" />
                                 حذف الصورة
                               </button>
                             )}

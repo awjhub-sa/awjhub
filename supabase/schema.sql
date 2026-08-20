@@ -8,6 +8,9 @@ DROP TABLE IF EXISTS public.mina_readiness        CASCADE;
 DROP TABLE IF EXISTS public.arafat_readiness      CASCADE;
 DROP TABLE IF EXISTS public.logistics_requests    CASCADE;
 DROP TABLE IF EXISTS public.reports               CASCADE;
+DROP TABLE IF EXISTS public.center_officials      CASCADE;
+DROP TABLE IF EXISTS public.centers               CASCADE;
+DROP TABLE IF EXISTS public.caterers              CASCADE;
 DROP TABLE IF EXISTS public.users                 CASCADE;
 
 CREATE SEQUENCE IF NOT EXISTS public.reports_number_seq   START 1;
@@ -20,6 +23,7 @@ CREATE TABLE public.users (
   auth_uid           uuid UNIQUE,
   name               text,
   name_ar            text NOT NULL,
+  phone              text,
   role               text NOT NULL CHECK (role IN ('admin','staff','observer','supervisor')),
   center             text,
   assigned_centers   text[] DEFAULT '{}',
@@ -32,6 +36,51 @@ CREATE INDEX users_role_idx          ON public.users (role);
 CREATE INDEX users_center_idx        ON public.users (center);
 CREATE INDEX users_id_number_idx     ON public.users (id_number);
 CREATE INDEX users_auth_uid_idx      ON public.users (auth_uid);
+
+-- Caterers and centers were text values until migration 001 promoted them to
+-- rows. caterers.name and centers.id keep the exact strings the older tables
+-- store in their `caterer` / `center` columns, so nothing had to be rewritten.
+CREATE TABLE public.caterers (
+  id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name           text UNIQUE NOT NULL,
+  name_short     text,
+  cr_number      text,
+  status         text NOT NULL DEFAULT 'active'
+                   CHECK (status IN ('active','suspended','archived')),
+  contact_name   text,
+  contact_phone  text,
+  contact_email  text,
+  notes          text,
+  created_at     timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX caterers_name_idx   ON public.caterers (name);
+CREATE INDEX caterers_status_idx ON public.caterers (status);
+
+CREATE TABLE public.centers (
+  id            text PRIMARY KEY,
+  caterer_id    uuid REFERENCES public.caterers(id) ON DELETE SET NULL,
+  caterer_name  text,
+  shakhis       text,
+  location_url  text,
+  zone          text,
+  capacity      int,
+  active        boolean NOT NULL DEFAULT true,
+  created_at    timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX centers_caterer_idx ON public.centers (caterer_id);
+CREATE INDEX centers_active_idx  ON public.centers (active);
+
+CREATE TABLE public.center_officials (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  center_id   text REFERENCES public.centers(id) ON DELETE CASCADE,
+  name        text NOT NULL,
+  role        text,
+  phone       text,
+  email       text,
+  is_primary  boolean NOT NULL DEFAULT false,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX center_officials_center_idx ON public.center_officials (center_id);
 
 CREATE TABLE public.reports (
   id                 uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -211,6 +260,9 @@ VALUES ('phases', 'phases', true)
 ON CONFLICT (id) DO NOTHING;
 
 ALTER TABLE public.users               ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.caterers            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.centers             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.center_officials    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reports             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.logistics_requests  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.meal_evaluations    ENABLE ROW LEVEL SECURITY;
@@ -222,6 +274,9 @@ ALTER TABLE public.task_completions    ENABLE ROW LEVEL SECURITY;
 
 -- Dev policies: open access. Tighten before production.
 DROP POLICY IF EXISTS users_all              ON public.users;
+DROP POLICY IF EXISTS caterers_all           ON public.caterers;
+DROP POLICY IF EXISTS centers_all            ON public.centers;
+DROP POLICY IF EXISTS center_officials_all   ON public.center_officials;
 DROP POLICY IF EXISTS reports_all            ON public.reports;
 DROP POLICY IF EXISTS logistics_requests_all ON public.logistics_requests;
 DROP POLICY IF EXISTS meal_evaluations_all   ON public.meal_evaluations;
@@ -232,6 +287,9 @@ DROP POLICY IF EXISTS assigned_tasks_all     ON public.assigned_tasks;
 DROP POLICY IF EXISTS task_completions_all   ON public.task_completions;
 
 CREATE POLICY users_all              ON public.users              FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY caterers_all           ON public.caterers           FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY centers_all            ON public.centers            FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY center_officials_all   ON public.center_officials   FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
 CREATE POLICY reports_all            ON public.reports            FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
 CREATE POLICY logistics_requests_all ON public.logistics_requests FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
 CREATE POLICY meal_evaluations_all   ON public.meal_evaluations   FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
@@ -264,3 +322,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.meal_phases;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.assigned_tasks;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.task_completions;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.users;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.caterers;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.centers;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.center_officials;

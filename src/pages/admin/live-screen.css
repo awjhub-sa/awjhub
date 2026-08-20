@@ -1,0 +1,256 @@
+/* live-screen.css — the operations wall.
+ *
+ * Sized in vh rather than px: this screen has one job on a 24" desk monitor and
+ * the same job on a 55" panel across a room, and it must fill either without a
+ * scrollbar. Everything below is laid out from the viewport height down.
+ */
+
+.ls {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: rgb(var(--c-primary-900));
+  color: #fff;
+  overflow: hidden;
+}
+
+/* ── top bar ─────────────────────────────────────────── */
+.ls-bar {
+  height: 46px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 14px;
+  background: rgb(var(--c-primary));
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+}
+.ls-back {
+  display: flex; align-items: center; gap: 6px;
+  background: rgb(255 255 255 / 0.12);
+  border: 1px solid rgb(255 255 255 / 0.18);
+  color: #fff; border-radius: 8px;
+  padding: 5px 11px; font-size: 11.5px; font-weight: 800;
+  cursor: pointer; transition: background .15s;
+}
+.ls-back:hover { background: rgb(255 255 255 / 0.22); }
+.ls-logo { height: 22px; width: auto; opacity: .95; }
+.ls-title { font-size: 12.5px; font-weight: 800; opacity: .6; }
+.ls-right { margin-inline-start: auto; display: flex; align-items: center; gap: 8px; }
+.ls-chip {
+  background: rgb(255 255 255 / 0.12);
+  border-radius: 7px; padding: 4px 10px;
+  font-size: 11px; font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.ls-live { display: flex; align-items: center; gap: 6px; background: rgb(220 38 38 / 0.28); }
+.ls-live i {
+  width: 7px; height: 7px; border-radius: 50%; background: #F87171;
+  animation: lsPulse 1.6s ease-in-out infinite;
+}
+@keyframes lsPulse { 0%,100% { opacity: 1 } 50% { opacity: .25 } }
+.ls-icon {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: rgb(255 255 255 / 0.12);
+  border: 1px solid rgb(255 255 255 / 0.18);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.ls-icon:hover { background: rgb(255 255 255 / 0.22); }
+
+/* ── the number strip ────────────────────────────────── */
+.ls-strip {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1px;
+  background: rgb(255 255 255 / 0.08);
+}
+.ls-stat {
+  background: rgb(var(--c-primary));
+  border: 0; text-align: start; cursor: pointer;
+  padding: 10px 14px; color: #fff;
+  display: flex; flex-direction: column; gap: 2px;
+  transition: background .15s;
+}
+.ls-stat:hover { background: rgb(var(--c-primary-400)); }
+.ls-stat-v {
+  font-size: clamp(20px, 2.6vh, 30px);
+  font-weight: 900; line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.ls-stat-l { font-size: clamp(9px, 1.15vh, 12px); font-weight: 700; opacity: .6; }
+.ls-ok   .ls-stat-v { color: #86EFAC; }
+.ls-warn .ls-stat-v { color: #FCD34D; }
+.ls-bad  .ls-stat-v { color: #FCA5A5; }
+.ls-gold .ls-stat-v { color: rgb(var(--c-accent)); }
+
+/* ── panels ──────────────────────────────────────────── */
+.ls-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1.05fr 1.15fr .95fr;
+  gap: 10px;
+  padding: 10px;
+  background: rgb(var(--c-primary-900));
+}
+@media (max-width: 1100px) { .ls-grid { grid-template-columns: 1fr; overflow: auto; } }
+
+.ls-panel {
+  background: #fff;
+  color: rgb(var(--c-ink));
+  border-radius: 12px;
+  display: flex; flex-direction: column;
+  min-height: 0; overflow: hidden;
+}
+.ls-ph {
+  flex: none;
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px;
+  border-bottom: 1px solid rgb(var(--c-line));
+  font-size: clamp(11px, 1.5vh, 13.5px); font-weight: 900;
+}
+.ls-more {
+  margin-inline-start: auto;
+  background: none; border: 0; cursor: pointer;
+  font-size: 11px; font-weight: 800; color: rgb(var(--c-primary));
+}
+.ls-more:hover { text-decoration: underline; }
+.ls-seg { margin-inline-start: auto; display: flex; gap: 3px; }
+.ls-seg button {
+  border: 1px solid rgb(var(--c-line)); background: #fff;
+  color: rgb(var(--c-muted)); border-radius: 7px;
+  padding: 3px 9px; font-size: 10.5px; font-weight: 800; cursor: pointer;
+}
+.ls-seg button.on {
+  background: rgb(var(--c-primary)); border-color: transparent; color: #fff;
+}
+
+/* ── incoming ────────────────────────────────────────── */
+.ls-feed { flex: 1; min-height: 0; overflow: auto; }
+.ls-item {
+  display: flex; flex-direction: column; gap: 3px;
+  width: 100%; text-align: start; cursor: pointer;
+  background: #fff; border: 0;
+  border-bottom: 1px solid rgb(var(--c-line) / 0.5);
+  border-inline-start: 3px solid #4E7CB0;
+  padding: 8px 12px;
+}
+.ls-item:hover { background: rgb(var(--c-bg)); }
+.ls-item-t { font-size: clamp(11px, 1.45vh, 13px); font-weight: 800; }
+.ls-item-s { font-size: clamp(9.5px, 1.2vh, 11px); color: rgb(var(--c-muted)); font-weight: 700; }
+
+.ls-clear {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 5px;
+  color: rgb(var(--c-success)); padding: 20px;
+}
+.ls-clear b { font-size: 13px; }
+.ls-clear span { font-size: 11px; color: rgb(var(--c-muted)); font-weight: 700; }
+.ls-muted { color: rgb(var(--c-muted)); }
+
+/* ── heat map ────────────────────────────────────────── */
+.ls-heat {
+  flex: 1; min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(18px, 2.6vh, 34px), 1fr));
+  grid-auto-rows: min-content;
+  gap: 3px;
+  padding: 10px 12px;
+  align-content: start;
+  overflow: auto;
+}
+.ls-cell {
+  aspect-ratio: 1; border: 0; border-radius: 3px;
+  cursor: pointer; padding: 0;
+  transition: transform .12s;
+}
+.ls-cell:hover { transform: scale(1.25); }
+.ls-cell.ls-none, i.ls-none {
+  background: #fff;
+  box-shadow: inset 0 0 0 1.5px rgb(var(--c-line));
+}
+.ls-legend {
+  flex: none; display: flex; flex-wrap: wrap; gap: 10px;
+  padding: 0 12px 8px;
+  font-size: 10px; font-weight: 700; color: rgb(var(--c-muted));
+}
+.ls-legend span { display: flex; align-items: center; gap: 4px; }
+.ls-legend i { width: 9px; height: 9px; border-radius: 2px; display: block; }
+
+.ls-worst {
+  flex: none; display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+  padding: 8px 12px; border-top: 1px solid rgb(var(--c-line));
+  background: rgb(var(--c-bg));
+}
+.ls-worst-l { font-size: 10px; font-weight: 800; color: rgb(var(--c-muted)); }
+.ls-worst button {
+  background: #fff; border: 1px solid; border-radius: 7px;
+  padding: 2px 7px; font-size: 10.5px; font-weight: 800; cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── phases ──────────────────────────────────────────── */
+.ls-phases { flex: 1; min-height: 0; overflow: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 9px; }
+.ls-phase {
+  display: flex; align-items: center; gap: 9px;
+  background: none; border: 0; padding: 0; cursor: pointer; text-align: start;
+}
+.ls-mark {
+  width: 22px; height: 22px; border-radius: 50%; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 900; color: #fff;
+  background: rgb(var(--c-line));
+}
+.ls-done .ls-mark { background: rgb(var(--c-success)); }
+.ls-run  .ls-mark { background: rgb(var(--c-accent)); }
+.ls-idle { opacity: .45; }
+.ls-phase-b { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ls-phase-t { font-size: clamp(11px, 1.4vh, 12.5px); font-weight: 800; }
+.ls-phase-s { font-size: 10px; color: rgb(var(--c-muted)); font-weight: 700; font-variant-numeric: tabular-nums; }
+.ls-track { height: 4px; border-radius: 99px; background: rgb(var(--c-line)); overflow: hidden; }
+.ls-track i { display: block; height: 100%; background: rgb(var(--c-primary)); border-radius: 99px; }
+.ls-done .ls-track i { background: rgb(var(--c-success)); }
+.ls-run  .ls-track i { background: rgb(var(--c-accent)); }
+.ls-phase-r {
+  flex: none; font-size: 10px; font-weight: 800;
+  color: rgb(var(--c-muted)); font-variant-numeric: tabular-nums;
+}
+.ls-run .ls-phase-r { color: rgb(var(--c-accent-600)); }
+
+.ls-late {
+  flex: none; margin: 0 12px 12px;
+  border: 1px solid #EBCFC3; border-radius: 9px;
+  background: color-mix(in srgb, #B4674E 7%, #fff);
+  padding: 8px 10px;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.ls-late-t { display: flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 800; color: #8C4A32; }
+.ls-late-n {
+  font-size: 11px; font-weight: 800; color: rgb(var(--c-error));
+  font-variant-numeric: tabular-nums; line-height: 1.7;
+}
+.ls-late-ok {
+  border-color: #BBE7C8;
+  background: color-mix(in srgb, #16A34A 6%, #fff);
+}
+.ls-late-ok .ls-late-t { color: rgb(var(--c-success)); }
+
+/* Phases that have not begun are stated as such, not dressed as an alarm. */
+.ls-late-idle {
+  border-color: rgb(var(--c-line));
+  background: rgb(var(--c-bg));
+}
+.ls-late-idle .ls-late-t { color: rgb(var(--c-ink)); }
+.ls-late-s {
+  font-size: 10px; font-weight: 700;
+  color: rgb(var(--c-muted)); line-height: 1.7;
+}
+
+/* A phase with a few records but before recording has really begun: present,
+   but not to be read as "in progress". */
+.ls-part { opacity: .7; }
+.ls-part .ls-mark { background: rgb(var(--c-muted)); }
+.ls-part .ls-track i { background: rgb(var(--c-muted)); }

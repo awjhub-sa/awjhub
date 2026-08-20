@@ -12,12 +12,18 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { ShieldCheck, Mountain, X, User, Building2 } from 'lucide-react';
+import {
+  ShieldCheck,
+  Mountains as Mountain,
+  X,
+  User,
+  Buildings as Building2,
+} from '@phosphor-icons/react';
 import { db } from '../lib/db.js';
 
 const SITE_META = {
-  mina:   { label: 'مشعر منى',  Icon: ShieldCheck, color: '#386B41', gradient: 'linear-gradient(135deg, #4F8856, #386B41)' },
-  arafat: { label: 'مشعر عرفة', Icon: Mountain,    color: '#1D6FA4', gradient: 'linear-gradient(135deg, #2D87C2, #1D6FA4)' },
+  mina:   { label: 'مشعر منى',  Icon: ShieldCheck, color: 'rgb(var(--c-success))', gradient: 'linear-gradient(135deg, #4F8856, rgb(var(--c-success)))' },
+  arafat: { label: 'مشعر عرفة', Icon: Mountain,    color: '#2F5580', gradient: 'linear-gradient(135deg, #6595C4, #2F5580)' },
 };
 
 const TOAST_TTL_MS = 8000;
@@ -76,13 +82,13 @@ function ToastCard({ site, doc, onClose }) {
   const Icon = meta.Icon;
   return (
     <div
-      className="pointer-events-auto bg-white rounded-2xl border-2 shadow-[0_12px_32px_rgba(45,41,38,0.18)] p-3.5 flex items-center gap-3 animate-in slide-in-from-left-4 fade-in duration-300"
+      className="pointer-events-auto bg-white rounded-2xl border-2 shadow-[0_12px_32px_rgb(var(--c-ink)/0.18)] p-3.5 flex items-center gap-3 animate-in slide-in-from-left-4 fade-in duration-300"
       style={{ borderColor: meta.color }}>
       <div className="relative shrink-0">
         <div className="absolute inset-0 rounded-2xl blur-md opacity-50" style={{ background: meta.color }} />
         <div className="relative w-12 h-12 rounded-2xl flex items-center justify-center shadow-md"
           style={{ background: meta.gradient }}>
-          <Icon size={22} className="text-white" strokeWidth={2.25} />
+          <Icon size={22} className="text-white" weight="bold" />
         </div>
       </div>
       <div className="flex-1 min-w-0">
@@ -90,20 +96,20 @@ function ToastCard({ site, doc, onClose }) {
           تقييم جاهزية جديد
         </p>
         <div className="flex items-center gap-1.5 mb-0.5">
-          <Building2 size={11} className="text-[#A98159] shrink-0" strokeWidth={2.5} />
-          <p className="text-sm font-black text-[#2D2926] truncate">{doc.center || '—'}</p>
+          <Building2 size={11} className="text-primary shrink-0" weight="bold" />
+          <p className="text-sm font-black text-ink truncate">{doc.center || '—'}</p>
         </div>
         <div className="flex items-center gap-1.5">
-          <User size={10} className="text-[#9D8F85] shrink-0" strokeWidth={2.5} />
-          <p className="text-[11px] text-[#6D6E71] font-bold truncate">
+          <User size={10} className="text-muted shrink-0" weight="bold" />
+          <p className="text-[11px] text-muted font-bold truncate">
             {meta.label} · {doc.observer || (doc.role === 'supervisor' ? 'مشرف' : 'مراقب')}
           </p>
         </div>
       </div>
       <button onClick={onClose}
-        className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[#F5F0EB] transition-colors shrink-0"
+        className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[rgb(var(--c-primary-50))] transition-colors shrink-0"
         title="إغلاق">
-        <X size={14} className="text-[#9D8F85]" strokeWidth={2.25} />
+        <X size={14} className="text-muted" weight="bold" />
       </button>
     </div>
   );

@@ -1,4 +1,6 @@
-import { StickyNote } from 'lucide-react';
+import {
+  Note as StickyNote,
+} from '@phosphor-icons/react';
 import { getCenterNotes } from '../config/centerNotes.js';
 
 /**
@@ -16,7 +18,7 @@ export default function CenterNotesPanel({ centerId, variant = 'card' }) {
     /* Single-line summary chip — used inline in list rows */
     return (
       <div className="mt-1.5 inline-flex items-start gap-1.5 text-[10.5px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 max-w-full">
-        <StickyNote size={11} strokeWidth={2.5} className="text-amber-600 shrink-0 mt-[1px]" />
+        <StickyNote size={11} weight="bold" className="text-amber-600 shrink-0 mt-[1px]" />
         <span className="leading-snug">
           {notes.length === 1
             ? notes[0]
@@ -39,7 +41,7 @@ export default function CenterNotesPanel({ centerId, variant = 'card' }) {
       <div className="flex items-center gap-2 mb-2">
         <div className="w-7 h-7 rounded-lg flex items-center justify-center shadow-sm"
           style={{ background: 'linear-gradient(135deg, #F59E0B, #D97706)' }}>
-          <StickyNote size={13} strokeWidth={2.5} className="text-white" />
+          <StickyNote size={13} weight="bold" className="text-white" />
         </div>
         <p className="text-[11px] font-black text-amber-800 uppercase tracking-wider">
           ملاحظات غرفة العمليات للمركز

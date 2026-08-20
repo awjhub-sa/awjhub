@@ -1,12 +1,33 @@
 import { useState, useEffect } from 'react';
 import { db, serverTimestamp } from '../../lib/db.js';
 import {
-  Target, ChefHat, Tent, Compass, Earth, CalendarCheck,
-  Rocket, Sparkles, Building2, CheckCircle2, ChevronDown,
-  ChevronUp, Clock, AlertCircle, X, Layers, Search, Trash2,
-  Flame, Package, ShieldCheck,
-} from 'lucide-react';
-import { Coffee, ForkKnife, Moon } from '@phosphor-icons/react';
+  Target,
+  ChefHat,
+  Tent,
+  Compass,
+  Globe as Earth,
+  CalendarCheck,
+  Rocket,
+  Sparkle as Sparkles,
+  Buildings as Building2,
+  CheckCircle as CheckCircle2,
+  CaretDown as ChevronDown,
+  CaretUp as ChevronUp,
+  Clock,
+  WarningCircle as AlertCircle,
+  X,
+  Stack as Layers,
+  MagnifyingGlass as Search,
+  Trash as Trash2,
+  Fire as Flame,
+  Package,
+  ShieldCheck,
+} from '@phosphor-icons/react';
+import {
+  SunHorizon as Sunrise,
+  Sun as SunMedium,
+  MoonStars as MoonStar,
+} from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
 import { CENTERS } from '../../config/centers.js';
 import { NATIONALITIES, NAT_LABEL as NAT_LABEL_SHARED } from '../../config/nationalities.js';
@@ -22,21 +43,21 @@ function fullDate(ts) {
 }
 
 const TASKS = [
-  { key: 'meal_evaluation',  label: 'تقييم الوجبات', icon: ChefHat,  color: '#A98159', hasMeals: true  },
-  { key: 'mina_readiness',   label: 'جاهزية منى',    icon: Tent,     color: '#2F855A', hasMeals: false },
-  { key: 'arafat_readiness', label: 'جاهزية عرفة',   icon: Compass,  color: '#0987A0', hasMeals: false },
+  { key: 'meal_evaluation',  label: 'تقييم الوجبات', icon: ChefHat,  color: 'rgb(var(--c-primary))', hasMeals: true  },
+  { key: 'mina_readiness',   label: 'جاهزية منى',    icon: Tent,     color: '#16A34A', hasMeals: false },
+  { key: 'arafat_readiness', label: 'جاهزية عرفة',   icon: Compass,  color: '#3D6795', hasMeals: false },
 ];
 
 const MEALS = [
-  { key: 'breakfast', label: 'الإفطار', icon: Coffee,    color: '#F59E0B' },
-  { key: 'lunch',     label: 'الغداء',  icon: ForkKnife, color: '#EF4444' },
-  { key: 'dinner',    label: 'العشاء',  icon: Moon,      color: '#6366F1' },
+  { key: 'breakfast', label: 'الإفطار', icon: Sunrise,   color: '#F59E0B' },
+  { key: 'lunch',     label: 'الغداء',  icon: SunMedium, color: '#4E7CB0' },
+  { key: 'dinner',    label: 'العشاء',  icon: MoonStar,  color: '#B4674E' },
 ];
 
 const MEAL_CATEGORIES = [
   { key: 'cooked',     label: 'وجبة مطبوخة', icon: Flame,       color: '#DC2626' },
-  { key: 'dry',        label: 'وجبة جافة',   icon: Package,     color: '#A98159' },
-  { key: 'sterilized', label: 'وجبة معقمة',  icon: ShieldCheck, color: '#2563EB' },
+  { key: 'dry',        label: 'وجبة جافة',   icon: Package,     color: 'rgb(var(--c-primary))' },
+  { key: 'sterilized', label: 'وجبة معقمة',  icon: ShieldCheck, color: '#3D6795' },
 ];
 
 const DHU_HIJJAH_DAYS = [
@@ -115,26 +136,26 @@ function AssignmentCard({ item }) {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-[#EDE5DC] shadow-[0_2px_10px_rgba(45,41,38,0.06)] overflow-hidden">
+    <div className="bg-white rounded-2xl border border-line shadow-[0_2px_10px_rgb(var(--c-ink)/0.06)] overflow-hidden">
       <div className="flex items-center gap-3 px-5 py-3.5">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ background: 'linear-gradient(135deg, #C4A46E28, #A9815914)' }}>
-          <Layers size={18} style={{ color: '#A98159' }} strokeWidth={1.5} />
+          style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400) / 0.16), rgb(var(--c-primary) / 0.08))' }}>
+          <Layers size={18} style={{ color: 'rgb(var(--c-primary))' }} weight="light" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-[#2D2926] truncate">{taskLabels}</p>
+          <p className="text-sm font-bold text-ink truncate">{taskLabels}</p>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             {natLabels
-              ? <span className="flex items-center gap-1 text-[11px] text-[#6D6E71]">
-                  <Earth size={10} strokeWidth={1.5} /> {natLabels}
+              ? <span className="flex items-center gap-1 text-[11px] text-muted">
+                  <Earth size={10} weight="light" /> {natLabels}
                 </span>
-              : <span className="flex items-center gap-1 text-[11px] text-[#6D6E71]">
-                  <Building2 size={10} strokeWidth={1.5} /> مراكز محددة
+              : <span className="flex items-center gap-1 text-[11px] text-muted">
+                  <Building2 size={10} weight="light" /> مراكز محددة
                 </span>
             }
-            <span className="text-[#C9B8A8]">·</span>
-            <span className="flex items-center gap-1 text-[11px] text-[#6D6E71]">
-              <Building2 size={10} strokeWidth={1.5} /> {centerCount} مركز
+            <span className="text-muted">·</span>
+            <span className="flex items-center gap-1 text-[11px] text-muted">
+              <Building2 size={10} weight="light" /> {centerCount} مركز
             </span>
           </div>
         </div>
@@ -146,20 +167,20 @@ function AssignmentCard({ item }) {
           }`}>
             {item.status === 'completed' ? 'منجز' : 'قيد الانتظار'}
           </span>
-          <div className="flex items-center gap-1 text-[10px] text-[#B5A99E]">
-            <Clock size={9} strokeWidth={1.5} />
+          <div className="flex items-center gap-1 text-[10px] text-muted">
+            <Clock size={9} weight="light" />
             {fullDate(item.createdAt)}
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => setOpen(p => !p)}
-              className="flex items-center gap-0.5 text-[10px] font-bold text-[#A98159]">
+              className="flex items-center gap-0.5 text-[10px] font-bold text-primary">
               {open ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
               {open ? 'إخفاء' : 'تفاصيل'}
             </button>
-            <span className="text-[#D9CEBC]">|</span>
+            <span className="text-line">|</span>
             <button onClick={() => setConfirm(true)}
               className="flex items-center gap-0.5 text-[10px] font-bold text-red-400 hover:text-red-600 transition-colors">
-              <Trash2 size={11} strokeWidth={2} />
+              <Trash2 size={11} weight="regular" />
               حذف
             </button>
           </div>
@@ -174,14 +195,14 @@ function AssignmentCard({ item }) {
           </p>
           <div className="flex items-center gap-2 flex-shrink-0">
             <button onClick={() => setConfirm(false)}
-              className="text-[11px] font-bold text-[#6D6E71] hover:text-[#2D2926] px-2.5 py-1 rounded-lg border border-[#D9CEBC] bg-white transition-colors">
+              className="text-[11px] font-bold text-muted hover:text-ink px-2.5 py-1 rounded-lg border border-line bg-white transition-colors">
               إلغاء
             </button>
             <button onClick={handleDelete} disabled={deleting}
               className="text-[11px] font-bold text-white px-3 py-1 rounded-lg bg-red-500 hover:bg-red-600 disabled:opacity-60 transition-colors flex items-center gap-1.5">
               {deleting
                 ? <span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                : <Trash2 size={11} strokeWidth={2} />}
+                : <Trash2 size={11} weight="regular" />}
               {deleting ? 'جارٍ الحذف...' : 'تأكيد الحذف'}
             </button>
           </div>
@@ -189,19 +210,19 @@ function AssignmentCard({ item }) {
       )}
 
       {open && (
-        <div className="border-t border-[#EDE5DC] bg-[#FDFCFB] px-5 py-3.5 space-y-2.5">
+        <div className="border-t border-line bg-background px-5 py-3.5 space-y-2.5">
           <div className="flex items-center gap-2 text-xs">
-            <CalendarCheck size={13} style={{ color: '#A98159' }} strokeWidth={1.5} />
-            <span className="text-[#6D6E71]">تاريخ التنفيذ:</span>
-            <span className="font-bold text-[#2D2926]">{dateDisplay}</span>
+            <CalendarCheck size={13} style={{ color: 'rgb(var(--c-primary))' }} weight="light" />
+            <span className="text-muted">تاريخ التنفيذ:</span>
+            <span className="font-bold text-ink">{dateDisplay}</span>
           </div>
 
           {item.mealTypes?.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap text-xs">
-              <ChefHat size={13} style={{ color: '#A98159' }} strokeWidth={1.5} />
-              <span className="text-[#6D6E71]">وجبات:</span>
+              <ChefHat size={13} style={{ color: 'rgb(var(--c-primary))' }} weight="light" />
+              <span className="text-muted">وجبات:</span>
               {item.mealTypes.map(m => (
-                <span key={m} className="bg-[#FDF8F0] border border-[#E8DDD4] text-[#A98159] font-bold px-2 py-0.5 rounded-lg text-[11px]">
+                <span key={m} className="bg-background border border-line text-primary font-bold px-2 py-0.5 rounded-lg text-[11px]">
                   {MEAL_LABEL[m] || m}
                 </span>
               ))}
@@ -210,10 +231,10 @@ function AssignmentCard({ item }) {
 
           {item.mealCategories?.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap text-xs">
-              <Layers size={13} style={{ color: '#A98159' }} strokeWidth={1.5} />
-              <span className="text-[#6D6E71]">الأصناف:</span>
+              <Layers size={13} style={{ color: 'rgb(var(--c-primary))' }} weight="light" />
+              <span className="text-muted">الأصناف:</span>
               {item.mealCategories.map(c => (
-                <span key={c} className="bg-[#FDF8F0] border border-[#E8DDD4] text-[#A98159] font-bold px-2 py-0.5 rounded-lg text-[11px]">
+                <span key={c} className="bg-background border border-line text-primary font-bold px-2 py-0.5 rounded-lg text-[11px]">
                   {MEAL_CATEGORY_LABEL[c] || c}
                 </span>
               ))}
@@ -221,15 +242,15 @@ function AssignmentCard({ item }) {
           )}
 
           <div>
-            <p className="text-[11px] text-[#6D6E71] mb-1.5 flex items-center gap-1">
-              <Building2 size={11} strokeWidth={1.5} />
+            <p className="text-[11px] text-muted mb-1.5 flex items-center gap-1">
+              <Building2 size={11} weight="light" />
               المراكز المستهدفة ({centerCount})
             </p>
             <div className="flex flex-wrap gap-1">
               {item.targetCenters?.map(c => {
                 const label = typeof c === 'string' ? c : `مركز ${c}`;
                 return (
-                  <span key={label} className="bg-white border border-[#EDE5DC] text-[#2D2926] text-[10px] font-bold px-2 py-0.5 rounded-lg">
+                  <span key={label} className="bg-white border border-line text-ink text-[10px] font-bold px-2 py-0.5 rounded-lg">
                     {label}
                   </span>
                 );
@@ -241,6 +262,25 @@ function AssignmentCard({ item }) {
     </div>
   );
 }
+
+/* The form is a sequence, so its panels are numbered. Three identical cards
+   with three different gradients said "three things" where the screen means
+   "first, then, then". */
+const Step = ({ n, title, hint, tone = 'rgb(var(--c-primary))' }) => (
+  <div className="flex items-center gap-2.5 px-4 sm:px-5 py-3 border-b border-line">
+    <span className="w-7 h-7 rounded-lg flex items-center justify-center text-[12px] font-black text-white flex-shrink-0"
+      style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}>
+      {n}
+    </span>
+    <p className="font-black text-ink text-[13px] flex-1 truncate">{title}</p>
+    {hint != null && (
+      <span className="text-[11px] font-black px-2 py-0.5 rounded-full flex-shrink-0"
+        style={{ color: tone, background: `color-mix(in srgb, ${tone} 12%, #fff)` }}>
+        {hint}
+      </span>
+    )}
+  </div>
+);
 
 export default function AdminTaskAssign() {
   const [selTasks,     setSelTasks]     = useState([]);
@@ -332,12 +372,15 @@ export default function AdminTaskAssign() {
 
   return (
     <div className="space-y-5">
-
-      {}
       <PageHeader
+        kicker="متابعة الوجبات"
         Icon={Target}
         title="إسناد المهام"
-        subtitle="توزيع المهام الميدانية على المراقبين حسب الجنسية والمركز"
+        stats={[
+          { value: selCenters.length, label: 'مركز محدَّد', tone: selCenters.length ? 'gold' : undefined },
+          { value: selTasks.length, label: 'نوع مهمة' },
+          { value: history.length, label: 'إسناد سابق' },
+        ]}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
@@ -346,15 +389,9 @@ export default function AdminTaskAssign() {
         <div className="lg:col-span-3 space-y-4">
 
           {/* 1. Task selection */}
-          <div className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgba(169,129,89,0.14)] overflow-hidden">
-            <div className="flex items-center gap-3 px-5 py-3.5 border-b border-[#EDE5DC]"
-              style={{ background: 'linear-gradient(135deg, #FDF8F0, #fff 60%)' }}>
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
-                <Sparkles size={15} className="text-white" strokeWidth={2} />
-              </div>
-              <p className="font-bold text-[#2D2926] text-sm">اختيار المهام</p>
-            </div>
+          <div className="bg-white rounded-2xl border border-line overflow-hidden">
+            <Step n="١" title="ما المطلوب إنجازه"
+              hint={selTasks.length ? `${selTasks.length} مهمة` : null} />
             <div className="p-4 space-y-3">
               {TASKS.map(t => {
                 const Icon   = t.icon;
@@ -366,17 +403,17 @@ export default function AdminTaskAssign() {
                       className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-right"
                       style={active
                         ? { background: `${t.color}0F`, borderColor: `${t.color}50`, boxShadow: `0 2px 12px ${t.color}18` }
-                        : { background: '#fff', borderColor: '#EDE5DC' }}>
+                        : { background: '#fff', borderColor: 'rgb(var(--c-line))' }}>
                       <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                        style={{ background: active ? `${t.color}22` : '#F5F0EB' }}>
-                        <Icon size={17} style={{ color: t.color }} strokeWidth={1.75} />
+                        style={{ background: active ? `${t.color}22` : 'rgb(var(--c-primary-50))' }}>
+                        <Icon size={17} style={{ color: t.color }} weight="regular" />
                       </div>
-                      <span className="flex-1 text-sm font-bold" style={{ color: active ? t.color : '#4A3B35' }}>
+                      <span className="flex-1 text-sm font-bold" style={{ color: active ? t.color : 'rgb(var(--c-ink-800))' }}>
                         {t.label}
                       </span>
-                      <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${active ? 'border-transparent' : 'border-[#D9CEBC]'}`}
+                      <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${active ? 'border-transparent' : 'border-line'}`}
                         style={active ? { background: t.color } : {}}>
-                        {active && <CheckCircle2 size={13} className="text-white" strokeWidth={2.5} />}
+                        {active && <CheckCircle2 size={13} className="text-white" weight="bold" />}
                       </div>
                     </button>
 
@@ -385,10 +422,10 @@ export default function AdminTaskAssign() {
                       <div className="mt-2 mr-4 space-y-3">
                         <div>
                           <div className="flex items-center gap-1.5 mb-2">
-                            <span className="text-[11px] font-semibold text-[#6D6E71]">نوع الوجبة</span>
+                            <span className="text-[11px] font-semibold text-muted">نوع الوجبة</span>
                             {mealMissing
                               ? <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500 border border-red-100 flex items-center gap-0.5">
-                                  <AlertCircle size={8} strokeWidth={2.5} /> مطلوب
+                                  <AlertCircle size={8} weight="bold" /> مطلوب
                                 </span>
                               : <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">
                                   ✓ محدد
@@ -404,8 +441,8 @@ export default function AdminTaskAssign() {
                                   className="flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all"
                                   style={mActive
                                     ? { background: `${t.color}12`, borderColor: t.color, color: t.color }
-                                    : { background: '#FAFAF8', borderColor: mealMissing ? '#FCA5A5' : '#EDE5DC', color: '#6D6E71' }}>
-                                  <m.icon size={20} weight="duotone" style={{ color: mActive ? t.color : m.color }} />
+                                    : { background: 'rgb(var(--c-bg))', borderColor: mealMissing ? '#FCA5A5' : 'rgb(var(--c-line))', color: 'rgb(var(--c-muted))' }}>
+                                  <m.icon size={20} weight="regular" style={{ color: mActive ? t.color : m.color }} />
                                   <span className="text-xs font-bold">{m.label}</span>
                                 </button>
                               );
@@ -416,10 +453,10 @@ export default function AdminTaskAssign() {
                         {/* Meal CATEGORY sub-selection — required */}
                         <div>
                           <div className="flex items-center gap-1.5 mb-2">
-                            <span className="text-[11px] font-semibold text-[#6D6E71]">صنف الوجبة</span>
+                            <span className="text-[11px] font-semibold text-muted">صنف الوجبة</span>
                             {categoryMissing
                               ? <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500 border border-red-100 flex items-center gap-0.5">
-                                  <AlertCircle size={8} strokeWidth={2.5} /> مطلوب
+                                  <AlertCircle size={8} weight="bold" /> مطلوب
                                 </span>
                               : <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">
                                   ✓ {selCategories.length} محدد
@@ -436,8 +473,8 @@ export default function AdminTaskAssign() {
                                   className="flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all"
                                   style={cActive
                                     ? { background: `${c.color}12`, borderColor: c.color, color: c.color }
-                                    : { background: '#FAFAF8', borderColor: categoryMissing ? '#FCA5A5' : '#EDE5DC', color: '#6D6E71' }}>
-                                  <CIcon size={20} strokeWidth={1.75} style={{ color: cActive ? c.color : c.color + 'AA' }} />
+                                    : { background: 'rgb(var(--c-bg))', borderColor: categoryMissing ? '#FCA5A5' : 'rgb(var(--c-line))', color: 'rgb(var(--c-muted))' }}>
+                                  <CIcon size={20} weight="regular" style={{ color: cActive ? c.color : c.color + 'AA' }} />
                                   <span className="text-xs font-bold">{c.label}</span>
                                 </button>
                               );
@@ -453,25 +490,15 @@ export default function AdminTaskAssign() {
           </div>
 
           {/* 2. Target selection (Nationality or Center) */}
-          <div className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgba(169,129,89,0.14)] overflow-hidden">
+          <div className="bg-white rounded-2xl border border-line overflow-hidden">
             {/* Header */}
-            <div className="flex items-center gap-3 px-5 py-3.5 border-b border-[#EDE5DC]"
-              style={{ background: 'linear-gradient(135deg, #EFF6FF, #fff 60%)' }}>
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg, #93C5FD, #3182CE)' }}>
-                {selMode === 'nationality' ? <Earth size={15} className="text-white" strokeWidth={2} /> : <Building2 size={15} className="text-white" strokeWidth={2} />}
-              </div>
-              <p className="font-bold text-[#2D2926] text-sm">تحديد الجهة المستهدفة</p>
-              {(selMode === 'nationality' ? selNats.length : selCenters.length) > 0 && (
-                <span className="mr-auto text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200">
-                  {selMode === 'nationality' ? selNats.length : selCenters.length} محدد
-                </span>
-              )}
-            </div>
+            <Step n="٢" title="على من يقع" tone="#4E7CB0"
+              hint={(selMode === 'nationality' ? selNats.length : selCenters.length) || null}
+            />
 
             {/* Mode toggle */}
             <div className="px-4 pt-3.5 pb-0">
-              <div className="flex gap-1.5 p-1 rounded-xl bg-[#F5F0EB]">
+              <div className="flex gap-1.5 p-1 rounded-xl bg-[rgb(var(--c-primary-50))]">
                 {[
                   { id: 'nationality', label: 'حسب الجنسية', icon: Earth },
                   { id: 'center',      label: 'حسب المركز',  icon: Building2 },
@@ -483,9 +510,9 @@ export default function AdminTaskAssign() {
                       onClick={() => { setSelMode(m.id); setSelNats([]); setSelCenters([]); setCenterSearch(''); }}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all"
                       style={active
-                        ? { background: 'white', color: '#2D2926', boxShadow: '0 1px 6px rgba(45,41,38,0.12)' }
-                        : { color: '#9D8F85' }}>
-                      <Icon size={13} strokeWidth={2} />
+                        ? { background: 'white', color: 'rgb(var(--c-ink))', boxShadow: '0 1px 6px rgb(var(--c-ink) / 0.12)' }
+                        : { color: 'rgb(var(--c-muted))' }}>
+                      <Icon size={13} weight="regular" />
                       {m.label}
                     </button>
                   );
@@ -504,13 +531,13 @@ export default function AdminTaskAssign() {
                       className="flex items-center gap-2.5 px-3.5 py-3 rounded-xl border transition-all text-right"
                       style={active
                         ? { background: `${n.color}0D`, borderColor: `${n.color}45`, boxShadow: `0 2px 8px ${n.color}14` }
-                        : { background: '#FAFAF8', borderColor: '#EDE5DC' }}>
+                        : { background: 'rgb(var(--c-bg))', borderColor: 'rgb(var(--c-line))' }}>
                       <span className="text-lg leading-none">{n.flag}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold truncate" style={{ color: active ? n.color : '#2D2926' }}>{n.label}</p>
-                        <p className="text-[10px] text-[#9D8F85]">{n.centers.length} مركز</p>
+                        <p className="text-xs font-bold truncate" style={{ color: active ? n.color : 'rgb(var(--c-ink))' }}>{n.label}</p>
+                        <p className="text-[10px] text-muted">{n.centers.length} مركز</p>
                       </div>
-                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${active ? 'border-transparent' : 'border-[#D9CEBC]'}`}
+                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${active ? 'border-transparent' : 'border-line'}`}
                         style={active ? { background: n.color } : {}}>
                         {active && <span className="text-white text-[8px] font-black leading-none">✓</span>}
                       </div>
@@ -525,19 +552,19 @@ export default function AdminTaskAssign() {
               <div className="p-4 space-y-3">
                 {/* Search */}
                 <div className="relative">
-                  <Search size={13} strokeWidth={1.75} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9D8F85] pointer-events-none" />
+                  <Search size={13} weight="regular" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
                   <input
                     type="text"
                     value={centerSearch}
                     onChange={e => setCenterSearch(e.target.value)}
                     placeholder="ابحث عن مركز..."
                     dir="rtl"
-                    className="w-full pr-8 pl-3 py-2 rounded-xl border border-[#EDE5DC] bg-[#FAFAF8] text-sm text-[#2D2926] placeholder-[#C9B8A8] focus:outline-none focus:border-[#A98159] transition-colors"
+                    className="w-full pr-8 pl-3 py-2 rounded-xl border border-line bg-bg text-sm text-ink placeholder-muted focus:outline-none focus:border-primary transition-colors"
                   />
                   {centerSearch && (
                     <button onClick={() => setCenterSearch('')}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-[#C9B8A8] hover:text-[#6D6E71]">
-                      <X size={12} strokeWidth={2} />
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted hover:text-muted">
+                      <X size={12} weight="regular" />
                     </button>
                   )}
                 </div>
@@ -545,7 +572,7 @@ export default function AdminTaskAssign() {
                 {/* Select / deselect all visible */}
                 {filteredCenters.length > 0 && (
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-[#9D8F85]">{filteredCenters.length} مركز</span>
+                    <span className="text-[11px] text-muted">{filteredCenters.length} مركز</span>
                     <button
                       onClick={() => {
                         const visibleIds = filteredCenters.map(c => c.id);
@@ -553,7 +580,7 @@ export default function AdminTaskAssign() {
                         if (allSelected) setSelCenters(p => p.filter(id => !visibleIds.includes(id)));
                         else setSelCenters(p => [...new Set([...p, ...visibleIds])]);
                       }}
-                      className="text-[11px] font-bold text-[#A98159] hover:underline">
+                      className="text-[11px] font-bold text-primary hover:underline">
                       {filteredCenters.every(c => selCenters.includes(c.id)) ? 'إلغاء تحديد الكل' : 'تحديد الكل'}
                     </button>
                   </div>
@@ -562,7 +589,7 @@ export default function AdminTaskAssign() {
                 {/* Center rows */}
                 <div className="space-y-1.5 max-h-64 overflow-y-auto">
                   {filteredCenters.length === 0
-                    ? <p className="text-center text-[12px] text-[#C9B8A8] py-4">لا توجد نتائج</p>
+                    ? <p className="text-center text-[12px] text-muted py-4">لا توجد نتائج</p>
                     : filteredCenters.map(c => {
                         const active = selCenters.includes(c.id);
                         return (
@@ -570,18 +597,18 @@ export default function AdminTaskAssign() {
                             onClick={() => setSelCenters(p => toggle(p, c.id))}
                             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all text-right"
                             style={active
-                              ? { background: '#A9815910', borderColor: '#A9815950', boxShadow: '0 1px 6px rgba(169,129,89,0.12)' }
-                              : { background: '#FAFAF8', borderColor: '#EDE5DC' }}>
+                              ? { background: 'rgb(var(--c-primary) / 0.06)', borderColor: 'rgb(var(--c-primary) / 0.31)', boxShadow: '0 1px 6px rgb(var(--c-primary) / 0.12)' }
+                              : { background: 'rgb(var(--c-bg))', borderColor: 'rgb(var(--c-line))' }}>
                             <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                              style={{ background: active ? '#A9815920' : '#F5F0EB' }}>
-                              <Building2 size={13} strokeWidth={1.75} style={{ color: active ? '#A98159' : '#C9B8A8' }} />
+                              style={{ background: active ? 'rgb(var(--c-primary) / 0.13)' : 'rgb(var(--c-primary-50))' }}>
+                              <Building2 size={13} weight="regular" style={{ color: active ? 'rgb(var(--c-primary))' : 'rgb(var(--c-muted))' }} />
                             </div>
                             <div className="flex-1 min-w-0 text-right">
-                              <p className="text-xs font-bold" style={{ color: active ? '#A98159' : '#2D2926' }}>{c.id}</p>
-                              <p className="text-[10px] text-[#9D8F85] truncate">{c.caterer}</p>
+                              <p className="text-xs font-bold" style={{ color: active ? 'rgb(var(--c-primary))' : 'rgb(var(--c-ink))' }}>{c.id}</p>
+                              <p className="text-[10px] text-muted truncate">{c.caterer}</p>
                             </div>
-                            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${active ? 'border-transparent' : 'border-[#D9CEBC]'}`}
-                              style={active ? { background: '#A98159' } : {}}>
+                            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${active ? 'border-transparent' : 'border-line'}`}
+                              style={active ? { background: 'rgb(var(--c-primary))' } : {}}>
                               {active && <span className="text-white text-[8px] font-black leading-none">✓</span>}
                             </div>
                           </button>
@@ -594,20 +621,8 @@ export default function AdminTaskAssign() {
           </div>
 
           {/* 3. Date */}
-          <div className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgba(169,129,89,0.14)] overflow-hidden">
-            <div className="flex items-center gap-3 px-5 py-3.5 border-b border-[#EDE5DC]"
-              style={{ background: 'linear-gradient(135deg, #F0FDF4, #fff 60%)' }}>
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg, #86EFAC, #2F855A)' }}>
-                <CalendarCheck size={15} className="text-white" strokeWidth={2} />
-              </div>
-              <p className="font-bold text-[#2D2926] text-sm">يوم التنفيذ</p>
-              {schedDay && (
-                <span className="mr-auto text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  {schedLabel}
-                </span>
-              )}
-            </div>
+          <div className="bg-white rounded-2xl border border-line overflow-hidden">
+            <Step n="٣" title="متى يُنفَّذ" tone="#5E9070" hint={schedDay ? schedLabel : null} />
             <div className="p-4 grid grid-cols-4 gap-2">
               {DHU_HIJJAH_DAYS.map(d => {
                 const active = schedDay === d.value;
@@ -617,14 +632,14 @@ export default function AdminTaskAssign() {
                     className="flex flex-col items-center gap-0.5 py-3 px-1 rounded-xl border transition-all"
                     style={active
                       ? { background: '#2F855A14', borderColor: '#2F855A60', boxShadow: '0 2px 8px #2F855A18' }
-                      : { background: '#FAFAF8', borderColor: '#EDE5DC' }}>
-                    <span className="text-sm font-black leading-none" style={{ color: active ? '#2F855A' : '#2D2926' }}>
+                      : { background: 'rgb(var(--c-bg))', borderColor: 'rgb(var(--c-line))' }}>
+                    <span className="text-sm font-black leading-none" style={{ color: active ? '#16A34A' : 'rgb(var(--c-ink))' }}>
                       {d.dayAr}
                     </span>
-                    <span className="text-[9px] font-semibold" style={{ color: active ? '#2F855A99' : '#9D8F85' }}>
+                    <span className="text-[9px] font-semibold" style={{ color: active ? '#2F855A99' : 'rgb(var(--c-muted))' }}>
                       ذو الحجة
                     </span>
-                    {active && <div className="w-1.5 h-1.5 rounded-full mt-0.5" style={{ background: '#2F855A' }} />}
+                    {active && <div className="w-1.5 h-1.5 rounded-full mt-0.5" style={{ background: '#16A34A' }} />}
                   </button>
                 );
               })}
@@ -639,8 +654,8 @@ export default function AdminTaskAssign() {
                 : 'bg-red-50 text-red-600 border-red-200'
             }`}>
               {feedback.type === 'success'
-                ? <CheckCircle2 size={16} strokeWidth={2} />
-                : <AlertCircle size={16} strokeWidth={2} />}
+                ? <CheckCircle2 size={16} weight="regular" />
+                : <AlertCircle size={16} weight="regular" />}
               {feedback.msg}
             </div>
           )}
@@ -649,32 +664,30 @@ export default function AdminTaskAssign() {
           <button
             onClick={handleAssign}
             disabled={submitting}
-            className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-white font-bold text-sm transition-all disabled:opacity-60 shadow-[0_6px_24px_rgba(169,129,89,0.35)] hover:shadow-[0_8px_32px_rgba(169,129,89,0.45)] hover:opacity-95 active:scale-[0.98]"
-            style={{ background: 'linear-gradient(135deg, #C4A46E 0%, #A98159 50%, #8B6840 100%)' }}>
+            className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-white font-bold text-sm transition-all disabled:opacity-60 shadow-[0_6px_24px_rgb(var(--c-primary)/0.35)] hover:shadow-[0_8px_32px_rgb(var(--c-primary)/0.45)] hover:opacity-95 active:scale-[0.98]"
+            style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)) 0%, rgb(var(--c-primary)) 50%, rgb(var(--c-primary-700)) 100%)' }}>
             {submitting
               ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              : <Rocket size={16} strokeWidth={2} />}
+              : <Rocket size={16} weight="regular" />}
             {submitting ? 'جارٍ الإسناد...' : 'إسناد المهام'}
           </button>
         </div>
 
         {/* Preview */}
         <div className="lg:col-span-2">
-          <div className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgba(169,129,89,0.14)] overflow-hidden sticky top-4">
-            <div className="px-5 py-3.5 border-b border-[#EDE5DC]"
-              style={{ background: 'linear-gradient(135deg, #FDF8F0, #fff 60%)' }}>
-              <p className="font-bold text-[#2D2926] text-sm">ملخص الإسناد</p>
-              <p className="text-[10px] text-[#9D8F85] mt-0.5">اضغط × لحذف أي خيار</p>
+          <div className="bg-white rounded-2xl border border-line overflow-hidden sticky top-4">
+            <div className="px-4 sm:px-5 py-3 border-b border-line">
+              <p className="font-black text-ink text-[13px]">ملخص الإسناد</p>
             </div>
             <div className="p-4 space-y-4">
 
               {/* Tasks */}
               <div>
-                <p className="text-[11px] font-semibold text-[#9D8F85] mb-2 flex items-center gap-1">
-                  <Sparkles size={11} strokeWidth={1.75} /> المهام المختارة
+                <p className="text-[11px] font-semibold text-muted mb-2 flex items-center gap-1">
+                  <Sparkles size={11} weight="regular" /> المهام المختارة
                 </p>
                 {selTasks.length === 0
-                  ? <p className="text-[12px] text-[#C9B8A8] italic">لم تُحدد بعد</p>
+                  ? <p className="text-[12px] text-muted italic">لم تُحدد بعد</p>
                   : <div className="space-y-2">
                       {selTasks.map(k => {
                         const t = TASKS.find(x => x.key === k);
@@ -688,7 +701,7 @@ export default function AdminTaskAssign() {
                               <button onClick={() => removeTask(k)}
                                 className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-50 transition-colors flex-shrink-0"
                                 style={{ color: t.color }}>
-                                <X size={12} strokeWidth={2.5} />
+                                <X size={12} weight="bold" />
                               </button>
                             </div>
 
@@ -697,7 +710,7 @@ export default function AdminTaskAssign() {
                               <div className="mt-1.5 mr-2 space-y-1.5">
                                 {selMeals.length === 0
                                   ? <div className="flex items-center gap-1 text-[10px] text-red-500 font-semibold">
-                                      <AlertCircle size={10} strokeWidth={2} />
+                                      <AlertCircle size={10} weight="regular" />
                                       يرجى اختيار نوع الوجبة
                                     </div>
                                   : <div className="flex flex-wrap gap-1">
@@ -710,7 +723,7 @@ export default function AdminTaskAssign() {
                                           <button onClick={() => removeMeal(m)}
                                             className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-red-50 transition-colors"
                                             style={{ color: t.color }}>
-                                            <X size={9} strokeWidth={2.5} />
+                                            <X size={9} weight="bold" />
                                           </button>
                                         </div>
                                       ))}
@@ -718,7 +731,7 @@ export default function AdminTaskAssign() {
                                 }
                                 {selCategories.length === 0
                                   ? <div className="flex items-center gap-1 text-[10px] text-red-500 font-semibold">
-                                      <AlertCircle size={10} strokeWidth={2} />
+                                      <AlertCircle size={10} weight="regular" />
                                       يرجى اختيار صنف الوجبة
                                     </div>
                                   : <div className="flex flex-wrap gap-1">
@@ -733,7 +746,7 @@ export default function AdminTaskAssign() {
                                             <button onClick={() => setSelCategories(p => p.filter(x => x !== c))}
                                               className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-red-50 transition-colors"
                                               style={{ color: cat.color }}>
-                                              <X size={9} strokeWidth={2.5} />
+                                              <X size={9} weight="bold" />
                                             </button>
                                           </div>
                                         );
@@ -753,11 +766,11 @@ export default function AdminTaskAssign() {
               <div>
                 {selMode === 'nationality' ? (
                   <>
-                    <p className="text-[11px] font-semibold text-[#9D8F85] mb-2 flex items-center gap-1">
-                      <Earth size={11} strokeWidth={1.75} /> الجنسيات
+                    <p className="text-[11px] font-semibold text-muted mb-2 flex items-center gap-1">
+                      <Earth size={11} weight="regular" /> الجنسيات
                     </p>
                     {selNats.length === 0
-                      ? <p className="text-[12px] text-[#C9B8A8] italic">لم تُحدد بعد</p>
+                      ? <p className="text-[12px] text-muted italic">لم تُحدد بعد</p>
                       : <div className="space-y-1.5">
                           {selNats.map(k => {
                             const n = NATIONALITIES.find(x => x.key === k);
@@ -771,7 +784,7 @@ export default function AdminTaskAssign() {
                                 <button onClick={() => removeNat(k)}
                                   className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-50 transition-colors flex-shrink-0"
                                   style={{ color: n.color }}>
-                                  <X size={12} strokeWidth={2.5} />
+                                  <X size={12} weight="bold" />
                                 </button>
                               </div>
                             );
@@ -781,27 +794,27 @@ export default function AdminTaskAssign() {
                   </>
                 ) : (
                   <>
-                    <p className="text-[11px] font-semibold text-[#9D8F85] mb-2 flex items-center gap-1">
-                      <Building2 size={11} strokeWidth={1.75} /> المراكز المحددة
+                    <p className="text-[11px] font-semibold text-muted mb-2 flex items-center gap-1">
+                      <Building2 size={11} weight="regular" /> المراكز المحددة
                       {selCenters.length > 0 && (
                         <span className="mr-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                          style={{ background: '#A9815918', color: '#A98159', border: '1px solid #A9815930' }}>
+                          style={{ background: 'rgb(var(--c-primary) / 0.09)', color: 'rgb(var(--c-primary))', border: '1px solid rgb(var(--c-primary) / 0.19)' }}>
                           {selCenters.length}
                         </span>
                       )}
                     </p>
                     {selCenters.length === 0
-                      ? <p className="text-[12px] text-[#C9B8A8] italic">لم تُحدد بعد</p>
+                      ? <p className="text-[12px] text-muted italic">لم تُحدد بعد</p>
                       : <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
                           {selCenters.map(id => (
                             <div key={id} className="flex items-center gap-0.5">
                               <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg"
-                                style={{ background: '#A9815910', border: '1px solid #A9815935', color: '#A98159' }}>
+                                style={{ background: 'rgb(var(--c-primary) / 0.06)', border: '1px solid rgb(var(--c-primary) / 0.21)', color: 'rgb(var(--c-primary))' }}>
                                 {id}
                               </span>
                               <button onClick={() => removeCenter(id)}
-                                className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-red-50 transition-colors text-[#A98159]">
-                                <X size={9} strokeWidth={2.5} />
+                                className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-red-50 transition-colors text-primary">
+                                <X size={9} weight="bold" />
                               </button>
                             </div>
                           ))}
@@ -814,22 +827,22 @@ export default function AdminTaskAssign() {
               {/* Target centers count (nationality mode only) */}
               {selMode === 'nationality' && (
                 <div>
-                  <p className="text-[11px] font-semibold text-[#9D8F85] mb-2 flex items-center gap-1">
-                    <Building2 size={11} strokeWidth={1.75} />
+                  <p className="text-[11px] font-semibold text-muted mb-2 flex items-center gap-1">
+                    <Building2 size={11} weight="regular" />
                     المراكز المستهدفة
                     {targetCenters.length > 0 && (
                       <span className="mr-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                        style={{ background: '#7C3AED18', color: '#7C3AED', border: '1px solid #7C3AED30' }}>
+                        style={{ background: '#9E574118', color: '#9E5741', border: '1px solid #9E574130' }}>
                         {targetCenters.length}
                       </span>
                     )}
                   </p>
                   {targetCenters.length === 0
-                    ? <p className="text-[12px] text-[#C9B8A8] italic">ستظهر بعد تحديد الجنسيات</p>
+                    ? <p className="text-[12px] text-muted italic">ستظهر بعد تحديد الجنسيات</p>
                     : <div className="flex flex-wrap gap-1 max-h-40 overflow-y-auto">
                         {targetCenters.map(c => (
                           <span key={c} className="text-[10px] font-bold px-2 py-0.5 rounded-lg"
-                            style={{ background: '#7C3AED0D', border: '1px solid #7C3AED25', color: '#7C3AED' }}>
+                            style={{ background: '#9E57410D', border: '1px solid #9E574125', color: '#9E5741' }}>
                             {c}
                           </span>
                         ))}
@@ -842,14 +855,14 @@ export default function AdminTaskAssign() {
               {schedDay && (
                 <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl px-3 py-2.5 flex items-center justify-between">
                   <div>
-                    <p className="text-[10px] text-[#6D6E71] mb-0.5 flex items-center gap-1">
-                      <CalendarCheck size={10} strokeWidth={1.75} /> يوم التنفيذ
+                    <p className="text-[10px] text-muted mb-0.5 flex items-center gap-1">
+                      <CalendarCheck size={10} weight="regular" /> يوم التنفيذ
                     </p>
-                    <p className="text-xs font-bold text-[#2F855A]">{schedLabel}</p>
+                    <p className="text-xs font-bold text-[#16A34A]">{schedLabel}</p>
                   </div>
                   <button onClick={() => setSchedDay('')}
-                    className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-50 transition-colors text-[#2F855A]">
-                    <X size={12} strokeWidth={2.5} />
+                    className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-50 transition-colors text-[#16A34A]">
+                    <X size={12} weight="bold" />
                   </button>
                 </div>
               )}
@@ -857,21 +870,19 @@ export default function AdminTaskAssign() {
           </div>
         </div>
       </div>
-
-      {}
       {history.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="font-bold text-[#2D2926] text-sm flex items-center gap-2">
-              <Clock size={14} style={{ color: '#A98159' }} strokeWidth={1.75} />
+            <p className="font-bold text-ink text-sm flex items-center gap-2">
+              <Clock size={14} style={{ color: 'rgb(var(--c-primary))' }} weight="regular" />
               سجل الإسناد السابق
-              <span className="bg-[#FDF8F0] text-[#A98159] border border-[#E8DDD4] text-[10px] font-bold px-2 py-0.5 rounded-full">
+              <span className="bg-background text-primary border border-line text-[10px] font-bold px-2 py-0.5 rounded-full">
                 {history.length}
               </span>
             </p>
             {history.length > 5 && (
               <button onClick={() => setShowAll(p => !p)}
-                className="text-xs font-bold text-[#A98159] flex items-center gap-1">
+                className="text-xs font-bold text-primary flex items-center gap-1">
                 {showAll ? <><ChevronUp size={12} /> عرض أقل</> : <><ChevronDown size={12} /> عرض الكل</>}
               </button>
             )}

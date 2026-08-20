@@ -3,10 +3,24 @@ import { db, serverTimestamp } from '../../lib/db.js';
 import { supabase } from '../../config/supabase.js';
 import { CENTERS, getCaterer } from '../../config/centers.js';
 import {
-  UserCog, Plus, X, Save, ChevronDown, Eye, EyeOff,
-  ShieldCheck, Crown, Pencil, Trash2, Sparkles, Filter, Mail, Lock,
-} from 'lucide-react';
+  UserGear as UserCog,
+  Plus,
+  X,
+  FloppyDisk as Save,
+  CaretDown as ChevronDown,
+  Eye,
+  EyeSlash as EyeOff,
+  ShieldCheck,
+  Crown,
+  Pencil,
+  Trash as Trash2,
+  Sparkle as Sparkles,
+  Funnel as Filter,
+  Envelope as Mail,
+  Lock,
+} from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
+import DataTable from '../../components/DataTable.jsx';
 
 /* Create the staff/admin account end-to-end:
    1. Save the current admin's auth tokens so we can restore the session
@@ -61,17 +75,17 @@ async function createStaffRow(email, password, userData) {
 }
 
 const ROLES = [
-  { value: 'admin', label: 'مسؤول', Icon: Crown,       color: '#7C3AED' },
-  { value: 'staff', label: 'موظف',  Icon: ShieldCheck, color: '#A98159' },
+  { value: 'admin', label: 'مسؤول', Icon: Crown,       color: '#9E5741' },
+  { value: 'staff', label: 'موظف',  Icon: ShieldCheck, color: 'rgb(var(--c-primary))' },
 ];
 const ROLE_META = Object.fromEntries(ROLES.map(r => [r.value, r]));
 
 const inputCls =
-  'w-full px-4 py-2.5 border border-[#E8DDD4] rounded-xl text-sm text-[#2D2926] outline-none focus:border-[#A98159] transition placeholder-[#6D6E71]/40 bg-white';
+  'w-full px-4 py-2.5 border border-line rounded-xl text-sm text-ink outline-none focus:border-primary transition placeholder-muted/40 bg-white';
 
 const Field = ({ label, required, children }) => (
   <div>
-    <label className="block text-xs font-medium text-[#6D6E71] mb-1.5">
+    <label className="block text-xs font-medium text-muted mb-1.5">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
     {children}
@@ -88,29 +102,29 @@ function MultiCenterSelect({ selected, onChange }) {
       <button
         type="button"
         onClick={() => setOpen((p) => !p)}
-        className="w-full px-4 py-2.5 border border-[#D1C4B9] rounded-xl text-sm text-right flex items-center justify-between focus:border-[#A98159] outline-none transition bg-white"
+        className="w-full px-4 py-2.5 border border-line rounded-xl text-sm text-right flex items-center justify-between focus:border-primary outline-none transition bg-white"
       >
-        <span className={selected.length ? 'text-[#2D2926]' : 'text-[#6D6E71]/50'}>
+        <span className={selected.length ? 'text-ink' : 'text-muted/50'}>
           {selected.length ? `${selected.length} مركز محدد` : 'اختر المراكز المخصصة'}
         </span>
-        <ChevronDown size={15} className={`text-[#6D6E71] transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown size={15} className={`text-muted transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="absolute z-30 top-full right-0 left-0 mt-1 bg-white border border-[#E8DDD4] rounded-xl shadow-lg max-h-72 overflow-y-auto">
+        <div className="absolute z-30 top-full right-0 left-0 mt-1 bg-white border border-line rounded-xl shadow-lg max-h-72 overflow-y-auto">
           {CENTERS.map((c) => (
             <label
               key={c.id}
-              className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#FDF8F0] cursor-pointer text-sm"
+              className="flex items-center gap-3 px-4 py-2.5 hover:bg-background cursor-pointer text-sm"
             >
               <input
                 type="checkbox"
                 checked={selected.includes(c.id)}
                 onChange={() => toggle(c.id)}
-                className="accent-[#A98159] w-4 h-4"
+                className="accent-primary w-4 h-4"
               />
               <div className="min-w-0">
-                <span className="text-[#2D2926] font-medium">{c.id}</span>
-                <span className="text-[#6D6E71] text-xs block truncate">{c.caterer}</span>
+                <span className="text-ink font-medium">{c.id}</span>
+                <span className="text-muted text-xs block truncate">{c.caterer}</span>
               </div>
             </label>
           ))}
@@ -264,24 +278,23 @@ export default function AdminStaff() {
   return (
     <div className="space-y-5" dir="rtl">
       <PageHeader
+        kicker="المستخدمين"
         Icon={UserCog}
-        title="إدارة الموظفين"
-        subtitle="حسابات الإداريين والمراكز المخصَّصة لهم"
-        gradient={{ from: '#C4A46E', to: '#A98159' }}
+        title="الموظفين"
+        gradient={{ from: 'rgb(var(--c-primary-400))', to: 'rgb(var(--c-primary))' }}
         sparkle
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
         {/* ── Add panel (left) ─────────────────── */}
-        <section className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgba(169,129,89,0.14)] lg:col-span-2 h-fit relative">
-          <div className="px-5 py-4 border-b border-[#EDE5DC] flex items-center gap-2.5 bg-[#FDF8F0]/40">
+        <section className="bg-gradient-to-br from-white via-white to-background/40 rounded-2xl border border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgb(var(--c-primary)/0.14)] lg:col-span-2 h-fit relative">
+          <div className="px-5 py-4 border-b border-line flex items-center gap-2.5 bg-background/40">
             <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
-              <Plus size={16} className="text-white" strokeWidth={2.5} />
+              style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
+              <Plus size={16} className="text-white" weight="bold" />
             </div>
             <div>
-              <h2 className="font-bold text-[#2D2926] text-sm">إضافة موظف جديد</h2>
-              <p className="text-[10px] text-[#9D8F85]">سيتم إنشاء حساب دخول بالبريد الإلكتروني</p>
+              <h2 className="font-bold text-ink text-sm">إضافة موظف جديد</h2>
             </div>
           </div>
 
@@ -307,7 +320,7 @@ export default function AdminStaff() {
             <Field label="البريد الإلكتروني" required>
               <div className="relative">
                 <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                  <Mail size={14} className="text-[#A98159]" />
+                  <Mail size={14} className="text-primary" />
                 </div>
                 <input
                   type="email"
@@ -323,7 +336,7 @@ export default function AdminStaff() {
             <Field label="كلمة المرور" required>
               <div className="relative">
                 <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                  <Lock size={14} className="text-[#A98159]" />
+                  <Lock size={14} className="text-primary" />
                 </div>
                 <input
                   type={showPass ? 'text' : 'password'}
@@ -336,7 +349,7 @@ export default function AdminStaff() {
                 <button
                   type="button"
                   onClick={() => setShowPass((p) => !p)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6D6E71] hover:text-[#A98159]"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary"
                 >
                   {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
@@ -369,7 +382,7 @@ export default function AdminStaff() {
                       type="button"
                       onClick={() => setForm((p) => ({ ...p, role: r.value }))}
                       className={`group/role px-3 py-2.5 rounded-xl text-sm font-bold border-2 transition-all flex items-center justify-center gap-2 ${
-                        active ? 'text-white scale-[1.02] shadow-md' : 'border-[#E8DDD4] bg-white text-[#6D6E71] hover:scale-[1.02]'
+                        active ? 'text-white scale-[1.02] shadow-md' : 'border-line bg-white text-muted hover:scale-[1.02]'
                       }`}
                       style={active ? {
                         borderColor: r.color,
@@ -414,8 +427,8 @@ export default function AdminStaff() {
             <button
               type="submit"
               disabled={saving}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm hover:opacity-90 disabled:opacity-60 transition shadow-[0_4px_16px_rgba(169,129,89,0.35)]"
-              style={{ background: 'linear-gradient(135deg,#C4A46E,#A98159)' }}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm hover:opacity-90 disabled:opacity-60 transition shadow-[0_4px_16px_rgb(var(--c-primary)/0.35)]"
+              style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}
             >
               {saving ? (
                 <>
@@ -432,19 +445,19 @@ export default function AdminStaff() {
         </section>
 
         {/* ── List panel (right) ─────────────── */}
-        <section className="bg-gradient-to-br from-white via-white to-[#FDF8F0]/40 rounded-2xl border border-[#EDE5DC] shadow-[0_2px_12px_rgba(45,41,38,0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgba(169,129,89,0.14)] lg:col-span-3">
-          <div className="p-4 border-b border-[#EDE5DC]">
-            <h2 className="text-lg font-bold text-[#A98159] mb-3">
+        <section className="bg-gradient-to-br from-white via-white to-background/40 rounded-2xl border border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgb(var(--c-primary)/0.14)] lg:col-span-3">
+          <div className="p-4 border-b border-line">
+            <h2 className="text-lg font-bold text-primary mb-3">
               الموظفون ({visible.length}{filter !== 'all' && ` من ${counts.all}`})
             </h2>
             <div className="flex gap-2 flex-wrap">
-              <Chip active={filter === 'all'} onClick={() => setFilter('all')} count={counts.all} Icon={Filter} color="#6D6E71">
+              <Chip active={filter === 'all'} onClick={() => setFilter('all')} count={counts.all} Icon={Filter} color="rgb(var(--c-muted))">
                 الكل
               </Chip>
-              <Chip active={filter === 'admin'} onClick={() => setFilter('admin')} count={counts.admin} Icon={Crown} color="#7C3AED">
+              <Chip active={filter === 'admin'} onClick={() => setFilter('admin')} count={counts.admin} Icon={Crown} color="#9E5741">
                 المسؤولون
               </Chip>
-              <Chip active={filter === 'staff'} onClick={() => setFilter('staff')} count={counts.staff} Icon={ShieldCheck} color="#A98159">
+              <Chip active={filter === 'staff'} onClick={() => setFilter('staff')} count={counts.staff} Icon={ShieldCheck} color="rgb(var(--c-primary))">
                 الموظفون
               </Chip>
             </div>
@@ -456,10 +469,10 @@ export default function AdminStaff() {
             </div>
           )}
 
-          <div className="overflow-x-auto">
+          <DataTable>
             <table className="w-full text-sm">
-              <thead className="text-[#6D6E71] text-xs border-b border-[#EDE5DC]"
-                style={{ background: 'linear-gradient(135deg, #FDF8F0 0%, #fff 60%)' }}>
+              <thead className="text-muted text-xs border-b border-line"
+                style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 60%)' }}>
                 <tr>
                   <th className="px-4 py-3 text-right font-semibold">الاسم</th>
                   <th className="px-4 py-3 text-right font-semibold">البريد</th>
@@ -468,20 +481,20 @@ export default function AdminStaff() {
                   <th className="px-4 py-3 text-right font-semibold">إجراء</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#EDE5DC]">
+              <tbody className="divide-y divide-line">
                 {loading && (
-                  <tr><td colSpan={5} className="p-8 text-center text-[#6D6E71]">جارٍ التحميل...</td></tr>
+                  <tr><td colSpan={5} className="p-8 text-center text-muted">جارٍ التحميل...</td></tr>
                 )}
                 {!loading && visible.length === 0 && (
-                  <tr><td colSpan={5} className="p-8 text-center text-[#6D6E71]">لا يوجد موظفون</td></tr>
+                  <tr><td colSpan={5} className="p-8 text-center text-muted">لا يوجد موظفون</td></tr>
                 )}
                 {visible.map((u) => {
                   const meta = ROLE_META[u.role] || ROLE_META.staff;
                   const RoleIcon = meta.Icon;
                   const assignedCenters = u.assignedCenters || [];
                   return (
-                    <tr key={u.uid || u.id} className="group/row hover:bg-[#FDF8F0] transition-colors">
-                      <td className="px-4 py-3 font-medium text-[#2D2926]">
+                    <tr key={u.uid || u.id} className="group/row hover:bg-background transition-colors">
+                      <td className="px-4 py-3 font-medium text-ink">
                         <div className="flex items-center gap-2.5">
                           <div className="relative flex-shrink-0">
                             <div className="absolute inset-0 rounded-full blur-md opacity-0 group-hover/row:opacity-60 transition-opacity"
@@ -494,22 +507,22 @@ export default function AdminStaff() {
                           <div className="min-w-0">
                             <div className="truncate">{u.nameAr || u.name || '—'}</div>
                             {u.nameEn && (
-                              <div className="text-[#6D6E71] text-xs truncate" dir="ltr">{u.nameEn}</div>
+                              <div className="text-muted text-xs truncate" dir="ltr">{u.nameEn}</div>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-[#6D6E71] text-xs" dir="ltr">{u.email || '—'}</td>
+                      <td className="px-4 py-3 text-muted text-xs" dir="ltr">{u.email || '—'}</td>
                       <td className="px-4 py-3">
                         <span
                           className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white shadow-sm"
                           style={{ background: `linear-gradient(135deg, ${meta.color}, ${meta.color}DD)` }}
                         >
-                          <RoleIcon size={11} strokeWidth={2.5} />
+                          <RoleIcon size={11} weight="bold" />
                           {meta.label}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-[#6D6E71] text-xs">
+                      <td className="px-4 py-3 text-muted text-xs">
                         {u.role === 'admin' ? (
                           <span className="inline-flex items-center gap-1 font-bold text-purple-600">
                             <Crown size={10} /> كل المراكز
@@ -524,7 +537,7 @@ export default function AdminStaff() {
                         <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => openEdit(u)}
-                            className="group/edit flex items-center gap-1 text-[#A98159] hover:text-white text-xs font-bold px-2 py-1 rounded-lg border border-[#A98159]/20 hover:bg-gradient-to-br hover:from-[#C4A46E] hover:to-[#A98159] hover:border-transparent transition-all hover:shadow-md"
+                            className="group/edit flex items-center gap-1 text-primary hover:text-white text-xs font-bold px-2 py-1 rounded-lg border border-primary/20 hover:bg-gradient-to-br hover:from-primary-400 hover:to-primary hover:border-transparent transition-all hover:shadow-md"
                           >
                             <Pencil size={12} className="group-hover/edit:rotate-12 transition-transform" />
                             تعديل
@@ -543,7 +556,7 @@ export default function AdminStaff() {
                 })}
               </tbody>
             </table>
-          </div>
+          </DataTable>
         </section>
       </div>
 
@@ -552,18 +565,18 @@ export default function AdminStaff() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeEdit} />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#EDE5DC]"
-              style={{ background: 'linear-gradient(135deg, #FDF8F0 0%, #fff 55%)' }}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-line"
+              style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 55%)' }}>
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                  style={{ background: 'linear-gradient(135deg, #C4A46E, #A98159)' }}>
+                  style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
                   <Pencil size={15} className="text-white" />
                 </div>
-                <h2 className="font-bold text-[#2D2926] text-sm">تعديل بيانات الموظف</h2>
+                <h2 className="font-bold text-ink text-sm">تعديل بيانات الموظف</h2>
               </div>
               <button onClick={closeEdit}
-                className="w-8 h-8 rounded-xl border border-[#EDE5DC] flex items-center justify-center hover:bg-[#F5F0EB]">
-                <X size={15} className="text-[#6D6E71]" />
+                className="w-8 h-8 rounded-xl border border-line flex items-center justify-center hover:bg-[rgb(var(--c-primary-50))]">
+                <X size={15} className="text-muted" />
               </button>
             </div>
 
@@ -588,9 +601,8 @@ export default function AdminStaff() {
                   value={editForm.email}
                   disabled
                   dir="ltr"
-                  className={`${inputCls} bg-gray-50 text-[#6D6E71]`}
+                  className={`${inputCls} bg-gray-50 text-muted`}
                 />
-                <p className="text-[10px] text-[#9D8F85] mt-1">البريد لا يمكن تغييره بعد إنشاء الحساب.</p>
               </Field>
               <Field label="رقم الجوال">
                 <input
@@ -616,7 +628,7 @@ export default function AdminStaff() {
                         type="button"
                         onClick={() => setEditForm((p) => ({ ...p, role: r.value }))}
                         className={`group/role px-3 py-2.5 rounded-xl text-sm font-bold border-2 transition-all flex items-center justify-center gap-2 ${
-                          active ? 'text-white scale-[1.02]' : 'border-[#E8DDD4] bg-white text-[#6D6E71] hover:scale-[1.02]'
+                          active ? 'text-white scale-[1.02]' : 'border-line bg-white text-muted hover:scale-[1.02]'
                         }`}
                         style={active ? {
                           borderColor: r.color,
@@ -657,7 +669,7 @@ export default function AdminStaff() {
                   onClick={handleEditSave}
                   disabled={editSaving}
                   className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm hover:opacity-90 disabled:opacity-60 transition"
-                  style={{ background: 'linear-gradient(135deg,#C4A46E,#A98159)' }}
+                  style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}
                 >
                   {editSaving ? (
                     <>
@@ -672,7 +684,7 @@ export default function AdminStaff() {
                 </button>
                 <button
                   onClick={closeEdit}
-                  className="px-5 py-3 rounded-xl border border-[#D1C4B9] text-[#6D6E71] text-sm font-medium hover:bg-gray-50"
+                  className="px-5 py-3 rounded-xl border border-line text-muted text-sm font-medium hover:bg-gray-50"
                 >
                   إلغاء
                 </button>
@@ -685,7 +697,7 @@ export default function AdminStaff() {
   );
 }
 
-function Chip({ active, count, onClick, Icon, color = '#A98159', children }) {
+function Chip({ active, count, onClick, Icon, color = 'rgb(var(--c-primary))', children }) {
   const activeStyle = active
     ? {
         background: `linear-gradient(135deg, ${color}DD, ${color})`,
@@ -700,7 +712,7 @@ function Chip({ active, count, onClick, Icon, color = '#A98159', children }) {
       onClick={onClick}
       style={activeStyle}
       className={`group/chip px-3 py-1.5 rounded-xl text-sm font-bold border transition-all flex items-center gap-1.5 ${
-        active ? 'scale-[1.03]' : 'bg-white text-[#2D2926] border-[#E8DDD4] hover:scale-[1.02]'
+        active ? 'scale-[1.03]' : 'bg-white text-ink border-line hover:scale-[1.02]'
       }`}
     >
       {Icon && (
@@ -712,7 +724,7 @@ function Chip({ active, count, onClick, Icon, color = '#A98159', children }) {
       )}
       {children}
       {count !== undefined && (
-        <span className={`px-1.5 py-0.5 rounded-full text-xs ${active ? 'bg-white/25 text-white' : 'bg-[#FDF8F0]'}`}
+        <span className={`px-1.5 py-0.5 rounded-full text-xs ${active ? 'bg-white/25 text-white' : 'bg-background'}`}
           style={!active ? { color } : undefined}>
           {count}
         </span>

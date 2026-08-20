@@ -1,6 +1,21 @@
 import { useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronRight, AlertTriangle, Zap, Image as ImageIcon, Video, Upload, X, CheckCircle2, Sparkles, Coffee, Sun, Moon, MapPin, Mountain } from 'lucide-react';
+import {
+  CaretRight as ChevronRight,
+  Siren,
+  Lightning as Zap,
+  Image as ImageIcon,
+  VideoCamera as Video,
+  UploadSimple as Upload,
+  X,
+  CheckCircle as CheckCircle2,
+  Sparkle as Sparkles,
+  SunHorizon as Sunrise,
+  Sun as SunMedium,
+  MoonStars as MoonStar,
+  MapPin,
+  Tent,
+} from '@phosphor-icons/react';
 import { db, serverTimestamp, uploadFile, STORAGE_BUCKETS } from '../../lib/db.js';
 import { compressImage } from '../../lib/imageCompression.js';
 import { useAuth } from "../../context/AuthContext.jsx";
@@ -37,18 +52,18 @@ const REPORT_TYPES = [
 ];
 
 const MEAL_OPTIONS = [
-  { key: 'breakfast', label: 'الإفطار', Icon: Coffee, color: '#F59E0B' },
-  { key: 'lunch',     label: 'الغداء',  Icon: Sun,    color: '#EF4444' },
-  { key: 'dinner',    label: 'العشاء',  Icon: Moon,   color: '#6366F1' },
+  { key: 'breakfast', label: 'الإفطار', Icon: Sunrise,   color: '#F59E0B' },
+  { key: 'lunch',     label: 'الغداء',  Icon: SunMedium, color: '#4E7CB0' },
+  { key: 'dinner',    label: 'العشاء',  Icon: MoonStar,  color: '#B4674E' },
 ];
 
 const HOLY_SITES = [
-  { key: 'mina',   label: 'منى',   Icon: MapPin,   color: '#A98159' },
-  { key: 'arafat', label: 'عرفات', Icon: Mountain, color: '#0E7C66' },
+  { key: 'mina',   label: 'منى',   Icon: Tent,   color: 'rgb(var(--c-primary))' },
+  { key: 'arafat', label: 'عرفات', Icon: MapPin, color: '#5E9070' },
 ];
 
 const SEVERITY_MAP = {
-  high: { label: 'عالي الخطورة', color: 'bg-[#BA1A1A]', text: 'text-[#BA1A1A]', border: 'border-[#BA1A1A]', light: 'bg-red-50' },
+  high: { label: 'عالي الخطورة', color: 'bg-error', text: 'text-error', border: 'border-error', light: 'bg-red-50' },
   medium: { label: 'متوسط الخطورة', color: 'bg-orange-500', text: 'text-orange-500', border: 'border-orange-500', light: 'bg-orange-50' },
   low: { label: 'منخفض الخطورة', color: 'bg-green-600', text: 'text-green-600', border: 'border-green-600', light: 'bg-green-50' },
 };
@@ -126,33 +141,33 @@ export default function SupReport() {
   };
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-32 font-arabic">
-      <header className="sticky top-0 z-50 bg-[#FDFCFB]/95 backdrop-blur-sm border-b border-[#D1C4B9] w-full px-4 md:px-8 py-3 mb-6 shadow-sm">
+    <div dir="rtl" className="min-h-screen bg-canvas pb-32 font-arabic">
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-line w-full px-4 md:px-8 py-3 mb-6 shadow-sm">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <button onClick={() => navigate('/supervisor-home')} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition shrink-0 border border-transparent active:border-[#A98159]/20">
-            <ChevronRight className="text-[#A98159]" size={22} strokeWidth={2.5} />
+          <button onClick={() => navigate('/supervisor-home')} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition shrink-0 border border-transparent active:border-primary/20">
+            <ChevronRight className="text-primary" size={22} weight="bold" />
           </button>
-          <h1 className="text-base font-bold text-[#2D2926] absolute left-1/2 -translate-x-1/2 whitespace-nowrap">بلاغ طارئ عاجل (إشراف)</h1>
+          <h1 className="text-base font-bold text-ink absolute left-1/2 -translate-x-1/2 whitespace-nowrap">بلاغ طارئ عاجل (إشراف)</h1>
           <div className="w-10 shrink-0" />
         </div>
       </header>
 
       <div className="max-w-4xl mx-auto px-4">
-          <div className="rounded-[2.5rem] p-6 my-6 text-white shadow-lg relative overflow-hidden bg-[#2D2926]">
+          <div className="rounded-[2.5rem] p-6 my-6 text-white shadow-lg relative overflow-hidden bg-ink">
             <div className="flex justify-between items-center mb-6 relative z-10 group">
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <div
                     className="absolute inset-0 rounded-2xl blur-xl opacity-50 group-hover:opacity-80 transition-opacity"
-                    style={{ background: severity === 'high' ? '#BA1A1A' : '#A98159' }}
+                    style={{ background: severity === 'high' ? 'rgb(var(--c-error))' : 'rgb(var(--c-primary))' }}
                   />
                   <div className="relative bg-white/10 p-3 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-                    <AlertTriangle className={severity === 'high' ? "text-[#BA1A1A] animate-pulse" : "text-[#A98159]"} size={28} />
+                    <Siren className={severity === 'high' ? "text-error animate-pulse" : "text-primary"} size={28} />
                     <Sparkles size={10} className="absolute -top-0.5 -right-0.5 text-yellow-200 drop-shadow" />
                   </div>
                 </div>
                 <div>
-                  <p className="text-[#A98159] text-[10px] font-black uppercase tracking-wider">نظام الرصد الميداني</p>
+                  <p className="text-primary text-[10px] font-black uppercase tracking-wider">نظام الرصد الميداني</p>
                   <h2 className="text-xl font-bold">تفاصيل البلاغ</h2>
                 </div>
               </div>
@@ -164,7 +179,7 @@ export default function SupReport() {
               </div>
               <div className="bg-white/5 rounded-2xl py-3 border border-white/10 text-center">
                 <span className="text-white/40 text-[9px] block mb-1">المركز</span>
-                <span className="text-[#A98159] font-bold text-[11px]">{selectedCenter}</span>
+                <span className="text-primary font-bold text-[11px]">{selectedCenter}</span>
               </div>
               <div className="bg-white/5 rounded-2xl py-3 border border-white/10 text-center">
                 <span className="text-white/40 text-[9px] block mb-1">المتعهد</span>
@@ -173,9 +188,9 @@ export default function SupReport() {
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl p-6 border border-[#D1C4B9] shadow-sm space-y-6">
+          <div className="bg-white rounded-3xl p-6 border border-line shadow-sm space-y-6">
             <div>
-              <label className="text-xs font-bold text-[#A98159] mb-3 block tracking-wide">المشعر *</label>
+              <label className="text-xs font-bold text-primary mb-3 block tracking-wide">المشعر *</label>
               <div className="grid grid-cols-2 gap-2.5">
                 {HOLY_SITES.map(s => {
                   const active = holySite === s.key;
@@ -184,11 +199,11 @@ export default function SupReport() {
                     <button key={s.key} type="button"
                       onClick={() => setHolySite(s.key)}
                       className={`relative flex flex-col items-center gap-1.5 py-4 rounded-2xl border-2 transition-all ${
-                        active ? 'text-white scale-[1.02] shadow-md' : 'bg-white text-[#6D6E71] border-[#E8DDD4] hover:border-[#A98159]/40'
+                        active ? 'text-white scale-[1.02] shadow-md' : 'bg-white text-muted border-line hover:border-primary/40'
                       }`}
                       style={active ? { background: `linear-gradient(135deg, ${s.color}, ${s.color}CC)`, borderColor: s.color } : undefined}
                     >
-                      <SIcon size={22} strokeWidth={2.25} />
+                      <SIcon size={22} weight="bold" />
                       <span className="text-sm font-bold">{s.label}</span>
                     </button>
                   );
@@ -197,7 +212,7 @@ export default function SupReport() {
             </div>
 
             <div>
-              <label className="text-xs font-bold text-[#A98159] mb-3 block tracking-wide">الوجبة *</label>
+              <label className="text-xs font-bold text-primary mb-3 block tracking-wide">الوجبة *</label>
               <div className="grid grid-cols-3 gap-2.5">
                 {MEAL_OPTIONS.map(m => {
                   const active = mealType === m.key;
@@ -206,11 +221,11 @@ export default function SupReport() {
                     <button key={m.key} type="button"
                       onClick={() => setMealType(m.key)}
                       className={`relative flex flex-col items-center gap-1.5 py-3 rounded-2xl border-2 transition-all ${
-                        active ? 'text-white scale-[1.02] shadow-md' : 'bg-white text-[#6D6E71] border-[#E8DDD4] hover:border-[#A98159]/40'
+                        active ? 'text-white scale-[1.02] shadow-md' : 'bg-white text-muted border-line hover:border-primary/40'
                       }`}
                       style={active ? { background: `linear-gradient(135deg, ${m.color}, ${m.color}CC)`, borderColor: m.color } : undefined}
                     >
-                      <MIcon size={20} strokeWidth={2.25} />
+                      <MIcon size={20} weight="bold" />
                       <span className="text-xs font-bold">{m.label}</span>
                     </button>
                   );
@@ -219,10 +234,10 @@ export default function SupReport() {
             </div>
 
             <div>
-              <label className="text-xs font-bold text-[#A98159] mb-3 block tracking-wide">نوع المخالفة/البلاغ</label>
+              <label className="text-xs font-bold text-primary mb-3 block tracking-wide">نوع المخالفة/البلاغ</label>
               <select value={selectedReport} onChange={handleReportChange}
-                className="w-full px-4 py-4 border border-[#D1C4B9] rounded-2xl bg-[#FDFCFB] font-bold text-sm outline-none focus:ring-2 focus:ring-[#A98159]/20 transition-all appearance-none">
-                <option value="">اختر نوع البلاغ من القائمة...</option>
+                className="w-full px-4 py-4 border border-line rounded-2xl bg-background font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none">
+                <option value="">اختر</option>
                 {REPORT_TYPES.map(r => <option key={r.id} value={r.title}>{r.title}</option>)}
               </select>
             </div>
@@ -238,15 +253,15 @@ export default function SupReport() {
             )}
 
             <div>
-              <label className="text-xs font-bold text-[#A98159] mb-2 block tracking-wide">وصف البلاغ الميداني *</label>
+              <label className="text-xs font-bold text-primary mb-2 block tracking-wide">وصف البلاغ الميداني *</label>
               <textarea rows={3} value={description} onChange={e => setDescription(e.target.value)}
                 placeholder="يرجى كتابة تفاصيل واضحة للمساعدة في المعالجة السريعة..."
-                className="w-full px-4 py-4 border border-[#D1C4B9] rounded-2xl outline-none text-sm resize-none focus:border-[#A98159] transition-colors" />
+                className="w-full px-4 py-4 border border-line rounded-2xl outline-none text-sm resize-none focus:border-primary transition-colors" />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div onClick={() => imageInputRef.current.click()} 
-                   className={`relative border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center transition-all cursor-pointer ${imageFile ? 'border-green-500 bg-green-50' : 'border-[#D1C4B9] bg-gray-50'}`}>
+              <div onClick={() => imageInputRef.current.click()}
+                   className={`relative border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center transition-all cursor-pointer ${imageFile ? 'border-green-500 bg-green-50' : 'border-line bg-gray-50'}`}>
                 <input type="file" ref={imageInputRef} hidden accept="image/*" onChange={(e) => setImageFile(e.target.files[0])} />
                 {imageFile ? (
                   <>
@@ -256,14 +271,14 @@ export default function SupReport() {
                   </>
                 ) : (
                   <>
-                    <ImageIcon className="text-[#A98159] mb-1" size={24} />
-                    <span className="text-[10px] font-bold text-[#6D6E71]">ارفق صورة *</span>
+                    <ImageIcon className="text-primary mb-1" size={24} />
+                    <span className="text-[10px] font-bold text-muted">ارفق صورة *</span>
                   </>
                 )}
               </div>
 
-              <div onClick={() => videoInputRef.current.click()} 
-                   className={`relative border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center transition-all cursor-pointer ${videoFile ? 'border-green-500 bg-green-50' : 'border-[#D1C4B9] bg-gray-50'}`}>
+              <div onClick={() => videoInputRef.current.click()}
+                   className={`relative border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center transition-all cursor-pointer ${videoFile ? 'border-green-500 bg-green-50' : 'border-line bg-gray-50'}`}>
                 <input type="file" ref={videoInputRef} hidden accept="video/*" onChange={(e) => setVideoFile(e.target.files[0])} />
                 {videoFile ? (
                   <>
@@ -273,8 +288,8 @@ export default function SupReport() {
                   </>
                 ) : (
                   <>
-                    <Video className="text-[#A98159] mb-1" size={24} />
-                    <span className="text-[10px] font-bold text-[#6D6E71]">ارفق فيديو *</span>
+                    <Video className="text-primary mb-1" size={24} />
+                    <span className="text-[10px] font-bold text-muted">ارفق فيديو *</span>
                   </>
                 )}
               </div>
@@ -282,10 +297,10 @@ export default function SupReport() {
           </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-white/90 border-t border-[#D1C4B9] z-50">
+      <div className="fixed bottom-0 left-0 right-0 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-white/90 border-t border-line z-50">
         <button onClick={handleSubmit} disabled={loading}
           className={`w-full max-w-md mx-auto py-4 rounded-2xl font-black text-lg shadow-xl flex items-center justify-center gap-3 transition-all active:scale-95
-            ${loading ? 'bg-gray-400' : 'bg-[#BA1A1A] text-white hover:bg-[#961515]'}`}>
+            ${loading ? 'bg-gray-400' : 'bg-error text-white hover:bg-[#961515]'}`}>
           {loading ? 'جاري رفع البيانات...' : <><Zap size={22} fill="white" /> إرسال بلاغ عاجل</>}
         </button>
       </div>

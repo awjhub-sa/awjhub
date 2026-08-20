@@ -1,22 +1,70 @@
 /* src/index.css */
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
+/* Cairo is loaded from index.html — see the note there. */
 /* src/index.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 
+/* ──────────────────────────────────────────────────────────────
+   Brand tokens — the only place colours are defined.
+   Stored as RGB channels (not hex) so Tailwind can layer opacity
+   on top: text-primary/30, ring-primary/15, bg-primary/10.
+   Rebranding for a new tenant = editing this block + brand.js.
+   ────────────────────────────────────────────────────────────── */
+:root {
+  --c-primary:      30  58  95;   /* #1E3A5F — the navy of the نصاب wordmark */
+  --c-primary-50:  242 245 249;
+  --c-primary-100: 225 232 241;
+  --c-primary-200: 196 210 227;
+  --c-primary-400:  62 102 153;   /* #3E6699 — hover / gradient head */
+  --c-primary-700:  22  48  78;   /* #16304E — pressed / gradient tail */
+  --c-primary-900:  13  30  51;
+
+  /* Accent carries the energy the navy cannot: highlights, active states,
+     data emphasis. The gold of the NSAB wordmark — warm against the navy, and
+     far enough from success-green and error-red that a status badge is never
+     mistaken for a brand element. */
+  --c-accent:    185 154 100;     /* #B99A64 */
+  --c-accent-50: 250 246 238;
+  --c-accent-600: 140 112  56;    /* #8C7038 — the accent as readable text */
+
+  /* The top bar. Its own token rather than the accent so a tenant can part the
+     two, but the brand gold is muted enough to carry a full-width field. */
+  --c-header:    185 154 100;     /* #B99A64 */
+
+  --c-ink:      22 35 61;         /* headings, primary text */
+  --c-ink-800:  44 62 99;
+  --c-muted:   100 116 139;       /* secondary text */
+
+  /* The page canvas stays near-white so cards read as the content and the
+     navy works as accent rather than mass. Kept separate from --c-bg, which
+     doubles as a light tint *inside* cards. */
+  --c-canvas:    247 249 252;
+  --c-on-canvas:  22 35 61;       /* text that sits directly on the canvas */
+
+  --c-bg:      246 248 251;       /* light tint inside components */
+  --c-surface: 255 255 255;       /* cards */
+  /* Borders carry a navy cast so every card edge is a quiet brand cue. */
+  --c-line:    214 222 234;
+
+  --c-success: 22 163 74;
+  --c-warning: 245 158 11;
+  --c-error:   220 38 38;
+  --c-info:     78 124 176;       /* #4E7CB0 — steel blue, light enough to read as its own thing beside the navy */
+}
+
 @layer base {
   html {
     direction: rtl;
-    font-family: 'IBM Plex Sans Arabic', Tahoma, sans-serif;
+    font-family: 'Cairo', Tahoma, sans-serif;
     -webkit-tap-highlight-color: transparent;
     -webkit-font-smoothing: antialiased;
   }
 
   body {
-    background-color: #FDFCFB;
-    color: #2D2926;
+    background-color: rgb(var(--c-canvas));
+    color: rgb(var(--c-on-canvas));
     overflow-x: hidden;
   }
 
@@ -32,12 +80,13 @@
   /* Custom scrollbar */
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #D1C4B9; border-radius: 4px; }
-  ::-webkit-scrollbar-thumb:hover { background: #A98159; }
+  ::-webkit-scrollbar-thumb { background: rgb(var(--c-line)); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-primary)); }
 
-  /* Select arrow RTL fix */
+  /* Select arrow RTL fix. The chevron is a data: URI, which cannot read a CSS
+     variable, so it stays a literal — matched to --c-muted. */
   select {
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236D6E71' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748B' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
     background-position: left 0.75rem center;
     background-repeat: no-repeat;
     background-size: 1.25em;
@@ -53,26 +102,31 @@
 }
 
 @layer utilities {
-  .bg-gold-gradient {
-    background: linear-gradient(135deg, #C4A46E 0%, #A98159 50%, #8B6840 100%);
+  /* Kept under the original names so existing markup does not need touching;
+     they now follow the brand tokens instead of the retired gold palette. */
+  .bg-brand-gradient, .bg-gold-gradient {
+    background: linear-gradient(135deg,
+      rgb(var(--c-primary-400)) 0%,
+      rgb(var(--c-primary))     50%,
+      rgb(var(--c-primary-700)) 100%);
   }
   .bg-dark-gradient {
-    background: linear-gradient(135deg, #3D3330 0%, #2D2926 100%);
+    background: linear-gradient(135deg, rgb(var(--c-ink-800)) 0%, rgb(var(--c-ink)) 100%);
   }
-  .shadow-gold {
-    box-shadow: 0 4px 24px rgba(169, 129, 89, 0.30);
+  .shadow-brand, .shadow-gold {
+    box-shadow: 0 4px 24px rgb(var(--c-primary) / 0.30);
   }
-  .shadow-gold-lg {
-    box-shadow: 0 8px 40px rgba(169, 129, 89, 0.35);
+  .shadow-brand-lg, .shadow-gold-lg {
+    box-shadow: 0 8px 40px rgb(var(--c-primary) / 0.35);
   }
   .shadow-card {
-    box-shadow: 0 2px 16px rgba(45, 41, 38, 0.07);
+    box-shadow: 0 2px 16px rgb(var(--c-ink) / 0.07);
   }
   .shadow-card-lg {
-    box-shadow: 0 8px 32px rgba(45, 41, 38, 0.12);
+    box-shadow: 0 8px 32px rgb(var(--c-ink) / 0.12);
   }
   .font-arabic {
-    font-family: 'IBM Plex Sans Arabic', Tahoma, sans-serif;
+    font-family: 'Cairo', Tahoma, sans-serif;
   }
 }
 
@@ -85,13 +139,14 @@
   0%, 100% { transform: scale(1);    box-shadow: 0 0 0 0   rgba(59, 130, 246, 0.55); }
   50%      { transform: scale(1.08); box-shadow: 0 0 0 6px rgba(59, 130, 246, 0);     }
 }
-@keyframes badgePulseGold {
-  0%, 100% { transform: scale(1);    box-shadow: 0 0 0 0   rgba(169, 129, 89, 0.55); }
-  50%      { transform: scale(1.08); box-shadow: 0 0 0 6px rgba(169, 129, 89, 0);     }
+@keyframes badgePulseBrand {
+  0%, 100% { transform: scale(1);    box-shadow: 0 0 0 0   rgb(var(--c-primary) / 0.55); }
+  50%      { transform: scale(1.08); box-shadow: 0 0 0 6px rgb(var(--c-primary) / 0);     }
 }
 .badge-pulse-red   { animation: badgePulseRed   2s ease-in-out infinite; }
 .badge-pulse-blue  { animation: badgePulseBlue  2s ease-in-out infinite; }
-.badge-pulse-gold  { animation: badgePulseGold  2s ease-in-out infinite; }
+.badge-pulse-brand,
+.badge-pulse-gold  { animation: badgePulseBrand 2s ease-in-out infinite; }
 
 /* ── Full-row glow pulse (highlights brand-new reports/logistics) ── */
 @keyframes rowPulseRed {
@@ -138,3 +193,95 @@
 .row-pulse-blue  { animation: rowPulseBlue  2.2s ease-in-out infinite; }
 .card-pulse-red  { animation: cardPulseRed  2.2s ease-in-out infinite; }
 .card-pulse-blue { animation: cardPulseBlue 2.2s ease-in-out infinite; }
+
+/* ── Registers on a phone ────────────────────────────────────
+ *
+ * A wide table inside a horizontal scroll is a desktop answer. On a handset it
+ * hides the columns that carry the decision — status, deadline, the buttons —
+ * behind a gesture most people never make.
+ *
+ * Under 768px every row becomes a card and every cell a labelled line. Labels
+ * come from `data-th`, which DataTable lifts from the table's own header after
+ * render, so nothing is written twice.
+ */
+@media (max-width: 767px) {
+  .nsab-rt { overflow-x: visible; }
+
+  .nsab-rt table,
+  .nsab-rt tbody,
+  .nsab-rt tr,
+  .nsab-rt td { display: block; width: 100%; }
+
+  .nsab-rt thead { display: none; }
+
+  .nsab-rt tbody { display: block; padding: 10px; }
+
+  .nsab-rt tr {
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 16px;
+    background: #fff;
+    margin-bottom: 10px;
+    overflow: hidden;
+    /* The coloured edge every register uses to encode state reads as a top
+       band here — a 3px sliver on a card is lost. */
+    border-inline-start-width: 4px !important;
+  }
+  .nsab-rt tbody > tr:last-child { margin-bottom: 0; }
+
+  .nsab-rt td {
+    display: grid;
+    grid-template-columns: 6.5rem 1fr;
+    align-items: start;
+    /* A grid item stretches by default, which turned every status chip and
+       date pill into a full-width bar. A chip is sized by its own words. */
+    justify-items: start;
+    gap: 10px;
+    padding: 8px 12px !important;
+    border-bottom: 1px solid rgb(var(--c-line) / 0.5);
+    text-align: start;
+    max-width: none !important;
+    white-space: normal !important;
+  }
+  .nsab-rt tr > td:last-child { border-bottom: 0; }
+
+  .nsab-rt td[data-th]::before {
+    content: attr(data-th);
+    font-size: 11px;
+    font-weight: 800;
+    color: rgb(var(--c-muted));
+    line-height: 1.7;
+  }
+
+  /* A full-width row keeps the full width. */
+  .nsab-rt td[colspan] { grid-template-columns: 1fr; }
+
+  /* Anything constrained for a column has no reason to be on a card. */
+  .nsab-rt td > .line-clamp-2 { -webkit-line-clamp: unset; }
+}
+
+/* Fine phones: a label column of 6.5rem eats the value. */
+@media (max-width: 380px) {
+  .nsab-rt td { grid-template-columns: 1fr; gap: 2px; }
+}
+
+/* ── Filters and controls on a phone ─────────────────────────
+ * A `min-w-[240px]` select is a reasonable desktop measure and an overflow on
+ * a 390px screen once two of them sit in a row. On a handset a filter takes
+ * the width it has.
+ */
+@media (max-width: 767px) {
+  .nsab-filters > select,
+  .nsab-filters > .nsab-grow { width: 100% !important; min-width: 0 !important; }
+  .nsab-filters { flex-direction: column; align-items: stretch; }
+}
+
+/* ── The sheet on a phone ────────────────────────────────────
+ * A register can become cards because its rows are data. A form cannot: it is
+ * a document with a fixed shape that someone will print and sign, and squeezing
+ * an A4 grid into 390px collides its labels with its blanks. So the sheet keeps
+ * its real width and the page scrolls to it — what you fill is what prints.
+ */
+@media (max-width: 767px) {
+  .nsab-doc-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 8px !important; }
+  .nsab-doc-scroll > .nsab-doc { width: 794px !important; max-width: none !important; flex: 0 0 auto; }
+}

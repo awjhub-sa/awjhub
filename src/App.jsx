@@ -1,7 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
-import { RequireAuth, RequireAdmin } from './components/PrivateRoute.jsx';
-import React from 'react';
+import { RequireAuth, RequireAdmin, RequireCaterer } from './components/PrivateRoute.jsx';
+import React, { useEffect } from 'react';
+import { loadMenus } from './lib/menuStore.js';
+import { loadNationalities } from './lib/nationalityStore.js';
 
 // صفحات المراقب (Observer)
 import Login           from './pages/Login';
@@ -22,24 +24,44 @@ import SupReport           from './pages/Supervisor/SupReport';
 import SupLogisticsRequest from './pages/Supervisor/SupLogisticsRequest';
 
 // صفحات المسؤول (Admin)
+import FormPrint           from './pages/FormPrint';
+import CatererLayout       from './pages/caterer/CatererLayout';
+import CatererHome         from './pages/caterer/CatererHome';
+import CatererReports      from './pages/caterer/CatererReports';
+import CatererForms        from './pages/caterer/CatererForms';
+import CatererViolations   from './pages/caterer/CatererViolations';
 import AdminLayout         from './pages/admin/AdminLayout';
 import AdminDashboard      from './pages/admin/AdminDashboard';
 import AdminReports        from './pages/admin/AdminReports';
 import AdminLogistics      from './pages/admin/AdminLogistics';
 import AdminAnalytics      from './pages/admin/AdminAnalytics';
-import AdminUsers          from './pages/admin/AdminUsers';
+import AdminCaterers       from './pages/admin/AdminCaterers';
+import AdminCenters        from './pages/admin/AdminCenters';
+import AdminNationalities  from './pages/admin/AdminNationalities';
+import AdminEvaluations    from './pages/admin/AdminEvaluations';
+import AdminForms          from './pages/admin/AdminForms';
+import AdminViolations     from './pages/admin/AdminViolations';
+import AdminBrand          from './pages/admin/AdminBrand';
+import AdminDrill          from './pages/admin/AdminDrill';
+import AdminReportsCenter  from './pages/admin/AdminReportsCenter';
+import AdminInsights       from './pages/admin/AdminInsights';
+import AdminObservers      from './pages/admin/AdminObservers';
+import AdminSupervisors    from './pages/admin/AdminSupervisors';
 import AdminNotifications  from './pages/admin/AdminNotifications';
 import AdminTaskAssign     from './pages/admin/AdminTaskAssign';
 import AdminPhases         from './pages/admin/AdminPhases';
 import AdminReportView     from './pages/admin/AdminReportView';
+import ReportsViewer       from './pages/admin/ReportsViewer';
+import ReportsDeck         from './pages/admin/ReportsDeck';
+import LiveScreen          from './pages/admin/LiveScreen';
 import AdminStaff          from './pages/admin/AdminStaff';
 import AdminMenu           from './pages/admin/AdminMenu';
 import StagesReport        from './pages/admin/StagesReport';
 
 // شاشة تحميل بسيطة مطابقة لهوية التطبيق
 const FullPageLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-[#FDFCFB]">
-    <div className="w-10 h-10 border-4 border-[#A98159]/30 border-t-[#A98159] rounded-full animate-spin" />
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
   </div>
 );
 
@@ -50,6 +72,7 @@ function RootRedirect() {
   if (!user) return <Navigate to="/login" replace />;
   
   if (role === 'admin' || role === 'staff') return <Navigate to="/admin/dashboard" replace />;
+  if (role === 'caterer') return <Navigate to="/caterer/home" replace />;
   if (role === 'supervisor') return <Navigate to="/supervisor-home" replace />;
   return <Navigate to="/home" replace />;
 }
@@ -61,6 +84,11 @@ const PublicRoute = ({ children }) => {
 };
 
 export default function App() {
+  /* Saved menus are read synchronously all over the app, so they are fetched
+     once here and laid over the built-in ones. Until they land, the built-in
+     menu shows — never a blank card. */
+  useEffect(() => { loadNationalities().then(() => loadMenus()); }, []);
+
   return (
     <BrowserRouter>
       <Routes>
@@ -93,6 +121,35 @@ export default function App() {
           path="/admin/stages-report"
           element={<RequireAdmin><StagesReport /></RequireAdmin>}
         />
+        <Route
+          path="/admin/reports-view"
+          element={<RequireAdmin><ReportsViewer /></RequireAdmin>}
+        />
+        <Route
+          path="/admin/reports-deck"
+          element={<RequireAdmin><ReportsDeck /></RequireAdmin>}
+        />
+        {/* The operations wall — outside AdminLayout so it takes the whole display. */}
+        <Route
+          path="/admin/live"
+          element={<RequireAdmin><LiveScreen /></RequireAdmin>}
+        />
+
+        {/* One accepted form on paper — its own tab, so the print dialogue
+            gets a page with nothing else on it. */}
+        <Route
+          path="/forms/print/:id"
+          element={<RequireAuth><FormPrint /></RequireAuth>}
+        />
+
+        {/* Caterer portal — an outside company, so its own shell and guard. */}
+        <Route path="/caterer" element={<RequireCaterer><CatererLayout /></RequireCaterer>}>
+          <Route index          element={<Navigate to="/caterer/home" replace />} />
+          <Route path="home"    element={<CatererHome />} />
+          <Route path="reports" element={<CatererReports />} />
+          <Route path="forms"   element={<CatererForms />} />
+          <Route path="violations" element={<CatererViolations />} />
+        </Route>
 
         {/* Admin Routes */}
         <Route path="/admin" element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
@@ -100,10 +157,27 @@ export default function App() {
           <Route path="dashboard"     element={<AdminDashboard />} />
           <Route path="reports"       element={<AdminReports />} />
           <Route path="logistics"     element={<AdminLogistics />} />
-          <Route path="analytics"     element={<AdminAnalytics />} />
-          <Route path="users"         element={<AdminUsers />} />
+          {/* One implementation, pinned to a mash'ar by prop. `analytics` is
+              kept so older links and bookmarks still resolve. */}
+          <Route path="analytics"          element={<Navigate to="/admin/readiness/mina" replace />} />
+          <Route path="readiness/mina"     element={<AdminAnalytics site="mina" />} />
+          <Route path="readiness/arafat"   element={<AdminAnalytics site="arafat" />} />
+          <Route path="readiness/drill"    element={<AdminDrill />} />
+          <Route path="centers"       element={<AdminCenters />} />
+          <Route path="nationalities" element={<AdminNationalities />} />
+          <Route path="evaluations"   element={<AdminEvaluations />} />
+          <Route path="caterers"      element={<AdminCaterers />} />
+          <Route path="forms"         element={<AdminForms />} />
+          <Route path="violations"    element={<AdminViolations />} />
+          <Route path="observers"     element={<AdminObservers />} />
+          <Route path="supervisors"   element={<AdminSupervisors />} />
+          {/* The two roles used to share one screen behind a filter. */}
+          <Route path="users"         element={<Navigate to="/admin/observers" replace />} />
           <Route path="staff"         element={<AdminStaff />} />
           <Route path="notifications" element={<AdminNotifications />} />
+          <Route path="reports-center" element={<AdminReportsCenter />} />
+          <Route path="insights"      element={<AdminInsights />} />
+          <Route path="brand"         element={<AdminBrand />} />
           <Route path="tasks"         element={<AdminTaskAssign />} />
           <Route path="phases"        element={<AdminPhases />} />
           <Route path="menu"          element={<AdminMenu />} />
