@@ -21,8 +21,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { FileText, CheckCircle, WarningCircle, Printer, Eye, Clock } from '@phosphor-icons/react';
+import { FileText, CheckCircle, WarningCircle, Printer, Eye, Clock, ChatText } from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
+import { Surface, Pill, PanelHeader, EmptyState } from '../../components/ui/index.jsx';
 import { db } from '../../lib/db.js';
 import { STATUS_META, isPrintable } from '../../config/formSchema.js';
 import { ACTION, LATE, CALM, FORM_STATE, formToneOf } from '../../config/tones.js';
@@ -30,10 +31,20 @@ import FormFill from '../../components/forms/FormFill.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import DataTable from '../../components/DataTable.jsx';
 
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
+
 const AR = (n) => String(n ?? '').replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
 const ms = (v) => (v?.toMillis?.() ?? (v ? new Date(v).getTime() : 0));
 const day = (v) => (v ? AR(new Date(ms(v)).toISOString().slice(0, 10)) : '—');
 const isDone = (s) => s === 'submitted' || s === 'accepted';
+
+/* A verb's colour, and the surface derived from it — the same one wherever the
+   verb appears. */
+const actionStyle = (name) => ({
+  background: tint(ACTION[name].ink, 10),
+  borderColor: tint(ACTION[name].ink, 24),
+  color: ACTION[name].ink,
+});
 
 export default function CatererForms() {
   const { caterer, catererId, centers } = useOutletContext();
@@ -101,28 +112,25 @@ export default function CatererForms() {
         ]}
       />
 
-      <section className="bg-white rounded-2xl border border-line overflow-hidden">
+      <Surface className="overflow-hidden">
         {loading ? (
           <div className="py-16 flex justify-center">
-            <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+            <div className="w-7 h-7 border-2 border-primary/25 border-t-primary rounded-full animate-spin" />
           </div>
         ) : sorted.length === 0 ? (
-          <div className="py-16 flex flex-col items-center gap-2">
-            <FileText size={34} weight="bold" className="text-muted/40" />
-            <p className="text-[15px] font-black text-ink">لا نماذج مسنَدة إليك</p>
-          </div>
+          <EmptyState Icon={FileText} title="لا نماذج مسنَدة إليك" />
         ) : (
           <DataTable>
             <table className="w-full text-sm">
-              <thead className="text-muted text-[12.5px] bg-background border-b border-line">
+              <thead className="text-muted text-[11px] bg-[rgb(var(--c-bg))] border-b border-line">
                 <tr>
-                  <th className="px-5 py-3.5 text-right font-black">النموذج</th>
-                  <th className="px-5 py-3.5 text-right font-black">الرقم</th>
-                  <th className="px-5 py-3.5 text-right font-black">المركز</th>
-                  <th className="px-5 py-3.5 text-right font-black">الاستحقاق</th>
-                  <th className="px-5 py-3.5 text-right font-black">الحالة</th>
-                  <th className="px-5 py-3.5 text-right font-black">أُرسل</th>
-                  <th className="px-5 py-3.5 text-right font-black"></th>
+                  <th className="px-5 py-3 text-start font-bold">النموذج</th>
+                  <th className="px-5 py-3 text-start font-bold">الرقم</th>
+                  <th className="px-5 py-3 text-start font-bold">المركز</th>
+                  <th className="px-5 py-3 text-start font-bold">الاستحقاق</th>
+                  <th className="px-5 py-3 text-start font-bold">الحالة</th>
+                  <th className="px-5 py-3 text-start font-bold">أُرسل</th>
+                  <th className="px-5 py-3 text-start font-bold"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
@@ -134,51 +142,41 @@ export default function CatererForms() {
                   const tone = overdue ? LATE : formToneOf(a.status);
                   return (
                     <tr key={a.id} onClick={() => setOpenId(a.id)}
-                      className="hover:bg-background/70 cursor-pointer transition-colors"
+                      className="hover:bg-[rgb(var(--c-bg))] cursor-pointer transition-colors"
                       style={{ borderInlineStart: `3px solid ${tone.bar}` }}>
-                      <td className="px-5 py-3.5 font-bold text-ink text-[14px]">
+                      <td className="px-5 py-3.5 font-bold text-ink text-[13.5px]">
                         {t?.title || 'نموذج'}
                       </td>
-                      <td className="px-5 py-3.5 tabular-nums text-[13px] text-muted">
+                      <td className="px-5 py-3.5 tabular-nums text-[12.5px] font-medium text-muted">
                         {a.formNumber || '—'}
                       </td>
-                      <td className="px-5 py-3.5 text-[13.5px] text-muted whitespace-nowrap">
+                      <td className="px-5 py-3.5 text-[12.5px] font-medium text-muted whitespace-nowrap">
                         {centerById[a.centerId]?.code || 'كل المراكز'}
                       </td>
                       <td className="px-5 py-3.5 whitespace-nowrap">
+                        {/* Three states, three readings: gone, settled, and
+                            simply booked. */}
                         {a.dueAt ? (
-                          <span
-                            className="inline-flex items-center gap-1.5 text-[12px] font-black tabular-nums
-                                       px-2.5 py-1 rounded-lg border"
-                            /* Three states, three readings: gone, settled,
-                               and simply booked. */
-                            style={overdue ? { background: LATE.bg, borderColor: LATE.line, color: LATE.ink }
-                              : done ? { background: CALM.bg, borderColor: CALM.line, color: CALM.ink }
-                              : { background: FORM_STATE.pending.bg, borderColor: FORM_STATE.pending.line,
-                                  color: FORM_STATE.pending.ink }}
-                          >
-                            {overdue
-                              ? <WarningCircle size={13} weight="fill" />
-                              : <Clock size={13} weight="bold" />}
+                          <Pill className="tabular-nums"
+                            Icon={overdue ? WarningCircle : Clock}
+                            color={overdue ? LATE.ink : done ? CALM.ink : FORM_STATE.pending.ink}>
                             {overdue ? 'تأخّر عن' : 'موعد أقصاه'} {day(a.dueAt)}
-                          </span>
+                          </Pill>
                         ) : (
-                          <span className="text-[13px] text-muted">—</span>
+                          <span className="text-[12.5px] text-muted">—</span>
                         )}
                       </td>
                       <td className="px-5 py-3.5">
-                        <span className="inline-flex items-center gap-1.5 text-[11.5px] font-black px-2.5 py-1
-                                         rounded-full whitespace-nowrap border"
-                          style={{ background: tone.bg, color: tone.ink, borderColor: tone.line }}>
-                          <span className="w-1.5 h-1.5 rounded-full" style={{ background: tone.bar }} />
+                        <Pill color={tone.ink}>
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: tone.bar }} />
                           {st.label}
-                        </span>
+                        </Pill>
                       </td>
-                      <td className="px-5 py-3.5 text-[13px] text-muted whitespace-nowrap tabular-nums">
+                      <td className="px-5 py-3.5 text-[12.5px] text-muted whitespace-nowrap tabular-nums">
                         {a.submittedAt
-                          ? <span className="font-black inline-flex items-center gap-1"
+                          ? <span className="font-bold inline-flex items-center gap-1.5"
                               style={{ color: FORM_STATE.accepted.ink }}>
-                              <CheckCircle size={13} weight="fill" />{day(a.submittedAt)}
+                              <CheckCircle size={12} weight="bold" />{day(a.submittedAt)}
                             </span>
                           : '—'}
                       </td>
@@ -192,20 +190,20 @@ export default function CatererForms() {
                           <button
                             onClick={(e) => { e.stopPropagation(); setOpenId(a.id); }}
                             title="فتح النموذج"
-                            style={{ background: ACTION.view.bg, color: ACTION.view.ink, borderColor: ACTION.view.line }}
-                            className="inline-flex items-center gap-1.5 text-[12.5px] font-black px-2.5 py-1.5 rounded-lg
-                                       border transition-colors hover:brightness-95">
-                            <Eye size={14} weight="bold" />
+                            style={actionStyle('view')}
+                            className="inline-flex items-center gap-1.5 text-[11.5px] font-bold px-2.5 py-1.5 rounded-[10px]
+                                       border transition-colors hover:brightness-[0.97]">
+                            <Eye size={13} weight="bold" />
                             فتح
                           </button>
                           {isPrintable(a.status) && (
                             <button
                               onClick={(e) => { e.stopPropagation(); window.open(`/forms/print/${a.id}`, '_blank'); }}
                               title="طباعة النموذج"
-                              style={{ background: ACTION.print.bg, color: ACTION.print.ink, borderColor: ACTION.print.line }}
-                            className="inline-flex items-center gap-1.5 text-[12.5px] font-black px-2.5 py-1.5 rounded-lg
-                                       border transition-colors hover:brightness-95">
-                              <Printer size={14} weight="bold" />
+                              style={actionStyle('print')}
+                              className="inline-flex items-center gap-1.5 text-[11.5px] font-bold px-2.5 py-1.5 rounded-[10px]
+                                         border transition-colors hover:brightness-[0.97]">
+                              <Printer size={13} weight="bold" />
                               طباعة
                             </button>
                           )}
@@ -218,28 +216,37 @@ export default function CatererForms() {
             </table>
           </DataTable>
         )}
-      </section>
+      </Surface>
 
       {/* Review notes belong under the table, not squeezed into a cell — they
           are sentences, and a column would either clip them or ruin the row. */}
       {sorted.some(a => a.reviewNote) && (
-        <section className="bg-white rounded-2xl border border-line overflow-hidden">
-          <header className="px-5 py-4 border-b border-line">
-            <p className="text-[15px] font-black text-ink">ملاحظات المراجعة</p>
-          </header>
+        <Surface className="overflow-hidden">
+          <PanelHeader
+            Icon={ChatText}
+            color={FORM_STATE.returned.bar}
+            title="ملاحظات المراجعة"
+            right={
+              <Pill color={FORM_STATE.returned.ink} className="tabular-nums">
+                {AR(sorted.filter(a => a.reviewNote).length)}
+              </Pill>
+            }
+          />
           {sorted.filter(a => a.reviewNote).map(a => (
             <button key={a.id} onClick={() => setOpenId(a.id)}
-              className="w-full text-right px-5 py-4 border-b border-line/60 last:border-0 hover:bg-background">
-              <p className="text-[13.5px] font-bold text-ink">
+              className="w-full text-start ps-5 pe-4 py-4 border-b border-line last:border-0
+                         hover:bg-[rgb(var(--c-bg))] transition-colors">
+              <p className="text-[13px] font-bold text-ink">
                 {templateById[a.templateId]?.title || 'نموذج'}
-                {a.formNumber && <span className="text-muted font-bold mr-2">{a.formNumber}</span>}
+                {a.formNumber && <span className="text-muted font-medium ms-2">{a.formNumber}</span>}
               </p>
-              <p className="text-[13px] text-ink/80 leading-relaxed mt-1 border-r-2 border-line pr-2.5">
+              <p className="text-[12.5px] font-medium text-ink/75 leading-relaxed mt-1.5 border-s-2 ps-2.5"
+                style={{ borderColor: tint(FORM_STATE.returned.bar, 45) }}>
                 {a.reviewNote}
               </p>
             </button>
           ))}
-        </section>
+        </Surface>
       )}
     </div>
   );

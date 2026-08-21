@@ -3,6 +3,9 @@ import {
 } from '@phosphor-icons/react';
 import { getCenterNotes } from '../config/centerNotes.js';
 
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
+const NOTE = '#B45309';
+
 /**
  * Renders operations-room notes for a given center.
  *
@@ -17,14 +20,15 @@ export default function CenterNotesPanel({ centerId, variant = 'card' }) {
   if (variant === 'compact') {
     /* Single-line summary chip — used inline in list rows */
     return (
-      <div className="mt-1.5 inline-flex items-start gap-1.5 text-[10.5px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 max-w-full">
-        <StickyNote size={11} weight="bold" className="text-amber-600 shrink-0 mt-[1px]" />
+      <div className="mt-1.5 inline-flex items-start gap-1.5 text-[10.5px] font-semibold rounded-[10px] border px-2 py-1 max-w-full"
+        style={{ background: tint(NOTE, 12), borderColor: tint(NOTE, 28), color: NOTE }}>
+        <StickyNote size={11} weight="bold" className="shrink-0 mt-[1px]" />
         <span className="leading-snug">
           {notes.length === 1
             ? notes[0]
             : (
               <>
-                <span className="font-black">{notes.length} ملاحظات</span> · {notes.join(' · ')}
+                <span className="font-bold">{notes.length} ملاحظات</span> · {notes.join(' · ')}
               </>
             )}
         </span>
@@ -32,22 +36,20 @@ export default function CenterNotesPanel({ centerId, variant = 'card' }) {
     );
   }
 
-  const wrapClass = variant === 'modal'
-    ? 'rounded-2xl p-3.5'
-    : 'rounded-xl p-3';
-
   return (
-    <div className={`bg-gradient-to-br from-amber-50 via-amber-50/70 to-orange-50/40 border-2 border-amber-200 ${wrapClass}`}>
+    <div className={`rounded-[14px] border ${variant === 'modal' ? 'p-3.5' : 'p-3'}`}
+      style={{ background: tint(NOTE, 12), borderColor: tint(NOTE, 28) }}>
       <div className="flex items-center gap-2 mb-2">
-        <div className="w-7 h-7 rounded-lg flex items-center justify-center shadow-sm"
-          style={{ background: 'linear-gradient(135deg, #F59E0B, #D97706)' }}>
-          <StickyNote size={13} weight="bold" className="text-white" />
-        </div>
-        <p className="text-[11px] font-black text-amber-800 uppercase tracking-wider">
+        <span className="w-7 h-7 rounded-[10px] flex items-center justify-center border shrink-0"
+          style={{ background: tint(NOTE, 9), borderColor: tint(NOTE, 22) }}>
+          <StickyNote size={14} weight="duotone" style={{ color: NOTE }} />
+        </span>
+        <p className="text-[11.5px] font-bold" style={{ color: NOTE }}>
           ملاحظات غرفة العمليات للمركز
         </p>
         {notes.length > 1 && (
-          <span className="text-[10px] font-black tabular-nums px-1.5 py-0.5 rounded-md bg-amber-200/60 text-amber-900">
+          <span className="text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-md border"
+            style={{ background: tint(NOTE, 9), borderColor: tint(NOTE, 22), color: NOTE }}>
             {notes.length}
           </span>
         )}
@@ -55,8 +57,9 @@ export default function CenterNotesPanel({ centerId, variant = 'card' }) {
       <ul className="space-y-1.5">
         {notes.map((n, i) => (
           <li key={i}
-            className="flex items-start gap-2 text-[12px] font-bold text-amber-900 bg-white/60 border border-amber-200/60 rounded-lg px-2.5 py-1.5">
-            <span className="w-1 h-1 rounded-full bg-amber-600 mt-[7px] shrink-0" />
+            className="flex items-start gap-2 text-[12px] font-semibold bg-white rounded-[10px] border px-2.5 py-1.5"
+            style={{ borderColor: tint(NOTE, 28), color: NOTE }}>
+            <span className="w-1 h-1 rounded-full mt-[7px] shrink-0" style={{ background: NOTE }} />
             <span className="leading-snug">{n}</span>
           </li>
         ))}

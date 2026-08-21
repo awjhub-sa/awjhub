@@ -21,6 +21,10 @@ import {
 } from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
 import DataTable from '../../components/DataTable.jsx';
+import FilterChip from '../../components/FilterChip.jsx';
+import { IconTile } from '../../components/ui/index.jsx';
+
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
 
 /* Create the staff/admin account end-to-end:
    1. Save the current admin's auth tokens so we can restore the session
@@ -81,11 +85,11 @@ const ROLES = [
 const ROLE_META = Object.fromEntries(ROLES.map(r => [r.value, r]));
 
 const inputCls =
-  'w-full px-4 py-2.5 border border-line rounded-xl text-sm text-ink outline-none focus:border-primary transition placeholder-muted/40 bg-white';
+  'w-full px-3.5 py-2.5 border border-line rounded-[10px] text-[13px] font-medium text-ink outline-none focus:border-primary transition-colors placeholder:text-muted/50 bg-white';
 
 const Field = ({ label, required, children }) => (
   <div>
-    <label className="block text-xs font-medium text-muted mb-1.5">
+    <label className="block text-[11.5px] font-bold text-muted mb-1.5">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
     {children}
@@ -102,7 +106,7 @@ function MultiCenterSelect({ selected, onChange }) {
       <button
         type="button"
         onClick={() => setOpen((p) => !p)}
-        className="w-full px-4 py-2.5 border border-line rounded-xl text-sm text-right flex items-center justify-between focus:border-primary outline-none transition bg-white"
+        className="w-full px-3.5 py-2.5 border border-line rounded-[10px] text-[13px] font-medium text-start flex items-center justify-between focus:border-primary outline-none transition-colors bg-white"
       >
         <span className={selected.length ? 'text-ink' : 'text-muted/50'}>
           {selected.length ? `${selected.length} مركز محدد` : 'اختر المراكز المخصصة'}
@@ -110,11 +114,11 @@ function MultiCenterSelect({ selected, onChange }) {
         <ChevronDown size={15} className={`text-muted transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="absolute z-30 top-full right-0 left-0 mt-1 bg-white border border-line rounded-xl shadow-lg max-h-72 overflow-y-auto">
+        <div className="absolute z-30 top-full start-0 end-0 mt-1 bg-white border border-line rounded-[12px] shadow-[0_12px_32px_-12px_rgb(var(--c-ink)/0.28)] max-h-72 overflow-y-auto">
           {CENTERS.map((c) => (
             <label
               key={c.id}
-              className="flex items-center gap-3 px-4 py-2.5 hover:bg-background cursor-pointer text-sm"
+              className="flex items-center gap-3 px-4 py-2.5 hover:bg-[rgb(var(--c-bg))] cursor-pointer text-[13px]"
             >
               <input
                 type="checkbox"
@@ -123,8 +127,8 @@ function MultiCenterSelect({ selected, onChange }) {
                 className="accent-primary w-4 h-4"
               />
               <div className="min-w-0">
-                <span className="text-ink font-medium">{c.id}</span>
-                <span className="text-muted text-xs block truncate">{c.caterer}</span>
+                <span className="text-ink font-semibold">{c.id}</span>
+                <span className="text-muted text-[11px] block truncate">{c.caterer}</span>
               </div>
             </label>
           ))}
@@ -287,14 +291,17 @@ export default function AdminStaff() {
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
         {/* ── Add panel (left) ─────────────────── */}
-        <section className="bg-gradient-to-br from-white via-white to-background/40 rounded-2xl border border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgb(var(--c-primary)/0.14)] lg:col-span-2 h-fit relative">
-          <div className="px-5 py-4 border-b border-line flex items-center gap-2.5 bg-background/40">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
-              <Plus size={16} className="text-white" weight="bold" />
-            </div>
+        <section className="bg-white rounded-[14px] border border-line shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] transition-shadow duration-200 hover:shadow-[0_6px_20px_-6px_rgb(var(--c-ink)/0.16)] lg:col-span-2 h-fit relative overflow-hidden">
+          <div
+            className="px-4 sm:px-5 py-3.5 border-b flex items-center gap-3"
+            style={{
+              background: tint('rgb(var(--c-primary))', 12),
+              borderColor: tint('rgb(var(--c-primary))', 28),
+            }}
+          >
+            <IconTile Icon={Plus} size="md" />
             <div>
-              <h2 className="font-bold text-ink text-sm">إضافة موظف جديد</h2>
+              <h2 className="font-bold text-primary text-[14px]">إضافة موظف جديد</h2>
             </div>
           </div>
 
@@ -319,8 +326,8 @@ export default function AdminStaff() {
 
             <Field label="البريد الإلكتروني" required>
               <div className="relative">
-                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                  <Mail size={14} className="text-primary" />
+                <div className="absolute inset-y-0 start-3 flex items-center pointer-events-none">
+                  <Mail size={14} className="text-muted/60" weight="bold" />
                 </div>
                 <input
                   type="email"
@@ -328,15 +335,15 @@ export default function AdminStaff() {
                   onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
                   placeholder="admin@example.com"
                   dir="ltr"
-                  className={`${inputCls} pr-9`}
+                  className={`${inputCls} ps-9`}
                 />
               </div>
             </Field>
 
             <Field label="كلمة المرور" required>
               <div className="relative">
-                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                  <Lock size={14} className="text-primary" />
+                <div className="absolute inset-y-0 start-3 flex items-center pointer-events-none">
+                  <Lock size={14} className="text-muted/60" weight="bold" />
                 </div>
                 <input
                   type={showPass ? 'text' : 'password'}
@@ -344,12 +351,12 @@ export default function AdminStaff() {
                   onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
                   placeholder="6 أحرف على الأقل"
                   dir="ltr"
-                  className={`${inputCls} pr-9 pl-10`}
+                  className={`${inputCls} ps-9 pe-10`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPass((p) => !p)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary"
+                  className="absolute end-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors"
                 >
                   {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
@@ -381,16 +388,12 @@ export default function AdminStaff() {
                       key={r.value}
                       type="button"
                       onClick={() => setForm((p) => ({ ...p, role: r.value }))}
-                      className={`group/role px-3 py-2.5 rounded-xl text-sm font-bold border-2 transition-all flex items-center justify-center gap-2 ${
-                        active ? 'text-white scale-[1.02] shadow-md' : 'border-line bg-white text-muted hover:scale-[1.02]'
+                      className={`px-3 py-2.5 rounded-[10px] text-[12.5px] font-bold border transition-colors flex items-center justify-center gap-2 ${
+                        active ? 'text-white' : 'border-line bg-white text-muted hover:bg-[rgb(var(--c-bg))]'
                       }`}
-                      style={active ? {
-                        borderColor: r.color,
-                        background: `linear-gradient(135deg, ${r.color}, ${r.color}DD)`,
-                        boxShadow: `0 4px 14px ${r.color}40`,
-                      } : {}}
+                      style={active ? { background: r.color, borderColor: r.color } : undefined}
                     >
-                      <RIcon size={15} className={`transition-transform ${active ? 'scale-110' : 'group-hover/role:scale-110'}`} />
+                      <RIcon size={14} weight="bold" />
                       {r.label}
                     </button>
                   );
@@ -407,19 +410,22 @@ export default function AdminStaff() {
               </Field>
             )}
             {form.role === 'admin' && (
-              <div className="bg-purple-50 border border-purple-200 text-purple-700 rounded-xl px-3 py-2.5 text-xs font-medium flex items-start gap-2">
-                <Crown size={14} className="mt-0.5 flex-shrink-0" />
+              <div
+                className="rounded-[10px] border px-3 py-2.5 text-[11.5px] font-semibold flex items-start gap-2"
+                style={{ background: tint('#9E5741', 12), borderColor: tint('#9E5741', 28), color: '#9E5741' }}
+              >
+                <Crown size={14} weight="bold" className="mt-0.5 shrink-0" />
                 <span>المسؤول يرى ويدير <b>جميع المراكز</b> بدون قيود.</span>
               </div>
             )}
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-3 py-2 text-sm font-medium">
+              <div className="bg-red-50 border border-red-200 text-red-700 rounded-[10px] px-3 py-2 text-[12.5px] font-semibold">
                 {error}
               </div>
             )}
             {success && (
-              <div className="bg-green-50 border border-green-200 text-green-700 rounded-xl px-3 py-2 text-sm font-medium">
+              <div className="bg-green-50 border border-green-200 text-green-700 rounded-[10px] px-3 py-2 text-[12.5px] font-semibold">
                 {success}
               </div>
             )}
@@ -427,8 +433,7 @@ export default function AdminStaff() {
             <button
               type="submit"
               disabled={saving}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm hover:opacity-90 disabled:opacity-60 transition shadow-[0_4px_16px_rgb(var(--c-primary)/0.35)]"
-              style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-[10px] bg-primary border border-primary text-white font-bold text-[13px] hover:opacity-90 disabled:opacity-60 transition-opacity"
             >
               {saving ? (
                 <>
@@ -445,40 +450,45 @@ export default function AdminStaff() {
         </section>
 
         {/* ── List panel (right) ─────────────── */}
-        <section className="bg-gradient-to-br from-white via-white to-background/40 rounded-2xl border border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgb(var(--c-primary)/0.14)] lg:col-span-3">
-          <div className="p-4 border-b border-line">
-            <h2 className="text-lg font-bold text-primary mb-3">
+        <section className="bg-white rounded-[14px] border border-line shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] transition-shadow duration-200 hover:shadow-[0_6px_20px_-6px_rgb(var(--c-ink)/0.16)] overflow-hidden lg:col-span-3">
+          <div
+            className="p-4 border-b"
+            style={{
+              background: tint('rgb(var(--c-primary))', 12),
+              borderColor: tint('rgb(var(--c-primary))', 28),
+            }}
+          >
+            <h2 className="text-[14px] font-bold text-primary mb-3">
               الموظفون ({visible.length}{filter !== 'all' && ` من ${counts.all}`})
             </h2>
             <div className="flex gap-2 flex-wrap">
-              <Chip active={filter === 'all'} onClick={() => setFilter('all')} count={counts.all} Icon={Filter} color="rgb(var(--c-muted))">
+              <FilterChip active={filter === 'all'} onClick={() => setFilter('all')} count={counts.all} Icon={Filter} color="rgb(var(--c-muted))">
                 الكل
-              </Chip>
-              <Chip active={filter === 'admin'} onClick={() => setFilter('admin')} count={counts.admin} Icon={Crown} color="#9E5741">
+              </FilterChip>
+              <FilterChip active={filter === 'admin'} onClick={() => setFilter('admin')} count={counts.admin} Icon={Crown} color="#9E5741">
                 المسؤولون
-              </Chip>
-              <Chip active={filter === 'staff'} onClick={() => setFilter('staff')} count={counts.staff} Icon={ShieldCheck} color="rgb(var(--c-primary))">
+              </FilterChip>
+              <FilterChip active={filter === 'staff'} onClick={() => setFilter('staff')} count={counts.staff} Icon={ShieldCheck} color="rgb(var(--c-primary))">
                 الموظفون
-              </Chip>
+              </FilterChip>
             </div>
           </div>
 
           {listError && (
-            <div className="m-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-3 py-2 text-sm font-medium">
+            <div className="m-3 bg-red-50 border border-red-200 text-red-700 rounded-[10px] px-3 py-2 text-[12.5px] font-semibold">
               {listError}
             </div>
           )}
 
           <DataTable>
             <table className="w-full text-sm">
-              <thead className="text-muted text-xs border-b border-line"
-                style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 60%)' }}>
+              <thead className="text-muted text-[11px] border-b border-line bg-[rgb(var(--c-bg))]">
                 <tr>
-                  <th className="px-4 py-3 text-right font-semibold">الاسم</th>
-                  <th className="px-4 py-3 text-right font-semibold">البريد</th>
-                  <th className="px-4 py-3 text-right font-semibold">الدور</th>
-                  <th className="px-4 py-3 text-right font-semibold">المراكز</th>
-                  <th className="px-4 py-3 text-right font-semibold">إجراء</th>
+                  <th className="px-4 py-3 text-start font-bold">الاسم</th>
+                  <th className="px-4 py-3 text-start font-bold">البريد</th>
+                  <th className="px-4 py-3 text-start font-bold">الدور</th>
+                  <th className="px-4 py-3 text-start font-bold">المراكز</th>
+                  <th className="px-4 py-3 text-start font-bold">إجراء</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
@@ -493,39 +503,41 @@ export default function AdminStaff() {
                   const RoleIcon = meta.Icon;
                   const assignedCenters = u.assignedCenters || [];
                   return (
-                    <tr key={u.uid || u.id} className="group/row hover:bg-background transition-colors">
-                      <td className="px-4 py-3 font-medium text-ink">
+                    <tr key={u.uid || u.id} className="hover:bg-[rgb(var(--c-bg))] transition-colors">
+                      <td className="px-4 py-3 font-semibold text-ink">
                         <div className="flex items-center gap-2.5">
-                          <div className="relative flex-shrink-0">
-                            <div className="absolute inset-0 rounded-full blur-md opacity-0 group-hover/row:opacity-60 transition-opacity"
-                              style={{ background: meta.color }} />
-                            <div className="relative w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm ring-2 ring-white"
-                              style={{ background: `linear-gradient(135deg, ${meta.color}, ${meta.color}DD)` }}>
-                              {(u.nameAr || u.name)?.charAt(0) || '؟'}
-                            </div>
+                          <div
+                            className="w-8 h-8 rounded-[10px] border flex items-center justify-center text-[12px] font-bold shrink-0"
+                            style={{
+                              background: tint(meta.color, 12),
+                              borderColor: tint(meta.color, 28),
+                              color: meta.color,
+                            }}
+                          >
+                            {(u.nameAr || u.name)?.charAt(0) || '؟'}
                           </div>
                           <div className="min-w-0">
-                            <div className="truncate">{u.nameAr || u.name || '—'}</div>
+                            <div className="truncate text-[13px]">{u.nameAr || u.name || '—'}</div>
                             {u.nameEn && (
-                              <div className="text-muted text-xs truncate" dir="ltr">{u.nameEn}</div>
+                              <div className="text-muted text-[11px] font-medium truncate mt-0.5" dir="ltr">{u.nameEn}</div>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-muted text-xs" dir="ltr">{u.email || '—'}</td>
+                      <td className="px-4 py-3 text-muted text-[11.5px]" dir="ltr">{u.email || '—'}</td>
                       <td className="px-4 py-3">
                         <span
-                          className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white shadow-sm"
-                          style={{ background: `linear-gradient(135deg, ${meta.color}, ${meta.color}DD)` }}
+                          className="inline-flex items-center gap-1 text-[10.5px] font-bold px-1.5 py-[3px] rounded-md whitespace-nowrap leading-none"
+                          style={{ background: tint(meta.color, 11), color: meta.color }}
                         >
-                          <RoleIcon size={11} weight="bold" />
+                          <RoleIcon size={10} weight="bold" />
                           {meta.label}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-muted text-xs">
+                      <td className="px-4 py-3 text-muted text-[11.5px]">
                         {u.role === 'admin' ? (
-                          <span className="inline-flex items-center gap-1 font-bold text-purple-600">
-                            <Crown size={10} /> كل المراكز
+                          <span className="inline-flex items-center gap-1 font-bold" style={{ color: '#9E5741' }}>
+                            <Crown size={11} weight="bold" /> كل المراكز
                           </span>
                         ) : assignedCenters.length > 0 ? (
                           <span title={assignedCenters.join('، ')}>
@@ -537,16 +549,16 @@ export default function AdminStaff() {
                         <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => openEdit(u)}
-                            className="group/edit flex items-center gap-1 text-primary hover:text-white text-xs font-bold px-2 py-1 rounded-lg border border-primary/20 hover:bg-gradient-to-br hover:from-primary-400 hover:to-primary hover:border-transparent transition-all hover:shadow-md"
+                            className="flex items-center gap-1 text-primary hover:text-white text-[11px] font-bold px-2 py-1 rounded-[8px] border border-primary/25 bg-[rgb(var(--c-primary)/0.06)] hover:bg-primary hover:border-primary transition-colors"
                           >
-                            <Pencil size={12} className="group-hover/edit:rotate-12 transition-transform" />
+                            <Pencil size={12} weight="bold" />
                             تعديل
                           </button>
                           <button
                             onClick={() => handleDelete(u)}
-                            className="group/del flex items-center gap-1 text-red-500 hover:text-white text-xs font-bold px-2 py-1 rounded-lg border border-red-200 hover:bg-red-500 hover:border-red-500 transition-all hover:shadow-md"
+                            className="flex items-center gap-1 text-red-600 hover:text-white text-[11px] font-bold px-2 py-1 rounded-[8px] border border-red-200 bg-red-50 hover:bg-red-600 hover:border-red-600 transition-colors"
                           >
-                            <Trash2 size={12} className="group-hover/del:rotate-6 transition-transform" />
+                            <Trash2 size={12} weight="bold" />
                             حذف
                           </button>
                         </div>
@@ -563,24 +575,24 @@ export default function AdminStaff() {
       {/* ── Edit modal ─────────────────────── */}
       {editTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeEdit} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-line"
-              style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 55%)' }}>
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                  style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
-                  <Pencil size={15} className="text-white" />
-                </div>
-                <h2 className="font-bold text-ink text-sm">تعديل بيانات الموظف</h2>
+          <div className="absolute inset-0 bg-[rgb(var(--c-ink)/0.45)] backdrop-blur-sm" onClick={closeEdit} />
+          <div className="relative bg-white rounded-[18px] border border-line shadow-[0_24px_60px_-16px_rgb(var(--c-ink)/0.35)] w-full max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b"
+              style={{
+                background: tint('rgb(var(--c-primary))', 12),
+                borderColor: tint('rgb(var(--c-primary))', 28),
+              }}>
+              <div className="flex items-center gap-3">
+                <IconTile Icon={Pencil} size="md" />
+                <h2 className="font-bold text-primary text-[14px]">تعديل بيانات الموظف</h2>
               </div>
               <button onClick={closeEdit}
-                className="w-8 h-8 rounded-xl border border-line flex items-center justify-center hover:bg-[rgb(var(--c-primary-50))]">
-                <X size={15} className="text-muted" />
+                className="w-8 h-8 rounded-[10px] border border-line bg-white flex items-center justify-center text-muted hover:text-ink transition-colors">
+                <X size={14} weight="bold" />
               </button>
             </div>
 
-            <div className="px-6 py-5 space-y-3">
+            <div className="px-5 py-5 space-y-3">
               <Field label="الاسم (عربي)" required>
                 <input
                   value={editForm.nameAr}
@@ -601,7 +613,7 @@ export default function AdminStaff() {
                   value={editForm.email}
                   disabled
                   dir="ltr"
-                  className={`${inputCls} bg-gray-50 text-muted`}
+                  className={`${inputCls} bg-[rgb(var(--c-bg))] text-muted`}
                 />
               </Field>
               <Field label="رقم الجوال">
@@ -627,16 +639,12 @@ export default function AdminStaff() {
                         key={r.value}
                         type="button"
                         onClick={() => setEditForm((p) => ({ ...p, role: r.value }))}
-                        className={`group/role px-3 py-2.5 rounded-xl text-sm font-bold border-2 transition-all flex items-center justify-center gap-2 ${
-                          active ? 'text-white scale-[1.02]' : 'border-line bg-white text-muted hover:scale-[1.02]'
+                        className={`px-3 py-2.5 rounded-[10px] text-[12.5px] font-bold border transition-colors flex items-center justify-center gap-2 ${
+                          active ? 'text-white' : 'border-line bg-white text-muted hover:bg-[rgb(var(--c-bg))]'
                         }`}
-                        style={active ? {
-                          borderColor: r.color,
-                          background: `linear-gradient(135deg, ${r.color}, ${r.color}DD)`,
-                          boxShadow: `0 4px 14px ${r.color}40`,
-                        } : {}}
+                        style={active ? { background: r.color, borderColor: r.color } : undefined}
                       >
-                        <RIcon size={15} />
+                        <RIcon size={14} weight="bold" />
                         {r.label}
                       </button>
                     );
@@ -652,14 +660,17 @@ export default function AdminStaff() {
                 </Field>
               )}
               {editForm.role === 'admin' && (
-                <div className="bg-purple-50 border border-purple-200 text-purple-700 rounded-xl px-3 py-2.5 text-xs font-medium flex items-start gap-2">
-                  <Crown size={14} className="mt-0.5 flex-shrink-0" />
+                <div
+                  className="rounded-[10px] border px-3 py-2.5 text-[11.5px] font-semibold flex items-start gap-2"
+                  style={{ background: tint('#9E5741', 12), borderColor: tint('#9E5741', 28), color: '#9E5741' }}
+                >
+                  <Crown size={14} weight="bold" className="mt-0.5 shrink-0" />
                   <span>المسؤول يرى ويدير جميع المراكز.</span>
                 </div>
               )}
 
               {editError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-3 py-2 text-sm font-medium">
+                <div className="bg-red-50 border border-red-200 text-red-700 rounded-[10px] px-3 py-2 text-[12.5px] font-semibold">
                   {editError}
                 </div>
               )}
@@ -668,8 +679,7 @@ export default function AdminStaff() {
                 <button
                   onClick={handleEditSave}
                   disabled={editSaving}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm hover:opacity-90 disabled:opacity-60 transition"
-                  style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[10px] bg-primary border border-primary text-white font-bold text-[13px] hover:opacity-90 disabled:opacity-60 transition-opacity"
                 >
                   {editSaving ? (
                     <>
@@ -684,7 +694,7 @@ export default function AdminStaff() {
                 </button>
                 <button
                   onClick={closeEdit}
-                  className="px-5 py-3 rounded-xl border border-line text-muted text-sm font-medium hover:bg-gray-50"
+                  className="px-5 py-2.5 rounded-[10px] border border-line text-muted text-[13px] font-bold hover:bg-[rgb(var(--c-bg))] transition-colors"
                 >
                   إلغاء
                 </button>
@@ -694,41 +704,5 @@ export default function AdminStaff() {
         </div>
       )}
     </div>
-  );
-}
-
-function Chip({ active, count, onClick, Icon, color = 'rgb(var(--c-primary))', children }) {
-  const activeStyle = active
-    ? {
-        background: `linear-gradient(135deg, ${color}DD, ${color})`,
-        borderColor: color,
-        color: '#fff',
-        boxShadow: `0 3px 10px ${color}55`,
-      }
-    : undefined;
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={activeStyle}
-      className={`group/chip px-3 py-1.5 rounded-xl text-sm font-bold border transition-all flex items-center gap-1.5 ${
-        active ? 'scale-[1.03]' : 'bg-white text-ink border-line hover:scale-[1.02]'
-      }`}
-    >
-      {Icon && (
-        <Icon
-          size={14}
-          className={`transition-transform duration-300 ${active ? 'scale-110' : 'group-hover/chip:scale-110'}`}
-          style={!active ? { color } : undefined}
-        />
-      )}
-      {children}
-      {count !== undefined && (
-        <span className={`px-1.5 py-0.5 rounded-full text-xs ${active ? 'bg-white/25 text-white' : 'bg-background'}`}
-          style={!active ? { color } : undefined}>
-          {count}
-        </span>
-      )}
-    </button>
   );
 }

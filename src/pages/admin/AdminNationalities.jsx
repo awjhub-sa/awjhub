@@ -13,6 +13,8 @@ import {
   MagnifyingGlass,
 } from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
+import FilterChip from '../../components/FilterChip.jsx';
+import { Surface } from '../../components/ui/index.jsx';
 import { db } from '../../lib/db.js';
 import { extractCenterNum } from '../../config/nationalities.js';
 import { refreshNationalities } from '../../lib/nationalityStore.js';
@@ -38,6 +40,14 @@ const PALETTE = [
 ];
 
 const FLAGS = ['🇮🇩','🇮🇶','🇾🇪','🇧🇩','🇦🇫','🇰🇲','🇧🇭','🇵🇰','🇮🇳','🇹🇷','🇳🇬','🇲🇾','🇪🇬','🇸🇩','🇱🇾','🕌','🏳️'];
+
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
+
+/* The one alert colour on this screen, matched to the 'alert' tone the header
+   already paints the orphan count in, so the figure and the panel that explains
+   it are the same red. */
+const ALERT = 'rgb(var(--c-error))';
+const FALLBACK = '#6F5B96';
 
 const EMPTY = { name: '', flag: '🏳️', color: PALETTE[0], centerIds: [] };
 
@@ -191,8 +201,8 @@ export default function AdminNationalities() {
         ]}
         heroActions={!tableMissing && seasonId && (
           <button onClick={() => setEditing({ ...EMPTY, color: PALETTE[nats.length % PALETTE.length] })}
-            className="h-9 px-4 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25
-                       text-white text-[12px] font-black flex items-center gap-1.5 transition-colors">
+            className="h-9 px-4 rounded-xl bg-primary hover:brightness-110 border border-primary
+                       text-white text-[12px] font-bold flex items-center gap-1.5 transition-colors">
             <Plus size={14} weight="bold" />
             إضافة جنسية
           </button>
@@ -200,49 +210,41 @@ export default function AdminNationalities() {
       />
 
       {tableMissing && (
-        <div className="rounded-2xl border p-3.5 flex gap-2.5"
-          style={{ borderColor: '#EBCFC3', background: 'color-mix(in srgb, #B4674E 8%, #fff)' }}>
-          <WarningCircle size={17} weight="bold" style={{ color: '#B4674E' }} className="flex-shrink-0 mt-0.5" />
+        <div className="rounded-[14px] border p-3.5 flex gap-2.5"
+          style={{ background: tint(ALERT, 12), borderColor: tint(ALERT, 28) }}>
+          <WarningCircle size={17} weight="duotone" style={{ color: ALERT }} className="shrink-0 mt-0.5" />
           <div className="min-w-0">
-            <p className="text-[12px] font-black text-ink">القسم غير مفعّل بعد</p>
-            <p className="text-[11px] text-ink/80 leading-relaxed mt-0.5">{MISSING_TABLE}</p>
+            <p className="text-[12px] font-bold" style={{ color: ALERT }}>القسم غير مفعّل بعد</p>
+            <p className="text-[11.5px] font-medium text-ink/80 leading-relaxed mt-1">{MISSING_TABLE}</p>
           </div>
         </div>
       )}
 
       {seasons.length > 1 && (
-        <section className="bg-white rounded-2xl border border-line p-3">
-          <p className="text-[10px] font-black text-muted/70 tracking-widest mb-2 px-1">الموسم</p>
+        <Surface className="p-3">
+          <p className="text-[10px] font-bold text-muted tracking-[0.16em] mb-2 px-1">الموسم</p>
           <div className="flex gap-2 flex-wrap">
             {seasons.map(s => (
-              <button key={s.id} onClick={() => setSeasonId(s.id)}
-                className={`px-3.5 py-1.5 rounded-xl border text-[12px] font-black transition-all ${
-                  s.id === seasonId
-                    ? 'text-white border-transparent shadow-[0_3px_12px_rgb(var(--c-primary)/0.3)]'
-                    : 'bg-white border-line text-ink hover:border-primary/40'
-                }`}
-                style={s.id === seasonId
-                  ? { background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }
-                  : undefined}>
+              <FilterChip key={s.id} active={s.id === seasonId} onClick={() => setSeasonId(s.id)}>
                 {seasonLabel(s)}
-                {s.isActive && <span className="mr-1.5 text-[9px] opacity-70">نشط</span>}
-              </button>
+                {s.isActive && <span className="text-[10px] opacity-70">نشط</span>}
+              </FilterChip>
             ))}
           </div>
-        </section>
+        </Surface>
       )}
 
       {/* ── An unassigned centre is invisible downstream, so it is named here ── */}
       {!loading && orphans.length > 0 && (
-        <section className="rounded-2xl border p-3.5"
-          style={{ borderColor: '#EBCFC3', background: 'color-mix(in srgb, #B4674E 7%, #fff)' }}>
-          <p className="text-[12px] font-black text-ink flex items-center gap-1.5">
-            <WarningCircle size={14} weight="bold" style={{ color: '#B4674E' }} />
+        <section className="rounded-[14px] border p-3.5"
+          style={{ background: tint(ALERT, 12), borderColor: tint(ALERT, 28) }}>
+          <p className="text-[12px] font-bold flex items-center gap-1.5" style={{ color: ALERT }}>
+            <WarningCircle size={14} weight="duotone" />
             {AR(orphans.length)} مركز بلا جنسية
           </p>
-          <div className="flex flex-wrap gap-1 mt-2">
+          <div className="flex flex-wrap gap-1 mt-2.5">
             {orphans.map(c => (
-              <span key={c.id} className="text-[10.5px] font-bold px-2 py-0.5 rounded-md bg-white border border-line text-ink">
+              <span key={c.id} className="text-[10.5px] font-bold px-2 py-[3px] rounded-md bg-white border border-line text-ink">
                 {c.code}
               </span>
             ))}
@@ -252,20 +254,20 @@ export default function AdminNationalities() {
 
       {/* ── The roster ── */}
       {loading ? (
-        <div className="bg-white rounded-2xl border border-line py-16 flex justify-center">
-          <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-        </div>
+        <Surface className="py-16 flex justify-center">
+          <div className="w-8 h-8 border-2 border-primary/25 border-t-primary rounded-full animate-spin" />
+        </Surface>
       ) : nats.length === 0 && !tableMissing ? (
-        <div className="bg-white rounded-2xl border border-line py-14 flex flex-col items-center gap-2">
-          <Earth size={26} weight="bold" className="text-muted/40" />
-          <p className="text-[13px] font-black text-ink">لا جنسيات في هذا الموسم</p>
+        <Surface className="py-14 flex flex-col items-center gap-2">
+          <Earth size={26} weight="duotone" className="text-muted/35" />
+          <p className="text-[13px] font-bold text-ink">لا جنسيات في هذا الموسم</p>
           <button onClick={() => setEditing({ ...EMPTY })}
-            className="mt-2 h-9 px-5 rounded-xl text-white text-[12px] font-black flex items-center gap-1.5"
-            style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}>
+            className="mt-2 h-9 px-5 rounded-xl bg-primary hover:brightness-110 border border-primary
+                       text-white text-[12px] font-bold flex items-center gap-1.5 transition-colors">
             <Plus size={14} weight="bold" />
             إضافة أول جنسية
           </button>
-        </div>
+        </Surface>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {nats.map(n => {
@@ -275,20 +277,21 @@ export default function AdminNationalities() {
             /* Two groups may share a name — the centres are what tell them
                apart, so they are the subtitle, not a detail. */
             const twin = nats.some(o => o.id !== n.id && o.name === n.name);
+            const color = n.color || FALLBACK;
             return (
-              <section key={n.id} className="relative bg-white rounded-2xl border border-line overflow-hidden flex flex-col">
-                <span className="absolute inset-x-0 top-0 h-1" style={{ background: n.color || '#6F5B96' }} />
-                <header className="px-4 pt-4 pb-3 border-b border-line flex items-center gap-2.5">
-                  <span className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                    style={{ background: `color-mix(in srgb, ${n.color || '#6F5B96'} 14%, #fff)` }}>
+              <Surface key={n.id} interactive className="overflow-hidden flex flex-col">
+                <header className="px-4 py-3.5 border-b flex items-center gap-3"
+                  style={{ background: tint(color, 12), borderColor: tint(color, 28) }}>
+                  <span className="w-10 h-10 rounded-[10px] flex items-center justify-center text-xl shrink-0 border"
+                    style={{ background: tint(color, 9), borderColor: tint(color, 22) }}>
                     {n.flag || '🏳️'}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13.5px] font-black truncate" style={{ color: n.color || '#6F5B96' }}>
+                    <p className="text-[14px] font-bold truncate leading-tight" style={{ color }}>
                       {n.name}
                     </p>
-                    <p className="text-[10px] font-bold text-muted mt-0.5 flex items-center gap-1">
-                      <Building2 size={10} weight="bold" />
+                    <p className="text-[11px] font-medium text-muted mt-1 flex items-center gap-1 truncate">
+                      <Building2 size={11} weight="bold" className="text-muted/60 shrink-0" />
                       {codes.length ? `${AR(codes.length)} مركز` : 'بلا مراكز'}
                       {twin && codes.length > 0 && (
                         <span className="text-muted/60">· يميّزها مراكزها</span>
@@ -299,33 +302,34 @@ export default function AdminNationalities() {
                     id: n.id, name: n.name, flag: n.flag || '🏳️',
                     color: n.color || PALETTE[0], centerIds: ids,
                   })}
-                    className="w-8 h-8 rounded-lg border border-line flex items-center justify-center flex-shrink-0
-                               text-muted hover:text-ink hover:bg-background">
+                    className="w-8 h-8 rounded-[10px] border bg-white/70 flex items-center justify-center shrink-0
+                               text-muted hover:text-ink hover:bg-white transition-colors"
+                    style={{ borderColor: tint(color, 22) }}>
                     <PencilSimple size={14} weight="bold" />
                   </button>
                 </header>
 
-                <div className="p-4 flex-1 space-y-2.5">
-                  <div className="flex flex-wrap gap-1">
+                <div className="p-4 flex-1 flex flex-col">
+                  <div className="flex flex-wrap gap-1 flex-1">
                     {codes.length === 0 ? (
-                      <p className="text-[11px] font-bold text-muted/70">
+                      <p className="text-[11.5px] font-medium text-muted/70">
                         لم تُسنَد مراكز
                       </p>
                     ) : codes.map(c => (
-                      <span key={c.id} className="text-[10.5px] font-bold px-2 py-0.5 rounded-md border border-line bg-background text-ink">
+                      <span key={c.id} className="text-[10.5px] font-bold px-2 py-[3px] rounded-md border border-line bg-[rgb(var(--c-bg))] text-ink">
                         {c.code}
                       </span>
                     ))}
                   </div>
 
-                  <p className="text-[10.5px] font-bold text-muted flex items-center gap-1.5 pt-1 border-t border-line">
-                    <ForkKnife size={11} weight="bold" />
+                  <p className="text-[11px] font-medium text-muted flex items-center gap-1.5 mt-3 pt-3 border-t border-line">
+                    <ForkKnife size={12} weight="bold" className="text-muted/60 shrink-0" />
                     {meals > 0
-                      ? <>محفوظ لها <span className="text-ink">{AR(meals)}</span> وجبة في المنيو</>
+                      ? <>محفوظ لها <span className="font-bold text-ink">{AR(meals)}</span> وجبة في المنيو</>
                       : <>لا منيو محفوظ بعد{n.legacyKey ? ' — تعرض المنيو المرفق' : ''}</>}
                   </p>
                 </div>
-              </section>
+              </Surface>
             );
           })}
         </div>
@@ -344,11 +348,12 @@ export default function AdminNationalities() {
       )}
 
       {toast && (
-        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[80] flex items-center gap-2
-                        px-4 py-2.5 rounded-xl bg-ink text-white text-[12px] font-black
-                        shadow-[0_10px_30px_rgb(var(--c-ink)/0.4)]">
-          <CloudCheck size={15} weight="bold" className="text-success" />
-          {toast}
+        <div className="fixed bottom-5 inset-x-0 z-[80] flex justify-center pointer-events-none">
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-[11px] bg-ink text-white text-[12px] font-bold
+                          shadow-[0_8px_24px_-8px_rgb(var(--c-ink)/0.45)]">
+            <CloudCheck size={15} weight="bold" className="text-success" />
+            {toast}
+          </div>
         </div>
       )}
     </div>
@@ -412,50 +417,53 @@ function NationalityEditor({ draft, centers, links, nats, onClose, onSave, onDel
     <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center" dir="rtl">
       <button className="absolute inset-0 bg-ink/45 backdrop-blur-[2px]" onClick={onClose} aria-label="إغلاق" />
 
-      <div className="relative w-full sm:max-w-2xl max-h-[92vh] sm:max-h-[88vh] bg-background
+      <div className="relative w-full sm:max-w-2xl max-h-[92vh] sm:max-h-[88vh] bg-[rgb(var(--c-bg))]
                       rounded-t-3xl sm:rounded-3xl overflow-hidden flex flex-col
-                      shadow-[0_20px_70px_rgb(var(--c-ink)/0.35)]">
+                      shadow-[0_20px_60px_-20px_rgb(var(--c-ink)/0.45)]">
 
-        <header className="px-4 sm:px-6 py-4 bg-white border-b border-line flex items-center gap-3 flex-shrink-0">
-          <span className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-            style={{ background: `color-mix(in srgb, ${form.color} 14%, #fff)` }}>
+        <header className="px-4 sm:px-6 py-4 border-b flex items-center gap-3 flex-shrink-0"
+          style={{ background: tint(form.color, 12), borderColor: tint(form.color, 28) }}>
+          <span className="w-10 h-10 rounded-[10px] flex items-center justify-center text-xl shrink-0 border"
+            style={{ background: tint(form.color, 9), borderColor: tint(form.color, 22) }}>
             {form.flag}
           </span>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-black text-ink">
+            <p className="text-[14px] font-bold leading-tight" style={{ color: form.color }}>
               {form.id ? 'تعديل جنسية' : 'إضافة جنسية'}
             </p>
-            <p className="text-[10.5px] font-bold text-muted mt-0.5">
+            <p className="text-[11.5px] font-medium text-muted mt-1">
               {form.centerIds.length ? `${AR(form.centerIds.length)} مركز محدَّد` : 'لم تُحدَّد مراكز بعد'}
             </p>
           </div>
           <button onClick={onClose}
-            className="w-8 h-8 rounded-lg border border-line bg-white hover:bg-background
-                       flex items-center justify-center flex-shrink-0">
+            className="w-8 h-8 rounded-[10px] border bg-white/70 hover:bg-white transition-colors
+                       flex items-center justify-center shrink-0"
+            style={{ borderColor: tint(form.color, 22) }}>
             <X size={15} weight="bold" className="text-muted" />
           </button>
         </header>
 
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-3">
 
-          <section className="bg-white rounded-2xl border border-line p-4 space-y-3">
+          <Surface className="p-4 space-y-3.5">
             <label className="block">
-              <span className="text-[10px] font-black text-muted/70 tracking-widest block mb-1.5">اسم الجنسية</span>
+              <span className="text-[10px] font-bold text-muted tracking-[0.16em] block mb-1.5">اسم الجنسية</span>
               <input autoFocus value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="بنغلاديش"
-                className="w-full h-9 px-3 rounded-lg border border-line bg-background text-[12.5px] font-bold text-ink
-                           focus:outline-none focus:border-primary/50 focus:bg-white" />
+                className="w-full h-9 px-3 rounded-[10px] border border-line bg-[rgb(var(--c-bg))] text-[12.5px] font-bold text-ink
+                           focus:outline-none focus:border-primary/50 focus:bg-white transition-colors" />
             </label>
 
             <div>
-              <span className="text-[10px] font-black text-muted/70 tracking-widest block mb-1.5">العلم</span>
+              <span className="text-[10px] font-bold text-muted tracking-[0.16em] block mb-1.5">العلم</span>
               <div className="flex flex-wrap gap-1">
                 {FLAGS.map(f => (
                   <button key={f} type="button" onClick={() => setForm(p => ({ ...p, flag: f }))}
-                    className={`w-8 h-8 rounded-lg text-lg flex items-center justify-center border transition-all ${
-                      form.flag === f ? 'border-primary bg-primary/10' : 'border-line bg-white hover:border-primary/40'
-                    }`}>
+                    className="w-8 h-8 rounded-[10px] text-lg flex items-center justify-center border transition-colors"
+                    style={form.flag === f
+                      ? { background: tint(form.color, 12), borderColor: tint(form.color, 30) }
+                      : { background: '#fff', borderColor: 'rgb(var(--c-line))' }}>
                     {f}
                   </button>
                 ))}
@@ -463,36 +471,41 @@ function NationalityEditor({ draft, centers, links, nats, onClose, onSave, onDel
             </div>
 
             <div>
-              <span className="text-[10px] font-black text-muted/70 tracking-widest block mb-1.5">اللون</span>
+              <span className="text-[10px] font-bold text-muted tracking-[0.16em] block mb-1.5">اللون</span>
               <div className="flex flex-wrap gap-1.5">
                 {PALETTE.map(c => (
                   <button key={c} type="button" onClick={() => setForm(p => ({ ...p, color: c }))}
-                    className={`w-8 h-8 rounded-lg border-2 transition-all ${
-                      form.color === c ? 'border-ink scale-110' : 'border-transparent'
-                    }`}
-                    style={{ background: c }} />
+                    className="w-8 h-8 rounded-[10px] border transition-transform"
+                    style={{
+                      background: c,
+                      borderColor: form.color === c ? 'rgb(var(--c-ink))' : c,
+                      /* The selected swatch is read by an inset ring rather than a
+                         thicker edge, so the row keeps one border weight. */
+                      boxShadow: form.color === c ? 'inset 0 0 0 2px #fff' : undefined,
+                    }} />
                 ))}
               </div>
             </div>
-          </section>
+          </Surface>
 
           {/* ── The centres ── */}
-          <section className="bg-white rounded-2xl border border-line overflow-hidden">
-            <div className="px-4 py-2.5 border-b border-line flex items-center gap-2">
-              <p className="text-[11.5px] font-black text-ink">مراكز هذه الجنسية</p>
-              <span className="text-[10px] font-black tabular-nums text-muted mr-auto">
+          <Surface className="overflow-hidden">
+            <div className="px-4 py-3 border-b flex items-center gap-2"
+              style={{ background: tint(form.color, 12), borderColor: tint(form.color, 28) }}>
+              <p className="text-[13px] font-bold" style={{ color: form.color }}>مراكز هذه الجنسية</p>
+              <span className="text-[12px] font-extrabold tabular-nums ms-auto" style={{ color: form.color }}>
                 {form.centerIds.length ? AR(form.centerIds.length) : '—'}
               </span>
             </div>
 
             <div className="px-4 py-2.5 border-b border-line flex items-center gap-2">
-              <MagnifyingGlass size={13} weight="bold" className="text-muted/50 flex-shrink-0" />
+              <MagnifyingGlass size={13} weight="bold" className="text-muted/50 shrink-0" />
               <input value={q} onChange={e => setQ(e.target.value)}
                 placeholder="ابحث برقم المركز أو اسم المتعهد"
-                className="flex-1 h-7 text-[11.5px] bg-transparent focus:outline-none text-ink" />
+                className="flex-1 h-7 text-[11.5px] font-medium bg-transparent focus:outline-none text-ink" />
               {form.centerIds.length > 0 && (
                 <button type="button" onClick={() => setForm(f => ({ ...f, centerIds: [] }))}
-                  className="text-[10.5px] font-bold text-muted hover:text-error flex-shrink-0">
+                  className="text-[10.5px] font-bold text-muted hover:text-error transition-colors shrink-0">
                   إلغاء الكل
                 </button>
               )}
@@ -504,17 +517,17 @@ function NationalityEditor({ draft, centers, links, nats, onClose, onSave, onDel
                 const other = claimedBy.get(c.id);
                 return (
                   <button key={c.id} type="button" onClick={() => toggle(c.id)}
-                    className={`text-right px-2.5 py-2 rounded-xl border transition-all ${
-                      on ? 'border-primary' : 'bg-white border-line hover:border-primary/40'
-                    }`}
-                    style={on ? { background: `color-mix(in srgb, ${form.color} 12%, #fff)` } : undefined}>
-                    <span className="block text-[11.5px] font-black text-ink truncate">{c.code}</span>
+                    className="text-start px-2.5 py-2 rounded-[10px] border transition-colors"
+                    style={on
+                      ? { background: tint(form.color, 12), borderColor: tint(form.color, 30) }
+                      : { background: '#fff', borderColor: 'rgb(var(--c-line))' }}>
+                    <span className="block text-[12px] font-bold text-ink truncate">{c.code}</span>
                     {other ? (
-                      <span className="block text-[9px] font-bold truncate mt-0.5" style={{ color: other.color }}>
+                      <span className="block text-[10px] font-medium truncate mt-1" style={{ color: other.color }}>
                         {other.flag} {other.name}
                       </span>
                     ) : (
-                      <span className="block text-[9px] font-bold text-muted/60 truncate mt-0.5">
+                      <span className="block text-[10px] font-medium text-muted/70 truncate mt-1">
                         {c.catererName || '—'}
                       </span>
                     )}
@@ -522,47 +535,47 @@ function NationalityEditor({ draft, centers, links, nats, onClose, onSave, onDel
                 );
               })}
               {shown.length === 0 && (
-                <p className="col-span-full text-[11px] font-bold text-muted/70 text-center py-6">
+                <p className="col-span-full text-[11.5px] font-medium text-muted/70 text-center py-6">
                   لا مراكز مطابقة
                 </p>
               )}
             </div>
-          </section>
+          </Surface>
 
         </div>
 
         <footer className="px-4 sm:px-6 py-3 bg-white border-t border-line flex items-center gap-2 flex-shrink-0">
-          {err && <p className="text-[11px] font-bold text-error flex-1">{err}</p>}
+          {err && <p className="text-[11.5px] font-bold text-error flex-1">{err}</p>}
           {!err && form.id && !confirmDel && (
             <button type="button" onClick={() => setConfirmDel(true)} disabled={busy}
-              className="text-[11px] font-bold text-error/80 hover:text-error flex items-center gap-1 disabled:opacity-40">
+              className="text-[11.5px] font-bold text-error/80 hover:text-error transition-colors flex items-center gap-1 disabled:opacity-40">
               <Trash size={12} weight="bold" />
               حذف
             </button>
           )}
           {!err && confirmDel && (
             <div className="flex-1 flex items-center gap-2">
-              <p className="text-[11px] font-bold text-error">
+              <p className="text-[11.5px] font-bold text-error">
                 سيُحذف معها منيوها كاملاً. متأكد؟
               </p>
               <button type="button" onClick={doDelete} disabled={busy}
-                className="h-7 px-3 rounded-lg bg-error text-white text-[11px] font-black disabled:opacity-40">
+                className="h-7 px-3 rounded-[10px] bg-error border border-error text-white text-[11px] font-bold disabled:opacity-40">
                 نعم، احذف
               </button>
               <button type="button" onClick={() => setConfirmDel(false)}
-                className="text-[11px] font-bold text-muted">تراجع</button>
+                className="text-[11.5px] font-bold text-muted hover:text-ink transition-colors">تراجع</button>
             </div>
           )}
-          <div className="mr-auto flex items-center gap-2">
+          <div className="ms-auto flex items-center gap-2">
             <button type="button" onClick={onClose} disabled={busy}
-              className="h-9 px-4 rounded-lg border border-line bg-white text-[12px] font-bold text-muted
-                         hover:text-ink disabled:opacity-40">
+              className="h-9 px-4 rounded-[10px] border border-line bg-white text-[12px] font-bold text-muted
+                         hover:text-ink transition-colors disabled:opacity-40">
               إلغاء
             </button>
             <button type="button" onClick={submit} disabled={busy || !form.name.trim()}
-              className="h-9 px-5 rounded-lg text-white text-[12px] font-black flex items-center gap-1.5
-                         disabled:opacity-50 shadow-[0_3px_12px_rgb(var(--c-primary)/0.3)]"
-              style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}>
+              className="h-9 px-5 rounded-[10px] bg-primary hover:brightness-110 border border-primary
+                         text-white text-[12px] font-bold flex items-center gap-1.5
+                         transition-colors disabled:opacity-50">
               <FloppyDisk size={14} weight="bold" />
               {busy ? 'جارٍ الحفظ…' : 'حفظ'}
             </button>

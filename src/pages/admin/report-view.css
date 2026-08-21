@@ -8,7 +8,7 @@
   background: rgb(var(--c-bg));
   min-height: 100vh;
   padding: 2rem 0;
-  font-family: 'Cairo', Tahoma, sans-serif;
+  font-family: 'IBM Plex Sans Arabic', Tahoma, sans-serif;
   direction: rtl;
 }
 

@@ -15,6 +15,7 @@ import {
   WarningCircle,
 } from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
+import { IconTile, Pill } from '../../components/ui/index.jsx';
 import MealEditor from '../../components/menu/MealEditor.jsx';
 import MenuImport from '../../components/menu/MenuImport.jsx';
 import { NATIONALITIES } from '../../config/nationalities.js';
@@ -25,11 +26,15 @@ import {
   HAJJ_DAYS, CATEGORY_KEYS, CATEGORY_META, getMeal, getMealItems, isSavedMeal,
 } from '../../config/menus.js';
 
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
+
 const MEAL_META = {
   breakfast: { label: 'الإفطار', Icon: Sunrise,   color: '#F59E0B' },
   lunch:     { label: 'الغداء',  Icon: SunMedium, color: '#4E7CB0' },
   dinner:    { label: 'العشاء',  Icon: MoonStar,  color: '#B4674E' },
 };
+
+const ALERT = '#B4674E';
 const MEAL_ORDER = ['breakfast', 'lunch', 'dinner'];
 
 const AR = (n) => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
@@ -184,8 +189,8 @@ export default function AdminMenu() {
         ]}
         heroActions={nat && (
           <button onClick={() => setImporting(true)}
-            className="h-9 px-4 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25
-                       text-white text-[12px] font-black flex items-center gap-1.5 transition-colors">
+            className="h-9 px-4 rounded-xl bg-primary hover:brightness-110 border border-primary
+                       text-white text-[12px] font-bold flex items-center gap-1.5 transition-colors">
             <UploadSimple size={14} weight="bold" />
             استيراد منيو
           </button>
@@ -193,11 +198,11 @@ export default function AdminMenu() {
       />
 
       {tableMissing && (
-        <div className="rounded-2xl border p-3.5 flex gap-2.5"
-          style={{ borderColor: '#EBCFC3', background: 'color-mix(in srgb, #B4674E 8%, #fff)' }}>
-          <WarningCircle size={17} weight="bold" style={{ color: '#B4674E' }} className="flex-shrink-0 mt-0.5" />
+        <div className="rounded-[14px] border p-3.5 flex gap-2.5"
+          style={{ background: tint(ALERT, 12), borderColor: tint(ALERT, 28) }}>
+          <WarningCircle size={17} weight="duotone" style={{ color: ALERT }} className="shrink-0 mt-0.5" />
           <div className="min-w-0">
-            <p className="text-[12px] font-black text-ink">الحفظ غير مفعّل بعد</p>
+            <p className="text-[12.5px] font-bold" style={{ color: ALERT }}>الحفظ غير مفعّل بعد</p>
           </div>
         </div>
       )}
@@ -205,38 +210,38 @@ export default function AdminMenu() {
       {/* ── Who is eating ──
           A rail, not a screen: the choice stays visible so switching between
           two nationalities is one click rather than a round trip. */}
-      <section className="bg-white rounded-2xl border border-line p-3">
-        <p className="text-[10px] font-black text-muted/70 tracking-widest mb-2 px-1">الجنسية</p>
+      <section className="bg-white rounded-[14px] border border-line p-3 shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)]">
+        <p className="text-[10px] font-bold text-muted/70 tracking-widest mb-2 px-1">الجنسية</p>
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
           {NATIONALITIES.map(n => {
             const on = n.key === natKey;
             const saved = rows.filter(r => r.nationalityId === n.key).length;
             return (
               <button key={n.key} onClick={() => setNatKey(n.key)}
-                className={`relative flex-shrink-0 flex items-center gap-2.5 pr-2 pl-3.5 py-2 rounded-xl border transition-all ${
-                  on ? 'shadow-[0_3px_12px_rgb(var(--c-ink)/0.12)]' : 'bg-white border-line hover:border-primary/40'
+                className={`relative shrink-0 flex items-center gap-2.5 ps-2 pe-3.5 py-2 rounded-[11px] border transition-colors ${
+                  on ? '' : 'bg-white border-line hover:border-primary/40'
                 }`}
                 style={on
-                  ? { background: `color-mix(in srgb, ${n.color} 10%, #fff)`, borderColor: n.color }
+                  ? { background: tint(n.color, 12), borderColor: tint(n.color, 28) }
                   : undefined}>
-                <span className="w-8 h-8 rounded-lg flex items-center justify-center text-lg flex-shrink-0"
-                  style={{ background: `color-mix(in srgb, ${n.color} 14%, #fff)` }}>
+                <span className="w-8 h-8 rounded-lg flex items-center justify-center text-lg shrink-0 border"
+                  style={{ background: tint(n.color, 9), borderColor: tint(n.color, 22) }}>
                   {n.flag}
                 </span>
-                <span className="text-right">
-                  <span className={`block text-[12px] font-black whitespace-nowrap ${on ? '' : 'text-ink'}`}
+                <span className="text-start">
+                  <span className={`block text-[12.5px] font-bold whitespace-nowrap ${on ? '' : 'text-ink'}`}
                     style={on ? { color: n.color } : undefined}>
                     {n.label}
                   </span>
-                  <span className="block text-[9.5px] font-bold text-muted flex items-center gap-1 mt-0.5">
-                    <Building2 size={9} weight="bold" />
+                  <span className="block text-[10px] font-medium text-muted flex items-center gap-1 mt-0.5">
+                    <Building2 size={10} weight="bold" className="text-muted/60" />
                     {AR(n.centers.length)} مركز
                   </span>
                 </span>
                 {/* A dot, not a number: it answers "did anyone enter menus for
                     these pilgrims" without competing with the label. */}
                 {saved > 0 && (
-                  <span className="absolute top-1.5 left-1.5 w-1.5 h-1.5 rounded-full bg-success" />
+                  <span className="absolute top-1.5 end-1.5 w-1.5 h-1.5 rounded-full bg-success" />
                 )}
               </button>
             );
@@ -249,10 +254,10 @@ export default function AdminMenu() {
           {/* ── Which day ──
               The number leads and the label follows, because the operations
               room says "the ninth", never "Tuesday". */}
-          <section className="bg-white rounded-2xl border border-line p-3">
+          <section className="bg-white rounded-[14px] border border-line p-3 shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)]">
             <div className="flex items-center justify-between px-1 mb-2">
-              <p className="text-[10px] font-black text-muted/70 tracking-widest">يوم الحج</p>
-              <p className="text-[10px] font-bold text-muted truncate">
+              <p className="text-[10px] font-bold text-muted/70 tracking-widest">يوم الحج</p>
+              <p className="text-[10.5px] font-medium text-muted truncate">
                 {nat.centers.slice(0, 6).map(c => `مركز ${c}`).join('، ')}
                 {nat.centers.length > 6 && ` +${AR(nat.centers.length - 6)}`}
               </p>
@@ -263,17 +268,14 @@ export default function AdminMenu() {
                 const n = MEAL_ORDER.reduce((t, m) => t + getMealItems(nat.key, d.value, m).length, 0);
                 return (
                   <button key={d.value} onClick={() => setDay(d.value)}
-                    className={`rounded-xl border py-2 transition-all ${
-                      on ? 'text-white border-transparent shadow-[0_4px_14px_rgb(var(--c-primary)/0.3)]'
+                    className={`rounded-[11px] border py-2 transition-colors ${
+                      on ? 'text-white bg-primary border-primary'
                          : 'bg-white border-line hover:border-primary/40'
-                    }`}
-                    style={on
-                      ? { background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }
-                      : undefined}>
-                    <span className={`block text-lg font-black tabular-nums leading-none ${on ? '' : 'text-ink'}`}>
+                    }`}>
+                    <span className={`block text-lg font-extrabold tabular-nums leading-none ${on ? '' : 'text-ink'}`}>
                       {AR(d.value)}
                     </span>
-                    <span className={`block text-[9px] font-bold mt-1 ${on ? 'text-white/70' : 'text-muted'}`}>
+                    <span className={`block text-[10px] font-medium mt-1.5 ${on ? 'text-white/70' : 'text-muted'}`}>
                       {n > 0 ? `${AR(n)} صنف` : '—'}
                     </span>
                   </button>
@@ -323,7 +325,7 @@ export default function AdminMenu() {
 
       {toast && (
         <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[80] flex items-center gap-2
-                        px-4 py-2.5 rounded-xl bg-ink text-white text-[12px] font-black
+                        px-4 py-2.5 rounded-[11px] bg-ink text-white text-[12px] font-bold
                         shadow-[0_10px_30px_rgb(var(--c-ink)/0.4)] animate-[amToast_.2s_ease-out]">
           <CloudCheck size={15} weight="bold" className="text-success" />
           {toast}
@@ -353,24 +355,21 @@ function MealCard({ natKey, day, mealKey, onEdit }) {
   const MIcon = meta.Icon;
 
   return (
-    <section className="relative bg-white rounded-2xl border border-line overflow-hidden flex flex-col">
-      <span className="absolute inset-x-0 top-0 h-1" style={{ background: meta.color }} />
-
-      <header className="px-4 pt-4 pb-3 border-b border-line">
+    <section className="bg-white rounded-[14px] border border-line overflow-hidden flex flex-col
+                        shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)]">
+      <header className="px-4 py-3.5 border-b"
+        style={{ background: tint(meta.color, 12), borderColor: tint(meta.color, 28) }}>
         <div className="flex items-center gap-2.5">
-          <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: `color-mix(in srgb, ${meta.color} 12%, #fff)` }}>
-            <MIcon size={17} weight="bold" style={{ color: meta.color }} />
-          </span>
+          <IconTile Icon={MIcon} color={meta.color} size="md" />
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-black" style={{ color: meta.color }}>{meta.label}</p>
-            <p className="text-[10px] font-bold text-muted mt-0.5 flex items-center gap-1">
+            <p className="text-[14px] font-bold leading-tight" style={{ color: meta.color }}>{meta.label}</p>
+            <p className="text-[11px] font-medium text-muted mt-1 flex items-center gap-1">
               {total > 0 ? `${AR(total)} صنف` : 'لم يُضف بعد'}
               {saved && (
                 <>
                   <span className="text-muted/40">·</span>
                   <span className="inline-flex items-center gap-0.5 text-success">
-                    <CloudCheck size={10} weight="bold" />
+                    <CloudCheck size={11} weight="bold" />
                     محفوظ
                   </span>
                 </>
@@ -379,9 +378,9 @@ function MealCard({ natKey, day, mealKey, onEdit }) {
           </div>
 
           <button onClick={onEdit} title={total > 0 ? 'تعديل المنيو' : 'إضافة منيو'}
-            className="w-8 h-8 rounded-lg border flex items-center justify-center flex-shrink-0
-                       transition-colors hover:bg-background"
-            style={{ borderColor: `color-mix(in srgb, ${meta.color} 35%, #fff)`, color: meta.color }}>
+            className="w-8 h-8 rounded-[10px] border bg-white flex items-center justify-center shrink-0
+                       transition-colors hover:bg-[rgb(var(--c-bg))]"
+            style={{ borderColor: tint(meta.color, 28), color: meta.color }}>
             {total > 0
               ? <PencilSimple size={14} weight="bold" />
               : <Plus size={15} weight="bold" />}
@@ -390,18 +389,8 @@ function MealCard({ natKey, day, mealKey, onEdit }) {
 
         {(meal.location || meal.time) && (
           <div className="flex items-center gap-1.5 flex-wrap mt-2.5">
-            {meal.location && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border border-line bg-background text-ink">
-                <MapPin size={10} weight="bold" style={{ color: meta.color }} />
-                {meal.location}
-              </span>
-            )}
-            {meal.time && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border border-line bg-background text-ink">
-                <ClockIcon size={10} weight="bold" style={{ color: meta.color }} />
-                {meal.time}
-              </span>
-            )}
+            {meal.location && <Pill color={meta.color} Icon={MapPin}>{meal.location}</Pill>}
+            {meal.time && <Pill color={meta.color} Icon={ClockIcon}>{meal.time}</Pill>}
           </div>
         )}
       </header>
@@ -409,12 +398,12 @@ function MealCard({ natKey, day, mealKey, onEdit }) {
       <div className="p-4 flex-1">
         {total === 0 ? (
           <button onClick={onEdit}
-            className="w-full py-8 flex flex-col items-center gap-1.5 rounded-xl border border-dashed
-                       transition-colors hover:bg-background"
-            style={{ borderColor: `color-mix(in srgb, ${meta.color} 30%, #fff)` }}>
+            className="w-full py-8 flex flex-col items-center gap-1.5 rounded-[11px] border border-dashed
+                       transition-colors hover:bg-[rgb(var(--c-bg))]"
+            style={{ borderColor: tint(meta.color, 30) }}>
             <Plus size={16} weight="bold" style={{ color: meta.color }} />
-            <span className="text-[11px] font-black" style={{ color: meta.color }}>إضافة منيو {meta.label}</span>
-            <span className="text-[10px] font-bold text-muted">أو استورد ملفاً من الأعلى</span>
+            <span className="text-[11.5px] font-bold" style={{ color: meta.color }}>إضافة منيو {meta.label}</span>
+            <span className="text-[10.5px] font-medium text-muted">أو استورد ملفاً من الأعلى</span>
           </button>
         ) : (
           <div className="space-y-3.5">
@@ -425,15 +414,15 @@ function MealCard({ natKey, day, mealKey, onEdit }) {
               return (
                 <div key={catKey}>
                   <div className="flex items-center gap-2 mb-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: c.color }} />
-                    <span className="text-[10px] font-black" style={{ color: c.color }}>{c.label}</span>
-                    <span className="h-px flex-1" style={{ background: c.border }} />
-                    <span className="text-[9px] font-black tabular-nums text-muted">{AR(items.length)}</span>
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: c.color }} />
+                    <span className="text-[10.5px] font-bold" style={{ color: c.color }}>{c.label}</span>
+                    <span className="h-px flex-1" style={{ background: tint(c.color, 28) }} />
+                    <span className="text-[10px] font-bold tabular-nums text-muted">{AR(items.length)}</span>
                   </div>
-                  <ul className="space-y-1 pr-3.5">
+                  <ul className="space-y-1 ps-3.5">
                     {items.map((dish, i) => (
                       <li key={i} className="text-[12px] text-ink font-medium leading-relaxed flex gap-2">
-                        <span className="text-muted/40 flex-shrink-0">·</span>
+                        <span className="text-muted/40 shrink-0">·</span>
                         <span className="flex-1">{dish}</span>
                       </li>
                     ))}

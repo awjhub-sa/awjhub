@@ -4,6 +4,7 @@ import { db } from '../../lib/db.js';
 import { getCaterer } from '../../config/centers.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import FilterChip from '../../components/FilterChip.jsx';
+import { Surface, IconTile, Pill, EmptyState } from '../../components/ui/index.jsx';
 import {
   Bell,
   Warning as AlertTriangle,
@@ -15,7 +16,6 @@ import {
   Clock,
   Checks as CheckCheck,
   Funnel as Filter,
-  Sparkle as Sparkles,
   FileText,
 } from '@phosphor-icons/react';
 
@@ -143,7 +143,7 @@ export default function AdminNotifications() {
         ]}
         right={
           newCount === 0 && items.length > 0 ? (
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-[#16A34A]">
+            <div className="flex items-center gap-1.5 text-[12px] font-bold text-[#16A34A]">
               <CheckCheck size={14} weight="regular" />
               تمت المراجعة
             </div>
@@ -170,21 +170,13 @@ export default function AdminNotifications() {
       {/* List */}
       <div className="space-y-2.5">
         {loading ? (
-          <div className="bg-gradient-to-br from-white via-white to-background/40 rounded-3xl border border-line py-20 text-center shadow-[0_2px_12px_rgb(var(--c-ink)/0.06)] transition-shadow duration-300 hover:shadow-[0_6px_24px_rgb(var(--c-primary)/0.12)]">
+          <Surface className="py-20 text-center">
             <div className="w-8 h-8 border-2 border-line border-t-primary rounded-full animate-spin mx-auto" />
-          </div>
+          </Surface>
         ) : filtered.length === 0 ? (
-          <div className="bg-gradient-to-br from-white via-white to-background/40 rounded-3xl border border-line py-20 text-center shadow-[0_2px_12px_rgb(var(--c-ink)/0.06)] transition-shadow duration-300 hover:shadow-[0_6px_24px_rgb(var(--c-primary)/0.12)]">
-            <div className="relative w-fit mx-auto mb-3 group">
-              <div className="absolute inset-0 rounded-2xl blur-xl bg-primary-400 opacity-30 group-hover:opacity-60 transition-opacity" />
-              <div className="relative w-14 h-14 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300"
-                style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)), rgb(var(--c-primary-100)))' }}>
-                <Bell size={24} className="text-primary-400" weight="regular" />
-                <Sparkles size={9} className="absolute -top-0.5 -right-0.5 text-yellow-200 drop-shadow animate-pulse" />
-              </div>
-            </div>
-            <p className="text-muted text-sm font-medium">لا توجد إشعارات في هذه الفئة</p>
-          </div>
+          <Surface>
+            <EmptyState Icon={Bell} title="لا توجد إشعارات في هذه الفئة" />
+          </Surface>
         ) : filtered.map(item => {
           const src      = SOURCES.find(s => s.key === item._src);
           const Icon     = src.icon;
@@ -199,39 +191,27 @@ export default function AdminNotifications() {
           return (
             <button key={item._id}
               onClick={() => src.route && nav(src.route)}
-              className={`w-full text-right bg-white rounded-2xl border shadow-[0_2px_10px_rgb(var(--c-ink)/0.06)] overflow-hidden transition-all hover:shadow-[0_6px_24px_rgb(var(--c-ink)/0.11)] hover:-translate-y-px ${
-                isNew ? 'border-l-0' : 'border-line'
-              }`}
-              style={isNew ? {
-                borderColor: `${color}40`,
-                borderRightWidth: '3px',
-                borderRightColor: color,
-              } : {}}>
+              className="relative w-full text-start bg-white rounded-[14px] border border-line overflow-hidden
+                         shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] transition-shadow duration-200
+                         hover:shadow-[0_6px_20px_-6px_rgb(var(--c-ink)/0.16)]">
 
-              <div className="group flex items-start gap-3 px-4 py-3.5">
+              {isNew && (
+                <span aria-hidden className="absolute inset-y-0 start-0 w-[3px]" style={{ background: color }} />
+              )}
 
-                {/* Icon — lifts and deepens on hover, so the row reads as a way in */}
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 transition-transform duration-200 group-hover:scale-105"
-                  style={{ background: `linear-gradient(135deg, ${color}28, ${color}14)` }}>
-                  <Icon size={18} style={{ color }} weight={isNew ? 'fill' : 'regular'} />
-                </div>
+              <div className="flex items-start gap-3 px-4 py-3.5">
+
+                <IconTile Icon={Icon} color={color} size="md" className="mt-0.5" />
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
-                      style={{ background: `${color}18`, color }}>
-                      {src.label}
-                    </span>
-                    {isNew && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-500 border border-red-100">
-                        جديد
-                      </span>
-                    )}
+                    <Pill color={color}>{src.label}</Pill>
+                    {isNew && <Pill color="#DC2626">جديد</Pill>}
                   </div>
 
                   {/* Observer + center + caterer */}
-                  <div className="flex items-center gap-3 flex-wrap text-xs text-ink-800">
+                  <div className="flex items-center gap-3 flex-wrap text-[11.5px] text-ink-800">
                     <span className="flex items-center gap-1 font-bold">
                       {isForm ? <FileText size={11} weight="regular" className="text-primary" />
                               : <User size={11} weight="regular" className="text-primary" />}
@@ -245,7 +225,7 @@ export default function AdminNotifications() {
                       مركز {item.center || '—'}
                     </span>
                     <span className="text-muted">·</span>
-                    <span className="text-primary font-semibold text-[11px]">
+                    <span className="text-primary font-bold text-[11px]">
                       {caterer}
                     </span>
                   </div>
@@ -276,8 +256,8 @@ export default function AdminNotifications() {
                 </div>
 
                 {/* Timestamp */}
-                <div className="flex flex-col items-end gap-1 flex-shrink-0 text-left">
-                  <span className="flex items-center gap-1 text-[11px] font-semibold text-muted">
+                <div className="flex flex-col items-end gap-1 shrink-0 text-end">
+                  <span className="flex items-center gap-1 text-[11px] font-bold text-muted">
                     <Clock size={10} weight="regular" />
                     {timeAgo(ts)}
                   </span>

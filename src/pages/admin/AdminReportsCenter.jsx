@@ -10,6 +10,7 @@ import {
 import PageHeader from '../../components/PageHeader.jsx';
 import { seasonLabel } from '../../lib/hijri.js';
 import DataTable from '../../components/DataTable.jsx';
+import { Surface, IconTile, Pill, EmptyState } from '../../components/ui/index.jsx';
 import {
   FileArrowDown, ArrowSquareOut, MagnifyingGlass as Search, X, Warning,
   Columns, Funnel, Table as TableIcon, CalendarBlank, ListChecks,
@@ -27,21 +28,44 @@ const SOURCE_ICON = {
   phases: FlowArrow, taskCompletions: CheckSquare,
 };
 
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
+
+/* Two colours carry the page: navy for what is being reported on, gold for the
+   controls that narrow it. */
+const NAVY = 'rgb(var(--c-primary))';
+const GOLD = 'rgb(var(--c-accent-600))';
+const WARN = '#B45309';
+
 const inputCls =
-  'w-full px-3 py-2 border border-line rounded-xl text-sm text-ink outline-none focus:border-primary transition placeholder-muted/40 bg-white';
+  'w-full px-3 py-2.5 border border-line rounded-[10px] text-[13px] font-medium text-ink outline-none focus:border-primary transition-colors placeholder-muted/50 bg-white';
 
 const Field = ({ label, children }) => (
   <div>
-    <label className="block text-[11px] font-medium text-muted mb-1">{label}</label>
+    <label className="block text-[11.5px] font-semibold text-muted mb-1.5">{label}</label>
     {children}
   </div>
 );
 
-const StepNo = ({ n }) => (
-  <span className="w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-black text-white flex-shrink-0"
-    style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}>
+/* The step badge doubles as the section's tile — a numbered square beside a
+   pictogram square would say the same thing twice. */
+const StepNo = ({ n, color = NAVY }) => (
+  <span className="w-10 h-10 rounded-[10px] flex items-center justify-center text-[14px] font-extrabold shrink-0 border tabular-nums"
+    style={{ background: tint(color, 9), borderColor: tint(color, 22), color }}>
     {n}
   </span>
+);
+
+/* Every section wears the same tinted band, so the four steps read as one form
+   rather than four unrelated cards. */
+const SectionHead = ({ n, color = NAVY, title, children }) => (
+  <div className="flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 border-b flex-wrap"
+    style={{ background: tint(color, 12), borderColor: tint(color, 28) }}>
+    <div className="flex items-center gap-3 min-w-0">
+      <StepNo n={n} color={color} />
+      <h2 className="text-[14px] font-bold truncate leading-tight" style={{ color }}>{title}</h2>
+    </div>
+    <div className="flex items-center gap-2 shrink-0 flex-wrap">{children}</div>
+  </div>
 );
 
 /* Rows are read on demand rather than kept subscribed: a report is a snapshot
@@ -214,104 +238,96 @@ export default function AdminReportsCenter() {
         heroActions={
           <>
             <button onClick={openReport}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-black transition hover:-translate-y-0.5"
-              style={{
-                background: 'linear-gradient(135deg, rgb(var(--c-accent)), rgb(var(--c-accent-600)))',
-                color: 'rgb(var(--c-primary-900))',
-                boxShadow: '0 4px 16px rgb(var(--c-accent)/0.35), inset 0 1px 0 rgb(255 255 255 / 0.28)',
-              }}>
-              <ArrowSquareOut size={16} weight="bold" /> عرض التقرير
+              className="flex items-center gap-2 h-9 px-4 rounded-xl text-[12.5px] font-bold text-white
+                         bg-primary border border-primary hover:brightness-110 transition">
+              <ArrowSquareOut size={15} weight="bold" /> عرض التقرير
             </button>
             <button onClick={openDeck}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-black text-white border border-white/25 hover:border-white/50 hover:bg-white/10 transition">
-              <ProjectorScreenChart size={16} weight="bold" /> عرض تقديمي
+              className="flex items-center gap-2 h-9 px-4 rounded-xl text-[12.5px] font-bold text-ink
+                         bg-white border border-line hover:bg-[rgb(var(--c-bg))] transition">
+              <ProjectorScreenChart size={15} weight="bold" /> عرض تقديمي
             </button>
           </>
         }
       />
 
       {/* ── 1. Sections ── */}
-      <section className="bg-white rounded-2xl border border-line p-4 space-y-4">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2">
-            <StepNo n="١" />
-            <h2 className="text-sm font-black text-ink">الأقسام</h2>
-            <span className="text-[11px] font-bold text-accent-600 bg-accent/12 px-2 py-0.5 rounded-full">
-              {AR_NUM(picked.length)} مختار
-            </span>
-          </div>
-        </div>
+      <Surface className="overflow-hidden">
+        <SectionHead n="١" title="الأقسام">
+          <Pill color={GOLD}>{AR_NUM(picked.length)} مختار</Pill>
+        </SectionHead>
 
-        {SOURCE_GROUPS.map(group => (
-          <div key={group}>
-            <p className="text-[10px] font-black text-muted/70 tracking-widest mb-2">{group}</p>
-            {/* Cards, not pills: an icon and a count make a section
-                recognisable at a glance, and the row of identical rounded
-                rectangles gave neither. */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-              {REPORT_SOURCES.filter(s => s.group === group).map(s => {
-                const on = picked.includes(s.key);
-                const Icon = SOURCE_ICON[s.key] || TableIcon;
-                const n = tables[s.key]?.rows.length;
-                return (
-                  <button
-                    key={s.key}
-                    onClick={() => togglePick(s.key)}
-                    className={`group flex items-center gap-2.5 p-2.5 rounded-xl border text-right transition-all ${
-                      on
-                        ? 'border-primary bg-primary/[0.06] shadow-[0_3px_12px_rgb(var(--c-primary)/0.14)]'
-                        : 'border-line bg-white hover:border-primary/40 hover:bg-background'
-                    }`}
-                  >
-                    <span className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
-                      on ? 'text-white' : 'bg-background text-muted group-hover:text-primary'
-                    }`}
-                      style={on ? { background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' } : undefined}>
-                      <Icon size={17} weight={on ? 'fill' : 'regular'} />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className={`block text-[12px] font-black truncate ${on ? 'text-primary' : 'text-ink'}`}>
-                        {s.label}
+        <div className="p-4 sm:p-5 space-y-4">
+          {SOURCE_GROUPS.map(group => (
+            <div key={group}>
+              <p className="text-[10.5px] font-bold text-muted/80 tracking-[0.16em] mb-2">{group}</p>
+              {/* Cards, not pills: an icon and a count make a section
+                  recognisable at a glance, and the row of identical rounded
+                  rectangles gave neither. */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                {REPORT_SOURCES.filter(s => s.group === group).map(s => {
+                  const on = picked.includes(s.key);
+                  const Icon = SOURCE_ICON[s.key] || TableIcon;
+                  const n = tables[s.key]?.rows.length;
+                  return (
+                    <button
+                      key={s.key}
+                      onClick={() => togglePick(s.key)}
+                      className={`group relative flex items-center gap-2.5 p-2.5 rounded-[11px] border text-start overflow-hidden transition-colors ${
+                        on ? '' : 'border-line bg-white hover:bg-[rgb(var(--c-bg))]'
+                      }`}
+                      style={on ? { background: tint(NAVY, 12), borderColor: tint(NAVY, 30) } : undefined}
+                    >
+                      {on && <span aria-hidden className="absolute inset-y-0 start-0 w-[3px]" style={{ background: NAVY }} />}
+                      {on ? (
+                        <IconTile Icon={Icon} color={NAVY} size="sm" />
+                      ) : (
+                        <span className="w-8 h-8 rounded-lg border border-line bg-[rgb(var(--c-bg))] flex items-center justify-center shrink-0 text-muted group-hover:text-primary transition-colors">
+                          <Icon size={15} weight="duotone" />
+                        </span>
+                      )}
+                      <span className="min-w-0 flex-1">
+                        <span className={`block text-[12px] font-bold truncate ${on ? 'text-primary' : 'text-ink'}`}>
+                          {s.label}
+                        </span>
+                        <span className="block text-[10.5px] font-medium text-muted mt-0.5 truncate">
+                          {on && n != null ? `${AR_NUM(n)} سجل` : s.group}
+                        </span>
                       </span>
-                      <span className="block text-[10px] font-bold text-muted mt-0.5">
-                        {on && n != null ? `${AR_NUM(n)} سجل` : s.group}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
-      </section>
+          ))}
+        </div>
+      </Surface>
 
       {/* ── 2. Filters ── */}
-      <section className="bg-white rounded-2xl border border-line p-4 space-y-3">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2">
-            <StepNo n="٢" />
-            <h2 className="text-sm font-black text-ink">التصفية</h2>
-          </div>
+      <Surface className="overflow-hidden">
+        <SectionHead n="٢" color={GOLD} title="التصفية">
           {activeFilters.length > 0 && (
             <button onClick={clearAll}
-              className="text-[11px] font-bold text-muted hover:text-red-600 transition-colors">
+              className="text-[11.5px] font-bold text-muted hover:text-red-600 transition-colors px-2 py-1 rounded-lg">
               مسح الكل
             </button>
           )}
-        </div>
+        </SectionHead>
 
+        <div className="p-4 sm:p-5 space-y-3.5">
         {/* What is actually narrowing the result, as tokens you can pull off
             one at a time. A row of empty selects never said this. */}
         {activeFilters.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {activeFilters.map(f => (
               <span key={f.key}
-                className="inline-flex items-center gap-1.5 pr-2.5 pl-1.5 py-1 rounded-full text-[11px] font-bold bg-accent/12 text-accent-600 border border-accent/25">
+                className="inline-flex items-center gap-1.5 ps-2.5 pe-1.5 py-1 rounded-md text-[11px] font-bold border"
+                style={{ background: tint(GOLD, 12), borderColor: tint(GOLD, 28), color: GOLD }}>
                 {f.label}
                 <button onClick={() => clearFilter(f.key)}
-                  className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-accent/25 transition-colors"
+                  className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-white/70 transition-colors"
                   aria-label={`إزالة ${f.label}`}>
-                  <X size={9} weight="bold" />
+                  <X size={10} weight="bold" />
                 </button>
               </span>
             ))}
@@ -325,10 +341,10 @@ export default function AdminReportsCenter() {
                 <button
                   key={v || 'all'}
                   onClick={() => setFilters(f => ({ ...f, dhuDay: v }))}
-                  className={`min-w-[44px] px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
+                  className={`min-w-[44px] px-3 py-1.5 rounded-[10px] text-[12px] font-bold border transition-colors tabular-nums ${
                     filters.dhuDay === v
                       ? 'bg-primary text-white border-primary'
-                      : 'bg-white text-ink border-line hover:border-primary/40'
+                      : 'bg-white text-ink border-line hover:bg-[rgb(var(--c-bg))]'
                   }`}
                 >
                   {label}
@@ -390,28 +406,29 @@ export default function AdminReportsCenter() {
               under. */}
           <Field label="بحث حر">
             <div className="relative">
-              <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                <Search size={13} className="text-muted" />
+              <div className="absolute inset-y-0 start-3 flex items-center pointer-events-none">
+                <Search size={14} className="text-muted/70" weight="bold" />
               </div>
               <input value={search} onChange={e => setSearch(e.target.value)}
-                placeholder="أي نص داخل السجل" className={`${inputCls} pr-8`} />
+                placeholder="أي نص داخل السجل" className={`${inputCls} ps-9`} />
             </div>
           </Field>
         </div>
 
         {sources.some(s => s.questions?.length) && (
-          <label className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl border border-line cursor-pointer hover:bg-background transition-colors">
+          <label className="flex items-start gap-2.5 px-3.5 py-3 rounded-[11px] border cursor-pointer transition-colors"
+            style={{ background: tint(GOLD, 12), borderColor: tint(GOLD, 28) }}>
             <input type="checkbox" checked={detailed}
               onChange={e => setDetailed(e.target.checked)}
-              className="accent-primary w-4 h-4 mt-0.5" />
-            <span className="text-xs">
-              <span className="text-ink font-medium flex items-center gap-1.5">
-                <ListChecks size={13} />
+              className="accent-primary w-4 h-4 mt-0.5 shrink-0" />
+            <span className="min-w-0">
+              <span className="text-[12.5px] font-bold flex items-center gap-1.5" style={{ color: GOLD }}>
+                <ListChecks size={13} weight="bold" className="shrink-0" />
                 {sources.some(s => s.criteriaSections)
                   ? 'محضر مفصّل — صفحة لكل مركز'
                   : 'عرض مفصّل — إجابة كل معيار'}
               </span>
-              <span className="text-muted">
+              <span className="block text-[11.5px] font-medium text-muted mt-1 leading-relaxed">
                 {sources.some(s => s.criteriaSections)
                   ? 'صفحة كاملة لكل مركز: بياناته وتاريخه وإجابة كل معيار وصوره وخانات التوقيع.'
                   : 'يفكّ كل تقييم إلى سطر لكل سؤال. الدرجة وحدها لا تقول أي معيار سقط.'}
@@ -419,33 +436,25 @@ export default function AdminReportsCenter() {
             </span>
           </label>
         )}
-      </section>
+        </div>
+      </Surface>
 
       {/* ── 3. Columns ── */}
       {!detailed && (
-        <section className="bg-white rounded-2xl border border-line p-4 space-y-3">
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-2">
-              <StepNo n="٣" />
-              <h2 className="text-sm font-black text-ink">
-                أعمدة «{source.label}»
-              </h2>
-              <span className="text-[11px] font-bold text-accent-600 bg-accent/12 px-2 py-0.5 rounded-full">
-                {AR_NUM((cols[source.key] || []).length)}
-              </span>
-            </div>
-            <div className="flex gap-1.5">
-              <button onClick={() => setCols(c => ({ ...c, [source.key]: source.columns.map(x => x.key) }))}
-                className="px-2.5 py-1 rounded-lg border border-line text-[11px] font-bold text-muted hover:text-primary hover:border-primary/40 transition-colors">
-                الكل
-              </button>
-              <button onClick={() => setCols(c => ({ ...c, [source.key]: source.defaultColumns }))}
-                className="px-2.5 py-1 rounded-lg border border-line text-[11px] font-bold text-muted hover:text-primary hover:border-primary/40 transition-colors">
-                الافتراضي
-              </button>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
+        <Surface className="overflow-hidden">
+          <SectionHead n="٣" color={GOLD} title={`أعمدة «${source.label}»`}>
+            <Pill color={GOLD} className="tabular-nums">{AR_NUM((cols[source.key] || []).length)}</Pill>
+            <button onClick={() => setCols(c => ({ ...c, [source.key]: source.columns.map(x => x.key) }))}
+              className="px-2.5 py-1 rounded-[10px] border border-line bg-white text-[11.5px] font-bold text-muted hover:text-primary transition-colors">
+              الكل
+            </button>
+            <button onClick={() => setCols(c => ({ ...c, [source.key]: source.defaultColumns }))}
+              className="px-2.5 py-1 rounded-[10px] border border-line bg-white text-[11.5px] font-bold text-muted hover:text-primary transition-colors">
+              الافتراضي
+            </button>
+          </SectionHead>
+
+          <div className="p-4 sm:p-5 flex flex-wrap gap-1.5">
             {source.columns.map(c => {
               const on = (cols[source.key] || []).includes(c.key);
               return (
@@ -457,60 +466,58 @@ export default function AdminReportsCenter() {
                       ? (m[source.key] || []).filter(k => k !== c.key)
                       : [...(m[source.key] || []), c.key],
                   }))}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors ${
-                    on ? 'bg-accent/15 border-accent/40 text-accent-600' : 'bg-white border-line text-muted hover:border-primary/30'
+                  className={`px-2.5 py-1.5 rounded-[10px] text-[11.5px] font-bold border transition-colors ${
+                    on ? '' : 'bg-white border-line text-muted hover:bg-[rgb(var(--c-bg))]'
                   }`}
+                  style={on ? { background: tint(GOLD, 12), borderColor: tint(GOLD, 30), color: GOLD } : undefined}
                 >
                   {c.label}
                 </button>
               );
             })}
           </div>
-        </section>
+        </Surface>
       )}
 
       {error && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-3 py-2.5 text-sm font-medium flex items-start gap-2">
-          <Warning size={15} className="mt-0.5 flex-shrink-0" />
+        <div className="rounded-[11px] border px-3.5 py-3 text-[12.5px] font-medium flex items-start gap-2.5"
+          style={{ background: tint(WARN, 12), borderColor: tint(WARN, 28), color: WARN }}>
+          <Warning size={15} weight="fill" className="mt-0.5 shrink-0" />
           <span className="flex-1">{error}</span>
-          <button onClick={() => setError(null)} className="text-amber-600 hover:text-amber-900"><X size={14} /></button>
+          <button onClick={() => setError(null)} className="shrink-0 opacity-70 hover:opacity-100 transition-opacity"><X size={14} weight="bold" /></button>
         </div>
       )}
 
       {/* ── 4. Preview + export ── */}
-      <section className="bg-white rounded-2xl border border-line overflow-hidden">
-        <div className="p-4 border-b border-line flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <StepNo n={detailed ? '٣' : '٤'} />
-            <h2 className="text-sm font-black text-ink">المعاينة</h2>
-            <span className="text-[11px] font-bold text-muted flex items-center gap-1.5">
-              <CalendarBlank size={11} /> {filterSummary}
-            </span>
-          </div>
+      <Surface className="overflow-hidden">
+        <SectionHead n={detailed ? '٣' : '٤'} title="المعاينة">
+          <span className="text-[11.5px] font-medium text-muted flex items-center gap-1.5">
+            <CalendarBlank size={12} weight="bold" className="text-muted/60 shrink-0" /> {filterSummary}
+          </span>
           {canDossier && detailed && (
-            <label className="flex items-center gap-2 text-[11px] font-bold text-muted cursor-pointer">
+            <label className="flex items-center gap-2 text-[11.5px] font-bold text-muted cursor-pointer bg-white border border-line rounded-[10px] px-2.5 py-1.5">
               <input type="checkbox" checked={photos} onChange={e => setPhotos(e.target.checked)}
                 className="accent-primary w-3.5 h-3.5" />
               تضمين الصور الميدانية
             </label>
           )}
-        </div>
+        </SectionHead>
 
         {/* Section tabs — the PDF carries them all; the preview shows one. */}
         {sources.length > 1 && (
-          <div className="px-4 pt-3 flex flex-wrap gap-1.5">
+          <div className="px-4 sm:px-5 pt-3.5 flex flex-wrap gap-1.5">
             {sources.map(s => (
               <button
                 key={s.key}
                 onClick={() => setActive(s.key)}
-                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-colors ${
+                className={`px-3 py-1.5 rounded-[10px] text-[11.5px] font-bold border transition-colors ${
                   active === s.key
                     ? 'bg-primary text-white border-primary'
-                    : 'bg-white text-muted border-line hover:border-primary/40'
+                    : 'bg-white text-muted border-line hover:bg-[rgb(var(--c-bg))]'
                 }`}
               >
                 {s.label}
-                <span className={`mr-1.5 px-1.5 py-0.5 rounded-full ${active === s.key ? 'bg-white/25' : 'bg-background'}`}>
+                <span className={`ms-1.5 px-1.5 py-0.5 rounded-md tabular-nums ${active === s.key ? 'bg-white/25' : 'bg-[rgb(var(--c-bg))]'}`}>
                   {AR_NUM(tables[s.key]?.rows.length ?? 0)}
                 </span>
               </button>
@@ -519,25 +526,23 @@ export default function AdminReportsCenter() {
         )}
 
         <DataTable className="max-h-[520px] overflow-y-auto mt-3">
-          <table className="w-full text-xs">
-            <thead className="text-muted border-b border-line sticky top-0 z-10"
-              style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 60%)' }}>
+          <table className="w-full text-[12px]">
+            <thead className="text-muted border-b border-line sticky top-0 z-10 bg-[rgb(var(--c-bg))]">
               <tr>
-                <th className="px-3 py-2.5 text-right font-semibold w-10">#</th>
+                <th className="px-3 py-2.5 text-start font-bold text-[11px] w-10">#</th>
                 {current.columns.map((c, i) => (
-                  <th key={i} className="px-3 py-2.5 text-right font-semibold whitespace-nowrap">{c}</th>
+                  <th key={i} className="px-3 py-2.5 text-start font-bold text-[11px] whitespace-nowrap">{c}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
               {loading && (
-                <tr><td colSpan={current.columns.length + 1} className="p-10 text-center text-muted">جارٍ التحميل...</td></tr>
+                <tr><td colSpan={current.columns.length + 1} className="p-10 text-center text-[12.5px] font-semibold text-muted">جارٍ التحميل...</td></tr>
               )}
               {!loading && current.rows.length === 0 && (
                 <tr>
-                  <td colSpan={current.columns.length + 1} className="p-10 text-center">
-                    <TableIcon size={30} className="mx-auto text-muted/30 mb-2" />
-                    <p className="text-muted text-sm">لا سجلات مطابقة</p>
+                  <td colSpan={current.columns.length + 1}>
+                    <EmptyState Icon={TableIcon} title="لا سجلات مطابقة" />
                   </td>
                 </tr>
               )}
@@ -545,10 +550,10 @@ export default function AdminReportsCenter() {
                   painting ten thousand rows to prove it would freeze the tab.
                   The export always carries every matching row. */}
               {current.rows.slice(0, 200).map((r, i) => (
-                <tr key={i} className="hover:bg-background transition-colors">
-                  <td className="px-3 py-2 text-muted tabular-nums">{i + 1}</td>
+                <tr key={i} className="hover:bg-[rgb(var(--c-bg))] transition-colors">
+                  <td className="px-3 py-2.5 text-muted tabular-nums">{i + 1}</td>
                   {r.map((cell, j) => (
-                    <td key={j} className="px-3 py-2 text-ink max-w-[240px] truncate" title={cell}>
+                    <td key={j} className="px-3 py-2.5 text-ink/85 font-medium max-w-[240px] truncate" title={cell}>
                       {cell || <span className="text-muted/40">—</span>}
                     </td>
                   ))}
@@ -557,8 +562,7 @@ export default function AdminReportsCenter() {
             </tbody>
           </table>
         </DataTable>
-
-              </section>
+      </Surface>
     </div>
   );
 }

@@ -1,6 +1,17 @@
-import {
-  Sparkle as Sparkles,
-} from '@phosphor-icons/react';
+/**
+ * src/components/Card.jsx
+ *
+ * The older card vocabulary, kept because call sites still use it, but drawn in
+ * the language of src/components/ui: a flat tinted header, a hairline edge, and
+ * no glow.
+ *
+ * What went: the blurred copy of the icon tile sitting behind itself, the
+ * radial wash that faded in on hover, and the gradient fill on the tile. All
+ * three were the same idea — depth painted on a surface that has none — and all
+ * three are what dated these screens.
+ */
+
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
 
 export function Card({
   children,
@@ -13,8 +24,9 @@ export function Card({
   return (
     <div
       {...rest}
-      className={`group relative bg-white rounded-2xl border border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] overflow-hidden transition-all duration-300 ${
-        hover ? 'hover:shadow-[0_8px_28px_rgb(var(--c-primary)/0.15)] hover:-translate-y-0.5' : ''
+      className={`group relative bg-white rounded-[14px] border border-line overflow-hidden
+                  shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] transition-shadow duration-200 ${
+        hover ? 'hover:shadow-[0_6px_20px_-6px_rgb(var(--c-ink)/0.16)]' : ''
       } ${className}`}
       style={{
         ...(accentColor ? { borderRight: `3px solid ${accentColor}` } : {}),
@@ -22,20 +34,7 @@ export function Card({
       }}
     >
       {topAccent && accentColor && (
-        <div
-          className="absolute top-0 right-0 left-0 h-0.5 opacity-70"
-          style={{
-            background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)`,
-          }}
-        />
-      )}
-      {accentColor && hover && (
-        <div
-          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-          style={{
-            background: `radial-gradient(circle at 100% 0%, ${accentColor}15, transparent 60%)`,
-          }}
-        />
+        <div className="absolute top-0 inset-x-0 h-[2px]" style={{ background: accentColor }} />
       )}
       <div className="relative">{children}</div>
     </div>
@@ -49,44 +48,27 @@ export function CardHeader({
   color = 'rgb(var(--c-primary))',
   bgGradient,
   right,
-  sparkle = false,
+  sparkle,
   className = '',
 }) {
-  const headerBg =
-    bgGradient ||
-    `linear-gradient(135deg, ${color}10 0%, #fff 55%)`;
-  const iconGradient = `linear-gradient(135deg, ${color}DD, ${color})`;
-
   return (
     <div
-      className={`flex items-center justify-between px-5 py-3.5 border-b border-line gap-3 ${className}`}
-      style={{ background: headerBg }}
+      className={`flex items-center justify-between px-4 sm:px-5 py-3.5 border-b gap-3 ${className}`}
+      style={{ background: bgGradient || tint(color, 12), borderColor: tint(color, 28) }}
     >
       <div className="flex items-center gap-3 min-w-0">
         {Icon && (
-          <div className="relative flex-shrink-0">
-            <div
-              className="absolute inset-0 rounded-xl blur-lg opacity-50 group-hover:opacity-80 transition-opacity"
-              style={{ background: iconGradient }}
-            />
-            <div
-              className="relative w-9 h-9 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300"
-              style={{ background: iconGradient }}
-            >
-              <Icon size={16} className="text-white" weight="bold" />
-              {sparkle && (
-                <Sparkles
-                  size={9}
-                  className="absolute -top-0.5 -right-0.5 text-yellow-200 drop-shadow"
-                />
-              )}
-            </div>
-          </div>
+          <span
+            className="w-10 h-10 rounded-[10px] flex items-center justify-center flex-shrink-0 border"
+            style={{ background: tint(color, 9), borderColor: tint(color, 22) }}
+          >
+            <Icon size={18} weight="duotone" style={{ color }} />
+          </span>
         )}
         <div className="min-w-0">
-          <h2 className="font-bold text-ink text-sm truncate">{title}</h2>
+          <h2 className="text-[14px] font-bold truncate leading-tight" style={{ color }}>{title}</h2>
           {subtitle && (
-            <p className="text-[11px] text-muted mt-0.5 font-medium truncate">{subtitle}</p>
+            <p className="text-[11.5px] text-muted mt-1 font-medium truncate">{subtitle}</p>
           )}
         </div>
       </div>
@@ -102,12 +84,12 @@ export function SectionPanel({
   color = 'rgb(var(--c-primary))',
   bgGradient,
   right,
-  sparkle = false,
+  sparkle,
   children,
   className = '',
 }) {
   return (
-    <Card className={className} accentColor={color}>
+    <Card className={className}>
       <CardHeader
         Icon={Icon}
         title={title}
@@ -115,7 +97,6 @@ export function SectionPanel({
         color={color}
         bgGradient={bgGradient}
         right={right}
-        sparkle={sparkle}
       />
       {children}
     </Card>

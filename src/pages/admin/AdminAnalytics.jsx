@@ -30,10 +30,17 @@ import {
   ArrowCounterClockwise as RotateCcw,
 } from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
+import {
+  Surface,
+  IconTile,
+  Pill,
+  StatTile,
+  EmptyState,
+} from '../../components/ui/index.jsx';
 import { CENTERS, getCaterer } from '../../config/centers.js';
 import { MINA_ALL_CRITERIA } from '../../config/minaQuestions.js';
 import { ARAFAT_ALL_CRITERIA } from '../../config/arafatQuestions.js';
-import { computeReadinessTotals } from '../../config/readinessScore.js';
+import { computeReadinessTotals, readDetails } from '../../config/readinessScore.js';
 
 const MINA_Qs   = MINA_ALL_CRITERIA;
 const ARAFAT_Qs = ARAFAT_ALL_CRITERIA;
@@ -49,7 +56,6 @@ const TABS = [
     border:'#86EFAC',
     icon:  Mountain,
     allQs: MINA_Qs,
-    gradient: 'linear-gradient(135deg, #4F8856, rgb(var(--c-success)))',
   },
   {
     key:  'arafat',
@@ -61,7 +67,6 @@ const TABS = [
     border:'#BFDBFE',
     icon:  Mountain,
     allQs: ARAFAT_Qs,
-    gradient: 'linear-gradient(135deg, #6595C4, #2F5580)',
   },
 ];
 
@@ -344,59 +349,39 @@ export default function AdminAnalytics({ site }) {
           return (
             <button key={t.key}
               onClick={() => { setActiveTab(t.key); setSelectedCenter(null); setSearchTerm(''); }}
-              className={`group/tab relative overflow-hidden flex items-center gap-3 px-4 py-4 rounded-3xl border-2 transition-all duration-300 ${
-                active
-                  ? 'shadow-[0_8px_32px_rgb(var(--c-ink)/0.18)] scale-[1.02]'
-                  : 'bg-white border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.04)] hover:shadow-[0_4px_20px_rgb(var(--c-ink)/0.08)] hover:scale-[1.01]'
-              }`}
+              className="group/tab relative overflow-hidden flex items-center gap-3 px-4 ps-5 py-4 rounded-[14px] border
+                         shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] transition-shadow duration-200
+                         hover:shadow-[0_6px_20px_-6px_rgb(var(--c-ink)/0.16)]"
               style={active
-                ? { background: t.gradient, borderColor: t.color }
-                : { borderColor: 'rgb(var(--c-line))' }}
+                ? {
+                    background: `color-mix(in srgb, ${t.color} 12%, #fff)`,
+                    borderColor: t.color,
+                  }
+                : { background: '#fff', borderColor: 'rgb(var(--c-line))' }}
             >
               {active && (
-                <>
-                  <Sparkles className="absolute top-2 right-2 text-white/30 animate-pulse" size={12} />
-                  <Sparkles className="absolute bottom-3 left-3 text-white/20" size={9} />
-                </>
+                <span className="absolute inset-y-0 start-0 w-[3px]" style={{ background: t.color }} />
               )}
-              <div className="relative shrink-0">
-                {active && (
-                  <div className="absolute inset-0 rounded-2xl blur-md opacity-50 bg-white" />
-                )}
-                <div className="relative w-12 h-12 rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover/tab:scale-110"
-                  style={active
-                    ? { background: 'rgba(255,255,255,0.22)', border: '1.5px solid rgba(255,255,255,0.4)' }
-                    : { background: `${t.color}13`, border: `1.5px solid ${t.color}25` }}>
-                  <Icon
-                    size={22}
-                    style={{ color: active ? '#fff' : t.color }}
-                    weight={active ? 'bold' : 'regular'}
-                  />
-                </div>
-              </div>
-              <div className="flex-1 text-right">
-                <p className="text-base font-black leading-snug"
-                  style={{ color: active ? '#fff' : 'rgb(var(--c-ink))' }}>
+              <IconTile Icon={Icon} color={t.color} size="lg" />
+              <div className="flex-1 text-start min-w-0">
+                <p className="text-[15px] font-bold leading-snug"
+                  style={{ color: active ? t.color : 'rgb(var(--c-ink))' }}>
                   جاهزية {t.short}
                 </p>
-                <p className="text-[11px] font-bold mt-0.5"
-                  style={{ color: active ? 'rgba(255,255,255,0.85)' : 'rgb(var(--c-muted))' }}>
+                <p className="text-[11.5px] font-medium text-muted mt-1">
                   {count} تقييم · {evaluated} مركز مُقيَّم
                 </p>
               </div>
-              {active && (
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-white/40 animate-pulse" />
-              )}
             </button>
           );
         })}
       </div>
 
       {data[activeTab] === null ? (
-        <div className="bg-white rounded-3xl border border-line py-16 text-center shadow-[0_2px_20px_rgb(var(--c-ink)/0.06)]">
+        <Surface className="py-16 text-center">
           <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-muted text-sm">جارٍ التحميل...</p>
-        </div>
+          <p className="text-muted text-[13px] font-semibold">جارٍ التحميل...</p>
+        </Surface>
       ) : selectedCenter && activeSummary ? (
         /* ─── Center Detail View ─── */
         <CenterDetail
@@ -411,34 +396,31 @@ export default function AdminAnalytics({ site }) {
           {/* ── Stats row ── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: 'مراكز مُقيَّمة',  value: `${evaluated}/${CENTERS.length}`, color: tab.color, icon: ClipboardList },
-              { label: 'متوسط الدرجات',  value: overallAvg ? `${overallAvg}/10` : '—', color: 'rgb(var(--c-primary))', icon: TrendingUp },
-              { label: 'تقييمات ممتازة', value: perfectCnt,                      color: '#15803D', icon: Award },
-              { label: 'إجمالي مخالفات', value: totalViols,                      color: totalViols > 0 ? '#B91C1C' : '#15803D', icon: AlertCircle },
+              /* The evaluated count is the same set the "تم رفعها" chip below
+                 selects, so the tile drives that filter instead of leaving the
+                 reader to find the chip. The other three summarise the scores
+                 themselves — no screen and no filter holds those lists, so they
+                 stay plain figures rather than pretending to lead somewhere. */
+              { label: 'مراكز مُقيَّمة',  value: `${evaluated}/${CENTERS.length}`, color: tab.color, Icon: ClipboardList,
+                onClick: () => setDateFilter('uploaded'), active: dateFilter === 'uploaded' },
+              { label: 'متوسط الدرجات',  value: overallAvg ? `${overallAvg}/10` : '—', color: 'rgb(var(--c-primary))', Icon: TrendingUp },
+              { label: 'تقييمات ممتازة', value: perfectCnt,                      color: '#15803D', Icon: Award },
+              { label: 'إجمالي مخالفات', value: totalViols,                      color: totalViols > 0 ? '#B91C1C' : '#15803D', Icon: AlertCircle },
             ].map(c => (
-              /* Same tile as the dashboard and the analytics section: the
-                 accent is a bar on the top edge, so the three screens read as
-                 one system rather than three takes on a card. */
-              <div key={c.label}
-                className="relative bg-white rounded-2xl p-4 pt-5 border border-line overflow-hidden flex items-center gap-3">
-                <span className="absolute inset-x-0 top-0 h-1" style={{ background: c.color }} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-bold text-muted mb-1 truncate">{c.label}</p>
-                  <p className="text-2xl font-black tabular-nums leading-none" style={{ color: c.color }}>{c.value}</p>
-                </div>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: `color-mix(in srgb, ${c.color} 12%, #fff)` }}>
-                  <c.icon size={19} style={{ color: c.color }} weight="bold" />
-                </div>
-              </div>
+              /* The shared StatTile: same figure row as the dashboard and the
+                 phases screen, so the three read as one system. */
+              <StatTile key={c.label} label={c.label} value={c.value} Icon={c.Icon} color={c.color}
+                onClick={c.onClick} active={c.active} />
             ))}
           </div>
 
           {/* ── Stages report button ── */}
           <button
             onClick={() => window.open(`/admin/stages-report?tab=${activeTab}`, '_blank')}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-white text-sm font-black transition-all shadow-md hover:shadow-lg active:scale-[0.99]"
-            style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)) 60%, rgb(var(--c-primary-700)))' }}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-[14px] text-white text-[13px] font-bold
+                       shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] transition-shadow duration-200
+                       hover:shadow-[0_6px_20px_-6px_rgb(var(--c-ink)/0.16)]"
+            style={{ background: 'rgb(var(--c-primary))' }}
           >
             <BarChart3 size={16} weight="bold" />
             تقرير مراحل
@@ -458,19 +440,21 @@ export default function AdminAnalytics({ site }) {
               return (
                 <button key={f.key}
                   onClick={() => setDateFilter(f.key)}
-                  className={`group/flt flex items-center justify-center gap-2 px-3 py-2.5 rounded-2xl border-2 text-xs font-black transition-all ${
-                    active ? 'shadow-md scale-[1.02] text-white' : 'bg-white text-muted border-line hover:border-primary/50'
+                  className={`group/flt flex items-center justify-center gap-2 px-3 py-2.5 rounded-[10px] border text-[12px] font-bold transition-colors ${
+                    active ? '' : 'bg-white text-muted border-line hover:border-primary/50'
                   }`}
                   style={active
-                    ? { background: `linear-gradient(135deg, ${f.color}, color-mix(in srgb, ${f.color} 78%, #000))`, borderColor: f.color }
+                    ? {
+                        background: `color-mix(in srgb, ${f.color} 12%, #fff)`,
+                        borderColor: f.color,
+                        color: f.color,
+                      }
                     : undefined}
                 >
-                  <FIcon size={13} weight="bold" />
+                  <FIcon size={13} weight="duotone" style={{ color: f.color }} />
                   <span>{f.label}</span>
-                  <span className={`tabular-nums text-[10px] px-1.5 py-0.5 rounded-md ${
-                    active ? 'bg-white/25' : 'text-muted'
-                  }`}
-                    style={!active ? { background: `color-mix(in srgb, ${f.color} 12%, #fff)`, color: f.color } : undefined}>
+                  <span className="tabular-nums text-[10.5px] font-bold px-1.5 py-[3px] rounded-md leading-none"
+                    style={{ background: `color-mix(in srgb, ${f.color} 11%, #fff)`, color: f.color }}>
                     {f.count}
                   </span>
                 </button>
@@ -480,17 +464,17 @@ export default function AdminAnalytics({ site }) {
 
           {/* ── Search bar ── */}
           <div className="relative">
-            <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted" weight="regular" />
+            <Search size={16} className="absolute start-4 top-1/2 -translate-y-1/2 text-muted" weight="regular" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="بحث بالمركز أو المتعهد..."
-              className="w-full pr-11 pl-4 py-3 rounded-2xl border-2 border-line bg-white text-sm font-medium text-ink placeholder:text-muted focus:border-primary focus:outline-none transition-colors shadow-[0_2px_8px_rgb(var(--c-ink)/0.05)]"
+              className="w-full ps-11 pe-4 py-3 rounded-[14px] border border-line bg-white text-[13px] font-medium text-ink placeholder:text-muted focus:border-primary focus:outline-none transition-colors shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)]"
             />
             {searchTerm && (
               <button onClick={() => setSearchTerm('')}
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:bg-[rgb(var(--c-primary-50))] transition-colors">
+                className="absolute end-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-md flex items-center justify-center text-muted hover:bg-[rgb(var(--c-primary-50))] transition-colors">
                 <X size={14} weight="bold" />
               </button>
             )}
@@ -498,27 +482,20 @@ export default function AdminAnalytics({ site }) {
 
           {/* ── Centers grid ── */}
           {filteredSummaries.length === 0 ? (
-            <div className="bg-white rounded-3xl border border-line py-16 text-center shadow-[0_2px_20px_rgb(var(--c-ink)/0.06)]">
-              <div className="relative w-fit mx-auto mb-3 group">
-                <div className="absolute inset-0 rounded-2xl blur-xl opacity-30 group-hover:opacity-60 transition-opacity"
-                  style={{ background: tab.color }} />
-                <div className="relative w-12 h-12 rounded-2xl flex items-center justify-center"
-                  style={{ background: `${tab.color}1A` }}>
-                  {dateFilter === 'remaining'
-                    ? <CheckCircle2 size={22} style={{ color: '#15803D' }} weight="regular" />
-                    : <Search size={22} style={{ color: tab.color }} weight="regular" />}
-                </div>
-              </div>
-              <p className="text-muted font-medium">
-                {dateFilter === 'remaining'
-                  ? '🎉 جميع المراكز رُفعت لها تقييمات اليوم'
-                  : dateFilter === 'today'
-                    ? 'لم تُرفع تقييمات اليوم بعد'
-                    : dateFilter === 'uploaded'
-                      ? 'لم يُرفع أي تقييم بعد'
-                      : 'لا توجد مراكز تطابق البحث'}
-              </p>
-            </div>
+            <Surface>
+              <EmptyState
+                Icon={dateFilter === 'remaining' ? CheckCircle2 : Search}
+                title={
+                  dateFilter === 'remaining'
+                    ? '🎉 جميع المراكز رُفعت لها تقييمات اليوم'
+                    : dateFilter === 'today'
+                      ? 'لم تُرفع تقييمات اليوم بعد'
+                      : dateFilter === 'uploaded'
+                        ? 'لم يُرفع أي تقييم بعد'
+                        : 'لا توجد مراكز تطابق البحث'
+                }
+              />
+            </Surface>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredSummaries.map(s => (
@@ -539,8 +516,8 @@ export default function AdminAnalytics({ site }) {
  * The card used to give the score a two-tone chip, the centre number a glowing
  * gradient tile, and the observer and the violations a tile each — four boxes
  * for four facts, and the one that decides whether anyone visits the centre was
- * no louder than the rest. Now the band colour runs along the top edge, the
- * score is the largest thing on the card, and everything else is a line of
+ * no louder than the rest. Now the band colour is a rail on the leading edge,
+ * the score is the largest thing on the card, and everything else is a line of
  * quiet meta beneath it. */
 function CenterCard({ summary, tab, onSelect, isRecent }) {
   const sst = scoreStyle(summary.avgScore);
@@ -552,51 +529,51 @@ function CenterCard({ summary, tab, onSelect, isRecent }) {
     <button
       onClick={onSelect}
       disabled={!hasData}
-      className={`relative text-right group bg-white rounded-2xl border overflow-hidden p-4 pt-5 transition-all ${
+      className={`relative text-start group bg-white rounded-[14px] border overflow-hidden p-4 ps-5
+                  shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] transition-shadow duration-200 ${
         hasData
-          ? 'border-line hover:shadow-[0_8px_24px_rgb(var(--c-ink)/0.10)] hover:-translate-y-0.5 cursor-pointer'
-          : 'border-dashed border-line bg-bg opacity-70 cursor-not-allowed'
+          ? 'border-line hover:shadow-[0_6px_20px_-6px_rgb(var(--c-ink)/0.16)] cursor-pointer'
+          : 'border-dashed border-line bg-[rgb(var(--c-bg))] opacity-70 cursor-not-allowed'
       }`}
     >
-      {hasData && <span className="absolute inset-x-0 top-0 h-1" style={{ background: tone }} />}
+      {hasData && <span className="absolute inset-y-0 start-0 w-[3px]" style={{ background: tone }} />}
 
       {isRecent && (
-        <span className="absolute top-2.5 left-2.5 w-2.5 h-2.5 rounded-full bg-red-500 badge-pulse-red z-10" />
+        <span className="absolute top-2.5 end-2.5 w-2.5 h-2.5 rounded-full bg-red-500 badge-pulse-red z-10" />
       )}
 
       <div className="flex items-start gap-3">
-        <span className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 border"
+        <span className="w-11 h-11 rounded-[10px] flex items-center justify-center flex-shrink-0 border"
           style={hasData
-            ? { background: `color-mix(in srgb, ${tone} 12%, #fff)`, borderColor: `color-mix(in srgb, ${tone} 30%, #fff)` }
+            ? { background: `color-mix(in srgb, ${tone} 9%, #fff)`, borderColor: `color-mix(in srgb, ${tone} 22%, #fff)` }
             : { background: 'rgb(var(--c-primary-50))', borderStyle: 'dashed', borderColor: 'rgb(var(--c-line))' }}>
-          <span className="text-sm font-black tabular-nums" style={{ color: tone }}>{centerNum}</span>
+          <span className="text-[14px] font-extrabold tabular-nums" style={{ color: tone }}>{centerNum}</span>
         </span>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <p className="text-[13px] font-black text-ink truncate">{summary.center}</p>
+            <p className="text-[13.5px] font-bold text-ink truncate">{summary.center}</p>
             {summary.supervisorCount > 0 && (
-              <span className="inline-flex items-center gap-1 text-[8.5px] font-black px-1.5 py-0.5 rounded-md"
-                title={`${summary.supervisorCount} تقييم من المشرف`}
-                style={{ background: '#FBF3EF', color: '#9E5741', border: '1px solid #EBCFC3' }}>
-                <UserCog size={9} weight="bold" />
-                مشرف
-                {summary.supervisorCount > 1 && (
-                  <span className="tabular-nums">{summary.supervisorCount}</span>
-                )}
+              <span title={`${summary.supervisorCount} تقييم من المشرف`} className="inline-flex">
+                <Pill color="#9E5741" Icon={UserCog}>
+                  مشرف
+                  {summary.supervisorCount > 1 && (
+                    <span className="tabular-nums">{summary.supervisorCount}</span>
+                  )}
+                </Pill>
               </span>
             )}
           </div>
-          <p className="text-[10px] text-primary font-bold truncate mt-0.5">{summary.caterer || '—'}</p>
+          <p className="text-[11.5px] text-primary font-medium truncate mt-1">{summary.caterer || '—'}</p>
         </div>
 
         {/* The score, and nothing competing with it. */}
         {hasData ? (
-          <div className="text-left flex-shrink-0">
-            <p className="text-2xl font-black tabular-nums leading-none" style={{ color: tone }}>
+          <div className="text-end flex-shrink-0">
+            <p className="text-[26px] font-extrabold tabular-nums leading-none" style={{ color: tone }}>
               {summary.avgScore != null ? summary.avgScore.toFixed(1) : '—'}
             </p>
-            <p className="text-[9px] font-bold text-muted mt-1">من ١٠</p>
+            <p className="text-[10.5px] font-medium text-muted mt-1.5">من ١٠</p>
           </div>
         ) : (
           <ClipboardList size={16} className="text-muted flex-shrink-0" weight="regular" />
@@ -604,29 +581,29 @@ function CenterCard({ summary, tab, onSelect, isRecent }) {
       </div>
 
       {hasData ? (
-        <div className="mt-3 pt-3 border-t border-line flex items-center gap-3 flex-wrap text-[10px] font-bold">
-          <span className="flex items-center gap-1 text-muted">
-            <Sparkles size={10} weight="bold" style={{ color: tone }} />
+        <div className="mt-3 pt-3 border-t border-line flex items-center gap-x-3 gap-y-1 flex-wrap text-[11.5px] font-medium">
+          <span className="flex items-center gap-1.5 text-muted">
+            <Sparkles size={12} weight="bold" style={{ color: tone }} />
             {summary.count} تقييم
           </span>
-          <span className="flex items-center gap-1 text-muted min-w-0">
-            <User size={10} weight="bold" className="text-primary flex-shrink-0" />
-            <span className="truncate max-w-[7rem] text-ink">{getObserver(summary.latestDoc)}</span>
+          <span className="flex items-center gap-1.5 text-muted min-w-0">
+            <User size={12} weight="bold" className="text-muted/60 flex-shrink-0" />
+            <span className="truncate max-w-[7rem] text-ink/75">{getObserver(summary.latestDoc)}</span>
           </span>
-          <span className="flex items-center gap-1"
+          <span className="flex items-center gap-1.5 font-semibold"
             style={{ color: summary.totalViolations > 0 ? '#B91C1C' : '#15803D' }}>
-            <AlertCircle size={10} weight="bold" />
+            <AlertCircle size={12} weight="bold" />
             {summary.totalViolations} مخالفة
           </span>
           {summary.latestDoc?.timestamp && (
-            <span className="flex items-center gap-1 text-muted/70 mr-auto">
-              <Calendar size={10} weight="bold" />
+            <span className="flex items-center gap-1.5 text-muted/70 ms-auto">
+              <Calendar size={12} weight="bold" />
               {timeAgo(summary.latestDoc.timestamp)}
             </span>
           )}
         </div>
       ) : (
-        <p className="mt-3 pt-3 border-t border-dashed border-line text-[10px] font-bold text-muted text-center">
+        <p className="mt-3 pt-3 border-t border-dashed border-line text-[11.5px] font-medium text-muted text-center">
           لم يُقيَّم بعد
         </p>
       )}
@@ -641,40 +618,39 @@ function CenterDetail({ tab, summary, onBack, onDelete, recentDocIds }) {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="bg-gradient-to-br from-white to-background border border-line rounded-2xl p-4 flex items-center gap-3 shadow-[0_2px_8px_rgb(var(--c-ink)/0.07)]">
+      <Surface className="p-4 flex items-center gap-3">
         <button onClick={onBack}
-          className="min-w-[40px] min-h-[40px] rounded-xl border border-line bg-white text-primary flex items-center justify-center hover:bg-background hover:border-primary transition-all shrink-0"
+          className="min-w-[40px] min-h-[40px] rounded-[10px] border border-line bg-white text-primary flex items-center justify-center hover:bg-background hover:border-primary transition-colors shrink-0"
           title="رجوع">
           <X size={16} weight="bold" />
         </button>
-        <div className="relative shrink-0">
-          <div className="absolute inset-0 rounded-2xl blur-md opacity-50" style={{ background: tab.color }} />
-          <div className="relative w-12 h-12 rounded-2xl flex items-center justify-center shadow-md"
-            style={{ background: tab.gradient }}>
-            <span className="text-white text-sm font-black tabular-nums">{centerNum}</span>
-          </div>
-        </div>
+        <span className="w-12 h-12 rounded-[10px] flex items-center justify-center shrink-0 border"
+          style={{
+            background: `color-mix(in srgb, ${tab.color} 9%, #fff)`,
+            borderColor: `color-mix(in srgb, ${tab.color} 22%, #fff)`,
+          }}>
+          <span className="text-[16px] font-extrabold tabular-nums" style={{ color: tab.color }}>{centerNum}</span>
+        </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-base font-black text-ink truncate">{summary.center}</p>
-            <span className="inline-flex items-center gap-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border"
-              style={{ background: tab.bg, borderColor: tab.border, color: tab.color }}>
-              <tab.icon size={9} weight="bold" />
-              {tab.label}
-            </span>
+            <p className="text-[16px] font-bold text-ink truncate">{summary.center}</p>
+            <Pill color={tab.color} Icon={tab.icon}>{tab.label}</Pill>
           </div>
-          <p className="text-[11px] text-primary font-bold mt-0.5 truncate">{summary.caterer || '—'}</p>
+          <p className="text-[11.5px] text-primary font-medium mt-1 truncate">{summary.caterer || '—'}</p>
         </div>
         {/* Avg score chip */}
-        <div className="rounded-xl border-2 px-3 py-1.5 text-center shrink-0"
-          style={{ background: sst.bg, borderColor: sst.border }}>
-          <p className="text-[8px] font-bold opacity-80" style={{ color: sst.color }}>متوسط</p>
-          <p className="text-base font-black tabular-nums leading-tight" style={{ color: sst.color }}>
+        <div className="rounded-[10px] border px-3 py-1.5 text-center shrink-0"
+          style={{
+            background: `color-mix(in srgb, ${sst.color} 12%, #fff)`,
+            borderColor: `color-mix(in srgb, ${sst.color} 28%, #fff)`,
+          }}>
+          <p className="text-[10px] font-semibold opacity-80" style={{ color: sst.color }}>متوسط</p>
+          <p className="text-[18px] font-extrabold tabular-nums leading-tight mt-0.5" style={{ color: sst.color }}>
             {summary.avgScore != null ? summary.avgScore.toFixed(1) : '—'}
-            <span className="text-[9px] opacity-70">/10</span>
+            <span className="text-[10px] font-semibold opacity-70">/10</span>
           </p>
         </div>
-      </div>
+      </Surface>
 
       {/* Evaluations list */}
       <div className="space-y-3">
@@ -708,7 +684,7 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
   const savedAns      = evalDoc.answers || {};
   const ans           = isEditing ? draftAns     : savedAns;
   const photos        = isEditing ? draftPhotos  : (savedAns.__photos  || {});
-  const detailsMap    = isEditing ? draftDetails : (savedAns.__details || {});
+  const detailsMap    = isEditing ? draftDetails : readDetails(savedAns);
   const yes     = tab.allQs.filter(q => ans[q.id] === 'نعم').length;
   const no      = tab.allQs.filter(q => ans[q.id] === 'لا').length;
   const noQs    = tab.allQs.filter(q => ans[q.id] === 'لا');
@@ -716,7 +692,7 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
   const startEdit = (e) => {
     e?.stopPropagation();
     setDraftAns({ ...savedAns });
-    setDraftDetails({ ...(savedAns.__details || {}) });
+    setDraftDetails(readDetails(savedAns));
     setDraftPhotos({ ...(savedAns.__photos  || {}) });
     setIsEditing(true);
   };
@@ -797,85 +773,76 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
   };
 
   return (
-    <div className="relative bg-white rounded-2xl border-2 overflow-hidden shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)]"
-      style={{ borderColor: isOpen ? sst.border : 'rgb(var(--c-line))' }}>
+    <div className="relative bg-white rounded-[14px] border overflow-hidden shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)]"
+      style={{ borderColor: isOpen ? `color-mix(in srgb, ${sst.color} 28%, #fff)` : 'rgb(var(--c-line))' }}>
       {/* Pulsing red dot for newly-arrived evaluations */}
       {isRecent && (
-        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 border-2 border-white badge-pulse-red z-10" />
+        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 border border-white badge-pulse-red z-10" />
       )}
       {/* Header row — always visible */}
-      <div className="relative flex items-center hover:bg-[#FDFAF7] transition-colors">
+      <div className="relative flex items-center hover:bg-[rgb(var(--c-bg))] transition-colors">
       <button onClick={onToggle}
-        className="flex-1 min-w-0 text-right px-4 sm:px-5 py-3.5 flex items-center gap-3">
+        className="flex-1 min-w-0 text-start px-4 sm:px-5 py-3.5 flex items-center gap-3">
         {/* Score badge */}
-        <div className="relative shrink-0">
-          <div className="absolute inset-0 rounded-2xl blur-md opacity-40" style={{ background: sst.color }} />
-          <div className="relative w-14 h-14 rounded-2xl flex flex-col items-center justify-center border-2"
-            style={{ background: sst.bg, borderColor: sst.border }}>
-            <span className="text-base font-black tabular-nums leading-none" style={{ color: sst.color }}>
-              {score != null ? score.toFixed(1) : '—'}
-            </span>
-            <span className="text-[8px] font-bold opacity-70 mt-0.5" style={{ color: sst.color }}>/10</span>
-          </div>
+        <div className="w-14 h-14 rounded-[10px] flex flex-col items-center justify-center border shrink-0"
+          style={{
+            background: `color-mix(in srgb, ${sst.color} 12%, #fff)`,
+            borderColor: `color-mix(in srgb, ${sst.color} 28%, #fff)`,
+          }}>
+          <span className="text-[21px] font-extrabold tabular-nums leading-none" style={{ color: sst.color }}>
+            {score != null ? score.toFixed(1) : '—'}
+          </span>
+          <span className="text-[10px] font-semibold opacity-70 mt-1" style={{ color: sst.color }}>/10</span>
         </div>
         {/* Info */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            <span className="text-[10px] font-black px-2 py-0.5 rounded-md tabular-nums"
-              style={{ background: `${tab.color}15`, color: tab.color, border: `1px solid ${tab.color}30` }}>
-              تقييم #{index}
-            </span>
+          <div className="flex items-center gap-2 flex-wrap mb-1.5">
+            <Pill color={tab.color}>تقييم #{index}</Pill>
             {isSupervisorDoc(evalDoc) && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md text-white"
-                style={{ background: 'linear-gradient(135deg, #9E5741, #7F4534)' }}>
-                <UserCog size={10} weight="bold" />
-                مشرف
-              </span>
+              <Pill color="#9E5741" Icon={UserCog}>مشرف</Pill>
             )}
             {no > 0 && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md bg-red-50 border border-red-200 text-red-700">
-                <AlertCircle size={10} weight="bold" />
-                {no} مخالفة
-              </span>
+              <Pill color="#B91C1C" Icon={AlertCircle}>{no} مخالفة</Pill>
             )}
             {no === 0 && score != null && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md bg-green-50 border border-green-200 text-green-700">
-                <CheckCircle2 size={10} weight="bold" />
-                بدون مخالفات
-              </span>
+              <Pill color="#15803D" Icon={CheckCircle2}>بدون مخالفات</Pill>
             )}
           </div>
-          <div className="flex items-center gap-3 flex-wrap text-[11px] text-muted">
-            <span className="flex items-center gap-1">
-              <User size={11} weight="bold" className="text-primary" />
-              <span className="font-bold text-ink">{getObserver(evalDoc)}</span>
+          <div className="flex items-center gap-x-3 gap-y-1 flex-wrap text-[11.5px] text-muted">
+            <span className="flex items-center gap-1.5">
+              <User size={12} weight="bold" className="text-muted/60" />
+              <span className="font-medium text-ink/75">{getObserver(evalDoc)}</span>
             </span>
-            <span className="flex items-center gap-1">
-              <Calendar size={11} weight="bold" className="text-primary" />
-              <span className="font-bold">{fullDate(evalDoc.timestamp)}</span>
+            <span className="flex items-center gap-1.5">
+              <Calendar size={12} weight="bold" className="text-muted/60" />
+              <span className="font-medium text-ink/75">{fullDate(evalDoc.timestamp)}</span>
             </span>
           </div>
         </div>
         {/* Chevron stays inside the toggle button */}
-        <div className="w-8 h-8 rounded-lg border border-line flex items-center justify-center transition-transform shrink-0"
+        <div className="w-8 h-8 rounded-md border border-line flex items-center justify-center transition-transform shrink-0"
           style={{ transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>
           <ChevronRight size={14} className="text-primary" weight="bold" />
         </div>
       </button>
 
       {/* Edit + Delete buttons — siblings of toggle so their clicks never collide */}
-      <div className="flex items-center gap-1.5 ml-2 sm:ml-3 mr-1 shrink-0">
+      <div className="flex items-center gap-1.5 me-2 sm:me-3 ms-1 shrink-0">
         {!isEditing && (
           <button onClick={startEdit}
             title="تعديل التقييم"
-            style={{ borderColor: `${tab.color}40`, background: `${tab.color}10`, color: tab.color }}
-            className="w-9 h-9 rounded-lg border-2 flex items-center justify-center hover:scale-105 transition-transform">
+            style={{
+              borderColor: `color-mix(in srgb, ${tab.color} 28%, #fff)`,
+              background: `color-mix(in srgb, ${tab.color} 12%, #fff)`,
+              color: tab.color,
+            }}
+            className="w-9 h-9 rounded-[10px] border flex items-center justify-center transition-shadow duration-200 hover:shadow-[0_6px_20px_-6px_rgb(var(--c-ink)/0.16)]">
             <Pencil size={14} weight="bold" />
           </button>
         )}
         <button onClick={onDelete}
           title="حذف التقييم"
-          className="w-9 h-9 rounded-lg border border-red-200 bg-red-50 flex items-center justify-center hover:bg-red-500 hover:border-red-500 group/del transition-colors">
+          className="w-9 h-9 rounded-[10px] border border-red-200 bg-red-50 flex items-center justify-center hover:bg-red-500 hover:border-red-500 group/del transition-colors">
           <Trash2 size={14} className="text-red-500 group-hover/del:text-white" weight="bold" />
         </button>
       </div>
@@ -886,25 +853,25 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
         <div className="border-t border-line bg-background px-4 sm:px-5 py-4 space-y-4">
           {/* Edit-mode toolbar */}
           {isEditing && (
-            <div className="rounded-2xl border-2 p-3 flex items-center justify-between gap-3"
-              style={{ background: `${tab.color}08`, borderColor: `${tab.color}60` }}>
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: tab.gradient }}>
-                  <Pencil size={15} className="text-white" weight="bold" />
-                </div>
+            <div className="rounded-[14px] border p-3 flex items-center justify-between gap-3"
+              style={{
+                background: `color-mix(in srgb, ${tab.color} 12%, #fff)`,
+                borderColor: `color-mix(in srgb, ${tab.color} 28%, #fff)`,
+              }}>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <IconTile Icon={Pencil} color={tab.color} size="sm" />
                 <div className="min-w-0">
-                  <p className="text-sm font-black text-ink">وضع التعديل</p>
+                  <p className="text-[14px] font-bold text-ink">وضع التعديل</p>
                 </div>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
                 <button onClick={cancelEdit} disabled={savingEdit}
-                  className="px-3 py-2 rounded-xl border border-line text-muted text-xs font-bold hover:bg-[rgb(var(--c-primary-50))] transition-colors disabled:opacity-60">
+                  className="px-3 py-2 rounded-[10px] border border-line text-muted text-[12px] font-semibold hover:bg-[rgb(var(--c-primary-50))] transition-colors disabled:opacity-60">
                   إلغاء
                 </button>
                 <button onClick={saveEdit} disabled={savingEdit}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-xs font-black shadow-md transition-all active:scale-95 disabled:opacity-60"
-                  style={{ background: tab.gradient }}>
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-[10px] text-white text-[12px] font-bold transition-opacity disabled:opacity-60"
+                  style={{ background: tab.color }}>
                   {savingEdit ? (
                     <>
                       <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -923,21 +890,32 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
 
           {/* Quick stats */}
           <div className="grid grid-cols-3 gap-2.5">
-            <div className="rounded-xl border-2 p-3 text-center"
-              style={{ background: sst.bg, borderColor: sst.border }}>
-              <p className="text-[10px] font-bold opacity-80" style={{ color: sst.color }}>الدرجة</p>
-              <p className="text-xl font-black tabular-nums" style={{ color: sst.color }}>
+            <div className="rounded-[14px] border p-3 text-center"
+              style={{
+                background: `color-mix(in srgb, ${sst.color} 12%, #fff)`,
+                borderColor: `color-mix(in srgb, ${sst.color} 28%, #fff)`,
+              }}>
+              <p className="text-[10.5px] font-semibold opacity-80" style={{ color: sst.color }}>الدرجة</p>
+              <p className="text-[21px] font-extrabold tabular-nums leading-none mt-2" style={{ color: sst.color }}>
                 {score != null ? score.toFixed(1) : '—'}
-                <span className="text-[10px] opacity-70">/10</span>
+                <span className="text-[10.5px] font-semibold opacity-70">/10</span>
               </p>
             </div>
-            <div className="rounded-xl border-2 border-green-200 bg-green-50 p-3 text-center">
-              <p className="text-[10px] font-bold text-green-700 opacity-80">إجابة «نعم»</p>
-              <p className="text-xl font-black tabular-nums text-green-700">{yes}</p>
+            <div className="rounded-[14px] border p-3 text-center"
+              style={{
+                background: 'color-mix(in srgb, #15803D 12%, #fff)',
+                borderColor: 'color-mix(in srgb, #15803D 28%, #fff)',
+              }}>
+              <p className="text-[10.5px] font-semibold text-green-700 opacity-80">إجابة «نعم»</p>
+              <p className="text-[21px] font-extrabold tabular-nums leading-none mt-2 text-green-700">{yes}</p>
             </div>
-            <div className="rounded-xl border-2 border-red-200 bg-red-50 p-3 text-center">
-              <p className="text-[10px] font-bold text-red-700 opacity-80">إجابة «لا»</p>
-              <p className="text-xl font-black tabular-nums text-red-700">{no}</p>
+            <div className="rounded-[14px] border p-3 text-center"
+              style={{
+                background: 'color-mix(in srgb, #B91C1C 12%, #fff)',
+                borderColor: 'color-mix(in srgb, #B91C1C 28%, #fff)',
+              }}>
+              <p className="text-[10.5px] font-semibold text-red-700 opacity-80">إجابة «لا»</p>
+              <p className="text-[21px] font-extrabold tabular-nums leading-none mt-2 text-red-700">{no}</p>
             </div>
           </div>
 
@@ -948,14 +926,11 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
               { label: 'المركز',   val: getCenter(evalDoc),                                   Icon: Building2,color: tab.color },
               { label: 'الوقت',    val: fullDate(evalDoc.timestamp),                          Icon: Calendar, color: 'rgb(var(--c-muted))' },
             ].map(m => (
-              <div key={m.label} className="bg-white rounded-xl border border-line p-2.5 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: `${m.color}15` }}>
-                  <m.Icon size={12} style={{ color: m.color }} weight="bold" />
-                </div>
+              <div key={m.label} className="bg-white rounded-[10px] border border-line p-2.5 flex items-center gap-2.5">
+                <IconTile Icon={m.Icon} color={m.color} size="sm" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-[9px] text-muted font-bold">{m.label}</p>
-                  <p className="text-[11px] font-bold text-ink truncate">{m.val || '—'}</p>
+                  <p className="text-[10px] text-muted font-semibold">{m.label}</p>
+                  <p className="text-[11.5px] font-semibold text-ink truncate mt-0.5">{m.val || '—'}</p>
                 </div>
               </div>
             ))}
@@ -963,10 +938,10 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
 
           {/* Score progress bar */}
           {score != null && (
-            <div className="bg-white rounded-xl border border-line p-3">
-              <div className="flex justify-between text-xs mb-1.5">
-                <span className="text-muted font-bold">الدرجة الإجمالية</span>
-                <span className="font-black tabular-nums" style={{ color: sst.color }}>{score.toFixed(2)} / 10</span>
+            <div className="bg-white rounded-[10px] border border-line p-3">
+              <div className="flex justify-between text-[11.5px] mb-2">
+                <span className="text-muted font-semibold">الدرجة الإجمالية</span>
+                <span className="font-bold tabular-nums" style={{ color: sst.color }}>{score.toFixed(2)} / 10</span>
               </div>
               <div className="h-2 bg-[rgb(var(--c-primary-50))] rounded-full overflow-hidden">
                 <div className="h-full rounded-full transition-all duration-700"
@@ -979,19 +954,21 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
           {noQs.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-2.5">
-                <div className="w-1.5 h-5 rounded-full bg-red-500" />
-                <p className="text-sm font-black text-red-700">المخالفات</p>
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-red-50 border border-red-200 text-red-700 tabular-nums">
-                  {noQs.length}
-                </span>
+                <div className="w-1 h-4 rounded-full bg-red-500" />
+                <p className="text-[14px] font-bold text-red-700">المخالفات</p>
+                <Pill color="#B91C1C">{noQs.length}</Pill>
               </div>
               <ul className="space-y-1.5">
                 {noQs.map(q => (
-                  <li key={q.id} className="bg-red-50/60 border border-red-200/70 rounded-xl p-3 flex items-start gap-2.5">
-                    <span className="w-6 h-6 rounded-md bg-red-500 text-white text-[10px] font-black flex items-center justify-center shrink-0 mt-0.5 tabular-nums">
+                  <li key={q.id} className="rounded-[10px] border p-3 flex items-start gap-2.5"
+                    style={{
+                      background: 'color-mix(in srgb, #B91C1C 7%, #fff)',
+                      borderColor: 'color-mix(in srgb, #B91C1C 22%, #fff)',
+                    }}>
+                    <span className="w-6 h-6 rounded-md bg-red-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5 tabular-nums">
                       {q.id}
                     </span>
-                    <p className="text-sm text-ink font-medium leading-relaxed flex-1">{q.text}</p>
+                    <p className="text-[13.5px] text-ink font-medium leading-relaxed flex-1">{q.text}</p>
                   </li>
                 ))}
               </ul>
@@ -1001,12 +978,9 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
           {/* All answers */}
           <div>
             <div className="flex items-center gap-2 mb-2.5">
-              <div className="w-1.5 h-5 rounded-full" style={{ background: tab.color }} />
-              <p className="text-sm font-black text-ink">جميع الإجابات</p>
-              <span className="text-[10px] font-black px-2 py-0.5 rounded-full tabular-nums"
-                style={{ background: tab.bg, color: tab.color, border: `1px solid ${tab.border}` }}>
-                {tab.allQs.filter(q => ans[q.id]).length} سؤال
-              </span>
+              <div className="w-1 h-4 rounded-full" style={{ background: tab.color }} />
+              <p className="text-[14px] font-bold text-ink">جميع الإجابات</p>
+              <Pill color={tab.color}>{tab.allQs.filter(q => ans[q.id]).length} سؤال</Pill>
             </div>
             <div className="space-y-1.5">
               {tab.allQs.map(q => {
@@ -1022,24 +996,27 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
                 const isUploadingThis = uploadingQ === q.id;
                 return (
                   <div key={q.id}
-                    className={`rounded-xl px-3 py-2 border ${
-                      isYes ? 'bg-green-50/60 border-green-200/70'
-                      : isNo ? 'bg-red-50/60 border-red-200/70'
-                      :        'bg-white border-line'
-                    }`}>
+                    className="rounded-[10px] px-3 py-2 border"
+                    style={
+                      isYes
+                        ? { background: 'color-mix(in srgb, #15803D 7%, #fff)', borderColor: 'color-mix(in srgb, #15803D 22%, #fff)' }
+                        : isNo
+                          ? { background: 'color-mix(in srgb, #B91C1C 7%, #fff)', borderColor: 'color-mix(in srgb, #B91C1C 22%, #fff)' }
+                          : { background: '#fff', borderColor: 'rgb(var(--c-line))' }
+                    }>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] font-black flex-shrink-0 tabular-nums"
+                      <span className="text-[10.5px] font-bold flex-shrink-0 tabular-nums"
                         style={{ color: isYes ? '#15803D' : isNo ? '#B91C1C' : 'rgb(var(--c-muted))' }}>
                         #{q.id}
                       </span>
-                      <p className="text-xs flex-1 min-w-[180px] leading-relaxed"
+                      <p className="text-[12.5px] flex-1 min-w-[180px] leading-relaxed"
                         style={{ color: isYes ? '#166534' : isNo ? '#991B1B' : 'rgb(var(--c-ink))' }}>
                         {q.text}
                       </p>
                       {isEditing ? (
                         isChoice ? (
                           <select value={a || ''} onChange={(e) => setAnswer(q.id, e.target.value)}
-                            className="text-[11px] font-black px-2 py-1 rounded-md border-2 bg-white outline-none focus:border-primary"
+                            className="text-[11.5px] font-semibold px-2 py-1 rounded-md border bg-white outline-none focus:border-primary"
                             style={{ borderColor: 'rgb(var(--c-line))' }}>
                             <option value="">—</option>
                             {(q.choices || []).map(c => <option key={c} value={c}>{c}</option>)}
@@ -1047,15 +1024,15 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
                         ) : (
                           <div className="flex items-center gap-1 shrink-0">
                             <button onClick={() => setAnswer(q.id, 'نعم')}
-                              className={`px-2.5 py-1 rounded-md text-[10px] font-black border-2 transition-all ${
-                                isYes ? 'bg-green-600 border-green-600 text-white shadow-sm'
+                              className={`px-2.5 py-1 rounded-md text-[10.5px] font-bold border transition-colors ${
+                                isYes ? 'bg-green-600 border-green-600 text-white'
                                       : 'bg-white border-line text-muted hover:border-green-400'
                               }`}>
                               نعم
                             </button>
                             <button onClick={() => setAnswer(q.id, 'لا')}
-                              className={`px-2.5 py-1 rounded-md text-[10px] font-black border-2 transition-all ${
-                                isNo ? 'bg-red-600 border-red-600 text-white shadow-sm'
+                              className={`px-2.5 py-1 rounded-md text-[10.5px] font-bold border transition-colors ${
+                                isNo ? 'bg-red-600 border-red-600 text-white'
                                      : 'bg-white border-line text-muted hover:border-red-400'
                               }`}>
                               لا
@@ -1063,7 +1040,7 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
                           </div>
                         )
                       ) : (
-                        <span className={`text-[10px] font-black flex-shrink-0 flex items-center gap-0.5 ${
+                        <span className={`text-[10.5px] font-bold flex-shrink-0 flex items-center gap-1 ${
                           isYes ? 'text-green-700' : isNo ? 'text-red-700' : 'text-muted'
                         }`}>
                           {isYes
@@ -1082,7 +1059,7 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
                           className="mt-1.5 w-full text-[11px] px-2 py-1 rounded border border-line outline-none focus:border-primary" />
                       ) : (
                         detail && (
-                          <p className="mt-1.5 text-[11px] text-muted bg-white border border-line rounded px-2 py-1 leading-snug">
+                          <p className="mt-1.5 text-[11.5px] font-medium text-muted bg-white border border-line rounded-md px-2 py-1 leading-snug">
                             {detail}
                           </p>
                         )
@@ -1098,7 +1075,7 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
                           if (isEditing) {
                             return (
                               <div key={field.key} className="flex flex-col gap-0.5">
-                                <label className="text-[9px] font-bold text-muted">{field.label}</label>
+                                <label className="text-[10px] font-semibold text-muted">{field.label}</label>
                                 <input type={field.type === 'number' ? 'number' : 'text'}
                                   value={fieldVal || ''}
                                   onChange={(e) => setDetail(fieldKey, e.target.value)}
@@ -1109,9 +1086,9 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
                           }
                           return (
                             <div key={field.key}
-                              className="bg-white border border-line rounded px-2 py-1 flex items-baseline gap-1.5 min-w-0">
-                              <span className="text-[9px] font-bold text-muted shrink-0">{field.label}:</span>
-                              <span className="text-[11px] font-bold text-ink truncate tabular-nums">
+                              className="bg-white border border-line rounded-md px-2 py-1 flex items-baseline gap-1.5 min-w-0">
+                              <span className="text-[10px] font-semibold text-muted shrink-0">{field.label}:</span>
+                              <span className="text-[11.5px] font-semibold text-ink truncate tabular-nums">
                                 {fieldVal != null && fieldVal !== '' ? fieldVal : '—'}
                               </span>
                             </div>
@@ -1128,9 +1105,9 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
                               className="rounded-lg border border-line max-h-44 object-cover hover:opacity-90 transition-opacity" />
                           </a>
                         ) : isEditing && (
-                          <div className="rounded-lg border-2 border-dashed border-line bg-bg p-3 text-center">
-                            <ImageIcon size={20} className="text-primary mx-auto mb-1" weight="regular" />
-                            <p className="text-[10px] text-muted font-bold">لا توجد صورة بعد</p>
+                          <div className="rounded-[10px] border border-dashed border-line bg-[rgb(var(--c-bg))] p-3 text-center">
+                            <ImageIcon size={22} className="text-muted/35 mx-auto mb-1.5" weight="duotone" />
+                            <p className="text-[11.5px] text-muted font-medium">لا توجد صورة بعد</p>
                           </div>
                         )}
                         {isEditing && (
@@ -1140,8 +1117,12 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
                               onChange={(e) => handlePhotoUpload(q.id, e.target.files?.[0])} />
                             <button onClick={() => fileInputRefs.current[q.id]?.click()}
                               disabled={isUploadingThis}
-                              className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-black border-2 transition-colors disabled:opacity-60"
-                              style={{ borderColor: `${tab.color}40`, background: `${tab.color}10`, color: tab.color }}>
+                              className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10.5px] font-bold border transition-colors disabled:opacity-60"
+                              style={{
+                                borderColor: `color-mix(in srgb, ${tab.color} 28%, #fff)`,
+                                background: `color-mix(in srgb, ${tab.color} 12%, #fff)`,
+                                color: tab.color,
+                              }}>
                               {isUploadingThis ? (
                                 <>
                                   <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -1156,7 +1137,7 @@ function EvaluationCard({ evalDoc, tab, index, isOpen, onToggle, onDelete, isRec
                             </button>
                             {photoUrl && (
                               <button onClick={() => removePhoto(q.id)}
-                                className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-black border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors">
+                                className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10.5px] font-bold border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors">
                                 <X size={11} weight="bold" />
                                 حذف الصورة
                               </button>

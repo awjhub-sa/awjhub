@@ -13,15 +13,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { subscribeToasts } from '../lib/toast.js';
+import { IconTile } from './ui/index.jsx';
 import {
   CheckCircle, Info, WarningCircle, XCircle, X,
 } from '@phosphor-icons/react';
 
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
+
+/* One colour per kind; the surface is derived from it, never picked. */
 const KIND = {
-  ok:   { Icon: CheckCircle,    ink: '#047857', bg: '#ECFDF5', line: '#6EE7B7', bar: 'linear-gradient(90deg,#10B981,#059669)' },
-  info: { Icon: Info,           ink: '#1D4ED8', bg: '#EFF6FF', line: '#93C5FD', bar: 'linear-gradient(90deg,#3B82F6,#2563EB)' },
-  warn: { Icon: WarningCircle,  ink: '#B45309', bg: '#FFFBEB', line: '#FCD34D', bar: 'linear-gradient(90deg,#F59E0B,#D97706)' },
-  fail: { Icon: XCircle,        ink: '#BE123C', bg: '#FFF1F2', line: '#FDA4AF', bar: 'linear-gradient(90deg,#F43F5E,#E11D48)' },
+  ok:   { Icon: CheckCircle,   color: '#15803D' },
+  info: { Icon: Info,          color: 'rgb(var(--c-info))' },
+  warn: { Icon: WarningCircle, color: '#B45309' },
+  fail: { Icon: XCircle,       color: '#BE123C' },
 };
 
 const TTL = 5200;
@@ -49,7 +53,7 @@ export default function ToastStack() {
 
   return (
     <div dir="rtl"
-      className="fixed bottom-5 left-5 z-[200] flex flex-col gap-2 pointer-events-none w-[min(92vw,360px)]">
+      className="fixed bottom-5 end-5 z-[200] flex flex-col gap-2 pointer-events-none w-[min(92vw,360px)]">
       <AnimatePresence initial={false}>
         {items.map(t => {
           const k = KIND[t.kind] || KIND.info;
@@ -59,23 +63,24 @@ export default function ToastStack() {
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: -24, scale: 0.96 }}
               transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-              className="pointer-events-auto rounded-2xl border overflow-hidden shadow-[0_10px_30px_rgb(0,0,0,0.12)]"
-              style={{ background: k.bg, borderColor: k.line }}>
-              <div className="h-1" style={{ background: k.bar }} />
-              <div className="flex items-start gap-2.5 px-3.5 py-3">
-                <k.Icon size={18} weight="fill" style={{ color: k.ink }} className="mt-0.5 flex-shrink-0" />
+              className="relative pointer-events-auto rounded-[14px] border overflow-hidden
+                         shadow-[0_8px_28px_-8px_rgb(var(--c-ink)/0.28)]"
+              style={{ background: tint(k.color, 12), borderColor: tint(k.color, 28) }}>
+              <span aria-hidden className="absolute inset-y-0 start-0 w-[3px]" style={{ background: k.color }} />
+              <div className="flex items-start gap-3 ps-4 pe-3.5 py-3">
+                <IconTile Icon={k.Icon} color={k.color} size="sm" className="mt-px" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-[13.5px] font-black leading-snug" style={{ color: k.ink }}>{t.title}</p>
+                  <p className="text-[13px] font-bold leading-snug" style={{ color: k.color }}>{t.title}</p>
                   {t.detail && (
-                    <p className="text-[12px] font-bold mt-0.5 leading-relaxed opacity-80" style={{ color: k.ink }}>
+                    <p className="text-[11.5px] font-medium text-muted mt-1 leading-relaxed">
                       {t.detail}
                     </p>
                   )}
                 </div>
                 <button onClick={() => dismiss(t.id)} aria-label="إغلاق"
-                  className="opacity-45 hover:opacity-100 transition-opacity flex-shrink-0"
-                  style={{ color: k.ink }}>
-                  <X size={14} weight="bold" />
+                  className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 text-muted
+                             hover:bg-white/70 hover:text-ink transition-colors">
+                  <X size={13} weight="bold" />
                 </button>
               </div>
             </motion.div>

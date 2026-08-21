@@ -14,6 +14,7 @@ import FormDocument from '../../components/forms/FormDocument.jsx';
 import FormFill from '../../components/forms/FormFill.jsx';
 import HijriDateInput from '../../components/forms/HijriDateInput.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
+import { Surface, IconTile, StatTile } from '../../components/ui/index.jsx';
 import { seasonLabel } from '../../lib/hijri.js';
 import DataTable from '../../components/DataTable.jsx';
 import {
@@ -23,8 +24,10 @@ import {
   Printer,
 } from '@phosphor-icons/react';
 
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
+
 const inputCls =
-  'w-full px-4 py-2.5 border border-line rounded-xl text-sm text-ink outline-none focus:border-primary transition placeholder-muted/40 bg-white';
+  'w-full px-3.5 py-2.5 border border-line rounded-[10px] text-[13px] text-ink outline-none focus:border-primary transition-colors placeholder-muted/50 bg-white';
 
 const EMPTY_TEMPLATE = {
   id: null,
@@ -35,11 +38,11 @@ const EMPTY_TEMPLATE = {
 
 const Field = ({ label, required, hint, children }) => (
   <div>
-    <label className="block text-xs font-medium text-muted mb-1.5">
-      {label} {required && <span className="text-red-500">*</span>}
+    <label className="block text-[11.5px] font-bold text-muted mb-1.5">
+      {label} {required && <span style={{ color: '#DC2626' }}>*</span>}
     </label>
     {children}
-    {hint && <p className="text-[10px] text-muted mt-1">{hint}</p>}
+    {hint && <p className="text-[10.5px] font-medium text-muted mt-1">{hint}</p>}
   </div>
 );
 
@@ -485,17 +488,17 @@ export default function AdminForms() {
   if (builder) {
     return (
       <div className="space-y-4" dir="rtl">
-        <div className="bg-white rounded-2xl border border-line px-4 py-3 flex items-center justify-between gap-3 flex-wrap sticky top-0 z-30">
+        <Surface className="px-4 py-3 flex items-center justify-between gap-3 flex-wrap sticky top-0 z-30">
           <div className="flex items-center gap-2.5 min-w-0">
             <button onClick={() => setBuilder(null)}
-              className="w-9 h-9 rounded-xl border border-line flex items-center justify-center text-muted hover:text-ink transition-colors flex-shrink-0">
+              className="w-9 h-9 rounded-[10px] border border-line bg-white flex items-center justify-center text-muted hover:text-ink hover:bg-[rgb(var(--c-bg))] transition-colors shrink-0">
               <X size={16} />
             </button>
             <div className="min-w-0">
-              <h1 className="text-sm font-bold text-ink truncate">
+              <h1 className="text-[13.5px] font-bold text-ink truncate">
                 {builder.id ? 'تعديل النموذج' : 'نموذج جديد'}
               </h1>
-              <p className="text-[10px] text-muted">
+              <p className="text-[10.5px] font-medium text-muted">
                 {builder.definition.blocks.length} بلوك · {Object.keys(builder.definition.fields).length} حقل
               </p>
             </div>
@@ -503,17 +506,16 @@ export default function AdminForms() {
           <button
             onClick={saveTemplate}
             disabled={saving}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-bold text-sm hover:opacity-90 disabled:opacity-60 transition"
-            style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-[10px] bg-primary border border-primary text-white font-bold text-[12px] hover:opacity-90 disabled:opacity-60 transition-opacity"
           >
             {saving
               ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               : <Save size={15} />}
             حفظ النموذج
           </button>
-        </div>
+        </Surface>
 
-        <div className="bg-white rounded-2xl border border-line p-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <Surface className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Field label="عنوان النموذج" required>
             <input value={builder.title} onChange={e => setBuilder(p => ({ ...p, title: e.target.value }))}
               placeholder="تعيين ضابط اتصال" className={inputCls} />
@@ -529,10 +531,11 @@ export default function AdminForms() {
             <input value={builder.description} onChange={e => setBuilder(p => ({ ...p, description: e.target.value }))}
               placeholder="يظهر للمتعهد مع التكليف" className={inputCls} />
           </Field>
-        </div>
+        </Surface>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-3 py-2 text-sm font-medium">{error}</div>
+          <div className="rounded-[11px] border px-3.5 py-2.5 text-[13px] font-bold"
+            style={{ background: tint('#DC2626', 12), borderColor: tint('#DC2626', 28), color: '#DC2626' }}>{error}</div>
         )}
 
         <FormBuilder
@@ -554,8 +557,7 @@ export default function AdminForms() {
         right={
           <button
             onClick={openNew}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white font-bold text-sm hover:opacity-90 transition shadow-[0_4px_16px_rgb(var(--c-primary)/0.35)]"
-            style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-[10px] bg-primary border border-primary text-white font-bold text-[12px] hover:opacity-90 transition-opacity"
           >
             <Plus size={15} weight="bold" />
             <span className="hidden sm:inline">نموذج جديد</span>
@@ -564,17 +566,18 @@ export default function AdminForms() {
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label="نماذج متاحة"  value={stats.templates} Icon={FileText}    color={COLORS.primary} />
-        <StatCard label="في الانتظار"  value={stats.pending}   Icon={Clock}       color={COLORS.info} />
-        <StatCard label="مُسلَّم"       value={stats.submitted} Icon={CheckCircle} color={COLORS.success} />
-        <StatCard label="متأخر"        value={stats.overdue}   Icon={Warning}     color={COLORS.error} />
+        <StatTile label="نماذج متاحة"  value={stats.templates} Icon={FileText}    color={COLORS.primary} />
+        <StatTile label="في الانتظار"  value={stats.pending}   Icon={Clock}       color={COLORS.info} />
+        <StatTile label="مُسلَّم"       value={stats.submitted} Icon={CheckCircle} color={COLORS.success} />
+        <StatTile label="متأخر"        value={stats.overdue}   Icon={Warning}     color={COLORS.error} />
       </div>
 
       {notice && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-3 py-2.5 text-sm font-medium flex items-start gap-2">
-          <Warning size={15} className="mt-0.5 flex-shrink-0" />
+        <div className="rounded-[11px] border px-3.5 py-2.5 text-[13px] font-bold flex items-start gap-2"
+          style={{ background: tint(COLORS.warning, 12), borderColor: tint(COLORS.warning, 28), color: COLORS.warning }}>
+          <Warning size={15} className="mt-0.5 shrink-0" />
           <span className="flex-1">{notice}</span>
-          <button onClick={() => setNotice(null)} className="text-amber-600 hover:text-amber-900"><X size={14} /></button>
+          <button onClick={() => setNotice(null)} className="hover:opacity-70 transition-opacity"><X size={14} /></button>
         </div>
       )}
 
@@ -587,17 +590,14 @@ export default function AdminForms() {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-[10px] text-[12.5px] font-bold border transition-colors flex items-center gap-2 ${
               tab === t.key
-                ? 'text-white border-transparent shadow-[0_3px_10px_rgb(var(--c-primary)/0.35)]'
-                : 'bg-white text-ink border-line hover:border-primary/40'
+                ? 'bg-primary border-primary text-white'
+                : 'bg-white text-ink border-line hover:bg-[rgb(var(--c-bg))]'
             }`}
-            style={tab === t.key
-              ? { background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }
-              : undefined}
           >
             {t.label}
-            <span className={`px-1.5 py-0.5 rounded-full text-xs ${tab === t.key ? 'bg-white/25' : 'bg-background text-muted'}`}>
+            <span className={`px-1.5 py-[2px] rounded-md text-[10.5px] font-bold ${tab === t.key ? 'bg-white/20 text-white' : 'bg-[rgb(var(--c-bg))] text-muted'}`}>
               {t.count}
             </span>
           </button>
@@ -607,8 +607,9 @@ export default function AdminForms() {
       {tab !== 'assignments' ? (
         <section className="space-y-3">
           {tab === 'library' && (
-            <div className="bg-accent/8 border border-accent/25 rounded-xl px-4 py-3 text-xs text-ink flex items-start gap-2">
-              <Lock size={14} className="text-accent-600 mt-0.5 flex-shrink-0" />
+            <div className="rounded-[11px] border px-4 py-3 text-[12px] font-medium text-ink flex items-start gap-2"
+              style={{ background: tint(COLORS.accent600, 12), borderColor: tint(COLORS.accent600, 28) }}>
+              <Lock size={14} className="text-accent-600 mt-0.5 shrink-0" />
               <span className="leading-relaxed">
                 نماذج متعارف عليها تأتي مع النظام. <b>لا تُحذف ولا تُعدَّل</b> — أسندها كما هي،
                 أو انسخها إلى «قوالبي» وعدّل النسخة كما تشاء.
@@ -617,33 +618,32 @@ export default function AdminForms() {
           )}
 
           <div className="relative max-w-xs">
-            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+            <div className="absolute inset-y-0 start-3 flex items-center pointer-events-none">
               <Search size={14} className="text-muted" />
             </div>
             <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="ابحث في القوالب" className={`${inputCls} pr-9`} />
+              placeholder="ابحث في القوالب" className={`${inputCls} ps-9`} />
           </div>
 
-          {loading && <p className="text-center text-muted text-sm py-10">جارٍ التحميل...</p>}
+          {loading && <p className="text-center text-muted text-[13px] font-medium py-10">جارٍ التحميل...</p>}
 
           {!loading && visibleTemplates.length === 0 && (
-            <div className="bg-white rounded-2xl border border-line p-12 text-center">
+            <Surface className="p-12 text-center">
               <FileText size={38} className="mx-auto text-muted/30 mb-3" />
               {tab === 'library' ? (
                 <>
-                  <h3 className="font-bold text-ink text-sm mb-1">المكتبة فارغة</h3>
+                  <h3 className="font-bold text-ink text-[13.5px] mb-1">المكتبة فارغة</h3>
                 </>
               ) : (
                 <>
-                  <h3 className="font-bold text-ink text-sm mb-1">لا قوالب خاصة بك بعد</h3>
+                  <h3 className="font-bold text-ink text-[13.5px] mb-1">لا قوالب خاصة بك بعد</h3>
                   <button onClick={openNew}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-bold text-sm hover:opacity-90 transition"
-                    style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}>
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-[10px] bg-primary border border-primary text-white font-bold text-[12px] hover:opacity-90 transition-opacity">
                     <Plus size={15} weight="bold" /> نموذج جديد
                   </button>
                 </>
               )}
-            </div>
+            </Surface>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -656,21 +656,20 @@ export default function AdminForms() {
               const hue = templateTone(t.key || t.id);
               return (
                 <div key={t.id}
-                  className="group/card bg-white rounded-2xl border overflow-hidden flex flex-col
-                             transition-shadow hover:shadow-[0_8px_28px_rgb(var(--c-ink)/0.12)]"
+                  className="group/card bg-white rounded-[14px] border overflow-hidden flex flex-col
+                             shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] transition-shadow hover:shadow-[0_6px_20px_-6px_rgb(var(--c-ink)/0.16)]"
                   style={{ borderColor: hue.line }}>
                   {/* The spine. Fixed to the template's key, so the form you
                       reached for last week is in the same colour today. */}
-                  <span className="block h-1.5 flex-shrink-0"
-                    style={{ background: `linear-gradient(90deg, ${hue.bar}, ${hue.ink})` }} />
+                  <span className="block h-1.5 shrink-0" style={{ background: hue.bar }} />
                   <div className="p-4 flex flex-col gap-3 flex-1">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <h3 className="font-bold text-ink text-sm leading-snug">{t.title}</h3>
-                      {t.description && <p className="text-[11px] text-muted mt-1 line-clamp-2">{t.description}</p>}
+                      <h3 className="font-bold text-ink text-[13.5px] leading-snug">{t.title}</h3>
+                      {t.description && <p className="text-[11px] font-medium text-muted mt-1 line-clamp-2">{t.description}</p>}
                     </div>
                     {t.isStandard && (
-                      <span className="flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full flex-shrink-0 border"
+                      <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-[3px] rounded-md shrink-0 border"
                         style={{ background: hue.bg, color: hue.ink, borderColor: hue.line }}
                         title="نموذج جاهز — محمي من الحذف والتعديل">
                         <Lock size={10} weight="fill" /> جاهز
@@ -680,7 +679,7 @@ export default function AdminForms() {
 
                   <div className="flex flex-wrap gap-1.5 text-[10px]">
                     {t.category && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full font-black border"
+                      <span className="inline-flex items-center px-2 py-[3px] rounded-md font-bold border"
                         style={{ background: hue.bg, color: hue.ink, borderColor: hue.line }}>
                         {t.category}
                       </span>
@@ -715,10 +714,12 @@ export default function AdminForms() {
           </div>
         </section>
       ) : (
-        <section className="bg-white rounded-2xl border border-line overflow-hidden">
-          <div className="p-4 border-b border-line space-y-3">
+        <Surface className="overflow-hidden">
+          <div className="p-4 border-b space-y-3"
+            style={{ background: tint(COLORS.primary, 12), borderColor: tint(COLORS.primary, 28) }}>
             <div className="flex items-center gap-3 flex-wrap">
-              <h2 className="text-lg font-bold text-primary">
+              <IconTile Icon={FileText} size="md" />
+              <h2 className="text-[15px] font-bold text-ink">
                 {activeSeason ? `تكليفات ${seasonLabel(activeSeason)}` : 'التكليفات'}
               </h2>
               <span className="text-[12px] font-bold text-muted tabular-nums">
@@ -728,7 +729,7 @@ export default function AdminForms() {
               </span>
               {(byCaterer || byStatus || byTemplate) && (
                 <button onClick={() => { setByCaterer(''); setByStatus(''); setByTemplate(''); }}
-                  className="mr-auto text-[12px] font-black text-primary hover:underline">
+                  className="ms-auto text-[12px] font-bold text-primary hover:underline">
                   عرض الكل
                 </button>
               )}
@@ -762,22 +763,21 @@ export default function AdminForms() {
           </div>
           <DataTable>
             <table className="w-full text-sm">
-              <thead className="text-muted text-xs border-b border-line"
-                style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 60%)' }}>
+              <thead className="text-muted text-[11px] border-b border-line bg-[rgb(var(--c-bg))]">
                 <tr>
-                  <th className="px-4 py-3 text-right font-semibold">الرقم</th>
-                  <th className="px-4 py-3 text-right font-semibold">النموذج</th>
-                  <th className="px-4 py-3 text-right font-semibold">المتعهد</th>
-                  <th className="px-4 py-3 text-right font-semibold">المركز</th>
-                  <th className="px-4 py-3 text-right font-semibold">الموعد النهائي</th>
-                  <th className="px-4 py-3 text-right font-semibold">تاريخ التسليم</th>
-                  <th className="px-4 py-3 text-right font-semibold">الحالة</th>
-                  <th className="px-4 py-3 text-right font-semibold">إجراء</th>
+                  <th className="px-4 py-3 text-start font-bold">الرقم</th>
+                  <th className="px-4 py-3 text-start font-bold">النموذج</th>
+                  <th className="px-4 py-3 text-start font-bold">المتعهد</th>
+                  <th className="px-4 py-3 text-start font-bold">المركز</th>
+                  <th className="px-4 py-3 text-start font-bold">الموعد النهائي</th>
+                  <th className="px-4 py-3 text-start font-bold">تاريخ التسليم</th>
+                  <th className="px-4 py-3 text-start font-bold">الحالة</th>
+                  <th className="px-4 py-3 text-start font-bold">إجراء</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
                 {visibleAssignments.length === 0 && (
-                  <tr><td colSpan={8} className="p-10 text-center text-muted text-sm">
+                  <tr><td colSpan={8} className="p-10 text-center text-muted text-[13px] font-medium">
                     {seasonAssignments.length === 0
                       ? 'لا تكليفات بعد'
                       : 'لا تكليفات تطابق هذه التصفية'}
@@ -788,15 +788,15 @@ export default function AdminForms() {
                   const late = isOverdue(a) && a.status !== 'accepted';
                   const tone = late ? LATE : formToneOf(a.status);
                   return (
-                    <tr key={a.id} className="hover:bg-background transition-colors"
+                    <tr key={a.id} className="hover:bg-[rgb(var(--c-bg))] transition-colors"
                       style={{ borderInlineStart: `3px solid ${tone.bar}` }}>
-                      <td className="px-4 py-3 text-xs text-muted" dir="ltr">{a.formNumber}</td>
-                      <td className="px-4 py-3 text-xs text-ink font-medium">{templateById[a.templateId]?.title || '—'}</td>
-                      <td className="px-4 py-3 text-xs text-ink max-w-[200px]">{catererById[a.catererId]?.name || '—'}</td>
-                      <td className="px-4 py-3 text-xs text-muted">{centerById[a.centerId]?.code || '—'}</td>
-                      <td className="px-4 py-3 text-xs">
+                      <td className="px-4 py-3 text-[11.5px] text-muted" dir="ltr">{a.formNumber}</td>
+                      <td className="px-4 py-3 text-[12px] text-ink font-bold">{templateById[a.templateId]?.title || '—'}</td>
+                      <td className="px-4 py-3 text-[12px] text-ink max-w-[200px]">{catererById[a.catererId]?.name || '—'}</td>
+                      <td className="px-4 py-3 text-[12px] text-muted">{centerById[a.centerId]?.code || '—'}</td>
+                      <td className="px-4 py-3 text-[12px]">
                         {a.dueAt ? (
-                          <span className="inline-block px-2 py-1 rounded-lg border font-black tabular-nums" dir="ltr"
+                          <span className="inline-block px-2 py-1 rounded-md border text-[11px] font-bold tabular-nums" dir="ltr"
                             style={late
                               ? { background: LATE.bg, color: LATE.ink, borderColor: LATE.line }
                               : { background: CALM.bg, color: CALM.ink, borderColor: CALM.line }}>
@@ -809,9 +809,9 @@ export default function AdminForms() {
                           the deadline, and the only one that answers «هل
                           سلّم؟» without reading the status and the date and
                           doing the subtraction in your head. */}
-                      <td className="px-4 py-3 text-xs">
+                      <td className="px-4 py-3 text-[12px]">
                         {a.submittedAt ? (
-                          <span className="inline-flex items-center gap-1 font-black whitespace-nowrap" dir="ltr"
+                          <span className="inline-flex items-center gap-1 font-bold whitespace-nowrap" dir="ltr"
                             style={{ color: FORM_STATE.accepted.ink }}>
                             <CheckCircle size={12} weight="fill" />
                             {new Date(a.submittedAt).toISOString().slice(0, 10)}
@@ -822,14 +822,14 @@ export default function AdminForms() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="inline-flex items-center gap-1.5 text-[11px] font-black px-2.5 py-1
-                                           rounded-full whitespace-nowrap border"
+                          <span className="inline-flex items-center gap-1.5 text-[10.5px] font-bold px-2 py-[3px]
+                                           rounded-md whitespace-nowrap border"
                             style={{ background: tone.bg, color: tone.ink, borderColor: tone.line }}>
                             <span className="w-1.5 h-1.5 rounded-full" style={{ background: tone.bar }} />
                             {meta.label}
                           </span>
                           {late && (
-                            <span className="text-[10px] font-black whitespace-nowrap" style={{ color: LATE.ink }}>
+                            <span className="text-[10px] font-bold whitespace-nowrap" style={{ color: LATE.ink }}>
                               متأخر {daysLate(a)} يوم
                             </span>
                           )}
@@ -864,7 +864,7 @@ export default function AdminForms() {
                                 download={att.filename}
                                 style={{ background: ACTION.attach.bg, color: ACTION.attach.ink,
                                          borderColor: ACTION.attach.line }}
-                                className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg border
+                                className="flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-[8px] border
                                            transition-colors hover:brightness-95"
                               >
                                 <DownloadSimple size={11} weight="bold" /> المرفق
@@ -885,16 +885,16 @@ export default function AdminForms() {
               </tbody>
             </table>
           </DataTable>
-        </section>
+        </Surface>
       )}
 
       {/* ── Preview ────────────────────────────── */}
       {preview && (
         <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setPreview(null)} />
+          <div className="absolute inset-0 bg-[rgb(var(--c-ink)/0.45)] backdrop-blur-sm" onClick={() => setPreview(null)} />
           <div className="relative my-8 w-full max-w-3xl">
             <button onClick={() => setPreview(null)}
-              className="absolute -top-2 left-0 w-9 h-9 rounded-xl bg-white border border-line flex items-center justify-center text-muted hover:text-ink shadow-lg z-10">
+              className="absolute -top-2 end-0 w-9 h-9 rounded-[10px] bg-white border border-line flex items-center justify-center text-muted hover:text-ink shadow-[0_6px_20px_-6px_rgb(var(--c-ink)/0.16)] z-10">
               <X size={16} />
             </button>
             <FormDocument
@@ -910,28 +910,29 @@ export default function AdminForms() {
       {/* ── Assign step 2: the admin completes what the registry cannot ── */}
       {assign?.step === 'fill' && (
         <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setAssign(null)} />
-          <div className="relative my-6 bg-white rounded-2xl shadow-2xl w-full max-w-4xl" dir="rtl">
-            <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-line rounded-t-2xl"
-              style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 55%)' }}>
+          <div className="absolute inset-0 bg-[rgb(var(--c-ink)/0.45)] backdrop-blur-sm" onClick={() => setAssign(null)} />
+          <div className="relative my-6 bg-white rounded-[18px] border border-line shadow-[0_24px_60px_-16px_rgb(var(--c-ink)/0.35)] w-full max-w-4xl" dir="rtl">
+            <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b rounded-t-[18px]"
+              style={{ background: tint(COLORS.primary, 12), borderColor: tint(COLORS.primary, 28) }}>
               <div className="flex items-center gap-2.5">
                 <button onClick={() => setAssign(p => ({ ...p, step: 'who' }))}
-                  className="w-9 h-9 rounded-xl border border-line flex items-center justify-center text-muted hover:text-ink transition-colors">
+                  className="w-9 h-9 rounded-[10px] border border-line bg-white flex items-center justify-center text-muted hover:text-ink transition-colors">
                   <CaretLeft size={15} />
                 </button>
                 <div>
-                  <h2 className="font-bold text-ink text-sm">تعبئة ما لا يعرفه النظام</h2>
+                  <h2 className="font-bold text-ink text-[13.5px]">تعبئة ما لا يعرفه النظام</h2>
                 </div>
               </div>
               <button onClick={() => setAssign(null)}
-                className="w-8 h-8 rounded-xl border border-line flex items-center justify-center hover:bg-background transition-colors">
+                className="w-8 h-8 rounded-[10px] border border-line bg-white flex items-center justify-center hover:bg-[rgb(var(--c-bg))] transition-colors">
                 <X size={15} className="text-muted" />
               </button>
             </div>
 
             <div className="px-6 py-5 space-y-4">
-              <div className="bg-accent/8 border border-accent/25 rounded-xl px-4 py-3 text-xs text-ink flex items-start gap-2">
-                <Sparkle size={14} className="text-accent-600 mt-0.5 flex-shrink-0" />
+              <div className="rounded-[11px] border px-4 py-3 text-[12px] font-medium text-ink flex items-start gap-2"
+                style={{ background: tint(COLORS.accent600, 12), borderColor: tint(COLORS.accent600, 28) }}>
+                <Sparkle size={14} className="text-accent-600 mt-0.5 shrink-0" />
                 <span className="leading-relaxed">
                   الحقول المسجّلة في النظام (اسم المتعهد، السجل التجاري، المركز، الموسم…) تُعبَّأ
                   <b> لكل متعهد ببياناته هو</b> تلقائياً. هنا تكمل الباقي فقط.
@@ -943,7 +944,7 @@ export default function AdminForms() {
                   on its own does not say which party it names, and the minute
                   has two. */}
               <div className="space-y-4">
-                <p className="text-xs font-bold text-ink">قيمة موحّدة لجميع المتعهدين</p>
+                <p className="text-[12.5px] font-bold text-ink">قيمة موحّدة لجميع المتعهدين</p>
                 {Object.entries(
                   adminKeys.reduce((acc, key) => {
                     const g = assign.template.definition.fields[key]?.group || '';
@@ -953,7 +954,8 @@ export default function AdminForms() {
                 ).map(([group, keys]) => (
                   <div key={group} className="space-y-3">
                     {group && (
-                      <p className="text-[11px] font-black text-primary bg-primary/[0.06] rounded-lg px-3 py-2">
+                      <p className="text-[11px] font-bold text-primary rounded-[10px] border px-3 py-2"
+                        style={{ background: tint(COLORS.primary, 12), borderColor: tint(COLORS.primary, 28) }}>
                         {group}
                       </p>
                     )}
@@ -965,7 +967,7 @@ export default function AdminForms() {
                             {def.type === 'files' ? (
                               <div className="flex flex-wrap items-center gap-2">
                                 {(assign.shared[key] || []).map((u, i) => (
-                                  <span key={i} className="inline-flex items-center gap-1.5 pl-1 pr-2 py-1 rounded-lg
+                                  <span key={i} className="inline-flex items-center gap-1.5 pe-1 ps-2 py-1 rounded-[10px]
                                                            border border-line bg-white">
                                     <img src={u} alt="" className="h-8 w-8 object-cover rounded" />
                                     <button type="button" aria-label="إزالة"
@@ -973,7 +975,7 @@ export default function AdminForms() {
                                         ...p,
                                         shared: { ...p.shared, [key]: (p.shared[key] || []).filter((_, j) => j !== i) },
                                       }))}
-                                      className="w-4 h-4 rounded text-muted hover:text-red-600 leading-none">×</button>
+                                      className="w-4 h-4 rounded text-muted hover:text-ink leading-none">×</button>
                                   </span>
                                 ))}
                                 <label className={`${inputCls} w-auto cursor-pointer text-muted flex items-center text-[12.5px]`}>
@@ -1037,17 +1039,17 @@ export default function AdminForms() {
               </div>
 
               {/* Per-caterer, for anything that differs — a contract number does. */}
-              <details className="rounded-xl border border-line">
-                <summary className="px-4 py-2.5 text-xs font-bold text-ink cursor-pointer select-none">
+              <details className="rounded-[11px] border border-line">
+                <summary className="px-4 py-2.5 text-[12.5px] font-bold text-ink cursor-pointer select-none">
                   تخصيص لكل متعهد على حدة
                 </summary>
                 <DataTable className="px-4 pb-4">
-                  <table className="w-full text-xs">
+                  <table className="w-full text-[12px]">
                     <thead className="text-muted border-b border-line">
                       <tr>
-                        <th className="px-2 py-2 text-right font-semibold min-w-[180px]">المتعهد</th>
+                        <th className="px-2 py-2 text-start font-bold min-w-[180px]">المتعهد</th>
                         {perCatererKeys.map(k => (
-                          <th key={k} className="px-2 py-2 text-right font-semibold whitespace-nowrap">
+                          <th key={k} className="px-2 py-2 text-start font-bold whitespace-nowrap">
                             {assign.template.definition.fields[k]?.label || k}
                           </th>
                         ))}
@@ -1071,7 +1073,7 @@ export default function AdminForms() {
                                     },
                                   }))}
                                   placeholder={resolved[k] || '—'}
-                                  className="w-full px-2 py-1 border border-line rounded-lg text-xs outline-none focus:border-primary bg-white"
+                                  className="w-full px-2 py-1 border border-line rounded-[8px] text-[12px] outline-none focus:border-primary bg-white"
                                 />
                               </td>
                             ))}
@@ -1086,10 +1088,10 @@ export default function AdminForms() {
               {/* Exactly what the first caterer will receive. */}
               {assign.catererIds[0] && (
                 <div>
-                  <p className="text-xs font-bold text-ink mb-2">
+                  <p className="text-[12.5px] font-bold text-ink mb-2">
                     معاينة نسخة «{catererById[assign.catererIds[0]]?.name}»
                   </p>
-                  <div className="bg-background/60 rounded-xl border border-line p-4 max-h-[420px] overflow-y-auto">
+                  <div className="bg-[rgb(var(--c-bg))] rounded-[11px] border border-line p-4 max-h-[420px] overflow-y-auto">
                     <FormDocument
                       definition={assign.template.definition}
                       mode="view"
@@ -1105,8 +1107,7 @@ export default function AdminForms() {
                 <button
                   onClick={runAssign}
                   disabled={assigning}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm hover:opacity-90 disabled:opacity-60 transition"
-                  style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[10px] bg-primary border border-primary text-white font-bold text-[13px] hover:opacity-90 disabled:opacity-60 transition-opacity"
                 >
                   {assigning
                     ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -1114,7 +1115,7 @@ export default function AdminForms() {
                   إسناد إلى {assign.catererIds.length} متعهد
                 </button>
                 <button onClick={() => setAssign(p => ({ ...p, step: 'who' }))}
-                  className="px-5 py-3 rounded-xl border border-line text-muted text-sm font-medium hover:bg-background transition-colors">
+                  className="px-5 py-2.5 rounded-[10px] border border-line bg-white text-ink text-[13px] font-bold hover:bg-[rgb(var(--c-bg))] transition-colors">
                   رجوع
                 </button>
               </div>
@@ -1126,22 +1127,19 @@ export default function AdminForms() {
       {/* ── Assign step 1 ──────────────────────── */}
       {assign?.step === 'who' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setAssign(null)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
-            <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-line"
-              style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 55%)' }}>
+          <div className="absolute inset-0 bg-[rgb(var(--c-ink)/0.45)] backdrop-blur-sm" onClick={() => setAssign(null)} />
+          <div className="relative bg-white rounded-[18px] border border-line shadow-[0_24px_60px_-16px_rgb(var(--c-ink)/0.35)] w-full max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
+            <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b"
+              style={{ background: tint(COLORS.primary, 12), borderColor: tint(COLORS.primary, 28) }}>
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                  style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
-                  <PaperPlaneTilt size={15} className="text-white" />
-                </div>
+                <IconTile Icon={PaperPlaneTilt} size="md" />
                 <div>
-                  <h2 className="font-bold text-ink text-sm">إسناد «{assign.template.title}»</h2>
-                  <p className="text-[10px] text-muted">موسم {activeSeason ? seasonLabel(activeSeason) : '—'}</p>
+                  <h2 className="font-bold text-ink text-[13.5px]">إسناد «{assign.template.title}»</h2>
+                  <p className="text-[10.5px] font-medium text-muted">موسم {activeSeason ? seasonLabel(activeSeason) : '—'}</p>
                 </div>
               </div>
               <button onClick={() => setAssign(null)}
-                className="w-8 h-8 rounded-xl border border-line flex items-center justify-center hover:bg-background transition-colors">
+                className="w-8 h-8 rounded-[10px] border border-line bg-white flex items-center justify-center hover:bg-[rgb(var(--c-bg))] transition-colors">
                 <X size={15} className="text-muted" />
               </button>
             </div>
@@ -1150,29 +1148,31 @@ export default function AdminForms() {
               <Field label="الموعد النهائي للتسليم" required
                 hint="يظهر في النموذج نفسه وفي بوابة المتعهد، ومنه يُحتسب التأخير">
                 <div className="relative">
-                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                  <div className="absolute inset-y-0 start-3 flex items-center pointer-events-none">
                     <CalendarBlank size={14} className="text-primary" />
                   </div>
                   <input type="date" value={assign.dueAt}
                     onChange={e => setAssign(p => ({ ...p, dueAt: e.target.value }))}
-                    className={`${inputCls} pr-9`} dir="ltr" />
+                    className={`${inputCls} pe-9`} dir="ltr" />
                 </div>
               </Field>
 
               {(() => {
                 const locked = assign.template.definition?.scope === 'center';
                 return (
-                  <label className={`flex items-start gap-2.5 px-3 py-2.5 rounded-xl border transition-colors ${
-                    locked ? 'border-primary/30 bg-primary/[0.04] cursor-default'
-                           : 'border-line cursor-pointer hover:bg-background'
-                  }`}>
+                  <label className={`flex items-start gap-2.5 px-3 py-2.5 rounded-[11px] border transition-colors ${
+                    locked ? 'cursor-default' : 'border-line cursor-pointer hover:bg-[rgb(var(--c-bg))]'
+                  }`}
+                    style={locked
+                      ? { background: tint(COLORS.primary, 12), borderColor: tint(COLORS.primary, 28) }
+                      : undefined}>
                     <input type="checkbox" checked={assign.perCenter} disabled={locked}
                       onChange={e => setAssign(p => ({ ...p, perCenter: e.target.checked }))}
                       className="accent-primary w-4 h-4 mt-0.5" />
-                    <span className="text-xs">
-                      <span className="text-ink font-medium block">نسخة لكل مركز</span>
+                    <span className="text-[12px]">
+                      <span className="text-ink font-bold block">نسخة لكل مركز</span>
                       {locked && (
-                        <span className="text-[10.5px] text-muted block mt-0.5">
+                        <span className="text-[10.5px] font-medium text-muted block mt-0.5">
                           هذا النموذج يطبع بيانات المركز، فلا يُسنَد إلا لمركز
                         </span>
                       )}
@@ -1184,21 +1184,21 @@ export default function AdminForms() {
               <Field label={`المتعهدون (${assign.catererIds.length} محدد)`} required>
                 <div className="flex gap-1.5 mb-2">
                   <button onClick={() => setAssign(p => ({ ...p, catererIds: caterers.filter(c => c.status === 'active').map(c => c.id) }))}
-                    className="px-2.5 py-1 rounded-lg border border-line text-[11px] font-bold text-muted hover:border-primary/40 hover:text-primary transition-colors">
+                    className="px-2.5 py-1 rounded-[8px] border border-line bg-white text-[11px] font-bold text-muted hover:text-primary hover:bg-[rgb(var(--c-bg))] transition-colors">
                     تحديد الكل
                   </button>
                   <button onClick={() => setAssign(p => ({ ...p, catererIds: [] }))}
-                    className="px-2.5 py-1 rounded-lg border border-line text-[11px] font-bold text-muted hover:border-primary/40 hover:text-primary transition-colors">
+                    className="px-2.5 py-1 rounded-[8px] border border-line bg-white text-[11px] font-bold text-muted hover:text-primary hover:bg-[rgb(var(--c-bg))] transition-colors">
                     إلغاء التحديد
                   </button>
                 </div>
-                <div className="max-h-56 overflow-y-auto rounded-xl border border-line divide-y divide-line">
+                <div className="max-h-56 overflow-y-auto rounded-[11px] border border-line divide-y divide-line">
                   {caterers.filter(c => c.status !== 'archived').map(c => {
                     const owned = activeSeason
                       ? centers.filter(x => x.seasonId === activeSeason.id && x.catererId === c.id).length
                       : 0;
                     return (
-                      <label key={c.id} className="flex items-center gap-2.5 px-3 py-2 hover:bg-background cursor-pointer text-xs">
+                      <label key={c.id} className="flex items-center gap-2.5 px-3 py-2 hover:bg-[rgb(var(--c-bg))] cursor-pointer text-[12px]">
                         <input
                           type="checkbox"
                           checked={assign.catererIds.includes(c.id)}
@@ -1208,11 +1208,12 @@ export default function AdminForms() {
                               ? [...p.catererIds, c.id]
                               : p.catererIds.filter(x => x !== c.id),
                           }))}
-                          className="accent-primary w-4 h-4 flex-shrink-0"
+                          className="accent-primary w-4 h-4 shrink-0"
                         />
-                        <span className="text-ink flex-1 min-w-0 truncate">{c.name}</span>
+                        <span className="text-ink font-medium flex-1 min-w-0 truncate">{c.name}</span>
                         {assign.perCenter && (
-                          <span className={`text-[10px] flex items-center gap-1 flex-shrink-0 ${owned ? 'text-muted' : 'text-amber-600'}`}>
+                          <span className="text-[10px] font-bold flex items-center gap-1 shrink-0"
+                            style={{ color: owned ? 'rgb(var(--c-muted))' : COLORS.warning }}>
                             <Building2 size={10} /> {owned}
                           </span>
                         )}
@@ -1228,8 +1229,7 @@ export default function AdminForms() {
                     ? setAssign(p => ({ ...p, step: 'fill' }))
                     : runAssign())}
                   disabled={assigning || !assign.catererIds.length}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm hover:opacity-90 disabled:opacity-60 transition"
-                  style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[10px] bg-primary border border-primary text-white font-bold text-[13px] hover:opacity-90 disabled:opacity-60 transition-opacity"
                 >
                   {assigning
                     ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -1237,7 +1237,7 @@ export default function AdminForms() {
                   {adminKeys.length ? `التالي — تعبئة ${adminKeys.length} حقل` : 'إسناد'}
                 </button>
                 <button onClick={() => setAssign(null)}
-                  className="px-5 py-3 rounded-xl border border-line text-muted text-sm font-medium hover:bg-background transition-colors">
+                  className="px-5 py-2.5 rounded-[10px] border border-line bg-white text-ink text-[13px] font-bold hover:bg-[rgb(var(--c-bg))] transition-colors">
                   إلغاء
                 </button>
               </div>
@@ -1249,15 +1249,17 @@ export default function AdminForms() {
   );
 }
 
-const Tag = ({ children, tone }) => (
-  <span className={`px-2 py-0.5 rounded-md font-bold ${
-    tone === 'accent'  ? 'bg-accent/10 text-accent-600'
-    : tone === 'primary' ? 'bg-primary/10 text-primary'
-    : 'bg-background text-muted'
-  }`}>
-    {children}
-  </span>
-);
+const Tag = ({ children, tone }) => {
+  const c = tone === 'accent' ? COLORS.accent600 : tone === 'primary' ? COLORS.primary : null;
+  return (
+    <span className="px-2 py-[3px] rounded-md border font-bold"
+      style={c
+        ? { background: tint(c, 9), borderColor: tint(c, 22), color: c }
+        : { background: 'rgb(var(--c-bg))', borderColor: 'rgb(var(--c-line))', color: 'rgb(var(--c-muted))' }}>
+      {children}
+    </span>
+  );
+};
 
 function Action({ onClick, Icon, tone, children }) {
   const t = actionTone(tone);
@@ -1268,26 +1270,8 @@ function Action({ onClick, Icon, tone, children }) {
       onMouseLeave={e => { e.currentTarget.style.background = t.bg; e.currentTarget.style.color = t.ink;
                            e.currentTarget.style.borderColor = t.line; }}
       style={{ background: t.bg, color: t.ink, borderColor: t.line }}
-      className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg border transition-colors">
+      className="flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-[8px] border transition-colors">
       <Icon size={11} weight="bold" /> {children}
     </button>
-  );
-}
-
-function StatCard({ label, value, Icon, color }) {
-  return (
-    <div className="group/stat bg-white rounded-2xl border border-line px-4 py-3.5 shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] hover:shadow-[0_6px_24px_rgb(var(--c-primary)/0.14)] transition-shadow duration-300 flex items-center gap-3">
-      <div className="relative flex-shrink-0">
-        <div className="absolute inset-0 rounded-xl blur-lg opacity-40 group-hover/stat:opacity-70 transition-opacity" style={{ background: color }} />
-        <div className="relative w-10 h-10 rounded-xl flex items-center justify-center group-hover/stat:scale-110 transition-transform duration-300"
-          style={{ background: `linear-gradient(135deg, ${color}, ${color}DD)` }}>
-          <Icon size={18} className="text-white" weight="bold" />
-        </div>
-      </div>
-      <div className="min-w-0">
-        <p className="text-2xl font-black text-ink leading-none">{value}</p>
-        <p className="text-[11px] text-muted mt-1 truncate">{label}</p>
-      </div>
-    </div>
   );
 }

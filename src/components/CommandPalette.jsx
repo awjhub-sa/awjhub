@@ -18,7 +18,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MagnifyingGlass, ArrowElbowDownLeft } from '@phosphor-icons/react';
+import { IconTile, Pill } from './ui/index.jsx';
 import { db } from '../lib/db.js';
+
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
+
+const NAVY = 'rgb(var(--c-primary))';
+
+/* A result's colour says which register it came from before the label is read. */
+const KIND_COLOR = {
+  'قسم':   NAVY,
+  'مركز':  'rgb(var(--c-info))',
+  'متعهد': 'rgb(var(--c-accent-600))',
+};
 
 const norm = (v) => String(v ?? '')
   .replace(/[ً-ْ]/g, '')
@@ -105,49 +117,55 @@ export default function CommandPalette({ sections }) {
   return (
     <div className="fixed inset-0 z-[95] flex items-start justify-center pt-[12vh] px-4" dir="rtl">
       <button className="absolute inset-0 bg-ink/45 backdrop-blur-[2px]" onClick={() => setOpen(false)} aria-label="إغلاق" />
-      <div className="relative w-full max-w-lg bg-white rounded-2xl overflow-hidden
-                      shadow-[0_24px_70px_rgb(var(--c-ink)/0.4)]">
-        <div className="flex items-center gap-2.5 px-4 py-3 border-b border-line">
-          <MagnifyingGlass size={16} weight="bold" className="text-muted flex-shrink-0" />
+      <div className="relative w-full max-w-lg bg-white rounded-[18px] overflow-hidden border border-line
+                      shadow-[0_0_40px_-8px_rgb(0_0_0/0.45)]">
+        <div
+          className="flex items-center gap-3 px-4 py-3 border-b"
+          style={{ background: tint(NAVY, 12), borderColor: tint(NAVY, 28) }}
+        >
+          <IconTile Icon={MagnifyingGlass} color={NAVY} size="sm" />
           <input
             ref={inputRef}
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder="اذهب إلى قسم، أو ابحث عن مركز أو متعهد…"
-            className="flex-1 text-[13px] font-bold text-ink bg-transparent focus:outline-none placeholder-muted/50"
+            className="flex-1 min-w-0 text-[13.5px] font-bold text-ink bg-transparent focus:outline-none placeholder-muted/60 placeholder:font-medium"
           />
-          <kbd className="text-[9.5px] font-black text-muted bg-background border border-line rounded px-1.5 py-0.5">ESC</kbd>
+          <kbd className="text-[10px] font-bold text-muted bg-white border border-line rounded-md px-1.5 py-0.5 shrink-0">ESC</kbd>
         </div>
 
         <div className="max-h-[46vh] overflow-y-auto py-1">
           {results.length === 0 ? (
-            <p className="text-[12px] font-bold text-muted text-center py-8">لا نتائج لـ «{q}»</p>
-          ) : results.map((r, idx) => (
-            <button
-              key={`${r.kind}-${r.to}-${r.label}-${idx}`}
-              onMouseEnter={() => setI(idx)}
-              onClick={() => go(r)}
-              className={`w-full flex items-center gap-2.5 px-4 py-2 text-right transition-colors ${
-                idx === i ? 'bg-primary/[0.07]' : 'hover:bg-background'
-              }`}
-            >
-              <span className="text-[9.5px] font-black px-1.5 py-0.5 rounded-md bg-background border border-line text-muted flex-shrink-0">
-                {r.kind}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-[12.5px] font-bold text-ink truncate">{r.label}</span>
-                {r.hint && <span className="block text-[10px] font-bold text-muted truncate">{r.hint}</span>}
-              </span>
-              {idx === i && <ArrowElbowDownLeft size={12} weight="bold" className="text-primary flex-shrink-0" />}
-            </button>
-          ))}
+            <p className="text-[12.5px] font-semibold text-muted text-center py-10">لا نتائج لـ «{q}»</p>
+          ) : results.map((r, idx) => {
+            const color = KIND_COLOR[r.kind] || 'rgb(var(--c-muted))';
+            const on = idx === i;
+            return (
+              <button
+                key={`${r.kind}-${r.to}-${r.label}-${idx}`}
+                onMouseEnter={() => setI(idx)}
+                onClick={() => go(r)}
+                className={`relative w-full flex items-center gap-3 ps-5 pe-4 py-2.5 text-start transition-colors ${
+                  on ? 'bg-[rgb(var(--c-primary)/0.06)]' : 'hover:bg-[rgb(var(--c-bg))]'
+                }`}
+              >
+                {on && <span aria-hidden className="absolute inset-y-0 start-0 w-[3px]" style={{ background: color }} />}
+                <Pill color={color} className="shrink-0">{r.kind}</Pill>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[13px] font-bold text-ink truncate">{r.label}</span>
+                  {r.hint && <span className="block text-[11px] font-medium text-muted truncate mt-0.5">{r.hint}</span>}
+                </span>
+                {on && <ArrowElbowDownLeft size={13} weight="bold" className="text-primary shrink-0" />}
+              </button>
+            );
+          })}
         </div>
 
-        <div className="flex items-center gap-3 px-4 py-2 border-t border-line bg-background text-[10px] font-bold text-muted">
+        <div className="flex items-center gap-3 px-4 py-2.5 border-t border-line bg-[rgb(var(--c-bg))] text-[10.5px] font-semibold text-muted">
           <span>↑↓ للتنقل</span>
           <span>Enter للفتح</span>
-          <span className="mr-auto">Ctrl K</span>
+          <span className="ms-auto font-bold text-ink/70">Ctrl K</span>
         </div>
       </div>
     </div>

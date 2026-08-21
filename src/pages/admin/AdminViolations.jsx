@@ -30,13 +30,17 @@ import { toast } from '../../lib/toast.js';
 import { SEVERITY, STATE, stateOf, LATE, ATTACH, NOTE, extOf , actionTone } from '../../config/tones.js';
 import { seasonLabel } from '../../lib/hijri.js';
 import DataTable from '../../components/DataTable.jsx';
+import { IconTile } from '../../components/ui/index.jsx';
 import {
   NotePencil, Warning, Plus, X, Eye, Printer, Trash as Trash2,
   CircleNotch, CheckCircle, Buildings,
 } from '@phosphor-icons/react';
 
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
+const ALERT = '#DC2626';
+
 const inputCls =
-  'w-full px-4 py-2.5 border border-line rounded-xl text-sm text-ink outline-none focus:border-primary transition placeholder-muted/40 bg-white';
+  'w-full px-3.5 py-2.5 border border-line rounded-[10px] text-[13px] font-medium text-ink outline-none focus:border-primary transition-colors placeholder-muted/40 bg-white';
 
 const AR  = (n) => String(n ?? '').replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
 const centerLabel = (code) => (!code ? '—' : /^مركز/.test(String(code).trim()) ? code : `مركز ${code}`);
@@ -46,7 +50,7 @@ const day = (v) => (v ? new Date(v).toISOString().slice(0, 10) : '—');
 
 const Field = ({ label, required, hint, children }) => (
   <div>
-    <label className="block text-xs font-bold text-muted mb-1.5">
+    <label className="block text-[11.5px] font-bold text-muted mb-1.5">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
     {children}
@@ -67,8 +71,8 @@ function Files({ list, tone, formNumber }) {
       {files.map((u, i) => (
         <a key={i} href={asDownload(u, `${tone.label} ${formNumber} - ${i + 1}${extOf(u)}`)} download
           title={`تحميل ${tone.label} ${i + 1}`}
-          className="w-[26px] h-[26px] rounded-lg border flex items-center justify-center
-                     text-[11px] font-black tabular-nums transition-transform hover:scale-110"
+          className="w-[26px] h-[26px] rounded-md border flex items-center justify-center
+                     text-[11px] font-bold tabular-nums transition-colors hover:brightness-95"
           style={{ background: tone.bg, borderColor: tone.line, color: tone.ink }}>
           {AR(i + 1)}
         </a>
@@ -285,8 +289,8 @@ export default function AdminViolations() {
         ]}
         heroActions={
           <button onClick={openCompose} disabled={!template}
-            className="flex items-center gap-2 h-10 px-4 rounded-xl bg-accent text-primary-900
-                       text-[13px] font-black hover:brightness-105 transition disabled:opacity-50">
+            className="flex items-center gap-2 h-10 px-4 rounded-[10px] bg-primary border border-primary
+                       text-white text-[12px] font-bold hover:opacity-90 transition-opacity disabled:opacity-50">
             <Plus size={15} weight="bold" />
             محضر مخالفة جديد
           </button>
@@ -294,14 +298,15 @@ export default function AdminViolations() {
       />
 
       {notice && (
-        <div className="rounded-xl border border-primary/20 bg-primary/[0.05] px-4 py-3 flex items-center gap-2">
+        <div className="rounded-[10px] border px-4 py-3 flex items-center gap-2"
+          style={{ background: tint('rgb(var(--c-primary))', 12), borderColor: tint('rgb(var(--c-primary))', 28) }}>
           <p className="text-[13px] font-bold text-ink flex-1">{notice}</p>
           <button onClick={() => setNotice(null)} className="text-muted hover:text-ink"><X size={15} /></button>
         </div>
       )}
 
       {!template && !loading && (
-        <div className="bg-white rounded-2xl border border-line p-10 text-center">
+        <div className="bg-white rounded-[14px] border border-line shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] p-10 text-center">
           <p className="text-[14px] font-bold text-ink">قالب «محضر مخالفة» غير موجود</p>
           <p className="text-[12.5px] text-muted mt-1.5">شغّل ترحيل النماذج القياسية ليظهر القسم.</p>
         </div>
@@ -309,10 +314,10 @@ export default function AdminViolations() {
 
       {/* ── the register ── */}
       {template && (
-        <section className="bg-white rounded-2xl border border-line overflow-hidden">
+        <section className="bg-white rounded-[14px] border border-line shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] overflow-hidden">
           <div className="p-4 border-b border-line space-y-3">
             <div className="flex items-center gap-3 flex-wrap">
-              <h2 className="text-lg font-bold text-primary">
+              <h2 className="text-[15px] font-bold text-ink">
                 {activeSeason ? `مخالفات ${seasonLabel(activeSeason)}` : 'المخالفات'}
               </h2>
               <span className="text-[12px] font-bold text-muted tabular-nums">
@@ -320,7 +325,7 @@ export default function AdminViolations() {
               </span>
               {(byCaterer || byStatus) && (
                 <button onClick={() => { setByCaterer(''); setByStatus(''); }}
-                  className="mr-auto text-[12px] font-black text-primary hover:underline">عرض الكل</button>
+                  className="ms-auto text-[12px] font-bold text-primary hover:underline">عرض الكل</button>
               )}
             </div>
             <div className="nsab-filters flex items-center gap-2 flex-wrap">
@@ -339,18 +344,18 @@ export default function AdminViolations() {
 
           <DataTable>
             <table className="w-full text-sm">
-              <thead className="text-muted text-xs border-b border-line bg-bg">
+              <thead className="text-muted text-[11px] border-b border-line bg-[rgb(var(--c-bg))]">
                 <tr>
-                  <th className="px-4 py-3 text-right font-semibold">الرقم</th>
-                  <th className="px-4 py-3 text-right font-semibold">المتعهد</th>
-                  <th className="px-4 py-3 text-right font-semibold">المخالفة</th>
-                  <th className="px-4 py-3 text-right font-semibold whitespace-nowrap">صور المخالفة</th>
-                  <th className="px-4 py-3 text-right font-semibold">الخطورة</th>
-                  <th className="px-4 py-3 text-right font-semibold">المهلة</th>
-                  <th className="px-4 py-3 text-right font-semibold">ردّ المتعهد</th>
-                  <th className="px-4 py-3 text-right font-semibold whitespace-nowrap">مرفقات الردّ</th>
-                  <th className="px-4 py-3 text-right font-semibold">الحالة</th>
-                  <th className="px-4 py-3 text-right font-semibold">إجراء</th>
+                  <th className="px-4 py-3 text-start font-bold">الرقم</th>
+                  <th className="px-4 py-3 text-start font-bold">المتعهد</th>
+                  <th className="px-4 py-3 text-start font-bold">المخالفة</th>
+                  <th className="px-4 py-3 text-start font-bold whitespace-nowrap">صور المخالفة</th>
+                  <th className="px-4 py-3 text-start font-bold">الخطورة</th>
+                  <th className="px-4 py-3 text-start font-bold">المهلة</th>
+                  <th className="px-4 py-3 text-start font-bold">ردّ المتعهد</th>
+                  <th className="px-4 py-3 text-start font-bold whitespace-nowrap">مرفقات الردّ</th>
+                  <th className="px-4 py-3 text-start font-bold">الحالة</th>
+                  <th className="px-4 py-3 text-start font-bold">إجراء</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
@@ -365,7 +370,7 @@ export default function AdminViolations() {
                   const sev  = SEVERITY[a.data?.severity];
                   return (
                   <Fragment key={a.id}>
-                    <tr className="hover:bg-background transition-colors"
+                    <tr className="hover:bg-[rgb(var(--c-bg))] transition-colors"
                       style={sev ? { borderInlineStart: `3px solid ${sev.bar}` } : undefined}>
                       <td className="px-4 py-3 text-xs text-muted" dir="ltr">{a.formNumber}</td>
                       <td className="px-4 py-3 text-xs text-ink font-medium max-w-[200px]">
@@ -389,21 +394,21 @@ export default function AdminViolations() {
                       </td>
                       <td className="px-4 py-3">
                         {sev ? (
-                          <span className="text-[11px] font-black px-2.5 py-1 rounded-lg whitespace-nowrap border"
+                          <span className="text-[11px] font-bold px-2.5 py-1 rounded-md whitespace-nowrap border"
                             style={{ background: sev.bg, color: sev.ink, borderColor: sev.line }}>
                             {a.data.severity}
                           </span>
                         ) : <span className="text-muted/40 text-xs">—</span>}
                       </td>
                       <td className="px-4 py-3 text-xs">
-                        <span className="inline-block px-2 py-1 rounded-lg border font-black tabular-nums" dir="ltr"
+                        <span className="inline-block px-2 py-1 rounded-md border font-bold tabular-nums" dir="ltr"
                           style={late
                             ? { background: LATE.bg, color: LATE.ink, borderColor: LATE.line }
-                            : { background: '#F8FAFC', color: 'rgb(var(--c-muted))', borderColor: 'rgb(var(--c-line))' }}>
+                            : { background: 'rgb(var(--c-bg))', color: 'rgb(var(--c-muted))', borderColor: 'rgb(var(--c-line))' }}>
                           {day(a.dueAt)}
                         </span>
                         {late && (
-                          <span className="block text-[10px] font-black mt-1" style={{ color: LATE.ink }}>
+                          <span className="block text-[10px] font-bold mt-1" style={{ color: LATE.ink }}>
                             متأخر {AR(daysLate(a))} يوم
                           </span>
                         )}
@@ -426,8 +431,8 @@ export default function AdminViolations() {
                         <Files list={a.data?.remedy_evidence} tone={ATTACH.remedy_evidence} formNumber={a.formNumber} />
                       </td>
                       <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1.5 text-[11px] font-black px-2.5 py-1
-                                         rounded-full whitespace-nowrap border"
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1
+                                         rounded-md whitespace-nowrap border"
                           style={{ background: meta.bg, color: meta.ink, borderColor: meta.line }}>
                           <span className="w-1.5 h-1.5 rounded-full" style={{ background: meta.bar }} />
                           {meta.label}
@@ -453,11 +458,11 @@ export default function AdminViolations() {
                          chose to write is worth a line of its own. */
                       <tr key={`${a.id}-note`} style={{ background: NOTE.bg }}>
                         <td colSpan={10} className="px-4 pb-3 pt-0">
-                          <div className="flex items-start gap-2.5 rounded-xl border px-3.5 py-2.5"
+                          <div className="flex items-start gap-2.5 rounded-[10px] border px-3.5 py-2.5"
                             style={{ background: '#fff', borderColor: NOTE.line }}>
-                            <NotePencil size={14} weight="bold" className="mt-0.5 flex-shrink-0" style={{ color: NOTE.ink }} />
+                            <NotePencil size={14} weight="bold" className="mt-0.5 shrink-0" style={{ color: NOTE.ink }} />
                             <div className="min-w-0">
-                              <span className="block text-[10.5px] font-black mb-0.5" style={{ color: NOTE.ink }}>
+                              <span className="block text-[10.5px] font-bold mb-0.5" style={{ color: NOTE.ink }}>
                                 ملاحظة المتعهد على المحضر
                               </span>
                               <p className="text-[12.5px] leading-relaxed text-ink whitespace-pre-wrap">
@@ -481,19 +486,18 @@ export default function AdminViolations() {
       {compose && template && (
         <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto"
           style={{ background: 'rgb(var(--c-ink) / 0.45)' }}>
-          <div className="bg-white rounded-2xl border border-line w-full max-w-2xl my-6 shadow-lift">
-            <div className="px-6 py-4 border-b border-line flex items-center gap-3">
-              <span className="w-10 h-10 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center">
-                <Warning size={19} weight="duotone" className="text-red-600" />
-              </span>
+          <div className="bg-white rounded-[18px] border border-line shadow-[0_24px_60px_-16px_rgb(var(--c-ink)/0.35)] w-full max-w-2xl my-6">
+            <div className="px-6 py-4 border-b flex items-center gap-3"
+              style={{ background: tint(ALERT, 10), borderColor: tint(ALERT, 26) }}>
+              <IconTile Icon={Warning} color={ALERT} size="md" />
               <div className="flex-1">
-                <h2 className="font-black text-ink text-[15px]">محضر مخالفة جديد</h2>
+                <h2 className="font-bold text-ink text-[15px]">محضر مخالفة جديد</h2>
                 <p className="text-[11.5px] font-bold text-muted">
                   ما تكتبه هنا هو نصّ المحضر الذي يصل المتعهد
                 </p>
               </div>
               <button onClick={() => setCompose(null)}
-                className="w-8 h-8 rounded-xl border border-line flex items-center justify-center hover:bg-background">
+                className="w-8 h-8 rounded-[10px] border border-line bg-white flex items-center justify-center hover:bg-[rgb(var(--c-bg))] transition-colors">
                 <X size={15} className="text-muted" />
               </button>
             </div>
@@ -537,7 +541,11 @@ export default function AdminViolations() {
               ).map(([group, keys]) => (
                 <div key={group} className="space-y-3">
                   {group && (
-                    <p className="text-[11px] font-black text-primary bg-primary/[0.06] rounded-lg px-3 py-2">
+                    <p className="text-[11px] font-bold text-primary rounded-md border px-3 py-2"
+                      style={{
+                        background: tint('rgb(var(--c-primary))', 10),
+                        borderColor: tint('rgb(var(--c-primary))', 24),
+                      }}>
                       {group}
                     </p>
                   )}
@@ -562,8 +570,8 @@ export default function AdminViolations() {
                             ) : def.type === 'files' ? (
                               <div className="flex flex-wrap items-center gap-2">
                                 {(compose.values[key] || []).map((u, i) => (
-                                  <span key={i} className="inline-flex items-center gap-1.5 pl-1 pr-2 py-1
-                                                           rounded-lg border border-line bg-white">
+                                  <span key={i} className="inline-flex items-center gap-1.5 pe-1 ps-2 py-1
+                                                           rounded-[10px] border border-line bg-white">
                                     <img src={u} alt="" className="h-9 w-9 object-cover rounded" />
                                     <button type="button" aria-label="إزالة"
                                       onClick={() => setValue(key, (compose.values[key] || []).filter((_, j) => j !== i))}
@@ -611,13 +619,13 @@ export default function AdminViolations() {
 
             <div className="px-6 py-4 border-t border-line flex items-center gap-2">
               <button onClick={issue} disabled={saving}
-                className="flex-1 h-11 rounded-xl bg-primary text-white text-[14px] font-black
-                           flex items-center justify-center gap-2 hover:brightness-110 transition disabled:opacity-60">
+                className="flex-1 h-11 rounded-[10px] bg-primary border border-primary text-white text-[13px] font-bold
+                           flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-60">
                 {saving ? <CircleNotch size={17} weight="bold" className="animate-spin" />
                         : <><Warning size={16} weight="bold" /> تحرير المحضر وإرساله</>}
               </button>
               <button onClick={() => setCompose(null)}
-                className="h-11 px-5 rounded-xl border border-line text-[13.5px] font-bold text-muted hover:text-ink">
+                className="h-11 px-5 rounded-[10px] border border-line bg-white text-[13px] font-bold text-muted hover:bg-[rgb(var(--c-bg))] transition-colors">
                 إلغاء
               </button>
             </div>
@@ -637,7 +645,7 @@ function Action({ onClick, Icon, tone, children }) {
       onMouseLeave={e => { e.currentTarget.style.background = t.bg; e.currentTarget.style.color = t.ink;
                            e.currentTarget.style.borderColor = t.line; }}
       style={{ background: t.bg, color: t.ink, borderColor: t.line }}
-      className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg border transition-colors">
+      className="flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-md border transition-colors">
       <Icon size={11} weight="bold" /> {children}
     </button>
   );

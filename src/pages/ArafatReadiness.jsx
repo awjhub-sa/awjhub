@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   CaretRight as ChevronRight,
+  CaretLeft as ChevronLeft,
   FloppyDisk as Save,
   CheckCircle as CheckCircle2,
   WarningCircle as AlertCircle,
@@ -20,6 +21,15 @@ import { getCaterer } from '../config/centers.js';
 import { useAssignedTasks } from '../hooks/useAssignedTasks.js';
 import { computeReadinessTotals } from '../config/readinessScore.js';
 import { ARAFAT_SECTIONS, ARAFAT_ALL_CRITERIA } from '../config/arafatQuestions.js';
+import { HOLY_SITE_COLOR } from '../config/fieldRecords.js';
+import { IconTile, Pill } from '../components/ui/index.jsx';
+
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
+
+/* Every tinted surface on this screen derives from one of these three. */
+const SITE = HOLY_SITE_COLOR.arafat;
+const OK   = '#15803D';
+const BAD  = '#DC2626';
 
 const SECTIONS = ARAFAT_SECTIONS;
 const ALL_CRITERIA = ARAFAT_ALL_CRITERIA;
@@ -145,10 +155,10 @@ export default function ArafatReadiness() {
       <div dir="rtl" className="min-h-screen bg-canvas pb-28 font-arabic px-4 md:px-8">
         <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-line w-full px-4 md:px-8 py-3 mb-6 shadow-sm">
           <div className="max-w-5xl mx-auto flex items-center justify-between">
-            <button onClick={() => navigate('/home')} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition shrink-0">
-              <ChevronRight className="text-primary" size={22} weight="bold" />
+            <button onClick={() => navigate('/home')} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-[rgb(var(--c-bg))] rounded-[10px] transition-colors shrink-0">
+              <ChevronRight className="text-primary" size={20} weight="bold" />
             </button>
-            <h1 className="text-base font-bold text-ink absolute left-1/2 -translate-x-1/2 whitespace-nowrap">جاهزية مشعر عرفة</h1>
+            <h1 className="text-[15px] font-bold text-ink absolute left-1/2 -translate-x-1/2 whitespace-nowrap">جاهزية مشعر عرفة</h1>
             <div className="w-10 shrink-0" />
           </div>
         </header>
@@ -156,43 +166,42 @@ export default function ArafatReadiness() {
         <div className="max-w-2xl mx-auto mt-4">
           {tasksLoading ? (
             <div className="flex flex-col items-center justify-center py-24 gap-4">
-              <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-              <p className="text-muted font-bold text-sm">جاري التحميل...</p>
+              <div className="w-9 h-9 border-[3px] border-primary/25 border-t-primary rounded-full animate-spin" />
+              <p className="text-[13px] font-semibold text-muted">جاري التحميل...</p>
             </div>
           ) : arafatTasks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-              <div className="w-20 h-20 bg-[rgb(var(--c-primary-50))] rounded-full flex items-center justify-center mb-2">
-                <Ban size={36} className="text-line" weight="light" />
-              </div>
-              <p className="text-ink font-bold text-lg">لا توجد مهام حالياً</p>
-              <p className="text-muted text-sm max-w-xs">لم يتم إسناد مهام جاهزية عرفة لمركزك بعد</p>
+            <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
+              <span className="w-14 h-14 rounded-[16px] bg-white border border-line flex items-center justify-center">
+                <Ban size={24} weight="duotone" className="text-muted/40" />
+              </span>
+              <p className="text-[15px] font-bold text-ink">لا توجد مهام حالياً</p>
+              <p className="text-[12.5px] font-medium text-muted max-w-xs">لم يتم إسناد مهام جاهزية عرفة لمركزك بعد</p>
               <button onClick={() => navigate('/home')}
-                className="mt-4 flex items-center gap-2 text-primary font-bold text-sm border border-primary/30 px-5 py-2.5 rounded-xl hover:bg-background transition">
-                <ArrowLeft size={16} /> العودة للرئيسية
+                className="mt-3 inline-flex items-center gap-2 min-h-[44px] px-5 rounded-[11px] bg-white border border-line text-ink text-[13px] font-bold hover:bg-[rgb(var(--c-bg))] transition-colors">
+                <ArrowLeft size={15} weight="bold" /> العودة للرئيسية
               </button>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {pendingTasks.length > 0 && (
                 <>
-                  <p className="text-sm font-black text-ink px-1 mb-2">المهام المعلقة</p>
+                  <p className="text-[11px] font-bold tracking-[0.14em] text-muted px-1 mb-2.5">المهام المعلقة</p>
                   {pendingTasks.map(task => (
                     <button key={task.id}
                       onClick={() => setSelectedTask({ taskId: task.id, scheduledDate: task.scheduledDate })}
-                      className="w-full bg-gradient-to-br from-white to-background/60 border border-line rounded-3xl p-5 text-right flex items-center gap-4 hover:border-primary hover:shadow-[0_8px_24px_rgb(var(--c-primary)/0.18)] hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98]">
-                      <div className="w-12 h-12 bg-background border border-primary/20 rounded-2xl flex items-center justify-center shrink-0">
-                        <Mountain className="text-primary" size={22} />
-                      </div>
+                      className="group w-full bg-white border border-line rounded-[14px] p-4 text-start flex items-center gap-3.5
+                                 shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] transition-shadow duration-200
+                                 hover:shadow-[0_6px_20px_-6px_rgb(var(--c-ink)/0.16)]">
+                      <IconTile Icon={Mountain} color={SITE} size="lg" />
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-ink text-sm">جاهزية مشعر عرفة</p>
+                        <p className="text-[14px] font-bold text-ink">جاهزية مشعر عرفة</p>
                         {task.scheduledDate && (
-                          <div className="flex items-center gap-1.5 mt-1">
-                            <Calendar size={12} className="text-primary" />
-                            <span className="text-xs text-primary font-bold">{task.scheduledDate}</span>
+                          <div className="mt-1.5">
+                            <Pill color={SITE} Icon={Calendar}>{task.scheduledDate}</Pill>
                           </div>
                         )}
                       </div>
-                      <ChevronRight size={18} className="text-primary shrink-0" />
+                      <ChevronLeft size={15} weight="bold" className="shrink-0 text-muted/40 group-hover:text-muted transition-colors" />
                     </button>
                   ))}
                 </>
@@ -200,23 +209,21 @@ export default function ArafatReadiness() {
 
               {doneTasks.length > 0 && (
                 <>
-                  <p className="text-sm font-black text-muted px-1 mt-6 mb-2">المهام المكتملة</p>
+                  <p className="text-[11px] font-bold tracking-[0.14em] text-muted px-1 mt-6 mb-2.5">المهام المكتملة</p>
                   {doneTasks.map(task => (
-                    <div key={task.id} className="bg-[#F0FDF4] border border-green-200 rounded-3xl p-5 flex items-center gap-4 opacity-80">
-                      <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center shrink-0">
-                        <CheckCircle2 className="text-green-600" size={22} />
-                      </div>
+                    <div key={task.id} className="rounded-[14px] border p-4 flex items-center gap-3.5"
+                      style={{ background: tint(OK, 12), borderColor: tint(OK, 28) }}>
+                      <IconTile Icon={CheckCircle2} color={OK} size="lg" />
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-green-800 text-sm">جاهزية مشعر عرفة</p>
+                        <p className="text-[14px] font-bold" style={{ color: OK }}>جاهزية مشعر عرفة</p>
                         {task.scheduledDate && (
-                          <div className="flex items-center gap-1.5 mt-1">
-                            <Calendar size={12} className="text-green-600" />
-                            <span className="text-xs text-green-600 font-bold">{task.scheduledDate}</span>
+                          <div className="mt-1.5">
+                            <Pill color={OK} Icon={Calendar}>{task.scheduledDate}</Pill>
                           </div>
                         )}
-                        <p className="text-xs text-green-600 font-bold mt-0.5">تم الإرسال</p>
+                        <p className="text-[11px] font-medium text-muted mt-1.5">تم الإرسال</p>
                       </div>
-                      <CheckCircle2 size={18} className="text-green-500 shrink-0" />
+                      <CheckCircle2 size={17} weight="duotone" className="shrink-0" style={{ color: OK }} />
                     </div>
                   ))}
                 </>
@@ -225,8 +232,8 @@ export default function ArafatReadiness() {
               {pendingTasks.length === 0 && doneTasks.length > 0 && (
                 <div className="text-center pt-6">
                   <button onClick={() => navigate('/home')}
-                    className="inline-flex items-center gap-2 text-primary font-bold text-sm border border-primary/30 px-5 py-2.5 rounded-xl hover:bg-background transition">
-                    <ArrowLeft size={16} /> العودة للرئيسية
+                    className="inline-flex items-center gap-2 min-h-[44px] px-5 rounded-[11px] bg-white border border-line text-ink text-[13px] font-bold hover:bg-[rgb(var(--c-bg))] transition-colors">
+                    <ArrowLeft size={15} weight="bold" /> العودة للرئيسية
                   </button>
                 </div>
               )}
@@ -243,47 +250,52 @@ export default function ArafatReadiness() {
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-line w-full px-4 md:px-8 py-3 mb-6 shadow-sm">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <button onClick={() => { setSelectedTask(null); setAnswers({}); setDetails({}); }}
-            className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition shrink-0">
-            <ChevronRight className="text-primary" size={22} weight="bold" />
+            className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-[rgb(var(--c-bg))] rounded-[10px] transition-colors shrink-0">
+            <ChevronRight className="text-primary" size={20} weight="bold" />
           </button>
-          <h1 className="text-base font-bold text-ink absolute left-1/2 -translate-x-1/2 whitespace-nowrap">جاهزية مشعر عرفة</h1>
+          <h1 className="text-[15px] font-bold text-ink absolute left-1/2 -translate-x-1/2 whitespace-nowrap">جاهزية مشعر عرفة</h1>
           <div className="w-10 shrink-0" />
         </div>
       </header>
 
       {/* Header Card */}
-      <div className="rounded-[2.5rem] p-6 my-6 text-white shadow-lg relative overflow-hidden"
+      <div className="rounded-[18px] p-5 sm:p-6 my-6 text-white relative overflow-hidden"
         style={{ background: 'rgb(var(--c-ink))' }}>
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-white/10 p-3 rounded-2xl">
-              <Mountain className="text-primary" size={28} />
-            </div>
-            <div>
-              <p className="text-primary text-xs font-bold">نموذج الفحص الميداني</p>
-              <h2 className="text-xl font-bold">{totalRequired} بندًا للجاهزية</h2>
-              {selectedTask?.scheduledDate && (
-                <div className="flex items-center gap-1.5 mt-1">
-                  <Calendar size={12} className="text-primary" />
-                  <span className="text-xs text-primary font-bold">{selectedTask.scheduledDate}</span>
-                </div>
-              )}
-            </div>
+        <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px"
+          style={{ background: 'linear-gradient(90deg, transparent, rgb(var(--c-accent) / 0.6), transparent)' }} />
+
+        <div className="flex items-center gap-3.5 mb-5">
+          <span className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border border-white/10"
+            style={{ background: 'rgb(255 255 255 / 0.06)' }}>
+            <Mountain size={23} weight="duotone" className="text-accent" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold tracking-[0.18em] text-accent/80">نموذج الفحص الميداني</p>
+            <h2 className="text-[19px] font-extrabold mt-1 leading-tight">{totalRequired} بندًا للجاهزية</h2>
+            {selectedTask?.scheduledDate && (
+              <div className="flex items-center gap-1.5 mt-1.5">
+                <Calendar size={12} weight="bold" className="text-accent" />
+                <span className="text-[11.5px] font-bold text-accent">{selectedTask.scheduledDate}</span>
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-3 mt-4 w-full">
-          <div className="bg-white/5 rounded-2xl px-4 py-3 flex-1 min-w-[120px] flex flex-col items-center justify-center border border-white/10 shadow-sm">
-            <span className="text-white/40 text-[10px] mb-1 font-medium">المراقب</span>
-            <span className="text-white font-bold text-sm whitespace-nowrap">{profile?.nameAr || profile?.name || '—'}</span>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="rounded-[10px] py-2.5 px-2 border border-white/10 text-center"
+            style={{ background: 'rgb(255 255 255 / 0.06)' }}>
+            <span className="block text-[10px] font-medium text-white/50 mb-1">المراقب</span>
+            <span className="block text-white font-bold text-[12px] truncate">{profile?.nameAr || profile?.name || '—'}</span>
           </div>
-          <div className="bg-white/5 rounded-2xl px-4 py-3 flex-1 min-w-[100px] flex flex-col items-center justify-center border border-white/10 shadow-sm">
-            <span className="text-white/40 text-[10px] mb-1 font-medium">المركز</span>
-            <span className="text-primary font-bold text-sm whitespace-nowrap">{profile?.center || '—'}</span>
+          <div className="rounded-[10px] py-2.5 px-2 border border-white/10 text-center"
+            style={{ background: 'rgb(255 255 255 / 0.06)' }}>
+            <span className="block text-[10px] font-medium text-white/50 mb-1">المركز</span>
+            <span className="block text-accent font-bold text-[12px] truncate">{profile?.center || '—'}</span>
           </div>
-          <div className="bg-white/5 rounded-2xl px-4 py-3 flex-1 min-w-[140px] flex flex-col items-center justify-center border border-white/10 shadow-sm">
-            <span className="text-white/40 text-[10px] mb-1 font-medium">المتعهد</span>
-            <span className="text-white font-bold text-sm whitespace-nowrap">{profile?.caterer || getCaterer(profile?.center) || '—'}</span>
+          <div className="rounded-[10px] py-2.5 px-2 border border-white/10 text-center"
+            style={{ background: 'rgb(255 255 255 / 0.06)' }}>
+            <span className="block text-[10px] font-medium text-white/50 mb-1">المتعهد</span>
+            <span className="block text-white font-bold text-[12px] truncate">{profile?.caterer || getCaterer(profile?.center) || '—'}</span>
           </div>
         </div>
       </div>
@@ -291,66 +303,55 @@ export default function ArafatReadiness() {
       {SECTIONS.map(section => (
         <div key={section.id} className="mb-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="h-px flex-1 bg-gradient-to-l from-transparent via-primary/40 to-transparent" />
-            <span className="px-5 py-2 rounded-full text-white text-xs font-black shadow-[0_4px_14px_rgb(var(--c-primary)/0.35)]"
-              style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
+            <span className="px-3 py-1.5 rounded-[10px] border text-[12px] font-bold"
+              style={{ background: tint(SITE, 12), borderColor: tint(SITE, 28), color: SITE }}>
               {section.title}
             </span>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+            <span aria-hidden className="h-px flex-1 bg-line" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {section.criteria.map(c => {
               const ans = answers[c.id];
               const isYes = ans === 'نعم';
               const isNo  = ans === 'لا';
+              /* The answer decides the card's colour, so a screen of them reads
+                 as a pass/fail map before a single line is read. */
+              const rail = isYes ? OK : isNo ? BAD : ans ? SITE : null;
               return (
-                <div key={c.id} className={`group/q relative bg-gradient-to-br from-white via-white to-background/40 rounded-3xl shadow-[0_2px_12px_rgb(var(--c-ink)/0.05)] overflow-hidden transition-all duration-300 ${
-                  ans
-                    ? 'border-2 border-primary/40 shadow-[0_6px_24px_rgb(var(--c-primary)/0.18)]'
-                    : 'border border-line hover:shadow-[0_4px_18px_rgb(var(--c-ink)/0.08)]'
-                }`}>
-                  {ans && (
-                    <div className="absolute top-0 right-0 left-0 h-1"
-                      style={{ background: isYes
-                        ? 'linear-gradient(90deg, #16A34A, #22C55E, #16A34A)'
-                        : isNo
-                          ? 'linear-gradient(90deg, #DC2626, #EF4444, #DC2626)'
-                          : 'linear-gradient(90deg, rgb(var(--c-primary)), rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }} />
+                <div key={c.id}
+                  className="relative bg-white rounded-[14px] border overflow-hidden
+                             shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] transition-shadow duration-200
+                             hover:shadow-[0_6px_20px_-6px_rgb(var(--c-ink)/0.16)]"
+                  style={{ borderColor: rail ? tint(rail, 34) : 'rgb(var(--c-line))' }}>
+                  {rail && (
+                    <span aria-hidden className="absolute inset-y-0 start-0 w-[3px]" style={{ background: rail }} />
                   )}
-                  <div className="p-5">
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="relative flex-shrink-0">
-                        <div className="absolute inset-0 rounded-2xl blur-md bg-primary opacity-30 group-hover/q:opacity-50 transition-opacity" />
-                        <div className="relative w-10 h-10 rounded-2xl flex items-center justify-center text-white font-black text-sm shadow-md tabular-nums"
-                          style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
-                          {c.id}
-                        </div>
-                      </div>
+                  <div className="pt-4 pb-4 pe-4 ps-5">
+                    <div className="flex items-start gap-3">
+                      <span className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 border text-[13px] font-bold tabular-nums"
+                        style={{ background: tint(SITE, 9), borderColor: tint(SITE, 22), color: SITE }}>
+                        {c.id}
+                      </span>
                       <div className="flex-1 min-w-0">
                         {ans && (
                           <div className="mb-1.5">
-                            <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-green-50 border border-green-200 text-green-700">
-                              <CheckCircle2 size={9} weight="bold" />
-                              مُجاب
-                            </span>
+                            <Pill color={OK} Icon={CheckCircle2}>مُجاب</Pill>
                           </div>
                         )}
-                        <p className="text-ink font-bold text-[15px] leading-relaxed">{c.text}</p>
+                        <p className="text-ink font-bold text-[14px] leading-relaxed">{c.text}</p>
                       </div>
                     </div>
 
                     {c.type === 'choice' && (
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-2 mt-3">
                         {c.choices.map(choice => {
                           const sel = answers[c.id] === choice;
                           return (
                             <button key={choice} onClick={() => handleAnswer(c.id, choice)}
-                              className={`py-3 rounded-2xl text-sm font-bold transition-all duration-300 ${
-                                sel
-                                  ? 'text-white scale-[1.02] shadow-[0_4px_14px_rgb(var(--c-primary)/0.4)]'
-                                  : 'bg-white text-muted border-2 border-line hover:border-primary/40 hover:bg-background'
+                              className={`min-h-[44px] px-2 rounded-[11px] border text-[12.5px] font-bold transition-colors ${
+                                sel ? 'text-white' : 'bg-white border-line text-muted hover:bg-[rgb(var(--c-bg))]'
                               }`}
-                              style={sel ? { background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' } : undefined}
+                              style={sel ? { background: SITE, borderColor: SITE } : undefined}
                             >
                               {choice}
                             </button>
@@ -361,40 +362,32 @@ export default function ArafatReadiness() {
 
                     {(c.type === 'yesno' || c.type === 'yesno_detail' || c.type === 'yesno_multi_detail') && (
                       <>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 gap-2.5 mt-3">
                           <button
                             onClick={() => handleAnswer(c.id, 'نعم')}
-                            className={`min-h-[52px] py-3.5 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-2.5 active:scale-[0.98] ${
-                              isYes
-                                ? 'text-white scale-[1.02] shadow-[0_6px_20px_rgb(var(--c-success)/0.4)]'
-                                : 'bg-white text-muted border-2 border-line hover:border-primary/40 hover:bg-background'
+                            className={`min-h-[48px] rounded-[11px] border text-[14px] font-bold flex items-center justify-center gap-2 transition-colors ${
+                              isYes ? 'text-white' : 'bg-white border-line text-muted hover:bg-[rgb(var(--c-bg))]'
                             }`}
-                            style={isYes ? { background: 'linear-gradient(135deg, #16A34A, #15803D)' } : undefined}
+                            style={isYes ? { background: OK, borderColor: OK } : undefined}
                           >
-                            <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-transform ${isYes ? 'bg-white/25 scale-110' : 'bg-success/10'}`}>
-                              <CheckCircle2 size={16} weight="bold" className={isYes ? 'text-white' : 'text-success'} />
-                            </div>
-                            <span className="text-[15px]">نعم</span>
+                            <CheckCircle2 size={17} weight="bold" style={isYes ? undefined : { color: OK }} />
+                            نعم
                           </button>
                           <button
                             onClick={() => handleAnswer(c.id, 'لا')}
-                            className={`min-h-[52px] py-3.5 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-2.5 active:scale-[0.98] ${
-                              isNo
-                                ? 'text-white scale-[1.02] shadow-[0_6px_20px_rgb(var(--c-error)/0.4)]'
-                                : 'bg-white text-muted border-2 border-line hover:border-red-300 hover:bg-red-50/30'
+                            className={`min-h-[48px] rounded-[11px] border text-[14px] font-bold flex items-center justify-center gap-2 transition-colors ${
+                              isNo ? 'text-white' : 'bg-white border-line text-muted hover:bg-[rgb(var(--c-bg))]'
                             }`}
-                            style={isNo ? { background: 'linear-gradient(135deg, #DC2626, #B91C1C)' } : undefined}
+                            style={isNo ? { background: BAD, borderColor: BAD } : undefined}
                           >
-                            <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-transform ${isNo ? 'bg-white/25 scale-110' : 'bg-error/10'}`}>
-                              <AlertCircle size={16} weight="bold" className={isNo ? 'text-white' : 'text-error'} />
-                            </div>
-                            <span className="text-[15px]">لا</span>
+                            <AlertCircle size={17} weight="bold" style={isNo ? undefined : { color: BAD }} />
+                            لا
                           </button>
                         </div>
 
                         {c.type === 'yesno_detail' && answers[c.id] === 'نعم' && (
                           <input type="text"
-                            className="w-full mt-3 border-2 border-line rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none transition-all"
+                            className="w-full mt-2.5 min-h-[44px] border border-line rounded-[10px] px-3.5 py-2.5 text-[13px] text-ink bg-white placeholder:text-muted/70 focus:border-primary outline-none transition-colors"
                             value={details[c.id] || ''}
                             onChange={e => handleDetail(c.id, e.target.value)}
                             placeholder={c.detailLabel}
@@ -402,19 +395,19 @@ export default function ArafatReadiness() {
                         )}
 
                         {c.type === 'yesno_multi_detail' && answers[c.id] === 'نعم' && (
-                          <div className="grid grid-cols-1 gap-3 mt-3">
+                          <div className="grid grid-cols-1 gap-2.5 mt-2.5">
                             {c.fields.map(field => (
                               <input key={field.key} type={field.type}
                                 value={details[`${c.id}_${field.key}`] || ''}
                                 onChange={e => handleDetail(`${c.id}_${field.key}`, e.target.value)}
-                                className="w-full border-2 border-line rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none transition-all"
+                                className="w-full min-h-[44px] border border-line rounded-[10px] px-3.5 py-2.5 text-[13px] text-ink bg-white placeholder:text-muted/70 focus:border-primary outline-none transition-colors"
                                 placeholder={field.label} />
                             ))}
                           </div>
                         )}
 
                         {c.requiresPhoto && answers[c.id] && (
-                          <div className="mt-3">
+                          <div className="mt-2.5">
                             <input
                               ref={el => { photoInputRefs.current[c.id] = el; }}
                               type="file" accept="image/*" capture="environment"
@@ -422,21 +415,24 @@ export default function ArafatReadiness() {
                               onChange={e => handlePhotoChange(c.id, e.target.files[0])}
                             />
                             {photos[c.id] ? (
-                              <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl p-2.5">
-                                <img src={photos[c.id]} alt="" className="w-14 h-14 rounded-lg object-cover border border-green-300" />
+                              <div className="flex items-center gap-3 rounded-[11px] border p-2.5"
+                                style={{ background: tint(OK, 12), borderColor: tint(OK, 28) }}>
+                                <img src={photos[c.id]} alt="" className="w-14 h-14 rounded-[10px] object-cover border"
+                                  style={{ borderColor: tint(OK, 34) }} />
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-black text-green-700 flex items-center gap-1.5">
+                                  <p className="text-[12px] font-bold flex items-center gap-1.5" style={{ color: OK }}>
                                     <CheckCircle2 size={13} weight="bold" /> تم رفع الصورة
                                   </p>
-                                  <p className="text-[10px] text-green-600 mt-0.5">اضغط للتغيير</p>
+                                  <p className="text-[10.5px] font-medium text-muted mt-0.5">اضغط للتغيير</p>
                                 </div>
                                 <div className="flex items-center gap-1.5 shrink-0">
                                   <button onClick={() => photoInputRefs.current[c.id]?.click()}
-                                    className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-green-700 bg-white border border-green-300 hover:bg-green-50">
+                                    className="min-h-[40px] px-3 rounded-[10px] text-[11.5px] font-bold bg-white border transition-colors"
+                                    style={{ color: OK, borderColor: tint(OK, 34) }}>
                                     تغيير
                                   </button>
                                   <button onClick={() => removePhoto(c.id)}
-                                    className="w-7 h-7 rounded-lg flex items-center justify-center text-red-500 bg-white border border-red-200 hover:bg-red-50">
+                                    className="w-10 h-10 rounded-[10px] flex items-center justify-center bg-white border border-line text-muted hover:text-[#DC2626] transition-colors">
                                     <X size={13} weight="bold" />
                                   </button>
                                 </div>
@@ -445,7 +441,8 @@ export default function ArafatReadiness() {
                               <button
                                 onClick={() => !uploadingPhotos[c.id] && photoInputRefs.current[c.id]?.click()}
                                 disabled={uploadingPhotos[c.id]}
-                                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-primary/40 bg-background text-primary font-bold text-sm hover:bg-primary-50 hover:border-primary transition-all disabled:opacity-60 disabled:cursor-wait"
+                                className="w-full min-h-[46px] flex items-center justify-center gap-2 rounded-[11px] border border-dashed text-[13px] font-bold transition-colors disabled:opacity-60 disabled:cursor-wait"
+                                style={{ background: tint(SITE, 9), borderColor: tint(SITE, 34), color: SITE }}
                               >
                                 {uploadingPhotos[c.id]
                                   ? <><Loader2 size={16} className="animate-spin" /> جارٍ رفع الصورة...</>
@@ -464,10 +461,11 @@ export default function ArafatReadiness() {
         </div>
       ))}
 
-      <div className="fixed bottom-0 left-0 right-0 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-white/90 backdrop-blur-md border-t border-line z-[100]">
+      <div className="fixed inset-x-0 bottom-0 px-4 pt-3.5 pb-[max(1rem,env(safe-area-inset-bottom))] bg-white/95 backdrop-blur-sm border-t border-line z-[100]">
         <button onClick={handleSubmit} disabled={loading}
-          className="w-full max-w-md mx-auto min-h-[56px] bg-gradient-to-br from-primary-400 to-primary text-white py-4 rounded-2xl font-bold text-lg active:scale-[0.98] shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 transition-all">
-          {loading ? 'جاري الإرسال...' : <><Save size={22} /> حفظ وإرسال التقرير</>}
+          className="w-full max-w-md mx-auto min-h-[52px] rounded-[12px] bg-primary border border-primary text-white font-bold text-[15px]
+                     flex items-center justify-center gap-2.5 hover:opacity-90 transition-opacity disabled:opacity-60">
+          {loading ? 'جاري الإرسال...' : <><Save size={19} weight="bold" /> حفظ وإرسال التقرير</>}
         </button>
       </div>
     </div>

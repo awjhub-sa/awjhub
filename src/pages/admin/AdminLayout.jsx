@@ -1,11 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { useSyncExternalStore } from 'react';
-import WorkspaceTabs from '../../components/WorkspaceTabs.jsx';
 import CommandPalette from '../../components/CommandPalette.jsx';
-import {
-  subscribe as wsSubscribe, getPins as wsGetPins, togglePin as wsTogglePin,
-} from '../../lib/workspace.js';
 import { db } from '../../lib/db.js';
 import { useSectionAlerts, groupAlert, rowTime } from '../../lib/sectionAlerts.js';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -139,7 +134,7 @@ function Badge({ alert }) {
       initial={{ scale: 0 }}
       animate={{ scale: 1 }}
       title={owed ? 'بانتظار مراجعتك' : 'وصل ولم تطّلع عليه'}
-      className="text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[19px] text-center tabular-nums flex-shrink-0"
+      className="text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[19px] text-center tabular-nums flex-shrink-0"
       style={{
         background: bg, color: fg,
         boxShadow: alert.fresh ? `0 0 0 3px ${owed ? 'rgb(220 38 38 / 0.22)' : 'rgb(var(--c-accent) / 0.22)'}` : 'none',
@@ -150,14 +145,30 @@ function Badge({ alert }) {
   );
 }
 
-function NavItem({ item, idx, onNavigate, alerts, nested }) {
+/* Collapsed, the rail has no room for a count — so the badge becomes a dot on
+   the icon's corner. The section still says it is holding something; it just
+   says it in the space available. */
+function AlertDot({ alert }) {
+  if (!alert) return null;
+  const owed = alert.kind !== 'new';
+  return (
+    <span
+      className="absolute -top-1 -left-1 w-2.5 h-2.5 rounded-full ring-2 ring-[rgb(var(--c-primary-700))]"
+      style={{ background: owed ? '#DC2626' : 'rgb(var(--c-accent))' }}
+    />
+  );
+}
+
+function NavItem({ item, onNavigate, alerts, nested, expanded = true }) {
   const { to, label, icon: Icon } = item;
+  const alert = alerts?.[to];
   return (
     <NavLink
       to={to}
       onClick={onNavigate}
+      title={expanded ? undefined : label}
       className={({ isActive }) =>
-        `group relative flex items-center gap-3 rounded-xl text-sm transition-all duration-200 mx-2 ${
+        `group relative flex items-center gap-3 rounded-xl text-sm transition-colors duration-200 mx-2 ${
           nested ? 'px-2.5 py-2' : 'px-3 py-2.5'
         } ${isActive ? 'text-white font-bold' : 'text-white/75 font-semibold hover:text-white hover:bg-white/[0.07]'}`
       }
@@ -170,13 +181,8 @@ function NavItem({ item, idx, onNavigate, alerts, nested }) {
     >
       {({ isActive }) => (
         <>
-          <motion.div
-            initial={{ opacity: 0, x: 8 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.25, delay: Math.min(idx, 8) * 0.04 }}
-            whileHover={{ scale: 1.18 }}
-            whileTap={{ scale: 0.88 }}
-            className={`flex items-center justify-center rounded-xl flex-shrink-0 backdrop-blur-md border ${
+          <span
+            className={`relative flex items-center justify-center rounded-xl flex-shrink-0 border transition-transform duration-150 group-hover:scale-105 ${
               nested ? 'w-7 h-7' : 'w-8 h-8'
             }`}
             style={iconBox(isActive)}
@@ -186,13 +192,17 @@ function NavItem({ item, idx, onNavigate, alerts, nested }) {
               weight={isActive ? 'fill' : 'duotone'}
               color={isActive ? 'rgb(var(--c-accent))' : 'rgba(255,255,255,0.78)'}
             />
-          </motion.div>
+            {!expanded && <AlertDot alert={alert} />}
+          </span>
 
-          <span className={`flex-1 ${nested ? 'text-[12px]' : 'text-[13px]'}`}>{label}</span>
-
-          {/* Whatever this section is holding. The bell keeps the feed; this
-              keeps the count, beside the door it belongs to. */}
-          <Badge alert={alerts?.[to]} />
+          {expanded && (
+            <>
+              <span className={`flex-1 whitespace-nowrap ${nested ? 'text-[12px]' : 'text-[13px]'}`}>{label}</span>
+              {/* Whatever this section is holding. The bell keeps the feed; this
+                  keeps the count, beside the door it belongs to. */}
+              <Badge alert={alert} />
+            </>
+          )}
 
           {isActive && (
             <span aria-hidden className="absolute inset-y-2 right-0 w-[3px] rounded-full"
@@ -218,21 +228,15 @@ function HeaderClock() {
      than by punctuation — a boxed chip beside a boxed chip beside a boxed chip
      was what made the old bar read as a toolbar instead of a masthead. */
   return (
-    <div className="hidden sm:flex items-stretch gap-3 pl-1 whitespace-nowrap">
-      <CalendarBlank size={15} weight="light" className="text-accent/70 self-center flex-shrink-0" />
-
-      <div className="flex flex-col justify-center leading-none">
-        <span className="text-[12px] font-black text-white">{formatHijri(now)}</span>
-        <span className="text-[9.5px] font-bold text-white/45 mt-1" dir="ltr">
-          {now.toISOString().slice(0, 10)}
+    <div className="hidden md:flex items-center gap-2.5 whitespace-nowrap">
+      <CalendarBlank size={14} weight="regular" className="text-white/35 flex-shrink-0" />
+      <div className="flex flex-col leading-none">
+        <span className="text-[11.5px] font-bold text-white/85">{formatHijri(now)}</span>
+        <span className="text-[10px] font-medium text-white/40 mt-1 tabular-nums" dir="ltr">
+          {now.toISOString().slice(0, 10)} ·{' '}
+          {now.toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit', hour12: true })}
         </span>
       </div>
-
-      <span className="w-px bg-white/15 my-1" />
-
-      <span className="self-center text-[15px] font-black text-accent tabular-nums tracking-tight">
-        {now.toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit', hour12: true })}
-      </span>
     </div>
   );
 }
@@ -242,52 +246,58 @@ function HeaderClock() {
 
    Text on it is the deep navy, not white: white on the brand gold is about
    2.3:1 and unreadable, while the navy is 6:1 and looks like ink on brass. */
-const goldCard = {
-  background: 'linear-gradient(135deg, rgb(var(--c-accent)) 0%, rgb(var(--c-accent-600)) 100%)',
-  boxShadow: '0 4px 16px rgb(var(--c-accent) / 0.32), inset 0 1px 0 rgb(255 255 255 / 0.28)',
+/* Gold is the identity, so it appears on the bar once — as the outline of the
+   season chip and on the bell when something is waiting. Four gold plates in a
+   row spent it on decoration and left nothing to mark an alert with. */
+const goldChip = {
+  background: 'rgb(var(--c-accent) / 0.12)',
+  borderColor: 'rgb(var(--c-accent) / 0.45)',
 };
 
 /* Zero is shown, not hidden: "٠ بلاغ معلّق" is information, and a chip that
    vanishes when clear makes the header jump every time one is resolved.
  *
- * The card is gold either way — that is the identity, not a state. What the
- * state changes is the bubble holding the icon: hollow while the queue is
- * clear, filled navy with a pulsing dot the moment something is waiting. So
- * the bar is scannable without reading a single digit. */
+ * A count on the bar is a figure, not a plate. Colour carries the state — the
+ * numeral turns red the moment something is waiting — so the shape stays put
+ * and only the meaning changes. */
 function HeaderStat({ count, label, Icon, onClick }) {
   const live = count > 0;
   return (
-    <motion.button
+    <button
       onClick={onClick}
-      whileHover={{ scale: 1.04, y: -1 }}
-      whileTap={{ scale: 0.96 }}
-      className="group relative flex items-center gap-2 pr-1.5 pl-3.5 py-1.5 rounded-full"
-      style={goldCard}
+      className="group flex items-center gap-2.5 px-3 py-1.5 rounded-xl transition-colors hover:bg-white/[0.08]"
     >
-      <span className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
-        live ? 'shadow-[0_2px_6px_rgb(var(--c-primary-900)/0.35)]' : ''
-      }`}
-        style={{ background: live ? 'rgb(var(--c-primary))' : 'rgb(255 255 255 / 0.3)' }}>
-        <Icon size={14} weight="bold"
-          style={{ color: live ? 'rgb(var(--c-accent))' : 'rgb(var(--c-primary-900))' }} />
+      <span
+        className="relative w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0 border transition-colors"
+        style={{
+          background:  live ? 'rgb(239 68 68 / 0.20)'   : 'rgb(255 255 255 / 0.06)',
+          borderColor: live ? 'rgb(248 113 113 / 0.45)' : 'rgb(255 255 255 / 0.12)',
+        }}
+      >
+        <Icon size={15} weight="fill"
+          style={{ color: live ? '#FCA5A5' : 'rgb(255 255 255 / 0.55)' }} />
+        {live && (
+          <span className="absolute -top-1 -left-1 w-2 h-2 rounded-full bg-red-500 ring-2 ring-[rgb(var(--c-primary))]"
+            style={{ animation: 'badgePulse 2s ease-in-out infinite' }} />
+        )}
       </span>
-      <span className="text-[14px] font-black tabular-nums leading-none"
-        style={{ color: 'rgb(var(--c-primary-900))' }}>
-        {count}
+      <span className="flex flex-col items-start leading-none">
+        <span className="text-[17px] font-extrabold tabular-nums"
+          style={{ color: live ? '#FCA5A5' : '#fff' }}>
+          {count}
+        </span>
+        <span className="text-[10px] font-semibold text-white/50 mt-1 whitespace-nowrap">{label}</span>
       </span>
-      <span className="text-[11px] font-bold whitespace-nowrap"
-        style={{ color: 'rgb(var(--c-primary-900) / 0.72)' }}>
-        {label}
-      </span>
-      {live && (
-        <span className="absolute -top-0.5 -left-0.5 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-[rgb(var(--c-primary))]"
-          style={{ animation: 'badgePulse 2s ease-in-out infinite' }} />
-      )}
-    </motion.button>
+    </button>
   );
 }
 
-function NavGroup({ item, idx, openGroups, toggle, onNavigate, alerts }) {
+/* The rail's two widths. Set inline rather than as Tailwind classes so the
+   value is the same number the spacer and the overlay both read. */
+const RAIL_W      = 68;
+const RAIL_OPEN_W = 248;
+
+function NavGroup({ item, openGroups, toggle, onNavigate, alerts, railOpen = true }) {
   const { key, label, icon: Icon, children } = item;
   const location = useLocation();
   /* Collapsed, a group is a lid. Without this the two counts that matter most
@@ -297,37 +307,47 @@ function NavGroup({ item, idx, openGroups, toggle, onNavigate, alerts }) {
   /* A group holding the current page stays open regardless of what the admin
      last collapsed — otherwise the sidebar hides where you are. */
   const hasActive = children.some(c => location.pathname.startsWith(c.to));
-  const expanded  = hasActive || !!openGroups[key];
+  const open      = hasActive || !!openGroups[key];
+
+  /* On the narrow rail there is no room for a disclosure list, so the group
+     collapses to its children rendered flat as icons. The lid only exists when
+     there are labels to hide. */
+  if (!railOpen) {
+    return (
+      <div className="space-y-0.5">
+        {children.map(child => (
+          <NavItem key={child.to} item={child} onNavigate={onNavigate}
+            alerts={alerts} expanded={false} />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div>
       <button
         onClick={() => toggle(key)}
-        className={`w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors duration-150 ${
-          hasActive ? 'text-white font-bold' : 'text-white/80 font-semibold hover:text-white'
+        className={`w-full group flex items-center gap-3 mx-2 px-3 py-2.5 rounded-xl text-sm transition-colors duration-150 ${
+          hasActive ? 'text-white font-bold' : 'text-white/80 font-semibold hover:text-white hover:bg-white/[0.05]'
         }`}
-        style={{ borderRight: '3px solid transparent' }}
+        style={{ width: 'calc(100% - 1rem)' }}
       >
-        <motion.div
-          initial={{ opacity: 0, x: 8 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.25, delay: Math.min(idx, 8) * 0.04 }}
-          whileHover={{ scale: 1.18 }}
-          className="w-8 h-8 flex items-center justify-center rounded-xl flex-shrink-0 backdrop-blur-md border"
+        <span
+          className="w-8 h-8 flex items-center justify-center rounded-xl flex-shrink-0 border transition-transform duration-150 group-hover:scale-105"
           style={iconBox(hasActive)}
         >
-          <Icon size={17} weight={hasActive ? 'bold' : 'regular'}
+          <Icon size={17} weight={hasActive ? 'fill' : 'duotone'}
             color={hasActive ? 'rgb(var(--c-accent))' : 'rgba(255,255,255,0.75)'} />
-        </motion.div>
+        </span>
 
-        <span className="flex-1 text-[13px] text-right">{label}</span>
-        {!expanded && <Badge alert={rollup} />}
+        <span className="flex-1 text-[13px] text-right whitespace-nowrap">{label}</span>
+        {!open && <Badge alert={rollup} />}
         <CaretDown size={11} weight="bold"
-          className={`opacity-50 flex-shrink-0 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
+          className={`opacity-50 flex-shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
 
       <AnimatePresence initial={false}>
-        {expanded && (
+        {open && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
@@ -337,9 +357,9 @@ function NavGroup({ item, idx, openGroups, toggle, onNavigate, alerts }) {
           >
             {/* The rail makes the indent read as containment rather than as an
                 accidental margin. */}
-            <div className="mr-5 pr-3 my-0.5 space-y-0.5 border-r border-white/12">
-              {children.map((child, i) => (
-                <NavItem key={child.to} item={child} idx={i} nested
+            <div className="mr-6 pr-1 my-0.5 space-y-0.5 border-r border-white/12">
+              {children.map(child => (
+                <NavItem key={child.to} item={child} nested
                   onNavigate={onNavigate} alerts={alerts} />
               ))}
             </div>
@@ -362,10 +382,19 @@ export default function AdminLayout() {
   const toggleGroup = (key) => setOpenGroups(p => ({ ...p, [key]: !p[key] }));
   const [loggingOut, setLoggingOut] = useState(false);
 
-  /* The pinned sections, and the name a path answers to. Both are read by the
-     sidebar and by the tab strip, so they are resolved once here. */
-  const pins = useSyncExternalStore(wsSubscribe, wsGetPins);
-  const labelFor = useCallback((path) => LABEL_BY_PATH[path] || null, []);
+  /* The desktop sidebar is a 68px rail that widens on hover. Pinning it open is
+     remembered, because an admin who works from the nav all day should not have
+     to re-open it every morning. */
+  const [railPinned, setRailPinned] = useState(
+    () => localStorage.getItem('admin_rail_pinned') === '1'
+  );
+  const [railHover, setRailHover] = useState(false);
+  const railOpen = railPinned || railHover;
+  const toggleRailPin = () => setRailPinned(p => {
+    localStorage.setItem('admin_rail_pinned', p ? '0' : '1');
+    return !p;
+  });
+
   const { alerts, see } = useSectionAlerts();
   const [newCount,     setNewCount]     = useState(0);
   const [logisticsCount, setLogisticsCount] = useState(0);
@@ -424,95 +453,76 @@ export default function AdminLayout() {
     navigate('/login', { replace: true });
   };
 
-  const SidebarContent = () => (
+  /* A plain function rather than a component, because declaring a component
+     inside the render remounts the whole sidebar on every state change — which
+     on a rail that expands on hover means the nav rebuilds sixty times a
+     second. */
+  const sidebarContent = (railOpen = true) => (
     <div className="flex flex-col h-full">
 
-      {/* Logo */}
-      <div className="relative px-5 py-4 border-b border-white/10 overflow-hidden">
-        <div className="absolute inset-0 opacity-15"
-          style={{ background: 'radial-gradient(ellipse at 70% 50%, rgb(var(--c-primary-400)) 0%, transparent 70%)' }} />
-        <motion.div
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: 'easeOut' }}
-          className="relative flex flex-col items-center gap-1 cursor-default"
-        >
-          {/* The sidebar is 240px wide with 20px of padding, so 200 is all
-              there is. The new lockup is a fifth wider than the old for the
-              same height, and cannot regain that height in this slot — so it
-              takes every pixel available. */}
-          <img
-            src={brand.logo.fullOnDark}
-            alt={brand.companyName}
-            className="w-full max-w-[200px] h-auto"
-          />
-          <p className="text-[9px] font-semibold tracking-widest uppercase opacity-40 text-white">لوحة الإدارة</p>
-        </motion.div>
+      {/* Logo — the lockup when there is width for it, the square mark when
+          there is not. */}
+      <div className={`relative border-b border-white/10 overflow-hidden flex items-center justify-center ${railOpen ? 'px-5 py-4' : 'px-2 py-4'}`}>
+        {railOpen ? (
+          <div className="relative flex flex-col items-center gap-1 cursor-default">
+            <img src={brand.logo.fullOnDark} alt={brand.companyName}
+              className="w-full max-w-[190px] h-auto" />
+            <p className="text-[10px] font-semibold tracking-widest uppercase opacity-40 text-white">لوحة الإدارة</p>
+          </div>
+        ) : (
+          <img src={brand.logo.icon} alt={brand.companyName}
+            className="w-9 h-9 rounded-lg" />
+        )}
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {pins.length > 0 && (
-          <div className="mb-1">
-            <p className="text-[9px] font-black tracking-widest px-4 pt-2 pb-1"
-               style={{ color: 'rgb(255 255 255 / 0.42)' }}>
-              مثبّت
-            </p>
-            {pins
-              .filter(to => LABEL_BY_PATH[to])
-              .map((to, i) => (
-                <NavItem key={`pin-${to}`} idx={i} nested
-                  item={{ to, label: LABEL_BY_PATH[to], icon: PushPin }}
-                  onNavigate={() => setOpen(false)} alerts={alerts} />
-              ))}
-          </div>
-        )}
-
-        {NAV.map((item, idx) =>
+      <nav className={`flex-1 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden ${railOpen ? 'px-1' : 'px-0'}`}>
+        {NAV.map(item =>
           item.children
-            ? <NavGroup key={item.key} item={item} idx={idx} openGroups={openGroups}
+            ? <NavGroup key={item.key} item={item} openGroups={openGroups} railOpen={railOpen}
                 toggle={toggleGroup} onNavigate={() => setOpen(false)} alerts={alerts} />
-            : <NavItem key={item.to} item={item} idx={idx}
+            : <NavItem key={item.to} item={item} expanded={railOpen}
                 onNavigate={() => setOpen(false)} alerts={alerts} />,
         )}
       </nav>
 
       {/* Profile + Logout */}
-      <div className="px-4 py-4 border-t border-white/10">
-        {/* Avatar + info */}
-        <div className="flex items-center gap-3 mb-3 px-1">
-          <motion.div
-            whileHover={{ scale: 1.08 }}
+      <div className={`py-3 border-t border-white/10 ${railOpen ? 'px-4' : 'px-2'}`}>
+        <div className={`flex items-center gap-3 mb-2 ${railOpen ? 'px-1' : 'justify-center'}`}>
+          <span
+            title={railOpen ? undefined : (profile?.nameAr || profile?.name || 'المشرف')}
             className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-400 to-primary flex items-center justify-center flex-shrink-0 shadow-md cursor-default"
           >
             <span className="text-white text-sm font-bold">
               {(profile?.nameAr || profile?.name)?.charAt(0) || 'أ'}
             </span>
-          </motion.div>
-          <div className="min-w-0">
-            <p className="text-white text-xs font-bold truncate">{profile?.nameAr || profile?.name || 'المشرف'}</p>
-            <p className="text-white/40 text-[10px] truncate">{profile?.email || ''}</p>
-          </div>
+          </span>
+          {railOpen && (
+            <div className="min-w-0">
+              <p className="text-white text-xs font-bold truncate">{profile?.nameAr || profile?.name || 'المشرف'}</p>
+              <p className="text-white/40 text-[10px] truncate">{profile?.email || ''}</p>
+            </div>
+          )}
         </div>
 
         {/* Centers */}
-        {profile?.centers?.length > 0 && (
+        {railOpen && profile?.centers?.length > 0 && (
           <div className="mb-2 px-1 max-h-24 overflow-y-auto space-y-1">
             {profile.centers.map(cid => (
               <div key={cid} className="bg-white/5 rounded-lg px-2.5 py-1.5 hover:bg-white/10 transition-colors duration-150">
                 <p className="text-primary text-[10px] font-bold">{cid}</p>
-                <p className="text-white/50 text-[9px] truncate leading-tight">
+                <p className="text-white/50 text-[10px] truncate leading-tight">
                   {profile.caterers?.[cid] || getCaterer(cid)}
                 </p>
               </div>
             ))}
           </div>
         )}
-        {profile?.center && !profile?.centers?.length && (
+        {railOpen && profile?.center && !profile?.centers?.length && (
           <div className="mb-2 px-1">
             <div className="bg-white/5 rounded-lg px-2.5 py-1.5">
               <p className="text-primary text-[10px] font-bold">{profile.center}</p>
-              <p className="text-white/50 text-[9px] truncate leading-tight">
+              <p className="text-white/50 text-[10px] truncate leading-tight">
                 {profile.caterer || getCaterer(profile.center)}
               </p>
             </div>
@@ -520,31 +530,63 @@ export default function AdminLayout() {
         )}
 
         {/* Logout */}
-        <motion.button
+        <button
           onClick={handleLogout}
           disabled={loggingOut}
-          whileHover={{ x: -3 }}
-          whileTap={{ scale: 0.96 }}
-          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-white/55 hover:bg-red-500/15 hover:text-red-300 text-sm transition-colors duration-200 disabled:opacity-50"
+          title={railOpen ? undefined : 'تسجيل الخروج'}
+          className={`w-full flex items-center gap-2.5 py-2.5 rounded-xl text-white/55 hover:bg-red-500/15 hover:text-red-300 text-sm transition-colors duration-200 disabled:opacity-50 ${
+            railOpen ? 'px-3' : 'justify-center px-0'
+          }`}
         >
           {loggingOut
             ? <span className="w-4 h-4 border-2 border-red-400/40 border-t-red-400 rounded-full animate-spin flex-shrink-0" />
             : <LogOut size={16} weight="regular" className="flex-shrink-0" />}
-          <span className="text-xs font-semibold">{loggingOut ? 'جارٍ الخروج...' : 'تسجيل الخروج'}</span>
-        </motion.button>
+          {railOpen && (
+            <span className="text-xs font-semibold whitespace-nowrap">
+              {loggingOut ? 'جارٍ الخروج...' : 'تسجيل الخروج'}
+            </span>
+          )}
+        </button>
       </div>
     </div>
   );
 
   return (
     <div dir="rtl" className="flex h-screen font-arabic overflow-hidden bg-canvas"
-      style={{ fontFamily: "'Cairo', Tahoma, sans-serif" }}>
+      style={{ fontFamily: 'var(--font-arabic), Tahoma, sans-serif' }}>
 
-      {/* Desktop sidebar — navy deepening toward the base so the brand mark at
-          the top sits on the lightest part of the gradient. */}
-      <aside className="hidden lg:flex flex-col w-60 flex-shrink-0"
-        style={{ background: 'linear-gradient(180deg, rgb(var(--c-primary)) 0%, rgb(var(--c-primary-700)) 55%, rgb(var(--c-primary-900)) 100%)' }}>
-        <SidebarContent />
+      {/* Desktop sidebar — a 68px rail that widens over the canvas on hover.
+          The spacer holds the rail's collapsed width in the flex row so the
+          content never reflows when the overlay opens. */}
+      <div
+        className="hidden lg:block flex-shrink-0 transition-[width] duration-200"
+        style={{ width: railPinned ? RAIL_OPEN_W : RAIL_W }}
+      />
+      <aside
+        onMouseEnter={() => setRailHover(true)}
+        onMouseLeave={() => setRailHover(false)}
+        className="hidden lg:flex flex-col fixed inset-y-0 right-0 z-30 transition-[width] duration-200 ease-out overflow-hidden"
+        style={{
+          width: railOpen ? RAIL_OPEN_W : RAIL_W,
+          background: 'linear-gradient(180deg, rgb(var(--c-primary)) 0%, rgb(var(--c-primary-700)) 55%, rgb(var(--c-primary-900)) 100%)',
+          boxShadow: railOpen && !railPinned ? '0 0 40px -8px rgb(0 0 0 / 0.45)' : undefined,
+        }}
+      >
+        {sidebarContent(railOpen)}
+
+        {/* Pin — only offered once the rail is open, since collapsed there is
+            no room and nothing to pin. */}
+        {railOpen && (
+          <button
+            onClick={toggleRailPin}
+            title={railPinned ? 'إلغاء التثبيت' : 'تثبيت القائمة'}
+            className={`absolute top-4 left-3 w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
+              railPinned ? 'bg-accent/20 text-accent' : 'bg-white/10 text-white/50 hover:text-white hover:bg-white/20'
+            }`}
+          >
+            <PushPin size={13} weight={railPinned ? 'fill' : 'bold'} />
+          </button>
+        )}
       </aside>
 
       {/* Mobile drawer */}
@@ -574,7 +616,7 @@ export default function AdminLayout() {
               >
                 <X size={16} weight="thin" />
               </motion.button>
-              <SidebarContent />
+              {sidebarContent(true)}
             </motion.aside>
           </div>
         )}
@@ -604,33 +646,38 @@ export default function AdminLayout() {
           <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px]"
             style={{ background: 'linear-gradient(90deg, transparent, rgb(var(--c-accent)), rgb(var(--c-accent-600)), transparent)' }} />
 
-          <div className="relative flex items-center gap-2.5 min-w-0">
-            <motion.button
+          <div className="relative flex items-center gap-3 min-w-0">
+            <button
               onClick={() => setOpen(true)}
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.92 }}
               className="lg:hidden p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors flex-shrink-0"
               aria-label="فتح القائمة"
             >
               <PanelLeft size={22} weight="bold" />
-            </motion.button>
+            </button>
 
-            {/* The season as a crest rather than a chip: a ringed mark and two
-                lines of type. It is the one fixed fact on the bar, so it reads
-                as a title instead of another button.
+            {/* Where you are. The bar used to say only which season it is, which
+                every screen already knew; the one fact it never carried was the
+                name of the page under it. */}
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold tracking-[0.16em] text-accent/70 uppercase leading-none">
+                لوحة الإدارة
+              </p>
+              <p className="text-[15px] font-bold text-white truncate leading-tight mt-1.5">
+                {LABEL_BY_PATH[location.pathname] || brand.companyName}
+              </p>
+            </div>
+
+            {/* The season, spent as one gold outline rather than a filled plate.
                 Derived from today's Hijri date rather than from the season row:
                 a label that says which Hajj season we are in must follow the
                 calendar, not a record someone forgot to roll over. */}
-            <span className="flex items-center gap-2.5 flex-shrink-0 pr-1.5 pl-4 py-1.5 rounded-full"
-              style={goldCard}>
-              <span className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 bg-white/30">
-                <MoonStars size={15} weight="fill" style={{ color: 'rgb(var(--c-primary-900))' }} />
-              </span>
-              <span className="flex flex-col leading-none">
-                <span className="text-[8.5px] font-bold tracking-[0.2em]"
-                  style={{ color: 'rgb(var(--c-primary-900) / 0.68)' }}>موسم حج</span>
-                <span className="text-[14px] font-black mt-1 tabular-nums"
-                  style={{ color: 'rgb(var(--c-primary-900))' }}>{hijriYear}هـ</span>
+            <span
+              className="hidden sm:flex items-center gap-1.5 flex-shrink-0 px-2.5 py-1 rounded-full border"
+              style={goldChip}
+            >
+              <MoonStars size={13} weight="fill" className="text-accent" />
+              <span className="text-[11px] font-bold text-accent tabular-nums whitespace-nowrap">
+                موسم {hijriYear}هـ
               </span>
             </span>
           </div>
@@ -639,9 +686,10 @@ export default function AdminLayout() {
               of the bar rather than drifting with the width of what flanks
               them. Two counts an operations lead checks first thing, each a
               shortcut to the screen that clears it. */}
-          <div className="relative flex-1 hidden md:flex items-center justify-center gap-2.5">
+          <div className="relative flex-1 hidden md:flex items-center justify-center gap-1">
             <HeaderStat count={alerts['/admin/reports']?.n || 0} label="بلاغ معلّق"  Icon={Siren}
               onClick={() => navigate('/admin/reports')} />
+            <span className="w-px h-7 bg-white/12" />
             <HeaderStat count={logisticsCount} label="إسناد معلّق" Icon={Boxes}
               onClick={() => navigate('/admin/logistics')} />
           </div>
@@ -649,47 +697,40 @@ export default function AdminLayout() {
 
           {/* Clock and bell travel together at the far end. */}
           <div className="relative flex items-center gap-3 flex-shrink-0">
-          <HeaderClock />
+            <HeaderClock />
 
-          {/* The same gold card as the rest. Quiet it carries the word alone;
-              waiting, the bubble fills navy, the bell swings, the count takes
-              the label's place and a red dot rides the corner — the state
-              reads from shape, not from a colour change alone. */}
-          <motion.button
-            onClick={() => navigate('/admin/notifications')}
-            whileHover={{ scale: 1.04, y: -1 }}
-            whileTap={{ scale: 0.94 }}
-            className="relative flex items-center gap-2 pr-1.5 pl-3.5 py-1.5 rounded-full"
-            style={goldCard}
-            aria-label="التنبيهات"
-          >
-            <span className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: newCount > 0 ? 'rgb(var(--c-primary))' : 'rgb(255 255 255 / 0.3)' }}>
-              <BellRing size={15} weight="fill"
+            <span className="hidden md:block w-px h-7 bg-white/12" />
+
+            {/* One icon button carrying its own count, the way a bell is spelled
+                everywhere else. The label that used to sit beside it said
+                "التنبيهات" on a screen whose only bell is this one. */}
+            <button
+              onClick={() => navigate('/admin/notifications')}
+              className="relative w-9 h-9 rounded-[11px] flex items-center justify-center border flex-shrink-0 transition-colors"
+              style={{
+                background:  newCount > 0 ? 'rgb(var(--c-accent) / 0.16)' : 'rgb(255 255 255 / 0.06)',
+                borderColor: newCount > 0 ? 'rgb(var(--c-accent) / 0.5)'  : 'rgb(255 255 255 / 0.12)',
+              }}
+              aria-label="التنبيهات"
+            >
+              <BellRing size={17} weight="fill"
                 style={{
-                  color: newCount > 0 ? 'rgb(var(--c-accent))' : 'rgb(var(--c-primary-900))',
+                  color: newCount > 0 ? 'rgb(var(--c-accent))' : 'rgb(255 255 255 / 0.6)',
                   animation: newCount > 0 ? 'bellSwing 2.4s ease-in-out infinite' : undefined,
                 }} />
-            </span>
-            {newCount > 0 && (
-              <span className="text-[14px] font-black tabular-nums leading-none"
-                style={{ color: 'rgb(var(--c-primary-900))' }}>
-                {newCount > 99 ? '99+' : newCount}
-              </span>
-            )}
-            <span className="text-[11px] font-bold whitespace-nowrap"
-              style={{ color: 'rgb(var(--c-primary-900) / 0.72)' }}>
-              {newCount > 0 ? 'تنبيه جديد' : 'التنبيهات'}
-            </span>
-            {newCount > 0 && (
-              <span className="absolute -top-0.5 -left-0.5 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-[rgb(var(--c-primary))]"
-                style={{ animation: 'badgePulse 2s ease-in-out infinite' }} />
-            )}
-          </motion.button>
+              {newCount > 0 && (
+                <span
+                  className="absolute -top-1.5 -left-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500
+                             text-white text-[10px] font-bold tabular-nums flex items-center justify-center
+                             ring-2 ring-[rgb(var(--c-primary))]"
+                  style={{ animation: 'badgePulse 2s ease-in-out infinite' }}
+                >
+                  {newCount > 99 ? '99+' : newCount}
+                </span>
+              )}
+            </button>
           </div>
         </header>
-
-        <WorkspaceTabs labelFor={labelFor} />
 
         <main className="flex-1 overflow-y-auto bg-canvas p-3 sm:p-4 md:p-6">
           <Outlet />

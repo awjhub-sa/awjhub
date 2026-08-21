@@ -22,7 +22,18 @@ import FormFill from '../../components/forms/FormFill.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import { toast } from '../../lib/toast.js';
 import { ACTION, SEVERITY, STATE, stateOf, LATE, ATTACH, NOTE, extOf } from '../../config/tones.js';
+import { Surface, IconTile, Pill } from '../../components/ui/index.jsx';
 import DataTable from '../../components/DataTable.jsx';
+
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
+
+/* A verb's colour, and the surface derived from it — the same one wherever the
+   verb appears. */
+const actionStyle = (name) => ({
+  background: tint(ACTION[name].ink, 10),
+  borderColor: tint(ACTION[name].ink, 24),
+  color: ACTION[name].ink,
+});
 
 /* The photographs the office attached, as files rather than as a view. Reading
    them inside the sheet is not the same as having them: an answer often has to
@@ -30,16 +41,16 @@ import DataTable from '../../components/DataTable.jsx';
    the portal. */
 function Files({ list, tone, formNumber }) {
   const files = (Array.isArray(list) ? list : []).filter(Boolean);
-  if (!files.length) return <span className="text-muted/30 text-xs">—</span>;
+  if (!files.length) return <span className="text-muted/40 text-[12.5px]">—</span>;
   return (
     <span className="flex flex-wrap gap-1" style={{ maxWidth: 108 }}>
       {files.map((u, i) => (
         <a key={i} onClick={e => e.stopPropagation()}
           href={asDownload(u, `${tone.label} ${formNumber} - ${i + 1}${extOf(u)}`)} download
           title={`تحميل ${tone.label} ${i + 1}`}
-          className="w-[26px] h-[26px] rounded-lg border flex items-center justify-center
-                     text-[11px] font-black tabular-nums transition-transform hover:scale-110"
-          style={{ background: tone.bg, borderColor: tone.line, color: tone.ink }}>
+          className="w-[26px] h-[26px] rounded-[9px] border flex items-center justify-center
+                     text-[11px] font-bold tabular-nums transition-colors hover:brightness-[0.97]"
+          style={{ background: tint(tone.bar, 10), borderColor: tint(tone.bar, 26), color: tone.ink }}>
           {AR(i + 1)}
         </a>
       ))}
@@ -78,41 +89,46 @@ function NoteDialog({ row, onClose, onSaved }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[70] bg-ink/45 backdrop-blur-sm flex items-center justify-center p-4"
+    <div className="fixed inset-0 z-[70] bg-[rgb(var(--c-ink)/0.45)] flex items-center justify-center p-4"
       onClick={onClose} dir="rtl">
       <div onClick={e => e.stopPropagation()}
-        className="bg-white rounded-2xl border border-line w-full max-w-lg overflow-hidden shadow-2xl">
-        <header className="px-5 py-4 border-b border-line flex items-center gap-2.5">
-          <span className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
-            <NotePencil size={17} weight="bold" className="text-primary" />
-          </span>
-          <div className="flex-1">
-            <h3 className="text-[15px] font-black text-ink leading-tight">ملاحظة على المحضر</h3>
-            <p className="text-[11.5px] font-bold text-muted mt-0.5" dir="ltr">{row.formNumber}</p>
+        className="bg-white rounded-[16px] border border-line w-full max-w-lg overflow-hidden
+                   shadow-[0_24px_60px_-16px_rgb(var(--c-ink)/0.35)]">
+        <header className="px-5 py-3.5 border-b flex items-center gap-3"
+          style={{ background: tint(NOTE.bar, 12), borderColor: tint(NOTE.bar, 28) }}>
+          <IconTile Icon={NotePencil} color={NOTE.bar} size="md" />
+          <div className="flex-1 min-w-0">
+            <h3 className="text-[14px] font-bold leading-tight" style={{ color: NOTE.ink }}>ملاحظة على المحضر</h3>
+            <p className="text-[11.5px] font-medium text-muted mt-1" dir="ltr">{row.formNumber}</p>
           </div>
-          <button onClick={onClose} className="text-muted hover:text-ink transition-colors"><X size={18} /></button>
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-[10px] border border-line bg-white flex items-center justify-center
+                       text-muted hover:text-ink transition-colors shrink-0">
+            <X size={14} weight="bold" />
+          </button>
         </header>
 
-        <div className="p-5 space-y-2">
+        <div className="p-5 space-y-2.5">
           <textarea rows={6} autoFocus value={text} onChange={e => setText(e.target.value)}
             placeholder="اكتب ملاحظتك — اعتراض، توضيح ظرف، أو أي شيء تودّ أن تصل به الإدارة…"
-            className="w-full rounded-xl border border-line px-3.5 py-2.5 text-[13.5px] leading-relaxed
-                       resize-y focus:outline-none focus:ring-2 focus:ring-primary/25" />
-          <p className="text-[11.5px] font-bold text-muted flex items-center gap-1.5">
-            <Info size={13} weight="bold" />
+            className="w-full rounded-[10px] border border-line px-3.5 py-2.5 text-[13px] text-ink leading-relaxed
+                       resize-y focus:outline-none focus:border-primary/50 transition-colors" />
+          <p className="text-[11.5px] font-medium text-muted flex items-center gap-1.5">
+            <Info size={12} weight="bold" className="shrink-0" />
             تصل الإدارة مع ردّك، ولا تُطبع على المحضر.
           </p>
-          {err && <p className="text-[12px] font-bold text-red-600">{err}</p>}
+          {err && <p className="text-[11.5px] font-bold" style={{ color: '#DC2626' }}>{err}</p>}
         </div>
 
-        <footer className="px-5 py-3.5 border-t border-line bg-bg flex items-center justify-end gap-2">
+        <footer className="px-5 py-4 border-t border-line flex items-center justify-end gap-2.5">
           <button onClick={onClose}
-            className="px-4 py-2 rounded-xl text-[13px] font-bold text-muted hover:text-ink transition-colors">
+            className="px-4 py-2 rounded-[10px] text-[12px] font-bold border border-line text-muted
+                       hover:bg-[rgb(var(--c-bg))] transition-colors">
             إلغاء
           </button>
           <button onClick={save} disabled={busy}
-            className="px-5 py-2 rounded-xl text-[13px] font-black text-white bg-primary
-                       hover:brightness-110 disabled:opacity-50 transition-all">
+            className="px-5 py-2 rounded-[10px] text-[12px] font-bold text-white bg-primary border border-primary
+                       hover:opacity-90 disabled:opacity-50 transition-opacity">
             {busy ? 'يُحفظ…' : 'حفظ الملاحظة'}
           </button>
         </footer>
@@ -190,30 +206,32 @@ export default function CatererViolations() {
 
       {loading ? (
         <div className="py-20 flex justify-center">
-          <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+          <div className="w-7 h-7 border-2 border-primary/25 border-t-primary rounded-full animate-spin" />
         </div>
       ) : violations.length === 0 ? (
-        <section className="bg-white rounded-2xl border border-line py-16 flex flex-col items-center gap-2">
-          <ShieldCheck size={38} weight="fill" className="text-success" />
-          <p className="text-[17px] font-black text-ink">لا مخالفات على منشأتك</p>
-          <p className="text-[13.5px] font-bold text-muted">سجلّك نظيف هذا الموسم</p>
-        </section>
+        <Surface>
+          <div className="py-14 px-5 text-center">
+            <ShieldCheck size={26} weight="duotone" className="mx-auto" style={{ color: '#15803D' }} />
+            <p className="text-[13px] font-semibold text-ink mt-3">لا مخالفات على منشأتك</p>
+            <p className="text-[11.5px] font-medium text-muted mt-1">سجلّك نظيف هذا الموسم</p>
+          </div>
+        </Surface>
       ) : (
-        <section className="bg-white rounded-2xl border border-line overflow-hidden">
+        <Surface className="overflow-hidden">
           <DataTable>
-            <table className="w-full text-[13.5px]">
-              <thead className="text-muted text-[12px] border-b border-line bg-bg">
+            <table className="w-full text-[13px]">
+              <thead className="text-muted text-[11px] border-b border-line bg-[rgb(var(--c-bg))]">
                 <tr>
-                  <th className="px-5 py-3.5 text-right font-black">المخالفة</th>
-                  <th className="px-5 py-3.5 text-right font-black">الرقم</th>
-                  <th className="px-5 py-3.5 text-right font-black whitespace-nowrap">صور المخالفة</th>
-                  <th className="px-5 py-3.5 text-right font-black">المركز</th>
-                  <th className="px-5 py-3.5 text-right font-black">الخطورة</th>
-                  <th className="px-5 py-3.5 text-right font-black">المهلة</th>
-                  <th className="px-5 py-3.5 text-right font-black whitespace-nowrap">مرفقات ردّك</th>
-                  <th className="px-5 py-3.5 text-right font-black">ملاحظتك</th>
-                  <th className="px-5 py-3.5 text-right font-black">الحالة</th>
-                  <th className="px-5 py-3.5 text-right font-black"></th>
+                  <th className="px-5 py-3 text-start font-bold">المخالفة</th>
+                  <th className="px-5 py-3 text-start font-bold">الرقم</th>
+                  <th className="px-5 py-3 text-start font-bold whitespace-nowrap">صور المخالفة</th>
+                  <th className="px-5 py-3 text-start font-bold">المركز</th>
+                  <th className="px-5 py-3 text-start font-bold">الخطورة</th>
+                  <th className="px-5 py-3 text-start font-bold">المهلة</th>
+                  <th className="px-5 py-3 text-start font-bold whitespace-nowrap">مرفقات ردّك</th>
+                  <th className="px-5 py-3 text-start font-bold">ملاحظتك</th>
+                  <th className="px-5 py-3 text-start font-bold">الحالة</th>
+                  <th className="px-5 py-3 text-start font-bold"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
@@ -224,44 +242,40 @@ export default function CatererViolations() {
                   const sev = SEVERITY[a.data?.severity];
                   return (
                     <tr key={a.id} onClick={() => setOpenId(a.id)}
-                      className="hover:bg-background/70 cursor-pointer transition-colors"
+                      className="hover:bg-[rgb(var(--c-bg))] cursor-pointer transition-colors"
                       style={{ borderInlineStart: `3px solid ${
                         late ? LATE.bar : done ? STATE.accepted.bar : sev?.bar || STATE.pending.bar}` }}>
-                      <td className="px-5 py-3.5 font-bold text-ink">
+                      <td className="px-5 py-3.5 font-bold text-ink text-[13.5px]">
                         <span className="block max-w-[300px] line-clamp-2 leading-relaxed">
                           {a.data?.description || 'محضر مخالفة'}
                         </span>
                         {a.data?.shakhis && (
-                          <span className="block text-[11.5px] font-bold text-muted mt-0.5" dir="ltr">
+                          <span className="block text-[11px] font-medium text-muted mt-1" dir="ltr">
                             شاخص {a.data.shakhis}
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-3.5 tabular-nums text-[13px] text-muted" dir="ltr">
+                      <td className="px-5 py-3.5 tabular-nums text-[12.5px] font-medium text-muted" dir="ltr">
                         {a.formNumber || '—'}
                       </td>
                       <td className="px-5 py-3.5">
                         <Files list={a.data?.evidence} tone={ATTACH.evidence} formNumber={a.formNumber} />
                       </td>
-                      <td className="px-5 py-3.5 text-[13.5px] text-muted whitespace-nowrap">
+                      <td className="px-5 py-3.5 text-[12.5px] font-medium text-muted whitespace-nowrap">
                         {a.centerId ? centerLabel(centerById[a.centerId]?.code) : 'المنشأة'}
                       </td>
                       <td className="px-5 py-3.5">
-                        {sev ? (
-                          <span className="text-[11.5px] font-black px-2.5 py-1 rounded-lg whitespace-nowrap border"
-                            style={{ background: sev.bg, color: sev.ink, borderColor: sev.line }}>{a.data.severity}</span>
-                        ) : <span className="text-muted/40">—</span>}
+                        {sev
+                          ? <Pill color={sev.ink}>{a.data.severity}</Pill>
+                          : <span className="text-muted/40">—</span>}
                       </td>
                       <td className="px-5 py-3.5 whitespace-nowrap">
                         {a.dueAt ? (
-                          <span className="inline-flex items-center gap-1.5 text-[12px] font-black tabular-nums
-                                           px-2.5 py-1 rounded-lg border"
-                            style={late ? { background: LATE.bg, borderColor: LATE.line, color: LATE.ink }
-                              : done ? { background: '#F8FAFC', borderColor: 'rgb(var(--c-line))', color: 'rgb(var(--c-muted))' }
-                              : { background: SEVERITY['متوسطة'].bg, borderColor: SEVERITY['متوسطة'].line, color: SEVERITY['متوسطة'].ink }}>
-                            {late ? <WarningCircle size={13} weight="fill" /> : <Clock size={13} weight="bold" />}
+                          <Pill className="tabular-nums"
+                            Icon={late ? WarningCircle : Clock}
+                            color={late ? LATE.ink : done ? 'rgb(var(--c-muted))' : SEVERITY['متوسطة'].ink}>
                             {late ? `تأخّر ${AR(daysLate(a))} يوم` : 'مهلة حتى'} {late ? '' : day(a.dueAt)}
-                          </span>
+                          </Pill>
                         ) : <span className="text-muted/40">—</span>}
                       </td>
                       <td className="px-5 py-3.5">
@@ -271,11 +285,11 @@ export default function CatererViolations() {
                       <td className="px-5 py-3.5 max-w-[220px]">
                         {a.data?.notes ? (
                           <button onClick={(e) => { e.stopPropagation(); if (!done) setNoteFor(a); }}
-                            className={`text-right w-full ${done ? 'cursor-default' : ''}`}>
-                            <span className="block text-[12px] leading-relaxed text-ink line-clamp-2 pr-2 border-r-2"
+                            className={`text-start w-full ${done ? 'cursor-default' : ''}`}>
+                            <span className="block text-[12px] leading-relaxed text-ink line-clamp-2 ps-2 border-s-2"
                               style={{ borderColor: NOTE.bar }}>{a.data.notes}</span>
                             {!done && (
-                              <span className="text-[10.5px] font-black mt-0.5 inline-block"
+                              <span className="text-[10.5px] font-bold mt-1 inline-block"
                                 style={{ color: NOTE.ink }}>تعديل</span>
                             )}
                           </button>
@@ -283,38 +297,36 @@ export default function CatererViolations() {
                           <span className="text-muted/40">—</span>
                         ) : (
                           <button onClick={(e) => { e.stopPropagation(); setNoteFor(a); }}
-                            className="inline-flex items-center gap-1.5 text-[12px] font-black px-2.5 py-1.5 rounded-lg
-                                       border border-dashed transition-colors hover:brightness-95"
-                            style={{ background: NOTE.bg, borderColor: NOTE.line, color: NOTE.ink }}>
-                            <NotePencil size={13} weight="bold" />
+                            className="inline-flex items-center gap-1.5 text-[11.5px] font-bold px-2.5 py-1.5 rounded-[10px]
+                                       border border-dashed transition-colors hover:brightness-[0.97]"
+                            style={{ background: tint(NOTE.bar, 10), borderColor: tint(NOTE.bar, 30), color: NOTE.ink }}>
+                            <NotePencil size={12} weight="bold" />
                             إضافة ملاحظة
                           </button>
                         )}
                       </td>
                       <td className="px-5 py-3.5">
-                        <span className="inline-flex items-center gap-1.5 text-[11.5px] font-black px-2.5 py-1
-                                         rounded-full whitespace-nowrap border"
-                          style={{ background: st.bg, color: st.ink, borderColor: st.line }}>
-                          <span className="w-1.5 h-1.5 rounded-full" style={{ background: st.bar }} />
+                        <Pill color={st.ink}>
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: st.bar }} />
                           {st.label}
-                        </span>
+                        </Pill>
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-1.5">
                           <button
                             onClick={(e) => { e.stopPropagation(); setOpenId(a.id); }}
-                            style={{ background: ACTION.view.bg, color: ACTION.view.ink, borderColor: ACTION.view.line }}
-                            className="inline-flex items-center gap-1.5 text-[12.5px] font-black px-2.5 py-1.5 rounded-lg
-                                       border transition-colors hover:brightness-95">
-                            <Eye size={14} weight="bold" />
+                            style={actionStyle('view')}
+                            className="inline-flex items-center gap-1.5 text-[11.5px] font-bold px-2.5 py-1.5 rounded-[10px]
+                                       border transition-colors hover:brightness-[0.97]">
+                            <Eye size={13} weight="bold" />
                             {done ? 'عرض' : 'الردّ'}
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); window.open(`/forms/print/${a.id}`, '_blank'); }}
-                            style={{ background: ACTION.print.bg, color: ACTION.print.ink, borderColor: ACTION.print.line }}
-                            className="inline-flex items-center gap-1.5 text-[12.5px] font-black px-2.5 py-1.5 rounded-lg
-                                       border transition-colors hover:brightness-95">
-                            <Printer size={14} weight="bold" />
+                            style={actionStyle('print')}
+                            className="inline-flex items-center gap-1.5 text-[11.5px] font-bold px-2.5 py-1.5 rounded-[10px]
+                                       border transition-colors hover:brightness-[0.97]">
+                            <Printer size={13} weight="bold" />
                             طباعة
                           </button>
                         </div>
@@ -325,7 +337,7 @@ export default function CatererViolations() {
               </tbody>
             </table>
           </DataTable>
-        </section>
+        </Surface>
       )}
 
       {noteFor && (
@@ -334,8 +346,9 @@ export default function CatererViolations() {
       )}
 
       {!loading && violations.length > 0 && openCount === 0 && (
-        <p className="text-center text-[12.5px] font-bold text-success flex items-center justify-center gap-1.5">
-          <CheckCircle size={15} weight="fill" />
+        <p className="text-center text-[11.5px] font-semibold flex items-center justify-center gap-1.5"
+          style={{ color: '#15803D' }}>
+          <CheckCircle size={13} weight="bold" />
           أفدتَ عن كل المخالفات المسجّلة
         </p>
       )}

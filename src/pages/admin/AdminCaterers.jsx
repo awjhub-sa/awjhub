@@ -26,9 +26,11 @@ import { Key } from '@phosphor-icons/react';
 import { COLORS } from '../../config/brand.js';
 import { seasonLabel } from '../../lib/hijri.js';
 import DataTable from '../../components/DataTable.jsx';
+import FilterChip from '../../components/FilterChip.jsx';
+import { IconTile, StatTile } from '../../components/ui/index.jsx';
 
-/* Hex, not rgb(var(--token)) — these colours get an alpha suffix appended
-   (`${color}DD`) to build gradients, and that only works on hex. */
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
+
 const STATUSES = [
   { value: 'active',    label: 'نشط',    Icon: CircleCheck,  color: COLORS.success },
   { value: 'suspended', label: 'موقوف',  Icon: PauseCircle,  color: COLORS.warning },
@@ -37,7 +39,7 @@ const STATUSES = [
 const STATUS_META = Object.fromEntries(STATUSES.map(s => [s.value, s]));
 
 const inputCls =
-  'w-full px-4 py-2.5 border border-line rounded-xl text-sm text-ink outline-none focus:border-primary transition placeholder-muted/40 bg-white';
+  'w-full px-3.5 py-2.5 border border-line rounded-[10px] text-[13px] font-medium text-ink outline-none focus:border-primary transition-colors placeholder:text-muted/50 bg-white';
 
 /* Field names track the customer's own sheet (البيانات المركزية، الورقة4), so
    an owner transcribing what they already have on paper finds every column. */
@@ -54,11 +56,11 @@ const CAPACITIES = ['مالك', 'مفوّض', 'وكيل', 'مدير عام'];
 
 const Field = ({ label, required, hint, children }) => (
   <div>
-    <label className="block text-xs font-medium text-muted mb-1.5">
+    <label className="block text-[11.5px] font-bold text-muted mb-1.5">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
     {children}
-    {hint && <p className="text-[10px] text-muted mt-1">{hint}</p>}
+    {hint && <p className="text-[10.5px] text-muted mt-1">{hint}</p>}
   </div>
 );
 
@@ -67,7 +69,7 @@ const Field = ({ label, required, hint, children }) => (
 const SectionRule = ({ children }) => (
   <div className="pt-2 pb-0.5 flex items-center gap-2">
     <span className="h-px flex-1 bg-line" />
-    <span className="text-[10px] font-bold text-muted whitespace-nowrap">{children}</span>
+    <span className="text-[10.5px] font-bold text-muted whitespace-nowrap">{children}</span>
     <span className="h-px flex-1 bg-line" />
   </div>
 );
@@ -80,7 +82,7 @@ const PhoneLink = ({ phone }) => (
     className="inline-flex items-center gap-1.5 text-muted hover:text-green-600 transition-colors"
     dir="ltr"
   >
-    <WhatsappLogo size={12} className="flex-shrink-0" />
+    <WhatsappLogo size={12} className="shrink-0" />
     {phone}
   </a>
 );
@@ -282,8 +284,7 @@ export default function AdminCaterers() {
         right={
           <button
             onClick={openAdd}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white font-bold text-sm hover:opacity-90 transition shadow-[0_4px_16px_rgb(var(--c-primary)/0.35)]"
-            style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-[10px] bg-primary border border-primary text-white font-bold text-[12px] hover:opacity-90 transition-opacity"
           >
             <Plus size={15} weight="bold" />
             <span className="hidden sm:inline">إضافة متعهد</span>
@@ -293,40 +294,43 @@ export default function AdminCaterers() {
 
       {/* ── Stats ──────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label="إجمالي المتعهدين" value={counts.all}       Icon={Building2}   color={COLORS.primary} />
-        <StatCard label="نشط"              value={counts.active}    Icon={CircleCheck} color={COLORS.success} />
-        <StatCard label="موقوف"            value={counts.suspended} Icon={PauseCircle} color={COLORS.warning} />
-        <StatCard
+        <StatTile label="إجمالي المتعهدين" value={counts.all}       Icon={Building2}   color={COLORS.primary}
+          active={filter === 'all'}       onClick={() => setFilter('all')} />
+        <StatTile label="نشط"              value={counts.active}    Icon={CircleCheck} color={COLORS.success}
+          active={filter === 'active'}    onClick={() => setFilter('active')} />
+        <StatTile label="موقوف"            value={counts.suspended} Icon={PauseCircle} color={COLORS.warning}
+          active={filter === 'suspended'} onClick={() => setFilter('suspended')} />
+        <StatTile
           label={activeSeason ? `مراكز مُسندة · ${seasonLabel(activeSeason)}` : 'مراكز مُسندة'}
           value={linkedCenters} Icon={MapPinArea} color={COLORS.accent600} />
       </div>
 
       {/* ── List ───────────────────────────────── */}
-      <section className="bg-gradient-to-br from-white via-white to-background/40 rounded-2xl border border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgb(var(--c-primary)/0.14)]">
+      <section className="bg-white rounded-[14px] border border-line shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)]">
         <div className="p-4 border-b border-line space-y-3">
           <div className="flex items-center justify-between gap-3 flex-wrap">
-            <h2 className="text-lg font-bold text-primary">
+            <h2 className="text-[15px] font-bold text-ink">
               المتعهدون ({visible.length}{visible.length !== counts.all && ` من ${counts.all}`})
             </h2>
             <div className="relative flex-1 min-w-[200px] max-w-xs">
-              <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+              <div className="absolute inset-y-0 start-3 flex items-center pointer-events-none">
                 <Search size={14} className="text-muted" />
               </div>
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="ابحث بالاسم أو السجل أو الجوال"
-                className={`${inputCls} pr-9`}
+                className={`${inputCls} ps-9`}
               />
             </div>
           </div>
 
           <div className="flex gap-2 flex-wrap">
-            <Chip active={filter === 'all'} onClick={() => setFilter('all')} count={counts.all} Icon={Filter} color={COLORS.muted}>
+            <FilterChip active={filter === 'all'} onClick={() => setFilter('all')} count={counts.all} Icon={Filter} color={COLORS.muted}>
               الكل
-            </Chip>
+            </FilterChip>
             {STATUSES.map(s => (
-              <Chip
+              <FilterChip
                 key={s.value}
                 active={filter === s.value}
                 onClick={() => setFilter(s.value)}
@@ -335,13 +339,13 @@ export default function AdminCaterers() {
                 color={s.color}
               >
                 {s.label}
-              </Chip>
+              </FilterChip>
             ))}
           </div>
         </div>
 
         {listError && (
-          <div className="m-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-3 py-2.5 text-sm font-medium flex items-start gap-2">
+          <div className="m-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-[10px] px-3 py-2.5 text-[13px] font-medium flex items-start gap-2">
             <Warning size={15} className="mt-0.5 flex-shrink-0" />
             <span className="flex-1">{listError}</span>
             <button onClick={() => setListError(null)} className="text-amber-600 hover:text-amber-900">
@@ -352,16 +356,15 @@ export default function AdminCaterers() {
 
         <DataTable>
           <table className="w-full text-sm">
-            <thead className="text-muted text-xs border-b border-line"
-              style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 60%)' }}>
+            <thead className="text-muted text-[11px] border-b border-line bg-[rgb(var(--c-bg))]">
               <tr>
-                <th className="px-4 py-3 text-right font-semibold">المتعهد</th>
-                <th className="px-4 py-3 text-right font-semibold">السجل / الرخصة</th>
-                <th className="px-4 py-3 text-right font-semibold">المالك</th>
-                <th className="px-4 py-3 text-right font-semibold">ضابط الاتصال</th>
-                <th className="px-4 py-3 text-right font-semibold">المراكز</th>
-                <th className="px-4 py-3 text-right font-semibold">الحالة</th>
-                <th className="px-4 py-3 text-right font-semibold">إجراء</th>
+                <th className="px-4 py-3 text-start font-bold">المتعهد</th>
+                <th className="px-4 py-3 text-start font-bold">السجل / الرخصة</th>
+                <th className="px-4 py-3 text-start font-bold">المالك</th>
+                <th className="px-4 py-3 text-start font-bold">ضابط الاتصال</th>
+                <th className="px-4 py-3 text-start font-bold">المراكز</th>
+                <th className="px-4 py-3 text-start font-bold">الحالة</th>
+                <th className="px-4 py-3 text-start font-bold">إجراء</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -385,21 +388,17 @@ export default function AdminCaterers() {
                 const StatusIcon = meta.Icon;
                 const linked = centerCount[c.id] || 0;
                 return (
-                  <tr key={c.id} className="group/row hover:bg-background transition-colors align-top">
+                  <tr key={c.id} className="group/row hover:bg-[rgb(var(--c-bg))] transition-colors align-top">
                     <td className="px-4 py-3 font-medium text-ink max-w-[280px]">
                       <div className="flex items-start gap-2.5">
-                        <div className="relative flex-shrink-0 mt-0.5">
-                          <div className="absolute inset-0 rounded-xl blur-md opacity-0 group-hover/row:opacity-50 transition-opacity"
-                            style={{ background: meta.color }} />
-                          <div className="relative w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold shadow-sm ring-2 ring-white"
-                            style={{ background: `linear-gradient(135deg, ${meta.color}, ${meta.color}DD)` }}>
-                            {c.name?.replace(/^(شركة|مؤسسة|مطابخ)\s+/, '').charAt(0) || '؟'}
-                          </div>
+                        <div className="w-8 h-8 rounded-[10px] border flex items-center justify-center text-[12px] font-bold shrink-0 mt-0.5"
+                          style={{ background: tint(meta.color, 12), borderColor: tint(meta.color, 28), color: meta.color }}>
+                          {c.name?.replace(/^(شركة|مؤسسة|مطابخ)\s+/, '').charAt(0) || '؟'}
                         </div>
                         <div className="min-w-0">
                           <div className="leading-snug">{c.name}</div>
                           {c.nameShort && (
-                            <div className="text-muted text-xs mt-0.5">{c.nameShort}</div>
+                            <div className="text-muted text-[11.5px] mt-0.5">{c.nameShort}</div>
                           )}
                         </div>
                       </div>
@@ -455,7 +454,12 @@ export default function AdminCaterers() {
 
                     <td className="px-4 py-3">
                       {linked > 0 ? (
-                        <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg bg-accent/10 text-accent-600">
+                        <span className="inline-flex items-center gap-1 text-[11.5px] font-bold px-2 py-1 rounded-md border"
+                          style={{
+                            background: tint('rgb(var(--c-accent-600))', 11),
+                            borderColor: tint('rgb(var(--c-accent-600))', 26),
+                            color: 'rgb(var(--c-accent-600))',
+                          }}>
                           <MapPinArea size={11} weight="bold" />
                           {linked}
                         </span>
@@ -466,8 +470,8 @@ export default function AdminCaterers() {
 
                     <td className="px-4 py-3">
                       <span
-                        className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white shadow-sm whitespace-nowrap"
-                        style={{ background: `linear-gradient(135deg, ${meta.color}, ${meta.color}DD)` }}
+                        className="inline-flex items-center gap-1 text-[11.5px] font-bold px-2.5 py-1 rounded-md border whitespace-nowrap"
+                        style={{ background: tint(meta.color, 11), borderColor: tint(meta.color, 26), color: meta.color }}
                       >
                         <StatusIcon size={11} weight="bold" />
                         {meta.label}
@@ -482,10 +486,10 @@ export default function AdminCaterers() {
                         <button
                           onClick={() => setAccountFor(c)}
                           title={accounts[c.id] ? accounts[c.id].email : 'إنشاء حساب دخول للمتعهد'}
-                          className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg border transition-all ${
+                          className={`flex items-center gap-1 text-[11.5px] font-bold px-2 py-1 rounded-md border transition-colors ${
                             accounts[c.id]
-                              ? 'border-success/40 text-success bg-success/5 hover:bg-success/10'
-                              : 'border-accent/40 text-accent-600 bg-accent/5 hover:bg-accent/10'
+                              ? 'border-success/30 text-success bg-success/[0.07] hover:bg-success/[0.13]'
+                              : 'border-accent/30 text-accent-600 bg-accent/[0.07] hover:bg-accent/[0.13]'
                           }`}
                         >
                           <Key size={12} weight={accounts[c.id] ? 'fill' : 'bold'} />
@@ -493,16 +497,16 @@ export default function AdminCaterers() {
                         </button>
                         <button
                           onClick={() => openEdit(c)}
-                          className="group/edit flex items-center gap-1 text-primary hover:text-white text-xs font-bold px-2 py-1 rounded-lg border border-primary/20 hover:bg-gradient-to-br hover:from-primary-400 hover:to-primary hover:border-transparent transition-all hover:shadow-md"
+                          className="flex items-center gap-1 text-primary text-[11.5px] font-bold px-2 py-1 rounded-md border border-primary/20 bg-primary/[0.06] hover:bg-primary/[0.12] transition-colors"
                         >
-                          <Pencil size={12} className="group-hover/edit:rotate-12 transition-transform" />
+                          <Pencil size={12} />
                           تعديل
                         </button>
                         <button
                           onClick={() => handleDelete(c)}
-                          className="group/del flex items-center gap-1 text-red-500 hover:text-white text-xs font-bold px-2 py-1 rounded-lg border border-red-200 hover:bg-red-500 hover:border-red-500 transition-all hover:shadow-md"
+                          className="flex items-center gap-1 text-red-600 text-[11.5px] font-bold px-2 py-1 rounded-md border border-red-200 bg-red-500/[0.06] hover:bg-red-500/[0.12] transition-colors"
                         >
-                          <Trash2 size={12} className="group-hover/del:rotate-6 transition-transform" />
+                          <Trash2 size={12} />
                           حذف
                         </button>
                       </div>
@@ -518,21 +522,21 @@ export default function AdminCaterers() {
       {/* ── Add / edit modal ───────────────────── */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeModal} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
-            <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-line"
-              style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 55%)' }}>
+          <div className="absolute inset-0 bg-[rgb(var(--c-ink)/0.45)] backdrop-blur-sm" onClick={closeModal} />
+          <div className="relative bg-white rounded-[18px] border border-line shadow-[0_24px_60px_-16px_rgb(var(--c-ink)/0.35)] w-full max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+            <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b"
+              style={{
+                background: tint('rgb(var(--c-primary))', 12),
+                borderColor: tint('rgb(var(--c-primary))', 28),
+              }}>
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                  style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
-                  {form.id ? <Pencil size={15} className="text-white" /> : <Plus size={15} className="text-white" weight="bold" />}
-                </div>
-                <h2 className="font-bold text-ink text-sm">
+                <IconTile Icon={form.id ? Pencil : Plus} size="md" />
+                <h2 className="font-bold text-ink text-[14px]">
                   {form.id ? 'تعديل بيانات المتعهد' : 'إضافة متعهد جديد'}
                 </h2>
               </div>
               <button onClick={closeModal}
-                className="w-8 h-8 rounded-xl border border-line flex items-center justify-center hover:bg-background transition-colors">
+                className="w-8 h-8 rounded-[10px] border border-line bg-white flex items-center justify-center hover:bg-[rgb(var(--c-bg))] transition-colors">
                 <X size={15} className="text-muted" />
               </button>
             </div>
@@ -562,7 +566,7 @@ export default function AdminCaterers() {
               <div className="grid grid-cols-2 gap-3">
                 <Field label="رقم السجل التجاري">
                   <div className="relative">
-                    <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                    <div className="absolute inset-y-0 start-3 flex items-center pointer-events-none">
                       <IdentificationCard size={14} className="text-primary" />
                     </div>
                     <input
@@ -571,7 +575,7 @@ export default function AdminCaterers() {
                       placeholder="1010xxxxxx"
                       dir="ltr"
                       inputMode="numeric"
-                      className={`${inputCls} pr-9`}
+                      className={`${inputCls} ps-9`}
                     />
                   </div>
                 </Field>
@@ -589,14 +593,14 @@ export default function AdminCaterers() {
 
               <Field label="العنوان الرئيسي">
                 <div className="relative">
-                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                  <div className="absolute inset-y-0 start-3 flex items-center pointer-events-none">
                     <MapPinArea size={14} className="text-primary" />
                   </div>
                   <input
                     value={form.address}
                     onChange={(e) => setForm(p => ({ ...p, address: e.target.value }))}
                     placeholder="مكة المكرمة، حي العزيزية"
-                    className={`${inputCls} pr-9`}
+                    className={`${inputCls} ps-9`}
                   />
                 </div>
               </Field>
@@ -605,14 +609,14 @@ export default function AdminCaterers() {
 
               <Field label="الاسم الرباعي">
                 <div className="relative">
-                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                  <div className="absolute inset-y-0 start-3 flex items-center pointer-events-none">
                     <User size={14} className="text-primary" />
                   </div>
                   <input
                     value={form.ownerName}
                     onChange={(e) => setForm(p => ({ ...p, ownerName: e.target.value }))}
                     placeholder="عبدالله محمد سعيد الغامدي"
-                    className={`${inputCls} pr-9`}
+                    className={`${inputCls} ps-9`}
                   />
                 </div>
               </Field>
@@ -647,7 +651,7 @@ export default function AdminCaterers() {
 
               <Field label="رقم التواصل">
                 <div className="relative">
-                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                  <div className="absolute inset-y-0 start-3 flex items-center pointer-events-none">
                     <Phone size={14} className="text-primary" />
                   </div>
                   <input
@@ -660,7 +664,7 @@ export default function AdminCaterers() {
                     dir="ltr"
                     maxLength={10}
                     inputMode="numeric"
-                    className={`${inputCls} pr-9`}
+                    className={`${inputCls} ps-9`}
                   />
                 </div>
               </Field>
@@ -669,7 +673,7 @@ export default function AdminCaterers() {
 
               <Field label="البريد الإلكتروني">
                 <div className="relative">
-                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                  <div className="absolute inset-y-0 start-3 flex items-center pointer-events-none">
                     <Mail size={14} className="text-primary" />
                   </div>
                   <input
@@ -678,7 +682,7 @@ export default function AdminCaterers() {
                     onChange={(e) => setForm(p => ({ ...p, email: e.target.value }))}
                     placeholder="info@example.com"
                     dir="ltr"
-                    className={`${inputCls} pr-9`}
+                    className={`${inputCls} ps-9`}
                   />
                 </div>
               </Field>
@@ -721,16 +725,12 @@ export default function AdminCaterers() {
                         key={s.value}
                         type="button"
                         onClick={() => setForm(p => ({ ...p, status: s.value }))}
-                        className={`group/st px-2 py-2.5 rounded-xl text-xs font-bold border-2 transition-all flex items-center justify-center gap-1.5 ${
-                          active ? 'text-white scale-[1.02] shadow-md' : 'border-line bg-white text-muted hover:scale-[1.02]'
+                        className={`px-2 py-2.5 rounded-[10px] text-[12.5px] font-bold border transition-colors flex items-center justify-center gap-1.5 ${
+                          active ? 'text-white' : 'border-line bg-white text-muted hover:bg-[rgb(var(--c-bg))]'
                         }`}
-                        style={active ? {
-                          borderColor: s.color,
-                          background: `linear-gradient(135deg, ${s.color}, ${s.color}DD)`,
-                          boxShadow: `0 4px 14px ${s.color}40`,
-                        } : {}}
+                        style={active ? { background: s.color, borderColor: s.color } : undefined}
                       >
-                        <SIcon size={14} className={`transition-transform ${active ? 'scale-110' : 'group-hover/st:scale-110'}`} />
+                        <SIcon size={14} />
                         {s.label}
                       </button>
                     );
@@ -749,7 +749,7 @@ export default function AdminCaterers() {
               </Field>
 
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-3 py-2 text-sm font-medium">
+                <div className="bg-red-50 border border-red-200 text-red-700 rounded-[10px] px-3 py-2 text-[13px] font-medium">
                   {error}
                 </div>
               )}
@@ -758,8 +758,7 @@ export default function AdminCaterers() {
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm hover:opacity-90 disabled:opacity-60 transition"
-                  style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-[10px] bg-primary border border-primary text-white font-bold text-[13px] hover:opacity-90 disabled:opacity-60 transition-opacity"
                 >
                   {saving ? (
                     <>
@@ -774,7 +773,7 @@ export default function AdminCaterers() {
                 </button>
                 <button
                   onClick={closeModal}
-                  className="px-5 py-3 rounded-xl border border-line text-muted text-sm font-medium hover:bg-background transition-colors"
+                  className="px-5 py-3 rounded-[10px] border border-line bg-white text-muted text-[13px] font-bold hover:bg-[rgb(var(--c-bg))] transition-colors"
                 >
                   إلغاء
                 </button>
@@ -792,60 +791,5 @@ export default function AdminCaterers() {
         />
       )}
     </div>
-  );
-}
-
-function StatCard({ label, value, Icon, color }) {
-  return (
-    <div className="group/stat bg-white rounded-2xl border border-line px-4 py-3.5 shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] hover:shadow-[0_6px_24px_rgb(var(--c-primary)/0.14)] transition-shadow duration-300 flex items-center gap-3">
-      <div className="relative flex-shrink-0">
-        <div className="absolute inset-0 rounded-xl blur-lg opacity-40 group-hover/stat:opacity-70 transition-opacity"
-          style={{ background: color }} />
-        <div className="relative w-10 h-10 rounded-xl flex items-center justify-center group-hover/stat:scale-110 transition-transform duration-300"
-          style={{ background: `linear-gradient(135deg, ${color}, ${color}DD)` }}>
-          <Icon size={18} className="text-white" weight="bold" />
-        </div>
-      </div>
-      <div className="min-w-0">
-        <p className="text-2xl font-black text-ink leading-none">{value}</p>
-        <p className="text-[11px] text-muted mt-1 truncate">{label}</p>
-      </div>
-    </div>
-  );
-}
-
-function Chip({ active, count, onClick, Icon, color = COLORS.primary, children }) {
-  const activeStyle = active
-    ? {
-        background: `linear-gradient(135deg, ${color}DD, ${color})`,
-        borderColor: color,
-        color: '#fff',
-        boxShadow: `0 3px 10px ${color}55`,
-      }
-    : undefined;
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={activeStyle}
-      className={`group/chip px-3 py-1.5 rounded-xl text-sm font-bold border transition-all flex items-center gap-1.5 ${
-        active ? 'scale-[1.03]' : 'bg-white text-ink border-line hover:scale-[1.02]'
-      }`}
-    >
-      {Icon && (
-        <Icon
-          size={14}
-          className={`transition-transform duration-300 ${active ? 'scale-110' : 'group-hover/chip:scale-110'}`}
-          style={!active ? { color } : undefined}
-        />
-      )}
-      {children}
-      {count !== undefined && (
-        <span className={`px-1.5 py-0.5 rounded-full text-xs ${active ? 'bg-white/25 text-white' : 'bg-background'}`}
-          style={!active ? { color } : undefined}>
-          {count}
-        </span>
-      )}
-    </button>
   );
 }

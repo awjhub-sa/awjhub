@@ -24,6 +24,9 @@ import {
 import PageHeader from '../../components/PageHeader.jsx';
 import { seasonLabel } from '../../lib/hijri.js';
 import DataTable from '../../components/DataTable.jsx';
+import { Surface, IconTile, StatTile } from '../../components/ui/index.jsx';
+
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
 
 /* Grading bands the customer uses. Colour runs green → red so a season's
    quality mix is readable from the column alone, without reading each cell. */
@@ -40,7 +43,7 @@ const CATEGORIES = [
 const CAT_COLOR = Object.fromEntries(CATEGORIES.map(c => [c.value, c.color]));
 
 const inputCls =
-  'w-full px-4 py-2.5 border border-line rounded-xl text-sm text-ink outline-none focus:border-primary transition placeholder-muted/40 bg-white';
+  'w-full px-3.5 py-2.5 border border-line rounded-[10px] text-[13px] text-ink outline-none focus:border-primary transition-colors placeholder-muted/50 bg-white';
 
 const EMPTY_FORM = {
   id: null,
@@ -55,26 +58,26 @@ const EMPTY_SEASON = { name: '', hijriYear: '', gregorianYear: '', isActive: tru
 
 const Field = ({ label, required, hint, children }) => (
   <div>
-    <label className="block text-xs font-medium text-muted mb-1.5">
+    <label className="block text-[11.5px] font-bold text-muted mb-1.5">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
     {children}
-    {hint && <p className="text-[10px] text-muted mt-1">{hint}</p>}
+    {hint && <p className="text-[10.5px] font-medium text-muted mt-1">{hint}</p>}
   </div>
 );
 
 const SectionRule = ({ children }) => (
   <div className="pt-2 pb-0.5 flex items-center gap-2">
     <span className="h-px flex-1 bg-line" />
-    <span className="text-[10px] font-bold text-muted whitespace-nowrap">{children}</span>
+    <span className="text-[10.5px] font-bold text-muted whitespace-nowrap">{children}</span>
     <span className="h-px flex-1 bg-line" />
   </div>
 );
 
 const PhoneLink = ({ phone }) => (
   <a href={`https://wa.me/966${phone.slice(1)}`} target="_blank" rel="noreferrer"
-    className="inline-flex items-center gap-1.5 text-muted hover:text-green-600 transition-colors" dir="ltr">
-    <WhatsappLogo size={12} className="flex-shrink-0" />
+    className="inline-flex items-center gap-1.5 text-[11.5px] font-medium text-muted hover:text-green-600 transition-colors" dir="ltr">
+    <WhatsappLogo size={12} className="shrink-0" />
     {phone}
   </a>
 );
@@ -299,13 +302,13 @@ export default function AdminCenters() {
         right={
           <div className="flex items-center gap-2">
             <div className="relative">
-              <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+              <div className="absolute inset-y-0 start-3 flex items-center pointer-events-none">
                 <CalendarBlank size={14} className="text-accent-600" />
               </div>
               <select
                 value={seasonId || ''}
                 onChange={(e) => setSeasonId(e.target.value || null)}
-                className="pr-9 pl-3 py-2.5 border border-line rounded-xl text-sm font-bold text-ink bg-white outline-none focus:border-primary transition"
+                className="ps-9 pe-3 py-2.5 border border-line rounded-[10px] text-[12px] font-bold text-ink bg-white outline-none focus:border-primary transition-colors"
               >
                 {seasons.length === 0 && <option value="">لا مواسم</option>}
                 {seasons.map(s => (
@@ -318,17 +321,16 @@ export default function AdminCenters() {
             <button
               onClick={() => { setSeasonForm(EMPTY_SEASON); setSeasonError(null); setSeasonModal(true); }}
               title="إضافة موسم"
-              className="w-11 h-11 rounded-xl border border-line bg-white flex items-center justify-center text-muted hover:text-primary hover:border-primary/40 transition-colors"
+              className="w-[38px] h-[38px] rounded-[10px] border border-line bg-white flex items-center justify-center text-muted hover:text-primary hover:bg-[rgb(var(--c-bg))] transition-colors"
             >
-              <CalendarBlank size={17} />
+              <CalendarBlank size={16} />
             </button>
             <button
               onClick={openAdd}
               disabled={!seasonId}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white font-bold text-sm hover:opacity-90 disabled:opacity-40 transition shadow-[0_4px_16px_rgb(var(--c-primary)/0.35)]"
-              style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-[10px] bg-primary border border-primary text-white font-bold text-[12px] hover:opacity-90 disabled:opacity-40 transition-opacity"
             >
-              <Plus size={15} weight="bold" />
+              <Plus size={14} weight="bold" />
               <span className="hidden sm:inline">إضافة مركز</span>
             </button>
           </div>
@@ -336,67 +338,74 @@ export default function AdminCenters() {
       />
 
       {seasons.length === 0 && !loading ? (
-        <div className="bg-white rounded-2xl border border-line p-12 text-center">
-          <CalendarBlank size={38} className="mx-auto text-muted/30 mb-3" />
-          <h3 className="font-bold text-ink text-sm mb-1">ابدأ بإنشاء موسم</h3>
+        <Surface className="p-12 text-center">
+          <CalendarBlank size={30} weight="duotone" className="mx-auto text-muted/35 mb-3" />
+          <h3 className="font-bold text-ink text-[13px] mb-3">ابدأ بإنشاء موسم</h3>
           <button
             onClick={() => { setSeasonForm(EMPTY_SEASON); setSeasonModal(true); }}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-bold text-sm hover:opacity-90 transition"
-            style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[10px] bg-primary border border-primary text-white font-bold text-[12px] hover:opacity-90 transition-opacity"
           >
-            <Plus size={15} weight="bold" /> إنشاء موسم
+            <Plus size={14} weight="bold" /> إنشاء موسم
           </button>
-        </div>
+        </Surface>
       ) : (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <StatCard label="مراكز الموسم"   value={stats.total}      Icon={MapPinArea}      color={COLORS.accent600} />
-            <StatCard label="مُسندة لمتعهد"  value={stats.assigned}   Icon={Building2}       color={COLORS.success} />
-            <StatCard label="بدون متعهد"     value={stats.unassigned} Icon={LinkSimpleBreak} color={COLORS.warning} />
-            <StatCard label="إجمالي الحجاج"  value={stats.pilgrims.toLocaleString('ar-SA')} Icon={UsersThree} color={COLORS.primary} />
+            <StatTile label="مراكز الموسم"   value={stats.total}      Icon={MapPinArea}      color={COLORS.accent600} />
+            <StatTile label="مُسندة لمتعهد"  value={stats.assigned}   Icon={Building2}       color={COLORS.success} />
+            <StatTile label="بدون متعهد"     value={stats.unassigned} Icon={LinkSimpleBreak} color={COLORS.warning} />
+            <StatTile label="إجمالي الحجاج"  value={stats.pilgrims.toLocaleString('ar-SA')} Icon={UsersThree} color={COLORS.primary} />
           </div>
 
-          <section className="bg-gradient-to-br from-white via-white to-background/40 rounded-2xl border border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgb(var(--c-primary)/0.14)]">
-            <div className="p-4 border-b border-line flex items-center justify-between gap-3 flex-wrap">
-              <h2 className="text-lg font-bold text-primary">
-                {seasonLabel(season)} — {visible.length} مركز
-              </h2>
+          <Surface className="overflow-hidden">
+            <div
+              className="p-4 border-b flex items-center justify-between gap-3 flex-wrap"
+              style={{ background: tint(COLORS.accent600, 12), borderColor: tint(COLORS.accent600, 28) }}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <IconTile Icon={MapPinArea} color={COLORS.accent600} size="md" />
+                <div className="min-w-0">
+                  <p className="text-[14px] font-bold leading-tight" style={{ color: COLORS.accent600 }}>
+                    {seasonLabel(season)}
+                  </p>
+                  <p className="text-[11.5px] font-medium text-muted mt-1 tabular-nums">{visible.length} مركز</p>
+                </div>
+              </div>
               <div className="relative flex-1 min-w-[200px] max-w-xs">
-                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                  <Search size={14} className="text-muted" />
+                <div className="absolute inset-y-0 start-3 flex items-center pointer-events-none">
+                  <Search size={14} className="text-muted/60" weight="bold" />
                 </div>
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="ابحث برقم المركز أو المتعهد أو الشاخص"
-                  className={`${inputCls} pr-9`}
+                  className={`${inputCls} ps-9`}
                 />
               </div>
             </div>
 
             {listError && (
-              <div className="m-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-3 py-2.5 text-sm font-medium flex items-start gap-2">
-                <Warning size={15} className="mt-0.5 flex-shrink-0" />
+              <div className="m-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-[10px] px-3 py-2.5 text-[12px] font-medium flex items-start gap-2">
+                <Warning size={14} className="mt-0.5 shrink-0" />
                 <span className="flex-1">{listError}</span>
                 <button onClick={() => setListError(null)} className="text-amber-600 hover:text-amber-900">
-                  <X size={14} />
+                  <X size={13} />
                 </button>
               </div>
             )}
 
             <DataTable>
               <table className="w-full text-sm">
-                <thead className="text-muted text-xs border-b border-line"
-                  style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 60%)' }}>
+                <thead className="text-muted text-[11px] border-b border-line bg-[rgb(var(--c-bg))]">
                   <tr>
-                    <th className="px-4 py-3 text-right font-semibold">المركز</th>
-                    <th className="px-4 py-3 text-right font-semibold">المتعهد</th>
-                    <th className="px-4 py-3 text-right font-semibold">المنشأة</th>
-                    <th className="px-4 py-3 text-right font-semibold">الحجاج</th>
-                    <th className="px-4 py-3 text-right font-semibold">الشاخص / المربع</th>
-                    <th className="px-4 py-3 text-right font-semibold">رئيس المركز</th>
-                    <th className="px-4 py-3 text-right font-semibold">المطبخ</th>
-                    <th className="px-4 py-3 text-right font-semibold">إجراء</th>
+                    <th className="px-4 py-3 text-start font-bold">المركز</th>
+                    <th className="px-4 py-3 text-start font-bold">المتعهد</th>
+                    <th className="px-4 py-3 text-start font-bold">المنشأة</th>
+                    <th className="px-4 py-3 text-start font-bold">الحجاج</th>
+                    <th className="px-4 py-3 text-start font-bold">الشاخص / المربع</th>
+                    <th className="px-4 py-3 text-start font-bold">رئيس المركز</th>
+                    <th className="px-4 py-3 text-start font-bold">المطبخ</th>
+                    <th className="px-4 py-3 text-start font-bold">إجراء</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
@@ -406,8 +415,8 @@ export default function AdminCenters() {
                   {!loading && visible.length === 0 && (
                     <tr>
                       <td colSpan={8} className="p-10 text-center">
-                        <MapPinArea size={34} className="mx-auto text-muted/30 mb-2" />
-                        <p className="text-muted text-sm">
+                        <MapPinArea size={26} weight="duotone" className="mx-auto text-muted/35 mb-3" />
+                        <p className="text-muted text-[13px] font-semibold">
                           {seasonCenters.length === 0
                             ? `لا مراكز في ${seasonLabel(season)} بعد — أضف أول مركز.`
                             : 'لا نتائج مطابقة للبحث'}
@@ -417,45 +426,43 @@ export default function AdminCenters() {
                   )}
                   {visible.map((c) => {
                     const head = primaryByCenter[c.id];
-                    const catColor = CAT_COLOR[c.category];
+                    const catColor = CAT_COLOR[c.category] || COLORS.muted;
                     return (
-                      <tr key={c.id} className="group/row hover:bg-background transition-colors align-top">
+                      <tr key={c.id} className="group/row hover:bg-[rgb(var(--c-bg))] transition-colors align-top">
                         <td className="px-4 py-3">
                           <div className="flex items-start gap-2.5">
-                            <div className="relative flex-shrink-0 mt-0.5">
-                              <div className="absolute inset-0 rounded-xl blur-md opacity-0 group-hover/row:opacity-50 transition-opacity"
-                                style={{ background: catColor || COLORS.muted }} />
-                              <div className="relative w-8 h-8 rounded-xl flex items-center justify-center text-white text-[11px] font-black shadow-sm ring-2 ring-white"
-                                style={{ background: `linear-gradient(135deg, ${catColor || COLORS.muted}, ${(catColor || COLORS.muted)}DD)` }}>
-                                {c.category || '—'}
-                              </div>
-                            </div>
+                            <span
+                              className="w-8 h-8 rounded-[10px] border flex items-center justify-center text-[11px] font-bold shrink-0 mt-0.5"
+                              style={{ background: tint(catColor, 12), borderColor: tint(catColor, 28), color: catColor }}
+                            >
+                              {c.category || '—'}
+                            </span>
                             <div className="min-w-0">
-                              <div className="font-bold text-ink whitespace-nowrap">{c.code}</div>
+                              <div className="text-[13px] font-bold text-ink whitespace-nowrap">{c.code}</div>
                               {c.category && (
-                                <div className="text-[10px] text-muted mt-0.5">الفئة {c.category}</div>
+                                <div className="text-[10.5px] font-medium text-muted mt-0.5">الفئة {c.category}</div>
                               )}
                             </div>
                           </div>
                         </td>
 
-                        <td className="px-4 py-3 text-xs max-w-[210px]">
+                        <td className="px-4 py-3 text-[11.5px] max-w-[210px]">
                           {c.catererId ? (
-                            <span className="text-ink leading-snug">{catererName(c.catererId) || c.catererName}</span>
+                            <span className="text-ink font-medium leading-snug">{catererName(c.catererId) || c.catererName}</span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-amber-600 font-medium">
+                            <span className="inline-flex items-center gap-1 text-amber-600 font-bold">
                               <LinkSimpleBreak size={11} /> غير مُسند
                             </span>
                           )}
                         </td>
 
-                        <td className="px-4 py-3 text-xs max-w-[180px]">
+                        <td className="px-4 py-3 text-[11.5px] max-w-[180px]">
                           {c.facilityName || c.facilityLicense ? (
                             <div className="space-y-1">
-                              {c.facilityName && <div className="text-ink leading-snug">{c.facilityName}</div>}
+                              {c.facilityName && <div className="text-ink font-medium leading-snug">{c.facilityName}</div>}
                               {c.facilityLicense && (
-                                <div className="inline-flex items-center gap-1 text-muted" dir="ltr">
-                                  <Certificate size={11} className="flex-shrink-0" />
+                                <div className="inline-flex items-center gap-1 text-muted tabular-nums" dir="ltr">
+                                  <Certificate size={11} className="shrink-0" />
                                   {c.facilityLicense}
                                 </div>
                               )}
@@ -463,22 +470,22 @@ export default function AdminCenters() {
                           ) : <span className="text-muted/40">—</span>}
                         </td>
 
-                        <td className="px-4 py-3 text-xs">
+                        <td className="px-4 py-3 text-[11.5px]">
                           {c.pilgrimsCount != null || c.pilgrimsNationality ? (
                             <div className="space-y-1">
                               {c.pilgrimsCount != null && (
-                                <div className="text-ink font-bold">{Number(c.pilgrimsCount).toLocaleString('ar-SA')}</div>
+                                <div className="text-ink font-bold tabular-nums">{Number(c.pilgrimsCount).toLocaleString('ar-SA')}</div>
                               )}
                               {c.pilgrimsNationality && (
-                                <div className="text-muted">{c.pilgrimsNationality}</div>
+                                <div className="text-muted font-medium">{c.pilgrimsNationality}</div>
                               )}
                             </div>
                           ) : <span className="text-muted/40">—</span>}
                         </td>
 
-                        <td className="px-4 py-3 text-xs" dir="ltr">
+                        <td className="px-4 py-3 text-[11.5px]" dir="ltr">
                           {c.shakhisMina || c.shakhisArafat || c.murabbaMina ? (
-                            <div className="space-y-0.5 text-muted">
+                            <div className="space-y-0.5 text-muted font-medium">
                               {c.shakhisMina   && <div><span className="text-muted/60">منى </span>{c.shakhisMina}</div>}
                               {c.shakhisArafat && <div><span className="text-muted/60">عرفة </span>{c.shakhisArafat}</div>}
                               {c.murabbaMina   && <div><span className="text-muted/60">مربع </span>{c.murabbaMina}</div>}
@@ -486,11 +493,11 @@ export default function AdminCenters() {
                           ) : <span className="text-muted/40">—</span>}
                         </td>
 
-                        <td className="px-4 py-3 text-xs">
+                        <td className="px-4 py-3 text-[11.5px]">
                           {head ? (
                             <div className="space-y-1">
-                              <div className="text-ink font-medium flex items-center gap-1.5">
-                                <User size={11} className="text-muted flex-shrink-0" />
+                              <div className="text-ink font-bold flex items-center gap-1.5">
+                                <User size={11} className="text-muted/60 shrink-0" />
                                 {head.name}
                               </div>
                               {head.phone && <PhoneLink phone={head.phone} />}
@@ -503,7 +510,7 @@ export default function AdminCenters() {
                             <MapLink url={c.kitchenLocationMina}   label="منى" />
                             <MapLink url={c.kitchenLocationArafat} label="عرفة" />
                             {!c.kitchenLocationMina && !c.kitchenLocationArafat && (
-                              <span className="text-muted/40 text-xs">—</span>
+                              <span className="text-muted/40 text-[11.5px]">—</span>
                             )}
                           </div>
                         </td>
@@ -512,16 +519,18 @@ export default function AdminCenters() {
                           <div className="flex items-center gap-1.5">
                             <button
                               onClick={() => openEdit(c)}
-                              className="group/edit flex items-center gap-1 text-primary hover:text-white text-xs font-bold px-2 py-1 rounded-lg border border-primary/20 hover:bg-gradient-to-br hover:from-primary-400 hover:to-primary hover:border-transparent transition-all hover:shadow-md"
+                              className="flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-[8px] border transition-colors hover:bg-[rgb(var(--c-bg))]"
+                              style={{ background: tint(COLORS.primary, 9), borderColor: tint(COLORS.primary, 24), color: COLORS.primary }}
                             >
-                              <Pencil size={12} className="group-hover/edit:rotate-12 transition-transform" />
+                              <Pencil size={11} weight="bold" />
                               تعديل
                             </button>
                             <button
                               onClick={() => handleDelete(c)}
-                              className="group/del flex items-center gap-1 text-red-500 hover:text-white text-xs font-bold px-2 py-1 rounded-lg border border-red-200 hover:bg-red-500 hover:border-red-500 transition-all hover:shadow-md"
+                              className="flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-[8px] border transition-colors hover:bg-[rgb(var(--c-bg))]"
+                              style={{ background: tint(COLORS.error, 9), borderColor: tint(COLORS.error, 24), color: COLORS.error }}
                             >
-                              <Trash2 size={12} className="group-hover/del:rotate-6 transition-transform" />
+                              <Trash2 size={11} weight="bold" />
                               حذف
                             </button>
                           </div>
@@ -532,32 +541,29 @@ export default function AdminCenters() {
                 </tbody>
               </table>
             </DataTable>
-          </section>
+          </Surface>
         </>
       )}
 
       {/* ── Center modal ───────────────────────── */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeModal} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
-            <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-line"
-              style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 55%)' }}>
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                  style={{ background: `linear-gradient(135deg, ${COLORS.accent}, ${COLORS.accent600})` }}>
-                  {form.id ? <Pencil size={15} className="text-white" /> : <Plus size={15} className="text-white" weight="bold" />}
-                </div>
+          <div className="absolute inset-0 bg-[rgb(var(--c-ink)/0.45)] backdrop-blur-sm" onClick={closeModal} />
+          <div className="relative bg-white rounded-[18px] border border-line shadow-[0_24px_60px_-16px_rgb(var(--c-ink)/0.35)] w-full max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+            <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b"
+              style={{ background: tint(COLORS.accent600, 12), borderColor: tint(COLORS.accent600, 28) }}>
+              <div className="flex items-center gap-3">
+                <IconTile Icon={form.id ? Pencil : Plus} color={COLORS.accent600} size="md" />
                 <div>
-                  <h2 className="font-bold text-ink text-sm">
+                  <h2 className="font-bold text-[14px] leading-tight" style={{ color: COLORS.accent600 }}>
                     {form.id ? 'تعديل بيانات المركز' : 'إضافة مركز جديد'}
                   </h2>
-                  <p className="text-[10px] text-muted">موسم {seasonLabel(season)}</p>
+                  <p className="text-[11.5px] font-medium text-muted mt-1">موسم {seasonLabel(season)}</p>
                 </div>
               </div>
               <button onClick={closeModal}
-                className="w-8 h-8 rounded-xl border border-line flex items-center justify-center hover:bg-background transition-colors">
-                <X size={15} className="text-muted" />
+                className="w-8 h-8 rounded-[10px] border border-line bg-white flex items-center justify-center text-muted hover:text-ink transition-colors">
+                <X size={14} weight="bold" />
               </button>
             </div>
 
@@ -684,7 +690,7 @@ export default function AdminCenters() {
 
               <Field label="موقع المطبخ (منى)">
                 <div className="relative">
-                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                  <div className="absolute inset-y-0 start-3 flex items-center pointer-events-none">
                     <NavigationArrow size={14} className="text-accent-600" />
                   </div>
                   <input
@@ -692,14 +698,14 @@ export default function AdminCenters() {
                     onChange={(e) => setForm(p => ({ ...p, kitchenLocationMina: e.target.value }))}
                     placeholder="https://maps.google.com/..."
                     dir="ltr"
-                    className={`${inputCls} pr-9`}
+                    className={`${inputCls} pe-9`}
                   />
                 </div>
               </Field>
 
               <Field label="موقع المطبخ (عرفة)">
                 <div className="relative">
-                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                  <div className="absolute inset-y-0 start-3 flex items-center pointer-events-none">
                     <NavigationArrow size={14} className="text-accent-600" />
                   </div>
                   <input
@@ -707,7 +713,7 @@ export default function AdminCenters() {
                     onChange={(e) => setForm(p => ({ ...p, kitchenLocationArafat: e.target.value }))}
                     placeholder="https://maps.google.com/..."
                     dir="ltr"
-                    className={`${inputCls} pr-9`}
+                    className={`${inputCls} pe-9`}
                   />
                 </div>
               </Field>
@@ -717,21 +723,21 @@ export default function AdminCenters() {
               <div className="grid grid-cols-2 gap-3">
                 <Field label="الاسم">
                   <div className="relative">
-                    <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                    <div className="absolute inset-y-0 start-3 flex items-center pointer-events-none">
                       <User size={14} className="text-primary" />
                     </div>
                     <input
                       value={form.headName}
                       onChange={(e) => setForm(p => ({ ...p, headName: e.target.value }))}
                       placeholder="اسم رئيس المركز"
-                      className={`${inputCls} pr-9`}
+                      className={`${inputCls} ps-9`}
                     />
                   </div>
                 </Field>
 
                 <Field label="رقم التواصل">
                   <div className="relative">
-                    <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                    <div className="absolute inset-y-0 start-3 flex items-center pointer-events-none">
                       <Phone size={14} className="text-primary" />
                     </div>
                     <input
@@ -744,14 +750,14 @@ export default function AdminCenters() {
                       dir="ltr"
                       maxLength={10}
                       inputMode="numeric"
-                      className={`${inputCls} pr-9`}
+                      className={`${inputCls} pe-9`}
                     />
                   </div>
                 </Field>
               </div>
 
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-3 py-2 text-sm font-medium">
+                <div className="bg-red-50 border border-red-200 text-red-700 rounded-[10px] px-3 py-2 text-[12px] font-medium">
                   {error}
                 </div>
               )}
@@ -760,8 +766,7 @@ export default function AdminCenters() {
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm hover:opacity-90 disabled:opacity-60 transition"
-                  style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[10px] bg-primary border border-primary text-white font-bold text-[13px] hover:opacity-90 disabled:opacity-60 transition-opacity"
                 >
                   {saving ? (
                     <>
@@ -769,12 +774,12 @@ export default function AdminCenters() {
                       جارٍ الحفظ...
                     </>
                   ) : (
-                    <><Save size={15} /> {form.id ? 'حفظ التعديلات' : 'إضافة المركز'}</>
+                    <><Save size={14} weight="bold" /> {form.id ? 'حفظ التعديلات' : 'إضافة المركز'}</>
                   )}
                 </button>
                 <button
                   onClick={closeModal}
-                  className="px-5 py-3 rounded-xl border border-line text-muted text-sm font-medium hover:bg-background transition-colors"
+                  className="px-5 py-2.5 rounded-[10px] border border-line bg-white text-muted text-[13px] font-bold hover:bg-[rgb(var(--c-bg))] transition-colors"
                 >
                   إلغاء
                 </button>
@@ -787,20 +792,17 @@ export default function AdminCenters() {
       {/* ── Season modal ───────────────────────── */}
       {seasonModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setSeasonModal(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm" dir="rtl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-line"
-              style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 55%)' }}>
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                  style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
-                  <CalendarBlank size={15} className="text-white" />
-                </div>
-                <h2 className="font-bold text-ink text-sm">موسم جديد</h2>
+          <div className="absolute inset-0 bg-[rgb(var(--c-ink)/0.45)] backdrop-blur-sm" onClick={() => setSeasonModal(false)} />
+          <div className="relative bg-white rounded-[18px] border border-line shadow-[0_24px_60px_-16px_rgb(var(--c-ink)/0.35)] w-full max-w-sm" dir="rtl">
+            <div className="flex items-center justify-between px-6 py-4 border-b"
+              style={{ background: tint('rgb(var(--c-primary))', 12), borderColor: tint('rgb(var(--c-primary))', 28) }}>
+              <div className="flex items-center gap-3">
+                <IconTile Icon={CalendarBlank} size="md" />
+                <h2 className="font-bold text-primary text-[14px]">موسم جديد</h2>
               </div>
               <button onClick={() => setSeasonModal(false)}
-                className="w-8 h-8 rounded-xl border border-line flex items-center justify-center hover:bg-background transition-colors">
-                <X size={15} className="text-muted" />
+                className="w-8 h-8 rounded-[10px] border border-line bg-white flex items-center justify-center text-muted hover:text-ink transition-colors">
+                <X size={14} weight="bold" />
               </button>
             </div>
 
@@ -839,23 +841,23 @@ export default function AdminCenters() {
                 </Field>
               </div>
 
-              <label className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-line cursor-pointer hover:bg-background transition-colors">
+              <label className="flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] border border-line cursor-pointer hover:bg-[rgb(var(--c-bg))] transition-colors">
                 <input
                   type="checkbox"
                   checked={seasonForm.isActive}
                   onChange={(e) => setSeasonForm(p => ({ ...p, isActive: e.target.checked }))}
                   className="accent-primary w-4 h-4"
                 />
-                <span className="text-sm text-ink font-medium">اجعله الموسم النشط</span>
+                <span className="text-[13px] text-ink font-bold">اجعله الموسم النشط</span>
               </label>
               {seasonForm.isActive && seasons.some(s => s.isActive) && (
-                <p className="text-[10px] text-muted -mt-1">
+                <p className="text-[10.5px] font-medium text-muted -mt-1">
                   سيُلغى تنشيط «{seasons.find(s => s.isActive)?.name}»، موسم نشط واحد فقط.
                 </p>
               )}
 
               {seasonError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-3 py-2 text-sm font-medium">
+                <div className="bg-red-50 border border-red-200 text-red-700 rounded-[10px] px-3 py-2 text-[12px] font-medium">
                   {seasonError}
                 </div>
               )}
@@ -864,8 +866,7 @@ export default function AdminCenters() {
                 <button
                   onClick={handleSeasonSave}
                   disabled={seasonSaving}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm hover:opacity-90 disabled:opacity-60 transition"
-                  style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[10px] bg-primary border border-primary text-white font-bold text-[13px] hover:opacity-90 disabled:opacity-60 transition-opacity"
                 >
                   {seasonSaving ? (
                     <>
@@ -873,12 +874,12 @@ export default function AdminCenters() {
                       جارٍ الإنشاء...
                     </>
                   ) : (
-                    <><Save size={15} /> إنشاء</>
+                    <><Save size={14} weight="bold" /> إنشاء</>
                   )}
                 </button>
                 <button
                   onClick={() => setSeasonModal(false)}
-                  className="px-5 py-3 rounded-xl border border-line text-muted text-sm font-medium hover:bg-background transition-colors"
+                  className="px-5 py-2.5 rounded-[10px] border border-line bg-white text-muted text-[13px] font-bold hover:bg-[rgb(var(--c-bg))] transition-colors"
                 >
                   إلغاء
                 </button>
@@ -898,29 +899,11 @@ function MapLink({ url, label }) {
       href={url}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg bg-accent/10 text-accent-600 hover:bg-accent/20 transition-colors whitespace-nowrap"
+      className="inline-flex items-center gap-1 text-[10.5px] font-bold px-2 py-1 rounded-[8px] border transition-colors whitespace-nowrap"
+      style={{ background: tint(COLORS.accent600, 10), borderColor: tint(COLORS.accent600, 24), color: COLORS.accent600 }}
     >
       <NavigationArrow size={11} weight="bold" />
       {label}
     </a>
-  );
-}
-
-function StatCard({ label, value, Icon, color }) {
-  return (
-    <div className="group/stat bg-white rounded-2xl border border-line px-4 py-3.5 shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] hover:shadow-[0_6px_24px_rgb(var(--c-primary)/0.14)] transition-shadow duration-300 flex items-center gap-3">
-      <div className="relative flex-shrink-0">
-        <div className="absolute inset-0 rounded-xl blur-lg opacity-40 group-hover/stat:opacity-70 transition-opacity"
-          style={{ background: color }} />
-        <div className="relative w-10 h-10 rounded-xl flex items-center justify-center group-hover/stat:scale-110 transition-transform duration-300"
-          style={{ background: `linear-gradient(135deg, ${color}, ${color}DD)` }}>
-          <Icon size={18} className="text-white" weight="bold" />
-        </div>
-      </div>
-      <div className="min-w-0">
-        <p className="text-2xl font-black text-ink leading-none">{value}</p>
-        <p className="text-[11px] text-muted mt-1 truncate">{label}</p>
-      </div>
-    </div>
   );
 }

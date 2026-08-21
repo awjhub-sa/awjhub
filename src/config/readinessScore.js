@@ -34,3 +34,16 @@ export function computeReadinessTotals(criteria, answers) {
     percentage,
   };
 }
+
+/* Answers migrated from the old system stored a detail as { detail: '3' }
+   rather than the plain '3' every current writer saves. React throws on an
+   object child, so a single stray row blanked the whole evaluation page. */
+export function readDetails(answers) {
+  const raw = answers?.__details;
+  if (!raw) return {};
+  const out = {};
+  for (const [k, v] of Object.entries(raw)) {
+    out[k] = v && typeof v === 'object' ? (v.detail ?? '') : v;
+  }
+  return out;
+}

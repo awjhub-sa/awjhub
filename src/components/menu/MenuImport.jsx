@@ -27,6 +27,12 @@ import { TEMPLATE_HEAD, templateRows, downloadWordTemplate } from '../../lib/men
 
 const AR = (n) => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
 
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
+
+const PRIMARY = 'rgb(var(--c-primary))';
+const ALERT   = '#B4674E';
+const NOTE    = '#4E7CB0';
+
 export default function MenuImport({
   open, onClose, natLabel, currentDay, onApplySheet, onApplyImage,
 }) {
@@ -111,23 +117,24 @@ export default function MenuImport({
     <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center" dir="rtl">
       <button className="absolute inset-0 bg-ink/45 backdrop-blur-[2px]" onClick={close} aria-label="إغلاق" />
 
-      <div className="relative w-full sm:max-w-3xl max-h-[92vh] sm:max-h-[88vh] bg-background
-                      rounded-t-3xl sm:rounded-3xl overflow-hidden flex flex-col
-                      shadow-[0_20px_70px_rgb(var(--c-ink)/0.35)] animate-[miSlide_.22s_ease-out]">
+      <div className="relative w-full sm:max-w-3xl max-h-[92vh] sm:max-h-[88vh] bg-[rgb(var(--c-bg))]
+                      rounded-t-[18px] sm:rounded-[18px] overflow-hidden flex flex-col
+                      shadow-[0_24px_60px_-16px_rgb(var(--c-ink)/0.35)] animate-[miSlide_.22s_ease-out]">
 
-        <header className="px-4 sm:px-6 py-4 bg-white border-b border-line flex items-center gap-3 flex-shrink-0">
-          <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}>
-            <UploadSimple size={16} weight="bold" className="text-white" />
+        <header className="px-4 sm:px-6 py-4 border-b flex items-center gap-3 flex-shrink-0"
+          style={{ background: tint(PRIMARY, 12), borderColor: tint(PRIMARY, 28) }}>
+          <span className="w-10 h-10 rounded-[10px] flex items-center justify-center flex-shrink-0 border"
+            style={{ background: tint(PRIMARY, 9), borderColor: tint(PRIMARY, 22) }}>
+            <UploadSimple size={18} weight="duotone" style={{ color: PRIMARY }} />
           </span>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-black text-ink">استيراد منيو</p>
-            <p className="text-[10.5px] font-bold text-muted mt-0.5 truncate">{natLabel}</p>
+            <p className="text-[14px] font-bold text-primary leading-tight">استيراد منيو</p>
+            <p className="text-[11.5px] font-medium text-muted mt-1 truncate">{natLabel}</p>
           </div>
           <button onClick={close}
-            className="w-8 h-8 rounded-lg border border-line bg-white hover:bg-background
-                       flex items-center justify-center flex-shrink-0">
-            <X size={15} weight="bold" className="text-muted" />
+            className="w-8 h-8 rounded-[10px] border border-line bg-white text-muted hover:text-ink
+                       flex items-center justify-center flex-shrink-0 transition-colors">
+            <X size={15} weight="bold" />
           </button>
         </header>
 
@@ -145,9 +152,9 @@ export default function MenuImport({
                   on ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-ink'
                 }`}>
                 <t.Icon size={15} weight="bold" />
-                <span className="text-[12px] font-black">{t.label}</span>
-                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                  on ? 'bg-primary/10' : 'bg-background'
+                <span className="text-[12.5px] font-bold">{t.label}</span>
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                  on ? 'bg-primary/10' : 'bg-[rgb(var(--c-bg))]'
                 }`}>{t.hint}</span>
               </button>
             );
@@ -160,13 +167,13 @@ export default function MenuImport({
           {!parsed && !loose && (
             <>
               <button type="button" onClick={() => inputRef.current?.click()} disabled={busy}
-                className="w-full rounded-2xl border-2 border-dashed border-line bg-white
+                className="w-full rounded-[14px] border border-dashed border-line bg-white
                            py-10 flex flex-col items-center gap-2 hover:border-primary/50 transition-colors
                            disabled:opacity-60">
                 {busy ? (
                   <>
                     <Spinner size={26} weight="bold" className="text-primary animate-spin" />
-                    <p className="text-[12px] font-black text-ink">
+                    <p className="text-[12.5px] font-bold text-ink">
                       {tab === 'pdf' && progress > 0
                         ? `جارٍ قراءة الملف… ${AR(progress)}٪`
                         : 'جارٍ قراءة الملف…'}
@@ -174,11 +181,11 @@ export default function MenuImport({
                   </>
                 ) : (
                   <>
-                    <UploadSimple size={26} weight="bold" className="text-muted/50" />
-                    <p className="text-[12.5px] font-black text-ink">
+                    <UploadSimple size={26} weight="duotone" className="text-muted/40" />
+                    <p className="text-[13px] font-bold text-ink">
                       {tab === 'excel' ? 'اختر ملف إكسل أو CSV' : 'اختر ملف PDF'}
                     </p>
-                    <p className="text-[10.5px] font-bold text-muted">
+                    <p className="text-[11px] font-medium text-muted">
                       {tab === 'excel'
                         ? 'يحتاج الملف عموداً للوجبة وأعمدة للأصناف'
                         : 'ملف نصّي — لا يُقرأ الـ PDF الممسوح ضوئياً'}
@@ -194,37 +201,37 @@ export default function MenuImport({
                   screen simply sat there after an upload, which reads as the
                   button being broken rather than the file being unreadable. */}
               {err && (
-                <div className="rounded-xl border p-3 flex gap-2"
-                  style={{ borderColor: '#EBCFC3', background: 'color-mix(in srgb, #B4674E 8%, #fff)' }}>
-                  <WarningCircle size={15} weight="bold" style={{ color: '#B4674E' }}
+                <div className="rounded-[11px] border p-3 flex gap-2"
+                  style={{ background: tint(ALERT, 12), borderColor: tint(ALERT, 28) }}>
+                  <WarningCircle size={15} weight="duotone" style={{ color: ALERT }}
                     className="flex-shrink-0 mt-0.5" />
                   <div className="min-w-0">
-                    <p className="text-[11.5px] font-black text-ink">تعذّرت قراءة الملف</p>
-                    <p className="text-[11px] text-ink/85 leading-relaxed mt-0.5">{err}</p>
+                    <p className="text-[12px] font-bold" style={{ color: ALERT }}>تعذّرت قراءة الملف</p>
+                    <p className="text-[11.5px] font-medium text-ink/80 leading-relaxed mt-1">{err}</p>
                   </div>
                 </div>
               )}
 
               {tab === 'excel' ? (
                 <button type="button" onClick={downloadExcelTemplate}
-                  className="w-full h-9 rounded-xl border border-line bg-white text-[11.5px] font-bold text-primary
-                             flex items-center justify-center gap-1.5 hover:bg-primary/5">
+                  className="w-full h-9 rounded-[10px] border border-line bg-white text-[12px] font-bold text-primary
+                             flex items-center justify-center gap-1.5 hover:bg-primary/5 transition-colors">
                   <DownloadSimple size={13} weight="bold" />
                   تنزيل قالب جاهز
                 </button>
               ) : (
                 /* Said plainly, before the upload rather than after the fact. */
-                <div className="rounded-xl border p-3 flex gap-2"
-                  style={{ borderColor: '#C4D8ED', background: 'color-mix(in srgb, #4E7CB0 7%, #fff)' }}>
-                  <WarningCircle size={15} weight="bold" style={{ color: '#4E7CB0' }} className="flex-shrink-0 mt-0.5" />
+                <div className="rounded-[11px] border p-3 flex gap-2"
+                  style={{ background: tint(NOTE, 12), borderColor: tint(NOTE, 28) }}>
+                  <WarningCircle size={15} weight="duotone" style={{ color: NOTE }} className="flex-shrink-0 mt-0.5" />
                 </div>
               )}
 
               {tab === 'pdf' && (
                 <button type="button" onClick={() => downloadWordTemplate(natLabel)}
-                  className="w-full rounded-xl border border-line bg-white px-3 py-2.5 text-right
+                  className="w-full rounded-[10px] border border-line bg-white px-3 py-2.5 text-start
                              hover:bg-primary/5 transition-colors">
-                  <span className="flex items-center gap-1.5 text-[11.5px] font-bold text-primary">
+                  <span className="flex items-center gap-1.5 text-[12px] font-bold text-primary">
                     <DownloadSimple size={13} weight="bold" />
                     تنزيل قالب Word
                   </span>
@@ -237,27 +244,29 @@ export default function MenuImport({
           {parsed && (
             <>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-black px-2.5 py-1 rounded-lg
+                <span className="inline-flex items-center gap-1.5 text-[11.5px] font-bold px-2.5 py-1 rounded-[10px]
                                  bg-white border border-line text-ink">
                   <CheckCircle size={12} weight="fill" className="text-success" />
                   قُرئ {AR(parsed.rows.length)} صف من «{parsed.sheet}»
                 </span>
-                <span className="text-[10.5px] font-bold text-muted truncate">{file?.name}</span>
+                <span className="text-[11px] font-medium text-muted truncate">{file?.name}</span>
                 <button onClick={reset}
-                  className="mr-auto text-[11px] font-bold text-primary hover:underline">
+                  className="ms-auto text-[11.5px] font-bold text-primary hover:underline">
                   ملف آخر
                 </button>
               </div>
 
               {parsed.warnings.map((w, i) => (
-                <p key={i} className="text-[10.5px] font-bold text-ink flex items-center gap-1.5 px-1">
-                  <WarningCircle size={12} weight="bold" style={{ color: '#B4674E' }} />
+                <p key={i} className="text-[11px] font-medium flex items-center gap-1.5 px-1" style={{ color: ALERT }}>
+                  <WarningCircle size={12} weight="bold" />
                   {w}
                 </p>
               ))}
 
-              <div className="bg-white rounded-2xl border border-line overflow-hidden">
-                <div className="flex items-center gap-2 px-4 py-2.5 border-b border-line">
+              <div className="bg-white rounded-[14px] border border-line overflow-hidden
+                              shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)]">
+                <div className="flex items-center gap-2 px-4 py-2.5 border-b"
+                  style={{ background: tint(PRIMARY, 12), borderColor: tint(PRIMARY, 28) }}>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox"
                       checked={picked.size === parsed.rows.length}
@@ -265,9 +274,9 @@ export default function MenuImport({
                         ? new Set(parsed.rows.map((_, i) => i))
                         : new Set())}
                       className="w-3.5 h-3.5 accent-primary" />
-                    <span className="text-[11px] font-black text-ink">تحديد الكل</span>
+                    <span className="text-[11.5px] font-bold text-primary">تحديد الكل</span>
                   </label>
-                  <span className="mr-auto text-[10.5px] font-bold text-muted">
+                  <span className="ms-auto text-[11px] font-medium text-muted">
                     {AR(picked.size)} من {AR(parsed.rows.length)} سيُحفظ
                   </span>
                 </div>
@@ -293,31 +302,31 @@ export default function MenuImport({
                               to Excel to add one. */}
                           <select value={day}
                             onChange={e => setDayFix(f => ({ ...f, [i]: e.target.value }))}
-                            className="h-7 px-1.5 rounded-lg border border-line bg-background text-[11px] font-black
+                            className="h-7 px-1.5 rounded-[10px] border border-line bg-[rgb(var(--c-bg))] text-[11px] font-bold
                                        text-ink focus:outline-none focus:border-primary/50">
                             {HAJJ_DAYS.map(d => (
                               <option key={d.value} value={d.value}>{d.dayAr}</option>
                             ))}
                           </select>
 
-                          <span className="text-[11.5px] font-black text-ink flex-shrink-0">
+                          <span className="text-[12px] font-bold text-ink flex-shrink-0">
                             {MEAL_LABEL[row.meal]}
                           </span>
                           {row.location && (
-                            <span className="text-[10px] font-bold text-muted">{row.location}</span>
+                            <span className="text-[10.5px] font-medium text-muted">{row.location}</span>
                           )}
-                          <span className="mr-auto text-[10px] font-black tabular-nums text-muted flex-shrink-0">
+                          <span className="ms-auto text-[10.5px] font-bold tabular-nums text-muted flex-shrink-0">
                             {AR(count)} صنف
                           </span>
                         </div>
 
-                        <div className="flex flex-wrap gap-1 mt-1.5 pr-7">
+                        <div className="flex flex-wrap gap-1 mt-1.5 ps-7">
                           {CATEGORY_KEYS.flatMap(k =>
                             (row[k] || []).map((dish, j) => (
                               <span key={`${k}-${j}`}
-                                className="text-[10px] font-bold px-1.5 py-0.5 rounded-md"
+                                className="text-[10.5px] font-bold px-1.5 py-[3px] rounded-md leading-none"
                                 style={{
-                                  background: `color-mix(in srgb, ${CATEGORY_META[k].color} 10%, #fff)`,
+                                  background: tint(CATEGORY_META[k].color, 11),
                                   color: CATEGORY_META[k].color,
                                 }}>
                                 {dish}
@@ -337,24 +346,25 @@ export default function MenuImport({
           {loose && (
             <>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-black px-2.5 py-1 rounded-lg
+                <span className="inline-flex items-center gap-1.5 text-[11.5px] font-bold px-2.5 py-1 rounded-[10px]
                                  bg-white border border-line text-ink">
                   {AR(loose.lines.length)} سطر مقروء
                 </span>
-                <span className="text-[10.5px] font-bold text-muted truncate">{file?.name}</span>
-                <button onClick={reset} className="mr-auto text-[11px] font-bold text-primary hover:underline">
+                <span className="text-[11px] font-medium text-muted truncate">{file?.name}</span>
+                <button onClick={reset} className="ms-auto text-[11.5px] font-bold text-primary hover:underline">
                   ملف آخر
                 </button>
               </div>
 
-              <div className="rounded-xl border p-3 flex gap-2"
-                style={{ borderColor: '#EBCFC3', background: 'color-mix(in srgb, #B4674E 7%, #fff)' }}>
-                <WarningCircle size={15} weight="bold" style={{ color: '#B4674E' }} className="flex-shrink-0 mt-0.5" />
+              <div className="rounded-[11px] border p-3 flex gap-2"
+                style={{ background: tint(ALERT, 12), borderColor: tint(ALERT, 28) }}>
+                <WarningCircle size={15} weight="duotone" style={{ color: ALERT }} className="flex-shrink-0 mt-0.5" />
               </div>
 
-              <div className="bg-white rounded-2xl border border-line p-3 max-h-[38vh] overflow-y-auto space-y-1">
+              <div className="bg-white rounded-[14px] border border-line p-3 max-h-[38vh] overflow-y-auto space-y-1
+                              shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)]">
                 {loose.lines.map((l, i) => (
-                  <p key={i} className="text-[11.5px] text-ink bg-background rounded-lg px-2.5 py-1.5 border border-line/60">
+                  <p key={i} className="text-[11.5px] text-ink bg-[rgb(var(--c-bg))] rounded-[10px] px-2.5 py-1.5 border border-line">
                     {l}
                   </p>
                 ))}
@@ -363,19 +373,16 @@ export default function MenuImport({
               {/* Loose text does not say which sitting it is for, so it is
                   asked rather than assumed — landing every file on breakfast
                   would silently be wrong two times in three. */}
-              <div className="bg-white rounded-2xl border border-line p-3">
-                <p className="text-[10px] font-black text-muted/70 tracking-widest mb-2">هذه السطور تخصّ وجبة</p>
+              <div className="bg-white rounded-[14px] border border-line p-3 shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)]">
+                <p className="text-[10px] font-bold text-muted/70 tracking-widest mb-2">هذه السطور تخصّ وجبة</p>
                 <div className="grid grid-cols-3 gap-2">
                   {MEAL_KEYS.map(k => {
                     const on = targetMeal === k;
                     return (
                       <button key={k} type="button" onClick={() => setTargetMeal(k)}
-                        className={`py-2 rounded-xl border text-[12px] font-black transition-all ${
-                          on ? 'text-white border-transparent' : 'bg-white border-line text-ink hover:border-primary/40'
-                        }`}
-                        style={on
-                          ? { background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }
-                          : undefined}>
+                        className={`py-2 rounded-[11px] border text-[12.5px] font-bold transition-colors ${
+                          on ? 'text-white bg-primary border-primary' : 'bg-white border-line text-ink hover:border-primary/40'
+                        }`}>
                         {MEAL_LABEL[k]}
                       </button>
                     );
@@ -389,25 +396,23 @@ export default function MenuImport({
 
         {(parsed || loose) && (
           <footer className="px-4 sm:px-6 py-3 bg-white border-t border-line flex items-center gap-2 flex-shrink-0">
-            {err && <p className="text-[11px] font-bold text-error flex-1 truncate">{err}</p>}
-            <div className="mr-auto flex items-center gap-2">
+            {err && <p className="text-[11.5px] font-bold text-error flex-1 truncate">{err}</p>}
+            <div className="ms-auto flex items-center gap-2">
               <button type="button" onClick={close} disabled={busy}
-                className="h-9 px-4 rounded-lg border border-line bg-white text-[12px] font-bold text-muted
-                           hover:text-ink disabled:opacity-40">
+                className="h-9 px-4 rounded-[10px] border border-line bg-white text-[12.5px] font-bold text-muted
+                           hover:text-ink disabled:opacity-40 transition-colors">
                 إلغاء
               </button>
               {parsed ? (
                 <button type="button" onClick={apply} disabled={busy || picked.size === 0}
-                  className="h-9 px-5 rounded-lg text-white text-[12px] font-black flex items-center gap-1.5
-                             disabled:opacity-50 shadow-[0_3px_12px_rgb(var(--c-primary)/0.3)]"
-                  style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}>
+                  className="h-9 px-5 rounded-[10px] bg-primary text-white text-[12.5px] font-bold flex items-center gap-1.5
+                             disabled:opacity-50 hover:brightness-110 transition-all">
                   {busy ? 'جارٍ الحفظ…' : `حفظ ${AR(picked.size)} وجبة`}
                 </button>
               ) : (
                 <button type="button" onClick={() => { onApplyImage(loose.lines, targetMeal); close(); }}
-                  className="h-9 px-5 rounded-lg text-white text-[12px] font-black flex items-center gap-1.5
-                             shadow-[0_3px_12px_rgb(var(--c-primary)/0.3)]"
-                  style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}>
+                  className="h-9 px-5 rounded-[10px] bg-primary text-white text-[12.5px] font-bold flex items-center gap-1.5
+                             hover:brightness-110 transition-all">
                   متابعة للمحرّر
                   <ArrowRight size={14} weight="bold" />
                 </button>

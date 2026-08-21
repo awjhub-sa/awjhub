@@ -21,6 +21,7 @@ import { db, serverTimestamp } from '../../lib/db.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { CENTERS, getCaterer } from '../../config/centers.js';
 import DataTable from '../../components/DataTable.jsx';
+import { IconTile } from '../../components/ui/index.jsx';
 import {
   Users,
   Plus,
@@ -35,9 +36,11 @@ import {
   MagnifyingGlass as Search,
 } from '@phosphor-icons/react';
 
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
+
 const ROLE_META = {
-  observer:   { Icon: Eye,         label: 'مراقب', gradient: 'from-line to-primary-400' },
-  supervisor: { Icon: ShieldCheck, label: 'مشرف',  gradient: 'from-primary to-[rgb(var(--c-primary-700))]' },
+  observer:   { Icon: Eye,         label: 'مراقب', color: '#4E7CB0' },
+  supervisor: { Icon: ShieldCheck, label: 'مشرف',  color: 'rgb(var(--c-primary))' },
 };
 const MAX_BULK = 10;
 
@@ -68,11 +71,11 @@ const PAGE = {
 const AR = (n) => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
 
 const inputCls =
-  'w-full px-4 py-2.5 border border-line rounded-xl text-sm text-ink outline-none focus:border-primary transition placeholder-muted/40 bg-white';
+  'w-full px-3.5 py-2.5 border border-line rounded-[10px] text-[13px] font-medium text-ink outline-none focus:border-primary transition-colors placeholder:text-muted/50 bg-white';
 
 const Field = ({ label, required, children }) => (
   <div>
-    <label className="block text-xs font-medium text-muted mb-1.5">
+    <label className="block text-[11.5px] font-bold text-muted mb-1.5">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
     {children}
@@ -89,7 +92,7 @@ function MultiCenterSelect({ selected, onChange }) {
       <button
         type="button"
         onClick={() => setOpen((p) => !p)}
-        className="w-full px-4 py-2.5 border border-line rounded-xl text-sm text-right flex items-center justify-between focus:border-primary outline-none transition bg-white"
+        className="w-full px-3.5 py-2.5 border border-line rounded-[10px] text-[13px] font-medium text-start flex items-center justify-between focus:border-primary outline-none transition-colors bg-white"
       >
         <span className={selected.length ? 'text-ink' : 'text-muted/50'}>
           {selected.length ? selected.join(' - ') : 'اختر مراكز الخدمة'}
@@ -100,11 +103,11 @@ function MultiCenterSelect({ selected, onChange }) {
         />
       </button>
       {open && (
-        <div className="absolute z-30 top-full right-0 left-0 mt-1 bg-white border border-line rounded-xl shadow-lg max-h-72 overflow-y-auto">
+        <div className="absolute z-30 top-full start-0 end-0 mt-1 bg-white border border-line rounded-[12px] shadow-[0_12px_32px_-12px_rgb(var(--c-ink)/0.28)] max-h-72 overflow-y-auto">
           {CENTERS.map((c) => (
             <label
               key={c.id}
-              className="flex items-center gap-3 px-4 py-2.5 hover:bg-background cursor-pointer text-sm"
+              className="flex items-center gap-3 px-4 py-2.5 hover:bg-[rgb(var(--c-bg))] cursor-pointer text-[13px]"
             >
               <input
                 type="checkbox"
@@ -113,8 +116,8 @@ function MultiCenterSelect({ selected, onChange }) {
                 className="accent-primary w-4 h-4"
               />
               <div className="min-w-0">
-                <span className="text-ink font-medium">{c.id}</span>
-                <span className="text-muted text-xs block truncate">{c.caterer}</span>
+                <span className="text-ink font-semibold">{c.id}</span>
+                <span className="text-muted text-[11px] block truncate">{c.caterer}</span>
               </div>
             </label>
           ))}
@@ -143,7 +146,12 @@ function CentersCell({ user }) {
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-br from-background to-white border border-line hover:border-primary hover:shadow-sm font-bold text-primary tabular-nums transition-all"
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[10px] border text-[11px] font-bold tabular-nums transition-colors"
+        style={{
+          background: tint('rgb(var(--c-primary))', 9),
+          borderColor: tint('rgb(var(--c-primary))', 22),
+          color: 'rgb(var(--c-primary))',
+        }}
       >
         <ChevronDown size={11} weight="bold"
           className={`transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -153,7 +161,7 @@ function CentersCell({ user }) {
         <div className="flex flex-wrap gap-1 max-w-xs">
           {centers.map(c => (
             <span key={c}
-              className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-md bg-white border border-line text-ink">
+              className="inline-flex items-center text-[10.5px] font-bold px-2 py-0.5 rounded-md bg-white border border-line text-ink">
               {c}
             </span>
           ))}
@@ -501,14 +509,14 @@ export default function UsersPage({ role }) {
 
       {/* Main grid */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-        <section className="bg-gradient-to-br from-white via-white to-background/40 rounded-2xl border border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgb(var(--c-primary)/0.14)] lg:col-span-2 h-fit relative">
-          <div className="bg-background p-1 m-3 rounded-xl flex">
+        <section className="bg-white rounded-[14px] border border-line shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] transition-shadow duration-200 hover:shadow-[0_6px_20px_-6px_rgb(var(--c-ink)/0.16)] lg:col-span-2 h-fit relative">
+          <div className="bg-[rgb(var(--c-bg))] border border-line p-1 m-3 rounded-[11px] flex">
             <button
               type="button"
               onClick={() => setMode('single')}
-              className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
+              className={`flex-1 py-2 rounded-[9px] text-[12.5px] font-bold transition-colors ${
                 mode === 'single'
-                  ? 'bg-white text-primary shadow-sm'
+                  ? 'bg-white text-primary shadow-[0_1px_2px_rgb(var(--c-ink)/0.06)]'
                   : 'text-muted hover:text-ink'
               }`}
             >
@@ -517,9 +525,9 @@ export default function UsersPage({ role }) {
             <button
               type="button"
               onClick={() => setMode('bulk')}
-              className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
+              className={`flex-1 py-2 rounded-[9px] text-[12.5px] font-bold transition-colors ${
                 mode === 'bulk'
-                  ? 'bg-white text-primary shadow-sm'
+                  ? 'bg-white text-primary shadow-[0_1px_2px_rgb(var(--c-ink)/0.06)]'
                   : 'text-muted hover:text-ink'
               }`}
             >
@@ -638,12 +646,12 @@ export default function UsersPage({ role }) {
               )}
 
               {singleError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-3 py-2 text-sm font-medium">
+                <div className="bg-red-50 border border-red-200 text-red-700 rounded-[10px] px-3 py-2 text-[12.5px] font-semibold">
                   {singleError}
                 </div>
               )}
               {singleSuccess && (
-                <div className="bg-green-50 border border-green-200 text-green-700 rounded-xl px-3 py-2 text-sm font-medium">
+                <div className="bg-green-50 border border-green-200 text-green-700 rounded-[10px] px-3 py-2 text-[12.5px] font-semibold">
                   {singleSuccess}
                 </div>
               )}
@@ -651,8 +659,7 @@ export default function UsersPage({ role }) {
               <button
                 type="submit"
                 disabled={singleSaving}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm hover:opacity-90 disabled:opacity-60 transition shadow-[0_4px_16px_rgb(var(--c-primary)/0.35)]"
-                style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-[10px] bg-primary border border-primary text-white font-bold text-[13px] hover:opacity-90 disabled:opacity-60 transition-opacity"
               >
                 {singleSaving ? (
                   <>
@@ -668,18 +675,18 @@ export default function UsersPage({ role }) {
             </form>
           ) : (
             <form onSubmit={handleBulkAdd} className="p-5 pt-2 space-y-3">
-              <div className="space-y-2 max-h-[460px] overflow-y-auto pr-1">
+              <div className="space-y-2 max-h-[460px] overflow-y-auto pe-1">
                 {rows.map((row, i) => (
                   <div
                     key={i}
-                    className="border border-line rounded-xl p-3 bg-background/40 space-y-2"
+                    className="border border-line rounded-[11px] p-3 bg-[rgb(var(--c-bg))] space-y-2"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-muted">المستخدم {i + 1}</span>
+                      <span className="text-[11.5px] font-bold text-muted">المستخدم {i + 1}</span>
                       <button
                         type="button"
                         onClick={() => removeRow(i)}
-                        className="text-red-500 hover:bg-red-50 px-2 py-0.5 rounded text-xs font-semibold"
+                        className="text-red-600 hover:bg-red-50 px-2 py-0.5 rounded-md text-[11px] font-bold transition-colors"
                       >
                         × إزالة
                       </button>
@@ -688,14 +695,14 @@ export default function UsersPage({ role }) {
                       value={row.nameAr}
                       onChange={(e) => updateRow(i, { nameAr: e.target.value })}
                       placeholder="الاسم (عربي)"
-                      className="w-full border border-line rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-primary"
+                      className="w-full border border-line rounded-[9px] px-2.5 py-1.5 text-[12.5px] bg-white focus:outline-none focus:border-primary transition-colors"
                     />
                     <input
                       value={row.nameEn}
                       onChange={(e) => updateRow(i, { nameEn: e.target.value })}
                       placeholder="الاسم (إنجليزي، اختياري)"
                       dir="ltr"
-                      className="w-full border border-line rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-primary"
+                      className="w-full border border-line rounded-[9px] px-2.5 py-1.5 text-[12.5px] bg-white focus:outline-none focus:border-primary transition-colors"
                     />
                     <div className="grid grid-cols-2 gap-1.5">
                       <input
@@ -708,7 +715,7 @@ export default function UsersPage({ role }) {
                         dir="ltr"
                         maxLength={10}
                         inputMode="numeric"
-                        className="w-full border border-line rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-primary"
+                        className="w-full border border-line rounded-[9px] px-2.5 py-1.5 text-[12.5px] bg-white focus:outline-none focus:border-primary transition-colors"
                       />
                       <input
                         value={row.phone}
@@ -720,7 +727,7 @@ export default function UsersPage({ role }) {
                         dir="ltr"
                         maxLength={10}
                         inputMode="numeric"
-                        className="w-full border border-line rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-primary"
+                        className="w-full border border-line rounded-[9px] px-2.5 py-1.5 text-[12.5px] bg-white focus:outline-none focus:border-primary transition-colors"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-1.5">
@@ -728,13 +735,13 @@ export default function UsersPage({ role }) {
                         value={row.roleCode}
                         onChange={(e) => updateRow(i, { roleCode: e.target.value })}
                         placeholder={row.role === 'observer' ? 'رمز المراقب' : 'رمز المشرف'}
-                        className="w-full border border-line rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-primary"
+                        className="w-full border border-line rounded-[9px] px-2.5 py-1.5 text-[12.5px] bg-white focus:outline-none focus:border-primary transition-colors"
                       />
                       <input
                         value={row.bravoCode}
                         onChange={(e) => updateRow(i, { bravoCode: e.target.value })}
                         placeholder="رمز البرافو"
-                        className="w-full border border-line rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-primary"
+                        className="w-full border border-line rounded-[9px] px-2.5 py-1.5 text-[12.5px] bg-white focus:outline-none focus:border-primary transition-colors"
                       />
                     </div>
                     {row.role === 'observer' ? (
@@ -742,7 +749,7 @@ export default function UsersPage({ role }) {
                         <select
                           value={row.center}
                           onChange={(e) => updateRow(i, { center: e.target.value })}
-                          className="w-full border border-line rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-primary"
+                          className="w-full border border-line rounded-[9px] px-2.5 py-1.5 text-[12.5px] bg-white focus:outline-none focus:border-primary transition-colors"
                         >
                           <option value="">-- اختر مركز الخدمة --</option>
                           {CENTERS.map((c) => (
@@ -754,7 +761,7 @@ export default function UsersPage({ role }) {
                         <select
                           value={row.supervisorId}
                           onChange={(e) => updateRow(i, { supervisorId: e.target.value })}
-                          className="w-full border border-line rounded-md px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-primary"
+                          className="w-full border border-line rounded-[9px] px-2.5 py-1.5 text-[12.5px] bg-white focus:outline-none focus:border-primary transition-colors"
                         >
                           <option value="">-- اختر المشرف المسؤول --</option>
                           {supervisors.map((s) => (
@@ -777,13 +784,13 @@ export default function UsersPage({ role }) {
                 type="button"
                 onClick={addRow}
                 disabled={rows.length >= MAX_BULK}
-                className="w-full border-2 border-dashed border-line text-muted hover:border-primary hover:text-primary py-2 rounded-xl text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed transition"
+                className="w-full border border-dashed border-line text-muted hover:border-primary hover:text-primary py-2 rounded-[10px] text-[12.5px] font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <Plus size={14} className="inline mb-0.5" /> إضافة صف ({rows.length}/{MAX_BULK})
               </button>
 
               {bulkError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-3 py-2 text-sm font-medium">
+                <div className="bg-red-50 border border-red-200 text-red-700 rounded-[10px] px-3 py-2 text-[12.5px] font-semibold">
                   {bulkError}
                 </div>
               )}
@@ -791,8 +798,7 @@ export default function UsersPage({ role }) {
               <button
                 type="submit"
                 disabled={bulkSaving}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm hover:opacity-90 disabled:opacity-60 transition shadow-[0_4px_16px_rgb(var(--c-primary)/0.35)]"
-                style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-[10px] bg-primary border border-primary text-white font-bold text-[13px] hover:opacity-90 disabled:opacity-60 transition-opacity"
               >
                 {bulkSaving ? (
                   <>
@@ -808,10 +814,16 @@ export default function UsersPage({ role }) {
             </form>
           )}
         </section>
-        <section className="bg-gradient-to-br from-white via-white to-background/40 rounded-2xl border border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgb(var(--c-primary)/0.14)] overflow-hidden lg:col-span-3">
-          <div className="p-4 border-b border-line space-y-3">
+        <section className="bg-white rounded-[14px] border border-line shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] transition-shadow duration-200 hover:shadow-[0_6px_20px_-6px_rgb(var(--c-ink)/0.16)] overflow-hidden lg:col-span-3">
+          <div
+            className="p-4 border-b space-y-3"
+            style={{
+              background: tint('rgb(var(--c-primary))', 12),
+              borderColor: tint('rgb(var(--c-primary))', 28),
+            }}
+          >
             <div className="flex items-center justify-between gap-3 flex-wrap">
-              <h2 className="text-lg font-bold text-primary">
+              <h2 className="text-[14px] font-bold text-primary">
                 {page.title} ({AR(visible.length)}
                 {search && ` من ${AR(mine.length)}`})
               </h2>
@@ -819,21 +831,21 @@ export default function UsersPage({ role }) {
 
             {/* Search bar */}
             <div className="relative">
-              <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                <Search size={15} className="text-primary" weight="bold" />
+              <div className="absolute inset-y-0 start-3 flex items-center pointer-events-none">
+                <Search size={15} className="text-muted/60" weight="bold" />
               </div>
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="ابحث بالاسم العربي أو الانجليزي أو رقم الهوية..."
-                className="w-full pr-10 pl-10 py-2.5 border border-line rounded-xl text-sm text-ink outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgb(var(--c-primary)/0.1)] transition-all bg-white placeholder-muted/40"
+                className="w-full ps-10 pe-10 py-2.5 border border-line rounded-[12px] text-[13px] font-medium text-ink outline-none focus:border-primary transition-colors bg-white placeholder:text-muted/50 shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)]"
               />
               {search && (
                 <button
                   type="button"
                   onClick={() => setSearch('')}
-                  className="absolute inset-y-0 left-3 flex items-center text-muted hover:text-primary transition-colors"
+                  className="absolute inset-y-0 end-3 flex items-center text-muted hover:text-primary transition-colors"
                   title="مسح البحث"
                 >
                   <X size={14} weight="bold" />
@@ -844,34 +856,31 @@ export default function UsersPage({ role }) {
           </div>
 
           {listError && (
-            <div className="m-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-3 py-2 text-sm font-medium">
+            <div className="m-3 bg-red-50 border border-red-200 text-red-700 rounded-[10px] px-3 py-2 text-[12.5px] font-semibold">
               {listError}
             </div>
           )}
 
           <DataTable>
             <table className="w-full text-sm">
-              <thead
-                className="text-muted text-xs border-b border-line"
-                style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 60%)' }}
-              >
+              <thead className="text-muted text-[11px] border-b border-line bg-[rgb(var(--c-bg))]">
                 <tr>
-                  <th className="px-4 py-3 text-right font-semibold">الاسم</th>
-                  <th className="px-4 py-3 text-right font-semibold">الهوية</th>
-                  <th className="px-4 py-3 text-right font-semibold">الجوال</th>
-                  <th className="px-4 py-3 text-right font-semibold">{page.codeLabel}</th>
+                  <th className="px-4 py-3 text-start font-bold">الاسم</th>
+                  <th className="px-4 py-3 text-start font-bold">الهوية</th>
+                  <th className="px-4 py-3 text-start font-bold">الجوال</th>
+                  <th className="px-4 py-3 text-start font-bold">{page.codeLabel}</th>
                   {/* Both roles carry one — every supervisor on file has a
                       bravo code, so this is not an observer-only field. */}
-                  <th className="px-4 py-3 text-right font-semibold">رمز البرافو</th>
-                  <th className="px-4 py-3 text-right font-semibold">
+                  <th className="px-4 py-3 text-start font-bold">رمز البرافو</th>
+                  <th className="px-4 py-3 text-start font-bold">
                     {isObserver ? 'المركز' : 'المراكز'}
                   </th>
                   {isObserver ? (
-                    <th className="px-4 py-3 text-right font-semibold">المشرف المسؤول</th>
+                    <th className="px-4 py-3 text-start font-bold">المشرف المسؤول</th>
                   ) : (
-                    <th className="px-4 py-3 text-right font-semibold">المراقبون</th>
+                    <th className="px-4 py-3 text-start font-bold">المراقبون</th>
                   )}
-                  <th className="px-4 py-3 text-right font-semibold">إجراء</th>
+                  <th className="px-4 py-3 text-start font-bold">إجراء</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
@@ -894,24 +903,24 @@ export default function UsersPage({ role }) {
                   return (
                     <tr
                       key={u.id}
-                      className="group/row hover:bg-background transition-colors"
+                      className="hover:bg-[rgb(var(--c-bg))] transition-colors"
                     >
-                      <td className="px-4 py-3 font-medium text-ink">
+                      <td className="px-4 py-3 font-semibold text-ink">
                         <div className="flex items-center gap-2.5">
-                          <div className="relative flex-shrink-0">
-                            <div
-                              className={`absolute inset-0 rounded-full blur-md opacity-0 group-hover/row:opacity-60 transition-opacity bg-gradient-to-br ${meta.gradient}`}
-                            />
-                            <div
-                              className={`relative w-8 h-8 rounded-full bg-gradient-to-br ${meta.gradient} flex items-center justify-center text-white text-xs font-bold shadow-sm ring-2 ring-white`}
-                            >
-                              {(u.nameAr || u.name)?.charAt(0) || '؟'}
-                            </div>
+                          <div
+                            className="w-8 h-8 rounded-[10px] border flex items-center justify-center text-[12px] font-bold shrink-0"
+                            style={{
+                              background: tint(meta.color, 12),
+                              borderColor: tint(meta.color, 28),
+                              color: meta.color,
+                            }}
+                          >
+                            {(u.nameAr || u.name)?.charAt(0) || '؟'}
                           </div>
                           <div className="min-w-0">
-                            <div className="truncate">{u.nameAr || u.name || '—'}</div>
+                            <div className="truncate text-[13px]">{u.nameAr || u.name || '—'}</div>
                             {u.nameEn && (
-                              <div className="text-muted text-xs truncate" dir="ltr">
+                              <div className="text-muted text-[11px] font-medium truncate mt-0.5" dir="ltr">
                                 {u.nameEn}
                               </div>
                             )}
@@ -924,28 +933,48 @@ export default function UsersPage({ role }) {
                       <td className="px-4 py-3 text-muted" dir="ltr">
                         {u.phone || '—'}
                       </td>
-                      <td className="px-4 py-3 text-muted text-xs">
+                      <td className="px-4 py-3 text-muted text-[11.5px]">
                         {u.roleCode ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-background border border-line text-primary font-bold">
+                          <span
+                            className="inline-flex items-center px-2 py-0.5 rounded-md border font-bold"
+                            style={{
+                              background: tint('rgb(var(--c-primary))', 11),
+                              borderColor: tint('rgb(var(--c-primary))', 24),
+                              color: 'rgb(var(--c-primary))',
+                            }}
+                          >
                             {u.roleCode}
                           </span>
                         ) : '—'}
                       </td>
-                      <td className="px-4 py-3 text-muted text-xs" dir="ltr">
+                      <td className="px-4 py-3 text-muted text-[11.5px]" dir="ltr">
                         {u.bravoCode ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-violet-50 border border-violet-200 text-violet-700 font-bold tabular-nums">
+                          <span
+                            className="inline-flex items-center px-2 py-0.5 rounded-md border font-bold tabular-nums"
+                            style={{
+                              background: tint('rgb(var(--c-accent-600))', 11),
+                              borderColor: tint('rgb(var(--c-accent-600))', 24),
+                              color: 'rgb(var(--c-accent-600))',
+                            }}
+                          >
                             {u.bravoCode}
                           </span>
                         ) : '—'}
                       </td>
-                      <td className="px-4 py-3 text-muted text-xs">
+                      <td className="px-4 py-3 text-muted text-[11.5px]">
                         <CentersCell user={u} />
                       </td>
-                      <td className="px-4 py-3 text-xs">
+                      <td className="px-4 py-3 text-[11.5px]">
                         {isObserver ? (() => {
                           const sup = centerToSupervisor.get(u.center);
                           return sup ? (
-                            <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gradient-to-br from-background to-white border border-line">
+                            <div
+                              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md border"
+                              style={{
+                                background: tint('rgb(var(--c-primary))', 9),
+                                borderColor: tint('rgb(var(--c-primary))', 22),
+                              }}
+                            >
                               <ShieldCheck size={11} className="text-primary" weight="bold" />
                               <span className="font-bold text-ink">{sup.nameAr || sup.name}</span>
                             </div>
@@ -957,7 +986,13 @@ export default function UsersPage({ role }) {
                         })() : (() => {
                           const n = observerLoad.get(u.id) || 0;
                           return n ? (
-                            <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gradient-to-br from-background to-white border border-line">
+                            <div
+                              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md border"
+                              style={{
+                                background: tint('rgb(var(--c-primary))', 9),
+                                borderColor: tint('rgb(var(--c-primary))', 22),
+                              }}
+                            >
                               <Eye size={11} className="text-primary" weight="bold" />
                               <span className="font-bold text-ink tabular-nums">{AR(n)}</span>
                               <span className="text-muted">مراقب</span>
@@ -971,18 +1006,18 @@ export default function UsersPage({ role }) {
                         <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => openEdit(u)}
-                            className="group/edit flex items-center gap-1 text-primary hover:text-white text-xs font-bold px-2 py-1 rounded-lg border border-primary/20 hover:bg-gradient-to-br hover:from-primary-400 hover:to-primary hover:border-transparent transition-all hover:shadow-md"
+                            className="flex items-center gap-1 text-primary hover:text-white text-[11px] font-bold px-2 py-1 rounded-[8px] border border-primary/25 bg-[rgb(var(--c-primary)/0.06)] hover:bg-primary hover:border-primary transition-colors"
                             title="تعديل"
                           >
-                            <Pencil size={12} className="group-hover/edit:rotate-12 transition-transform" />
+                            <Pencil size={12} weight="bold" />
                             تعديل
                           </button>
                           <button
                             onClick={() => handleDelete(u)}
-                            className="group/del flex items-center gap-1 text-red-500 hover:text-white text-xs font-bold px-2 py-1 rounded-lg border border-red-200 hover:bg-red-500 hover:border-red-500 transition-all hover:shadow-md"
+                            className="flex items-center gap-1 text-red-600 hover:text-white text-[11px] font-bold px-2 py-1 rounded-[8px] border border-red-200 bg-red-50 hover:bg-red-600 hover:border-red-600 transition-colors"
                             title="حذف"
                           >
-                            <Trash2 size={12} className="group-hover/del:rotate-6 transition-transform" />
+                            <Trash2 size={12} weight="bold" />
                             حذف
                           </button>
                         </div>
@@ -997,33 +1032,31 @@ export default function UsersPage({ role }) {
       </div>
       {editTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeEdit} />
+          <div className="absolute inset-0 bg-[rgb(var(--c-ink)/0.45)] backdrop-blur-sm" onClick={closeEdit} />
           <div
-            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+            className="relative bg-white rounded-[18px] border border-line shadow-[0_24px_60px_-16px_rgb(var(--c-ink)/0.35)] w-full max-w-lg max-h-[90vh] overflow-y-auto"
             dir="rtl"
           >
             <div
-              className="flex items-center justify-between px-6 py-4 border-b border-line"
-              style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 55%)' }}
+              className="flex items-center justify-between px-5 py-3.5 border-b"
+              style={{
+                background: tint('rgb(var(--c-primary))', 12),
+                borderColor: tint('rgb(var(--c-primary))', 28),
+              }}
             >
-              <div className="flex items-center gap-2.5">
-                <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center"
-                  style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}
-                >
-                  <Users size={16} className="text-white" weight="regular" />
-                </div>
-                <h2 className="font-bold text-ink text-sm">تعديل بيانات المستخدم</h2>
+              <div className="flex items-center gap-3">
+                <IconTile Icon={Users} size="md" />
+                <h2 className="font-bold text-primary text-[14px]">تعديل بيانات المستخدم</h2>
               </div>
               <button
                 onClick={closeEdit}
-                className="w-8 h-8 rounded-xl border border-line flex items-center justify-center hover:bg-[rgb(var(--c-primary-50))] transition-colors"
+                className="w-8 h-8 rounded-[10px] border border-line bg-white flex items-center justify-center text-muted hover:text-ink transition-colors"
               >
-                <X size={15} className="text-muted" weight="regular" />
+                <X size={14} weight="bold" />
               </button>
             </div>
 
-            <div className="px-6 py-5 space-y-3">
+            <div className="px-5 py-5 space-y-3">
               <Field label="الاسم (عربي)" required>
                 <input
                   value={editForm.nameAr}
@@ -1131,7 +1164,7 @@ export default function UsersPage({ role }) {
               )}
 
               {editError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-3 py-2 text-sm font-medium">
+                <div className="bg-red-50 border border-red-200 text-red-700 rounded-[10px] px-3 py-2 text-[12.5px] font-semibold">
                   {editError}
                 </div>
               )}
@@ -1140,8 +1173,7 @@ export default function UsersPage({ role }) {
                 <button
                   onClick={handleEditSave}
                   disabled={editSaving}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm hover:opacity-90 disabled:opacity-60 transition"
-                  style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[10px] bg-primary border border-primary text-white font-bold text-[13px] hover:opacity-90 disabled:opacity-60 transition-opacity"
                 >
                   {editSaving ? (
                     <>
@@ -1156,7 +1188,7 @@ export default function UsersPage({ role }) {
                 </button>
                 <button
                   onClick={closeEdit}
-                  className="px-5 py-3 rounded-xl border border-line text-muted text-sm font-medium hover:bg-gray-50 transition"
+                  className="px-5 py-2.5 rounded-[10px] border border-line text-muted text-[13px] font-bold hover:bg-[rgb(var(--c-bg))] transition-colors"
                 >
                   إلغاء
                 </button>

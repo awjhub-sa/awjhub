@@ -149,7 +149,7 @@ export default function Login() {
             <span className="h-px flex-1 max-w-[9rem] bg-gradient-to-l from-accent/50 to-transparent" />
           </div>
 
-          <h2 className="lg-rise mt-6 text-[30px] lg:text-[42px] font-black text-white leading-[1.35] tracking-tight"
+          <h2 className="lg-rise mt-6 text-[30px] lg:text-[42px] font-extrabold text-white leading-[1.35] tracking-tight"
             style={{ animationDelay: '.18s' }}>
             منظومة إدارة الإعاشة
             <span className="block text-accent">في المشاعر المقدّسة</span>
@@ -179,7 +179,7 @@ export default function Login() {
             >
               <d.Icon size={26} weight="duotone" style={{ color: d.accent }} />
             </span>
-            <h1 className="text-[21px] font-black text-ink">{d.title}</h1>
+            <h1 className="text-[21px] font-bold text-ink">{d.title}</h1>
             <p className="text-[12.5px] font-bold text-muted mt-1">{d.hint}</p>
           </div>
 

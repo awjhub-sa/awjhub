@@ -8,7 +8,6 @@ import {
   ForkKnife as Utensils,
   Drop as Droplets,
   User,
-  Sparkle as Sparkles,
   Warning as AlertTriangle,
   ArrowLeft,
   FileText,
@@ -21,6 +20,14 @@ import { db, serverTimestamp, rowFromDb } from '../../lib/db.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { getCaterer } from '../../config/centers.js';
 import { initialStatusFields } from '../../lib/statusTracking.js';
+import { Surface } from '../../components/ui/index.jsx';
+
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
+
+/* Two colours carry this screen: the report you are attaching to, and the
+   logistics request you are raising against it. */
+const REPORT_C = '#D97706';
+const LOGI_C   = 'rgb(var(--c-info))';
 
 const CATEGORY_TYPES = [{ id: 'meals', label: 'إسناد وجبات', icon: Utensils }, { id: 'water', label: 'إسناد مياه', icon: Droplets }];
 const SUPPORT_TYPES = [{ value: 'internal', label: 'داخلي' }, { value: 'external', label: 'خارجي' }, { value: 'both', label: 'داخلي وخارجي' }];
@@ -146,111 +153,130 @@ export default function SupLogisticsRequest() {
   if (!selectedReport) {
     return (
       <div dir="rtl" className="min-h-screen bg-canvas pb-10 font-arabic">
-        <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-line w-full px-4 md:px-8 py-3 mb-4 shadow-sm">
+        <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-line w-full px-4 md:px-8 py-3 mb-4">
           <div className="max-w-3xl mx-auto flex items-center justify-between">
-            <button onClick={() => navigate('/supervisor-home')} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition shrink-0">
-              <ChevronRight className="text-primary" size={22} weight="bold" />
+            <button onClick={() => navigate('/supervisor-home')} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-[rgb(var(--c-bg))] rounded-[10px] transition-colors shrink-0">
+              <ChevronRight className="text-primary" size={20} weight="bold" />
             </button>
-            <h1 className="text-base font-bold text-ink absolute left-1/2 -translate-x-1/2 whitespace-nowrap">طلب إسناد</h1>
+            <h1 className="text-[15px] font-bold text-ink absolute left-1/2 -translate-x-1/2 whitespace-nowrap">طلب إسناد</h1>
             <div className="w-10 shrink-0" />
           </div>
         </header>
 
         <div className="max-w-3xl mx-auto px-4 space-y-4">
-          <div className="bg-gradient-to-br from-ink-800 via-ink to-[#1F1A17] rounded-3xl p-5 sm:p-6 shadow-lg overflow-hidden relative">
-            <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10"
-              style={{ background: 'radial-gradient(circle, rgb(var(--c-primary)) 0%, transparent 70%)', transform: 'translate(30%, -40%)' }} />
-            <div className="flex items-start gap-3 relative">
-              <div className="relative">
-                <div className="absolute inset-0 rounded-2xl blur-xl bg-primary opacity-50" />
-                <div className="relative bg-gradient-to-br from-primary-400 to-primary p-3 rounded-2xl shadow-md">
-                  <FileText size={22} className="text-white" weight="bold" />
-                </div>
-              </div>
-              <div>
-                <p className="text-primary text-[10px] font-black uppercase tracking-widest mb-1">الخطوة الأولى</p>
-                <h2 className="text-white text-lg font-bold leading-snug">البلاغات</h2>
-                <p className="text-white/60 text-xs mt-1.5 leading-relaxed">
-                  بلاغات <span className="font-bold text-primary">{selectedCenter}</span> <span className="text-amber-300 font-bold">قيد الانتظار</span> فقط.
-                </p>
-              </div>
+          <div
+            className="rounded-[14px] border p-4 sm:p-5 flex items-start gap-3.5 shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)]"
+            style={{ background: tint(REPORT_C, 12), borderColor: tint(REPORT_C, 28) }}
+          >
+            <span
+              className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border"
+              style={{ background: tint(REPORT_C, 9), borderColor: tint(REPORT_C, 22) }}
+            >
+              <FileText size={21} weight="duotone" style={{ color: REPORT_C }} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] leading-none" style={{ color: REPORT_C }}>
+                الخطوة الأولى
+              </p>
+              <h2 className="text-[18px] font-extrabold text-ink mt-1.5 leading-tight">البلاغات</h2>
+              <p className="text-[12px] font-medium text-muted mt-1.5 leading-relaxed">
+                بلاغات <span className="font-bold text-ink">{selectedCenter}</span> <span className="font-bold" style={{ color: REPORT_C }}>قيد الانتظار</span> فقط.
+              </p>
             </div>
           </div>
 
           {loadingReports ? (
-            <div className="bg-white rounded-2xl py-14 text-center border border-line">
+            <Surface className="py-14 text-center">
               <div className="w-8 h-8 border-2 border-line border-t-primary rounded-full animate-spin mx-auto" />
-              <p className="text-muted text-sm mt-3 font-medium">جارٍ التحميل...</p>
-            </div>
+              <p className="text-[13px] text-muted mt-3 font-semibold">جارٍ التحميل...</p>
+            </Surface>
           ) : pendingReports.length === 0 ? (
-            <div className="bg-gradient-to-br from-white to-amber-50/40 rounded-2xl border-2 border-amber-200 p-7 text-center">
-              <div className="relative w-fit mx-auto mb-3">
-                <div className="absolute inset-0 rounded-2xl blur-xl bg-amber-400 opacity-30" />
-                <div className="relative w-14 h-14 rounded-2xl flex items-center justify-center"
-                  style={{ background: 'linear-gradient(135deg, #FEF3C7, #FDE68A)' }}>
-                  <AlertTriangle size={26} className="text-amber-600" weight="regular" />
-                </div>
-              </div>
-              <p className="text-ink font-bold text-base mb-1">لا توجد بلاغات قيد الانتظار</p>
-              <p className="text-muted text-sm mb-5 leading-relaxed">
+            <div
+              className="rounded-[14px] border p-7 text-center"
+              style={{ background: tint(REPORT_C, 12), borderColor: tint(REPORT_C, 28) }}
+            >
+              <span
+                className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto border"
+                style={{ background: tint(REPORT_C, 9), borderColor: tint(REPORT_C, 22) }}
+              >
+                <AlertTriangle size={22} weight="duotone" style={{ color: REPORT_C }} />
+              </span>
+              <p className="text-ink font-bold text-[15px] mt-3.5 mb-1">لا توجد بلاغات قيد الانتظار</p>
+              <p className="text-muted text-[12.5px] font-medium mb-5 leading-relaxed">
                 لا يمكن رفع طلب إسناد بدون بلاغ مرتبط.<br/>
                 ارفع بلاغاً أولاً من قسم البلاغات على هذا المركز.
               </p>
               <button onClick={() => navigate('/sup-report', { state: { centerId: selectedCenter } })}
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-white font-bold text-sm shadow-md active:scale-95 transition-all"
-                style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
-                <AlertTriangle size={15} />
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[11px] bg-primary border border-primary text-white text-[12px] font-bold transition-colors hover:bg-[rgb(var(--c-primary-700))]">
+                <AlertTriangle size={14} weight="bold" />
                 رفع بلاغ جديد
               </button>
             </div>
           ) : (
-            <div className="space-y-2.5">
-              <div className="flex items-center gap-2 px-1">
-                <span className="w-1.5 h-4 rounded-full bg-primary" />
-                <p className="text-xs font-black text-primary uppercase tracking-wider">بلاغات قيد الانتظار</p>
-                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 tabular-nums">
+            <Surface className="overflow-hidden">
+              <div
+                className="flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 border-b"
+                style={{ background: tint(REPORT_C, 12), borderColor: tint(REPORT_C, 28) }}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <span
+                    className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 border"
+                    style={{ background: tint(REPORT_C, 9), borderColor: tint(REPORT_C, 22) }}
+                  >
+                    <AlertTriangle size={18} weight="duotone" style={{ color: REPORT_C }} />
+                  </span>
+                  <p className="text-[14px] font-bold truncate leading-tight" style={{ color: REPORT_C }}>
+                    بلاغات قيد الانتظار
+                  </p>
+                </div>
+                <span
+                  className="text-[10.5px] font-bold px-1.5 py-[3px] rounded-md tabular-nums leading-none shrink-0"
+                  style={{ background: tint(REPORT_C, 11), color: REPORT_C }}
+                >
                   {pendingReports.length}
                 </span>
               </div>
-              {pendingReports.map(r => {
+
+              {pendingReports.map((r, i) => {
                 const label = REPORT_TYPE_LABEL[r.reportType] || REPORT_TYPE_LABEL[r.type] || r.reportType || 'بلاغ';
                 return (
                   <button key={r.id} onClick={() => setSelectedReport(r)}
-                    className="group/rep min-h-[72px] w-full text-right bg-gradient-to-br from-white via-white to-background/40 border-2 border-line hover:border-primary/50 active:bg-background rounded-2xl p-4 flex items-center gap-3 transition-all duration-300 hover:shadow-[0_6px_20px_rgb(var(--c-primary)/0.15)] hover:-translate-y-0.5 overflow-hidden relative"
+                    className={`group/rep relative min-h-[68px] w-full text-start flex items-center gap-3.5 ps-5 pe-4 py-3.5 transition-colors hover:bg-[rgb(var(--c-bg))] ${
+                      i === pendingReports.length - 1 ? '' : 'border-b border-line'
+                    }`}
                   >
-                    <div className="absolute top-0 bottom-0 right-0 w-1 bg-amber-500" />
-                    <div className="relative flex-shrink-0">
-                      <div className="absolute inset-0 rounded-xl blur-md bg-amber-400 opacity-0 group-hover/rep:opacity-50 transition-opacity" />
-                      <div className="relative w-11 h-11 rounded-xl flex items-center justify-center border-2 group-hover/rep:scale-110 group-hover/rep:rotate-3 transition-transform duration-300"
-                        style={{ background: 'linear-gradient(135deg, #FEF3C7, #FDE68A)', borderColor: '#FCD34D' }}>
-                        <AlertTriangle size={18} className="text-amber-600" weight="regular" />
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                        <p className="text-sm font-bold text-ink leading-tight">{label}</p>
+                    <span className="absolute inset-y-0 start-0 w-[3px]" style={{ background: REPORT_C }} />
+                    <span
+                      className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 border"
+                      style={{ background: tint(REPORT_C, 9), borderColor: tint(REPORT_C, 22) }}
+                    >
+                      <AlertTriangle size={18} weight="duotone" style={{ color: REPORT_C }} />
+                    </span>
+                    <span className="flex-1 min-w-0">
+                      <span className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[13.5px] font-bold text-ink leading-tight">{label}</span>
                         {r.reportNumber && (
-                          <span className="text-[10px] font-black px-2 py-0.5 rounded-md tabular-nums tracking-wide bg-background border border-primary/30 text-primary">
+                          <span className="text-[10.5px] font-bold px-1.5 py-[3px] rounded-md tabular-nums leading-none bg-[rgb(var(--c-primary)/0.08)] text-primary">
                             {r.reportNumber}
                           </span>
                         )}
-                        <span className="inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700">
-                          <span className="w-1 h-1 rounded-full bg-amber-500 animate-pulse" />
+                        <span
+                          className="text-[10.5px] font-bold px-1.5 py-[3px] rounded-md leading-none"
+                          style={{ background: tint(REPORT_C, 11), color: REPORT_C }}
+                        >
                           قيد الانتظار
                         </span>
-                      </div>
-                      <p className="text-[11px] text-muted truncate flex items-center gap-1">
-                        <Clock size={10} />
-                        {fmtTime(r.timestamp)} · بواسطة: {r.observer || '—'}
-                      </p>
-                    </div>
-                    <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-background group-hover/rep:bg-primary flex items-center justify-center group-hover/rep:-translate-x-1 transition-all duration-300">
-                      <ArrowLeft size={16} className="text-primary group-hover/rep:text-white transition-colors" weight="bold" />
-                    </div>
+                      </span>
+                      <span className="flex items-center gap-1.5 text-[11.5px] text-muted mt-1.5 truncate">
+                        <Clock size={12} weight="bold" className="text-muted/60 shrink-0" />
+                        <span className="font-medium text-ink/75 truncate">{fmtTime(r.timestamp)} · بواسطة: {r.observer || '—'}</span>
+                      </span>
+                    </span>
+                    <ArrowLeft size={15} weight="bold" className="shrink-0 text-muted/40 group-hover/rep:text-muted transition-colors" />
                   </button>
                 );
               })}
-            </div>
+            </Surface>
           )}
         </div>
       </div>
@@ -263,33 +289,171 @@ export default function SupLogisticsRequest() {
 
       {/* Linked report banner */}
       <div className="max-w-5xl mx-auto px-4 pt-2">
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50/40 border-2 border-amber-200/70 rounded-2xl p-3.5 flex items-center gap-3 shadow-sm">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg, #FEF3C7, #FDE68A)' }}>
-            <AlertTriangle size={16} className="text-amber-600" weight="bold" />
-          </div>
+        <div
+          className="rounded-[14px] border p-3.5 flex items-center gap-3"
+          style={{ background: tint(REPORT_C, 12), borderColor: tint(REPORT_C, 28) }}
+        >
+          <span
+            className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 border"
+            style={{ background: tint(REPORT_C, 9), borderColor: tint(REPORT_C, 22) }}
+          >
+            <AlertTriangle size={18} weight="duotone" style={{ color: REPORT_C }} />
+          </span>
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-black text-amber-700 uppercase tracking-wider">إسناد لبلاغ</p>
-            <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-              <p className="text-sm font-bold text-ink leading-tight">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] leading-none" style={{ color: REPORT_C }}>
+              إسناد لبلاغ
+            </p>
+            <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+              <p className="text-[13.5px] font-bold text-ink leading-tight">
                 {REPORT_TYPE_LABEL[selectedReport.reportType] || REPORT_TYPE_LABEL[selectedReport.type] || 'بلاغ'}
               </p>
               {selectedReport.reportNumber && (
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-md tabular-nums bg-white border border-amber-300 text-amber-700">
+                <span
+                  className="text-[10.5px] font-bold px-1.5 py-[3px] rounded-md tabular-nums leading-none"
+                  style={{ background: tint(REPORT_C, 11), color: REPORT_C }}
+                >
                   {selectedReport.reportNumber}
                 </span>
               )}
             </div>
           </div>
           <button onClick={() => setSelectedReport(null)}
-            className="flex-shrink-0 text-[11px] font-bold text-amber-700 hover:text-white hover:bg-amber-600 border border-amber-300 hover:border-amber-600 px-3 py-1.5 rounded-lg transition-all active:scale-95">
+            className="shrink-0 text-[12px] font-bold text-ink bg-white hover:bg-[rgb(var(--c-bg))] border border-line px-3 py-1.5 rounded-[10px] transition-colors">
             تغيير
           </button>
         </div>
       </div>
 
-      <div className="px-4"><div className="rounded-[2.5rem] p-6 my-6 text-white shadow-lg relative overflow-hidden" style={{ background: 'rgb(var(--c-ink))' }}><Truck className="absolute -left-4 -bottom-4 text-white/5 w-32 h-32 rotate-12" /><div className="flex justify-between items-center mb-8 relative z-10 group"><div className="flex items-center gap-4"><div className="relative"><div className="absolute inset-0 rounded-2xl blur-xl bg-primary opacity-50 group-hover:opacity-80 transition-opacity" /><div className="relative bg-gradient-to-br from-primary-400 to-primary p-3 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300"><Truck className="text-white" size={24} /><Sparkles size={10} className="absolute -top-0.5 -right-0.5 text-yellow-200 drop-shadow" /></div></div><div><p className="text-primary text-[10px] font-black uppercase tracking-widest">منظومة الخدمات اللوجستية</p><h2 className="text-xl font-bold">رفع طلب إسناد</h2></div></div></div><div className="flex flex-wrap justify-center gap-2 relative z-10 w-full"><div className="bg-white/5 rounded-2xl px-3 py-3 flex-1 min-w-[100px] border border-white/10 backdrop-blur-sm flex flex-col items-center"><span className="text-white/40 text-[10px] block mb-1">المشرف</span><span className="text-white font-bold text-[11px] truncate w-full text-center">{profile?.nameAr || '—'}</span></div><div className="bg-white/5 rounded-2xl px-3 py-3 flex-1 min-w-[80px] border border-white/10 backdrop-blur-sm flex flex-col items-center"><span className="text-white/40 text-[10px] block mb-1">المركز</span><span className="text-primary font-bold text-sm">{selectedCenter}</span></div><div className="bg-white/5 rounded-2xl px-3 py-3 flex-1 min-w-[100px] border border-white/10 backdrop-blur-sm flex flex-col items-center"><span className="text-white/40 text-[10px] block mb-1">المتعهد</span><span className="text-white font-bold text-[11px] truncate w-full text-center">{getCaterer(selectedCenter) || '—'}</span></div></div></div><div className="bg-white rounded-[2rem] p-6 border border-line shadow-sm space-y-8"><div><label className="text-xs font-bold text-primary mb-4 block text-center uppercase tracking-wide">المشعر *</label><div className="grid grid-cols-2 gap-3">{HOLY_SITES.map(s => { const active = holySite === s.key; const SIcon = s.Icon; return (<button key={s.key} type="button" onClick={() => setHolySite(s.key)} className={`relative flex flex-col items-center gap-1.5 py-4 rounded-2xl border-2 transition-all ${active ? 'text-white scale-[1.02] shadow-md' : 'bg-[#F9F7F5] text-muted border-line hover:border-primary/40'}`} style={active ? { background: `linear-gradient(135deg, ${s.color}, ${s.color}CC)`, borderColor: s.color } : undefined}><SIcon size={22} weight="bold" /><span className="text-sm font-bold">{s.label}</span></button>); })}</div></div><div className="h-px bg-line w-full" /><div><label className="text-xs font-bold text-primary mb-4 block text-center uppercase tracking-wide">تصنيف الإسناد</label><div className="grid grid-cols-2 gap-4">{CATEGORY_TYPES.map(type => (<button key={type.id} onClick={() => { setCategory(type.id); setSupportType(''); setQtyInternal(''); setQtyExternal(''); }} className={`py-6 rounded-3xl flex flex-col items-center gap-3 transition-all duration-300 border-2 ${category === type.id ? 'border-primary bg-primary/5 text-ink' : 'border-transparent bg-[#F9F7F5] text-muted'}`}><type.icon size={32} className={category === type.id ? 'text-primary' : 'text-line'} /><span className="font-bold text-sm">{type.label}</span></button>))}</div></div>{category && (<div className="animate-in fade-in slide-in-from-top-4 duration-500 space-y-8"><div className="h-px bg-line w-full" /><div><label className="text-xs font-bold text-primary mb-4 block text-center tracking-wider">نطاق الإسناد</label><div className="grid grid-cols-3 gap-3">{SUPPORT_TYPES.map(type => (<button key={type.value} onClick={() => { setSupportType(type.value); setQtyInternal(''); setQtyExternal(''); }} className={`py-4 rounded-2xl text-[11px] font-bold transition-all ${supportType === type.value ? 'bg-ink text-white shadow-lg' : 'bg-[#F9F7F5] text-muted border border-line'}`}>{type.label}</button>))}</div></div><div className="grid grid-cols-1 md:grid-cols-2 gap-6">{showInternal && (<div className="animate-in zoom-in-95 duration-300"><label className="flex items-center gap-2 text-xs font-bold text-ink mb-2 px-1"><Package size={14} className="text-primary" /> {category === 'water' ? 'عدد العبوات (داخلي)' : 'عدد الوجبات (داخلي)'}</label><input type="text" inputMode="numeric" value={qtyInternal} onChange={e => setQtyInternal(sanitizeNumber(e.target.value))} placeholder="0" className="w-full px-5 py-4 bg-background border-2 border-line rounded-2xl outline-none focus:border-primary font-bold text-lg" /></div>)}{showExternal && (<div className="animate-in zoom-in-95 duration-300"><label className="flex items-center gap-2 text-xs font-bold text-ink mb-2 px-1"><Package size={14} className="text-primary" /> {category === 'water' ? 'عدد العبوات (خارجي)' : 'عدد الوجبات (خارجي)'}</label><input type="text" inputMode="numeric" value={qtyExternal} onChange={e => setQtyExternal(sanitizeNumber(e.target.value))} placeholder="0" className="w-full px-5 py-4 bg-background border-2 border-line rounded-2xl outline-none focus:border-primary font-bold text-lg" /></div>)}</div><textarea placeholder="أضف ملاحظاتك..." value={notes} onChange={e => setNotes(e.target.value)} className="w-full px-4 py-4 border border-line rounded-2xl outline-none text-sm resize-none" /></div>)}</div></div>
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-lg border-t border-line z-50 text-center"><button onClick={handleSubmit} disabled={!isFormValid || loading} className={`w-full max-w-md mx-auto py-4 rounded-2xl font-bold text-lg shadow-xl flex items-center justify-center gap-3 transition-all duration-300 ${!isFormValid || loading ? 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-70 shadow-none' : 'bg-[#3D6795] text-white hover:bg-[#2F5580] active:scale-95'}`}>{loading ? 'جاري الإرسال...' : <><Send size={20} /> <span>إرسال طلب الإسناد</span></>}</button></div>
+      <div className="px-4">
+        <div className="rounded-[14px] border p-5 my-6 shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)]"
+          style={{ background: tint(LOGI_C, 12), borderColor: tint(LOGI_C, 28) }}>
+          <div className="flex items-center gap-3.5 mb-5">
+            <span className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border"
+              style={{ background: tint(LOGI_C, 9), borderColor: tint(LOGI_C, 22) }}>
+              <Truck size={21} weight="duotone" style={{ color: LOGI_C }} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] leading-none" style={{ color: LOGI_C }}>منظومة الخدمات اللوجستية</p>
+              <h2 className="text-[19px] font-extrabold text-ink mt-1.5 leading-tight">رفع طلب إسناد</h2>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { lbl: 'المشرف',  val: profile?.nameAr || '—' },
+              { lbl: 'المركز',  val: selectedCenter },
+              { lbl: 'المتعهد', val: getCaterer(selectedCenter) || '—' },
+            ].map(c => (
+              <div key={c.lbl} className="bg-white rounded-[11px] px-2.5 py-2.5 border text-center min-w-0"
+                style={{ borderColor: tint(LOGI_C, 22) }}>
+                <p className="text-[10px] font-semibold text-muted mb-1 truncate">{c.lbl}</p>
+                <p className="text-[12px] font-bold text-ink truncate" title={c.val || ''}>{c.val || '—'}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="bg-white rounded-[14px] p-5 sm:p-6 border border-line shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] space-y-7">
+          <div>
+            <label className="text-[11px] font-bold text-muted mb-3 block text-center uppercase tracking-[0.18em]">المشعر *</label>
+            <div className="grid grid-cols-2 gap-3">
+              {HOLY_SITES.map(s => {
+                const active = holySite === s.key;
+                const SIcon = s.Icon;
+                return (
+                  <button key={s.key} type="button" onClick={() => setHolySite(s.key)}
+                    className="flex flex-col items-center gap-2 py-4 rounded-[11px] border transition-colors"
+                    style={active
+                      ? { background: tint(s.color, 12), borderColor: s.color, color: s.color }
+                      : { background: 'rgb(var(--c-bg))', borderColor: 'rgb(var(--c-line))', color: 'rgb(var(--c-muted))' }}>
+                    <SIcon size={20} weight="duotone" />
+                    <span className="text-[13px] font-bold">{s.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="h-px bg-line w-full" />
+
+          <div>
+            <label className="text-[11px] font-bold text-muted mb-3 block text-center uppercase tracking-[0.18em]">تصنيف الإسناد</label>
+            <div className="grid grid-cols-2 gap-3">
+              {CATEGORY_TYPES.map(type => {
+                const active = category === type.id;
+                return (
+                  <button key={type.id} onClick={() => { setCategory(type.id); setSupportType(''); setQtyInternal(''); setQtyExternal(''); }}
+                    className="py-5 rounded-[11px] flex flex-col items-center gap-2.5 border transition-colors"
+                    style={active
+                      ? { background: tint(LOGI_C, 12), borderColor: LOGI_C, color: LOGI_C }
+                      : { background: 'rgb(var(--c-bg))', borderColor: 'rgb(var(--c-line))', color: 'rgb(var(--c-muted))' }}>
+                    <type.icon size={26} weight="duotone" />
+                    <span className="text-[13px] font-bold">{type.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {category && (
+            <div className="animate-in fade-in slide-in-from-top-4 duration-500 space-y-7">
+              <div className="h-px bg-line w-full" />
+
+              <div>
+                <label className="text-[11px] font-bold text-muted mb-3 block text-center uppercase tracking-[0.18em]">نطاق الإسناد</label>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {SUPPORT_TYPES.map(type => {
+                    const active = supportType === type.value;
+                    return (
+                      <button key={type.value} onClick={() => { setSupportType(type.value); setQtyInternal(''); setQtyExternal(''); }}
+                        className={`py-3.5 rounded-[11px] text-[12px] font-bold border transition-colors ${
+                          active
+                            ? 'bg-primary border-primary text-white'
+                            : 'bg-[rgb(var(--c-bg))] border-line text-muted hover:text-ink'
+                        }`}>
+                        {type.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {showInternal && (
+                  <div className="animate-in zoom-in-95 duration-300">
+                    <label className="flex items-center gap-2 text-[12px] font-bold text-ink mb-2 px-1">
+                      <Package size={14} weight="duotone" style={{ color: LOGI_C }} /> {category === 'water' ? 'عدد العبوات (داخلي)' : 'عدد الوجبات (داخلي)'}
+                    </label>
+                    <input type="text" inputMode="numeric" value={qtyInternal} onChange={e => setQtyInternal(sanitizeNumber(e.target.value))} placeholder="0"
+                      className="w-full px-4 py-3.5 bg-[rgb(var(--c-bg))] border border-line rounded-[11px] outline-none focus:border-primary font-bold text-[16px] tabular-nums text-ink transition-colors" />
+                  </div>
+                )}
+                {showExternal && (
+                  <div className="animate-in zoom-in-95 duration-300">
+                    <label className="flex items-center gap-2 text-[12px] font-bold text-ink mb-2 px-1">
+                      <Package size={14} weight="duotone" style={{ color: LOGI_C }} /> {category === 'water' ? 'عدد العبوات (خارجي)' : 'عدد الوجبات (خارجي)'}
+                    </label>
+                    <input type="text" inputMode="numeric" value={qtyExternal} onChange={e => setQtyExternal(sanitizeNumber(e.target.value))} placeholder="0"
+                      className="w-full px-4 py-3.5 bg-[rgb(var(--c-bg))] border border-line rounded-[11px] outline-none focus:border-primary font-bold text-[16px] tabular-nums text-ink transition-colors" />
+                  </div>
+                )}
+              </div>
+
+              <textarea placeholder="أضف ملاحظاتك..." value={notes} onChange={e => setNotes(e.target.value)}
+                className="w-full px-4 py-3.5 bg-[rgb(var(--c-bg))] border border-line rounded-[11px] outline-none focus:border-primary text-[13px] font-medium text-ink resize-none transition-colors" />
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-t border-line z-50 text-center">
+        <button onClick={handleSubmit} disabled={!isFormValid || loading}
+          className={`w-full max-w-md mx-auto py-3.5 rounded-[12px] font-bold text-[15px] flex items-center justify-center gap-2.5 border transition-colors ${
+            !isFormValid || loading
+              ? 'bg-[rgb(var(--c-bg))] border-line text-muted/60 cursor-not-allowed'
+              : 'bg-primary border-primary text-white hover:bg-[rgb(var(--c-primary-700))]'
+          }`}>
+          {loading ? 'جاري الإرسال...' : <><Send size={18} weight="bold" /> <span>إرسال طلب الإسناد</span></>}
+        </button>
+      </div>
     </div>
   );
 }

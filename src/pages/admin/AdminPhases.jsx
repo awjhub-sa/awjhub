@@ -24,6 +24,14 @@ import {
   MoonStars as MoonStar,
 } from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
+import {
+  Surface,
+  IconTile,
+  Pill,
+  Panel,
+  StatTile,
+  EmptyState,
+} from '../../components/ui/index.jsx';
 import { extractCenterNum, extractDay } from '../../hooks/useAssignedTasks.js';
 import { computePhaseAlerts, gregorianForDhulHijjah } from '../../lib/phaseAlerts.js';
 import { hasMealContent } from '../../config/menus.js';
@@ -155,23 +163,23 @@ function PhotoLightbox({ src, onClose }) {
         <X size={20} weight="regular" />
       </button>
       <div onClick={e => e.stopPropagation()}>
-        <img src={src} alt="" className="max-w-full max-h-[88vh] rounded-2xl shadow-2xl object-contain" />
+        <img src={src} alt="" className="max-w-full max-h-[88vh] rounded-[14px] object-contain" />
       </div>
     </div>
   );
 }
 
 function PhaseDot({ done, phase, small, photoUrl, onViewPhoto, late }) {
-  const size = small ? 'w-6 h-6 text-[9px]' : 'w-7 h-7 text-[10px]';
+  const size = small ? 'w-6 h-6 text-[10px]' : 'w-7 h-7 text-[10px]';
   const lateStyle = late && !done
     ? { background: '#EF4444', color: '#fff', boxShadow: '0 0 0 0 rgba(239,68,68,0.55)' }
     : null;
   return (
     <div className="relative group">
       <div
-        className={`${size} rounded-full flex items-center justify-center font-black transition-all cursor-default ${late && !done ? 'badge-pulse-red' : ''}`}
+        className={`${size} rounded-full flex items-center justify-center font-bold transition-all cursor-default ${late && !done ? 'badge-pulse-red' : ''}`}
         style={done
-          ? { background: phase.color, color: '#fff', boxShadow: `0 0 8px ${phase.glow}` }
+          ? { background: phase.color, color: '#fff' }
           : (lateStyle || { background: '#F3F4F6', color: '#D1D5DB' })
         }
         title={late && !done ? (phase.id === 1 ? 'متأخر في التجهيز' : phase.id === 3 ? 'متأخر في التوزيع' : '') : undefined}
@@ -439,7 +447,7 @@ export default function AdminPhases() {
       />
 
       {/* View switcher: المتابعة (phases) vs التقارير (reports) */}
-      <div className="bg-white border border-line rounded-2xl p-1.5 flex w-fit shadow-[0_2px_8px_rgb(var(--c-ink)/0.05)]">
+      <div className="bg-white border border-line rounded-[14px] p-1.5 flex w-fit shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)]">
         {[
           { id: 'phases',  label: 'المتابعة الميدانية', Icon: Activity },
           { id: 'reports', label: 'التقارير',           Icon: ImageIcon },
@@ -449,14 +457,12 @@ export default function AdminPhases() {
           return (
             <button key={t.id}
               onClick={() => { setView(t.id); setReportCenter(null); }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                active
-                  ? 'text-white shadow-[0_3px_10px_rgb(var(--c-primary)/0.4)]'
-                  : 'text-muted hover:text-ink hover:bg-background'
+              className={`flex items-center gap-2 px-4 py-2 rounded-[10px] text-[13px] font-bold transition-colors ${
+                active ? 'text-white' : 'text-muted hover:text-ink hover:bg-background'
               }`}
-              style={active ? { background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' } : undefined}
+              style={active ? { background: 'rgb(var(--c-primary))' } : undefined}
             >
-              <TIcon size={15} weight="bold" className={active ? 'scale-110' : ''} />
+              <TIcon size={15} weight="bold" />
               {t.label}
             </button>
           );
@@ -469,9 +475,9 @@ export default function AdminPhases() {
           <button
             key={day.id}
             onClick={() => setSelectedDay(day.id)}
-            className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+            className={`flex-shrink-0 px-4 py-2 rounded-[10px] text-[12px] font-semibold transition-colors border ${
               selectedDay === day.id
-                ? 'bg-ink text-white border-ink shadow-md'
+                ? 'bg-ink text-white border-ink'
                 : 'bg-white text-muted border-line hover:border-primary hover:text-primary'
             }`}
           >
@@ -496,29 +502,28 @@ export default function AdminPhases() {
             <button
               key={meal.id}
               onClick={() => setSelectedMeal(meal.id)}
-              className={`group/meal flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold border-2 transition-all ${
-                active ? 'scale-[1.02] shadow-md' : 'bg-white hover:scale-[1.01]'
+              className={`group/meal flex items-center gap-2 px-4 py-2.5 rounded-[14px] text-[13px] font-bold border transition-colors ${
+                active ? '' : 'bg-white'
               }`}
               style={active
                 ? {
-                    background: `linear-gradient(135deg, ${meal.color}, ${meal.color}DD)`,
+                    background: `color-mix(in srgb, ${meal.color} 12%, #fff)`,
                     borderColor: meal.color,
-                    color: '#fff',
-                    boxShadow: `0 4px 16px ${meal.color}40`,
+                    color: meal.color,
                   }
                 : { borderColor: 'rgb(var(--c-line))', color: 'rgb(var(--c-muted))' }}
             >
               <MIcon
-                size={18}
-                weight={active ? 'bold' : 'regular'}
-                className={`transition-transform ${active ? 'scale-110' : 'group-hover/meal:scale-110'}`}
-                style={!active ? { color: meal.color } : undefined}
+                size={17}
+                weight="duotone"
+                style={{ color: meal.color }}
               />
               {meal.label}
-              <span className={`tabular-nums px-2 py-0.5 rounded-full text-[10px] ${
-                active ? 'bg-white/25 text-white' : ''
-              }`}
-                style={!active ? { background: `${meal.color}15`, color: meal.color } : undefined}>
+              <span className="tabular-nums px-1.5 py-[3px] rounded-md text-[10.5px] font-bold leading-none"
+                style={{
+                  background: `color-mix(in srgb, ${meal.color} 11%, #fff)`,
+                  color: meal.color,
+                }}>
                 {doneCount}/{eligibleCenters.length}
               </span>
             </button>
@@ -529,45 +534,39 @@ export default function AdminPhases() {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'مراكز هذه الوجبة', value: totalEligible, color: '#B4674E', icon: Layers       },
-          { label: 'مكتمل الوجبات',   value: fullyDone,    color: '#5E9070', icon: CheckCircle2 },
-          { label: 'قيد التنفيذ',     value: inProgress,   color: '#F59E0B', icon: Activity     },
-          { label: 'لم يبدأ',         value: notStarted,   color: '#64748B', icon: Clock        },
+          /* `wait` names the waitFilter value a tile can actually show. The three
+             without one count sets the table cannot be narrowed to, so they stay
+             static rather than pretend to be controls. */
+          { label: 'مراكز هذه الوجبة', value: totalEligible, color: '#B4674E', Icon: Layers       },
+          { label: 'مكتمل الوجبات',   value: fullyDone,    color: '#5E9070', Icon: CheckCircle2 },
+          { label: 'قيد التنفيذ',     value: inProgress,   color: '#F59E0B', Icon: Activity     },
+          { label: 'لم يبدأ',         value: notStarted,   color: '#64748B', Icon: Clock,       wait: 1 },
         ].map(c => (
-          /* The accent runs along the top edge, as it does on every other
-             section — three takes on one card is what made the app read as
-             three apps. */
-          <div key={c.label}
-            className="relative bg-white rounded-2xl p-4 pt-5 border border-line overflow-hidden flex items-center gap-3">
-            <span className="absolute inset-x-0 top-0 h-1" style={{ background: c.color }} />
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-bold text-muted mb-1 truncate">{c.label}</p>
-              <p className="text-2xl font-black tabular-nums leading-none" style={{ color: c.color }}>{c.value}</p>
-            </div>
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: `color-mix(in srgb, ${c.color} 12%, #fff)` }}>
-              <c.icon size={19} style={{ color: c.color }} weight="bold" />
-            </div>
-          </div>
+          /* The shared StatTile: a flat tint carrying the figure's own colour,
+             so this row reads the same as every other KPI row in the app. */
+          <StatTile key={c.label} label={c.label} value={c.value} Icon={c.Icon} color={c.color}
+            active={c.wait != null && waitFilter === c.wait}
+            onClick={c.wait == null
+              ? undefined
+              : () => setWaitFilter(w => (w === c.wait ? null : c.wait))} />
         ))}
       </div>
 
       {/* Progress Bar */}
-      <div className="bg-white rounded-2xl px-6 py-4 border border-line shadow-[0_2px_8px_rgb(var(--c-ink)/0.07)]"
-        style={{ borderRight: `4px solid ${mealMeta.color}` }}>
-        <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: `${mealMeta.color}15` }}>
-              <mealMeta.icon size={16} weight="bold" style={{ color: mealMeta.color }} />
-            </div>
-            <p className="text-sm font-bold text-ink">
+      <Surface className="relative overflow-hidden px-5 sm:px-6 py-4">
+        <span className="absolute inset-y-0 start-0 w-[3px]" style={{ background: mealMeta.color }} />
+        <div className="flex items-center justify-between mb-2.5 gap-2 flex-wrap">
+          <div className="flex items-center gap-2.5">
+            <IconTile Icon={mealMeta.icon} color={mealMeta.color} size="sm" />
+            <p className="text-[14px] font-bold text-ink">
               {mealMeta.label} — {DAYS.find(d => d.id === selectedDay)?.label}
             </p>
           </div>
-          <p className="text-lg font-black tabular-nums" style={{ color: mealMeta.color }}>{overallPct}%</p>
+          <p className="text-[21px] font-extrabold tabular-nums leading-none" style={{ color: mealMeta.color }}>
+            {overallPct}%
+          </p>
         </div>
-        <div className="h-3 bg-[rgb(var(--c-primary-50))] rounded-full overflow-hidden">
+        <div className="h-2 bg-[rgb(var(--c-primary-50))] rounded-full overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-700"
             style={{
@@ -576,7 +575,7 @@ export default function AdminPhases() {
             }}
           />
         </div>
-      </div>
+      </Surface>
 
       {/* Where everyone is standing, before the detail of who */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -588,21 +587,23 @@ export default function AdminPhases() {
               onClick={() => setWaitFilter(on ? null : p.id)}
               disabled={p.n === 0}
               aria-pressed={on}
-              className={`rounded-2xl border p-4 text-right transition-all ${
-                p.n === 0 ? 'opacity-55 cursor-default' : 'hover:shadow-lift cursor-pointer'
+              className={`relative overflow-hidden rounded-[14px] border p-4 ps-5 text-start
+                          shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] transition-shadow duration-200 ${
+                p.n === 0
+                  ? 'opacity-55 cursor-default'
+                  : 'cursor-pointer hover:shadow-[0_6px_20px_-6px_rgb(var(--c-ink)/0.16)]'
               }`}
               style={{
-                borderTop: `3px solid ${p.color}`,
-                borderColor: on ? p.color : 'rgb(var(--c-line))',
-                background: on ? `color-mix(in srgb, ${p.color} 9%, #fff)` : '#fff',
-                boxShadow: on ? `0 0 0 2px color-mix(in srgb, ${p.color} 35%, transparent)` : undefined,
+                background: `color-mix(in srgb, ${p.color} ${on ? 16 : 8}%, #fff)`,
+                borderColor: on ? p.color : `color-mix(in srgb, ${p.color} 24%, #fff)`,
               }}
             >
-              <p className="text-[26px] font-black tabular-nums leading-none" style={{ color: p.color }}>
+              <span className="absolute inset-y-0 start-0 w-[3px]" style={{ background: p.color }} />
+              <p className="text-[26px] font-extrabold tabular-nums leading-none" style={{ color: p.color }}>
                 {p.n}
               </p>
-              <p className="text-[11.5px] font-bold text-ink mt-1.5">بانتظار {p.label}</p>
-              <p className="text-[10px] font-bold mt-0.5"
+              <p className="text-[11.5px] font-semibold text-ink mt-2">بانتظار {p.label}</p>
+              <p className="text-[10.5px] font-medium mt-1"
                 style={{ color: on ? p.color : 'rgb(var(--c-muted))' }}>
                 {on ? 'معروضون في الجدول' : p.n ? `من ${totalEligible} مركز` : 'لا أحد'}
               </p>
@@ -616,23 +617,27 @@ export default function AdminPhases() {
               onClick={() => setWaitFilter(on ? null : 'stalled')}
               disabled={stalledCount === 0}
               aria-pressed={on}
-              className={`rounded-2xl border p-4 text-right transition-all ${
-                stalledCount === 0 ? 'opacity-55 cursor-default' : 'hover:shadow-lift cursor-pointer'
+              className={`relative overflow-hidden rounded-[14px] border p-4 ps-5 text-start
+                          shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] transition-shadow duration-200 ${
+                stalledCount === 0
+                  ? 'opacity-55 cursor-default'
+                  : 'cursor-pointer hover:shadow-[0_6px_20px_-6px_rgb(var(--c-ink)/0.16)]'
               }`}
               style={{
-                borderTop: `3px solid ${stalledCount ? '#DC2626' : '#5E9070'}`,
-                borderColor: on ? '#DC2626' : stalledCount ? '#FECACA' : 'rgb(var(--c-line))',
-                background: on ? 'color-mix(in srgb, #DC2626 10%, #fff)'
-                  : stalledCount ? 'color-mix(in srgb, #DC2626 5%, #fff)' : '#fff',
-                boxShadow: on ? '0 0 0 2px rgb(220 38 38 / 0.35)' : undefined,
+                background: `color-mix(in srgb, ${stalledCount ? '#DC2626' : '#5E9070'} ${on ? 16 : 8}%, #fff)`,
+                borderColor: on
+                  ? '#DC2626'
+                  : `color-mix(in srgb, ${stalledCount ? '#DC2626' : '#5E9070'} 24%, #fff)`,
               }}
             >
-              <p className="text-[26px] font-black tabular-nums leading-none"
+              <span className="absolute inset-y-0 start-0 w-[3px]"
+                style={{ background: stalledCount ? '#DC2626' : '#5E9070' }} />
+              <p className="text-[26px] font-extrabold tabular-nums leading-none"
                 style={{ color: stalledCount ? '#DC2626' : '#5E9070' }}>
                 {stalledCount}
               </p>
-              <p className="text-[11.5px] font-bold text-ink mt-1.5">متوقّف</p>
-              <p className="text-[10px] font-bold mt-0.5"
+              <p className="text-[11.5px] font-semibold text-ink mt-2">متوقّف</p>
+              <p className="text-[10.5px] font-medium mt-1"
                 style={{ color: on ? '#DC2626' : 'rgb(var(--c-muted))' }}>
                 {on ? 'معروضون في الجدول'
                   : stalledCount ? 'لم يتحرّك منذ مدة' : 'كل شيء يتقدّم'}
@@ -643,29 +648,29 @@ export default function AdminPhases() {
       </div>
 
       {/* Table — one row per center, columns for each of the 3 phases of the selected meal */}
-      <div className="bg-gradient-to-br from-white via-white to-background/40 rounded-2xl border border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] transition-shadow duration-300 hover:shadow-[0_6px_28px_rgb(var(--c-primary)/0.14)] overflow-hidden">
-        <div className="grid gap-3 px-5 py-3 border-b border-line bg-bg sticky top-0 z-20"
+      <Surface className="overflow-hidden">
+        <div className="grid gap-3 px-5 py-3 border-b border-line bg-[rgb(var(--c-bg))] sticky top-0 z-20"
           style={{ gridTemplateColumns: '1.5fr repeat(3, 1fr) 1fr 0.6fr 0.8fr 0.5fr' }}>
-          <p className="text-[11px] font-bold text-muted">المركز / المتعهد</p>
+          <p className="text-[11.5px] font-semibold text-muted">المركز / المتعهد</p>
           {PHASES.map(phase => (
             <div key={phase.id} className="flex items-center justify-center gap-1.5">
               <span
-                className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black text-white"
+                className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold text-white"
                 style={{ background: phase.color }}>
                 {phase.id}
               </span>
-              <p className="text-[11px] font-bold text-muted">{phase.label}</p>
+              <p className="text-[11.5px] font-semibold text-muted">{phase.label}</p>
             </div>
           ))}
-          <p className="text-[11px] font-bold text-muted text-center">الحالة الآن</p>
-          <p className="text-[11px] font-bold text-muted text-center">التقدم</p>
-          <p className="text-[11px] font-bold text-muted text-center">تقييم الوجبة</p>
-          <p className="text-[11px] font-bold text-muted text-center">إجراء</p>
+          <p className="text-[11.5px] font-semibold text-muted text-center">الحالة الآن</p>
+          <p className="text-[11.5px] font-semibold text-muted text-center">التقدم</p>
+          <p className="text-[11.5px] font-semibold text-muted text-center">تقييم الوجبة</p>
+          <p className="text-[11.5px] font-semibold text-muted text-center">إجراء</p>
         </div>
 
         {waitFilter && (
           <div className="flex items-center gap-2 px-5 py-2.5 border-b border-line bg-primary/[0.04]">
-            <p className="text-[11.5px] font-bold text-ink">
+            <p className="text-[11.5px] font-semibold text-ink">
               يُعرض {visibleRows.length} من {rows.length} مركزاً ·{' '}
               {waitFilter === 'stalled'
                 ? 'المتوقّفون'
@@ -673,7 +678,7 @@ export default function AdminPhases() {
             </p>
             <button
               onClick={() => setWaitFilter(null)}
-              className="mr-auto text-[11.5px] font-black text-primary hover:underline"
+              className="ms-auto text-[11.5px] font-bold text-primary hover:underline"
             >
               عرض الكل
             </button>
@@ -681,9 +686,7 @@ export default function AdminPhases() {
         )}
 
         {visibleRows.length === 0 && (
-          <p className="py-12 text-center text-[12.5px] font-bold text-muted">
-            لا مراكز في هذه الحالة الآن
-          </p>
+          <EmptyState Icon={Layers} title="لا مراكز في هذه الحالة الآن" />
         )}
 
         {visibleRows.map((row, idx) => {
@@ -696,46 +699,42 @@ export default function AdminPhases() {
           return (
             <div
               key={row.center}
-              className={`grid gap-3 px-5 py-3.5 items-center group/row transition-colors ${!isLast ? 'border-b border-line' : ''} ${isLate ? 'row-pulse-red' : row.stalled ? 'bg-red-50/70' : noMeal ? 'bg-bg/60' : 'hover:bg-[#FDFAF7]'}`}
+              className={`grid gap-3 px-5 py-3.5 items-center group/row transition-colors ${!isLast ? 'border-b border-line' : ''} ${isLate ? 'row-pulse-red' : row.stalled ? 'bg-red-50/70' : noMeal ? 'bg-[rgb(var(--c-bg)/0.6)]' : 'hover:bg-[#FDFAF7]'}`}
               style={{ gridTemplateColumns: '1.5fr repeat(3, 1fr) 1fr 0.6fr 0.8fr 0.5fr' }}
             >
               {/* Center info */}
               <div className="min-w-0 flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: `${mealMeta.color}15`, border: `1px solid ${mealMeta.color}30` }}>
-                  <span className="text-[11px] font-black tabular-nums" style={{ color: mealMeta.color }}>
+                <div className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0 border"
+                  style={{
+                    background: `color-mix(in srgb, ${mealMeta.color} 9%, #fff)`,
+                    borderColor: `color-mix(in srgb, ${mealMeta.color} 22%, #fff)`,
+                  }}>
+                  <span className="text-[11.5px] font-extrabold tabular-nums" style={{ color: mealMeta.color }}>
                     {(row.center.match(/\d+/) || ['—'])[0]}
                   </span>
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <p className="font-bold text-sm text-ink truncate">{row.center}</p>
+                    <p className="text-[13.5px] font-bold text-ink truncate">{row.center}</p>
                     {/* Meal category chips for this center on this day */}
                     {[...(centerCategories.get(extractCenterNum(row.center)) || [])].map(cat => {
                       const meta = MEAL_CATEGORY_META[cat];
                       if (!meta) return null;
-                      const CIcon = meta.Icon;
                       return (
-                        <span key={cat}
-                          className="inline-flex items-center gap-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border"
-                          style={{ background: meta.bg, borderColor: meta.border, color: meta.color }}
-                          title={`نوع الوجبة: ${meta.label}`}
-                        >
-                          <CIcon size={9} weight="bold" />
-                          {meta.label}
+                        <span key={cat} title={`نوع الوجبة: ${meta.label}`} className="inline-flex">
+                          <Pill color={meta.color} Icon={meta.Icon}>{meta.label}</Pill>
                         </span>
                       );
                     })}
                     {noMeal && (
-                      <span className="inline-flex items-center gap-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border bg-[rgb(var(--c-primary-50))] border-line text-muted"
-                        title="لا توجد وجبة لهذا المركز في المنيو لهذا اليوم"
-                      >
-                        <AlertCircle size={9} weight="bold" />
-                        لا توجد وجبة {mealMeta.label} في المنيو
+                      <span title="لا توجد وجبة لهذا المركز في المنيو لهذا اليوم" className="inline-flex">
+                        <Pill color="rgb(var(--c-muted))" Icon={AlertCircle}>
+                          لا توجد وجبة {mealMeta.label} في المنيو
+                        </Pill>
                       </span>
                     )}
                   </div>
-                  <p className="text-[10px] text-primary font-bold truncate">{row.caterer}</p>
+                  <p className="text-[11.5px] text-primary font-medium truncate mt-1">{row.caterer}</p>
                 </div>
               </div>
 
@@ -756,23 +755,23 @@ export default function AdminPhases() {
                       late={phaseLate}
                     />
                     {phaseLate && !done && (
-                      <span className="text-[9px] font-black text-red-600 leading-none">متأخر</span>
+                      <span className="text-[10px] font-bold text-red-600 leading-none">متأخر</span>
                     )}
                     {done ? (
-                      <span className="text-[10px] font-bold tabular-nums" style={{ color: phase.color }}>
+                      <span className="text-[10.5px] font-semibold tabular-nums" style={{ color: phase.color }}>
                         {time}
                       </span>
                     ) : (
-                      <span className="text-[10px] text-[#D1D5DB]">—</span>
+                      <span className="text-[10.5px] text-[#D1D5DB]">—</span>
                     )}
                     {done && photoUrl && (
                       <button
                         onClick={() => setLightboxSrc(photoUrl)}
-                        className="text-[9px] font-bold flex items-center gap-0.5 px-1.5 py-0.5 rounded-md hover:bg-background transition-colors"
+                        className="text-[10px] font-semibold flex items-center gap-1 px-1.5 py-0.5 rounded-md hover:bg-background transition-colors"
                         style={{ color: phase.color }}
                         title="عرض الصورة"
                       >
-                        <ImageIcon size={9} weight="bold" />
+                        <ImageIcon size={10} weight="bold" />
                         صورة
                       </button>
                     )}
@@ -783,21 +782,21 @@ export default function AdminPhases() {
               {/* Where it stands this minute */}
               <div className="text-center min-w-0">
                 {noMeal ? (
-                  <span className="text-[10px] font-bold text-muted/60">—</span>
+                  <span className="text-[10.5px] font-medium text-muted/60">—</span>
                 ) : row.live.complete ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-black text-[#5E9070]">
+                  <span className="inline-flex items-center gap-1 text-[11.5px] font-bold text-[#5E9070]">
                     <CheckCircle2 size={12} weight="fill" />
                     اكتملت
                   </span>
                 ) : row.live.done === 0 ? (
-                  <span className="text-[11px] font-bold text-muted">لم يبدأ</span>
+                  <span className="text-[11.5px] font-medium text-muted">لم يبدأ</span>
                 ) : (
                   <>
-                    <p className="text-[11.5px] font-black truncate"
+                    <p className="text-[11.5px] font-bold truncate"
                       style={{ color: row.stalled ? '#DC2626' : PHASES[row.live.current - 1].color }}>
                       بانتظار {PHASES[row.live.current - 1].label}
                     </p>
-                    <p className="text-[10px] font-bold tabular-nums mt-0.5"
+                    <p className="text-[10.5px] font-medium tabular-nums mt-1"
                       style={{ color: row.stalled ? '#DC2626' : 'rgb(var(--c-muted))' }}>
                       {sinceLabel(row.live.sinceMin)}
                     </p>
@@ -807,11 +806,11 @@ export default function AdminPhases() {
 
               {/* Progress */}
               <div className="text-center">
-                <p className="text-base font-black tabular-nums"
+                <p className="text-[18px] font-extrabold tabular-nums leading-none"
                   style={{ color: pct === 100 ? '#5E9070' : pct > 0 ? '#F59E0B' : '#D1D5DB' }}>
                   {pct}%
                 </p>
-                <p className="text-[9px] text-muted mt-0.5">{row.total}/{maxDone}</p>
+                <p className="text-[10px] font-medium text-muted mt-1.5">{row.total}/{maxDone}</p>
               </div>
 
               {/* Meal evaluation score */}
@@ -824,8 +823,11 @@ export default function AdminPhases() {
                     : 0;
                   if (!row.evalDoc) {
                     return (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg border"
-                        style={{ background: style.bg, borderColor: style.border, color: style.color }}>
+                      <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold px-2 py-1 rounded-md"
+                        style={{
+                          background: `color-mix(in srgb, ${style.color} 11%, #fff)`,
+                          color: style.color,
+                        }}>
                         لم يُقيَّم
                       </span>
                     );
@@ -833,20 +835,25 @@ export default function AdminPhases() {
                   return (
                     <button
                       onClick={() => setEvalDetail(row.evalDoc)}
-                      className="group/eval flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-xl border-2 transition-all hover:scale-105 active:scale-95"
-                      style={{ background: style.bg, borderColor: style.border }}
+                      className="group/eval flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-[10px] border
+                                 shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] transition-shadow duration-200
+                                 hover:shadow-[0_6px_20px_-6px_rgb(var(--c-ink)/0.16)]"
+                      style={{
+                        background: `color-mix(in srgb, ${style.color} 12%, #fff)`,
+                        borderColor: `color-mix(in srgb, ${style.color} 28%, #fff)`,
+                      }}
                       title="عرض تفاصيل التقييم"
                     >
                       <div className="flex items-center gap-1">
-                        <Sparkles size={9} style={{ color: style.color }} />
-                        <span className="text-[13px] font-black tabular-nums leading-none"
+                        <Sparkles size={10} weight="duotone" style={{ color: style.color }} />
+                        <span className="text-[14px] font-extrabold tabular-nums leading-none"
                           style={{ color: style.color }}>
                           {score != null ? score.toFixed(1) : '—'}
-                          <span className="text-[9px] opacity-70">/10</span>
+                          <span className="text-[10px] font-semibold opacity-70">/10</span>
                         </span>
                       </div>
                       {noAns > 0 && (
-                        <span className="text-[8px] font-bold text-red-600 mt-0.5">
+                        <span className="text-[10px] font-semibold text-red-600 mt-0.5">
                           {noAns} مخالفة
                         </span>
                       )}
@@ -886,13 +893,13 @@ export default function AdminPhases() {
                     </button>
                   )
                 ) : (
-                  <span className="text-[10px] text-[#D1D5DB]">—</span>
+                  <span className="text-[10.5px] text-[#D1D5DB]">—</span>
                 )}
               </div>
             </div>
           );
         })}
-      </div>
+      </Surface>
 
       </>}
       {view === 'reports' && !reportCenter && (
@@ -975,21 +982,21 @@ function EvalDetailModal({ record, onClose, onDelete }) {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" dir="rtl">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div className="relative bg-white rounded-[16px] w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-[0_24px_60px_-20px_rgb(var(--c-ink)/0.35)]">
         {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-br from-background to-white px-6 py-4 border-b border-line flex items-center justify-between z-10">
+        <div className="sticky top-0 bg-white px-6 py-4 border-b border-line flex items-center justify-between z-10">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="relative shrink-0">
-              <div className="absolute inset-0 rounded-2xl blur-md opacity-50"
-                style={{ background: st.color }} />
-              <div className="relative w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg tabular-nums shadow-md"
-                style={{ background: st.bg, color: st.color, border: `2px solid ${st.color}40` }}>
-                {score != null ? score.toFixed(1) : '—'}
-              </div>
+            <div className="w-12 h-12 rounded-[10px] flex items-center justify-center border shrink-0 text-[21px] font-extrabold tabular-nums"
+              style={{
+                background: `color-mix(in srgb, ${st.color} 12%, #fff)`,
+                borderColor: `color-mix(in srgb, ${st.color} 28%, #fff)`,
+                color: st.color,
+              }}>
+              {score != null ? score.toFixed(1) : '—'}
             </div>
             <div className="min-w-0">
-              <h2 className="text-base font-bold text-ink truncate">تقييم الوجبة</h2>
-              <p className="text-[11px] text-muted mt-0.5 truncate">
+              <h2 className="text-[16px] font-bold text-ink truncate">تقييم الوجبة</h2>
+              <p className="text-[11.5px] font-medium text-muted mt-1 truncate">
                 {record.center} · {mealLabel} · {record.scheduledDate}
               </p>
             </div>
@@ -997,11 +1004,11 @@ function EvalDetailModal({ record, onClose, onDelete }) {
           <div className="flex items-center gap-1.5 shrink-0">
             <button onClick={() => onDelete?.(record.id)}
               title="حذف التقييم"
-              className="w-9 h-9 rounded-xl border border-red-200 bg-red-50 flex items-center justify-center hover:bg-red-500 hover:border-red-500 group/del transition-colors">
+              className="w-9 h-9 rounded-[10px] border border-red-200 bg-red-50 flex items-center justify-center hover:bg-red-500 hover:border-red-500 group/del transition-colors">
               <Trash2 size={14} className="text-red-500 group-hover/del:text-white" weight="bold" />
             </button>
             <button onClick={onClose}
-              className="w-9 h-9 rounded-xl border border-line flex items-center justify-center hover:bg-[rgb(var(--c-primary-50))] transition-colors">
+              className="w-9 h-9 rounded-[10px] border border-line flex items-center justify-center hover:bg-[rgb(var(--c-primary-50))] transition-colors">
               <X size={15} className="text-muted" />
             </button>
           </div>
@@ -1010,70 +1017,85 @@ function EvalDetailModal({ record, onClose, onDelete }) {
         <div className="p-6 space-y-4">
           {/* Stats row */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-2xl border-2 p-3 text-center"
-              style={{ background: st.bg, borderColor: `${st.color}40` }}>
-              <p className="text-[10px] font-semibold text-muted mb-1">الدرجة /10</p>
-              <p className="text-2xl font-extrabold tabular-nums" style={{ color: st.color }}>
+            <div className="rounded-[14px] border p-3 text-center"
+              style={{
+                background: `color-mix(in srgb, ${st.color} 12%, #fff)`,
+                borderColor: `color-mix(in srgb, ${st.color} 28%, #fff)`,
+              }}>
+              <p className="text-[10.5px] font-semibold text-muted mb-2">الدرجة /10</p>
+              <p className="text-[26px] font-extrabold tabular-nums leading-none" style={{ color: st.color }}>
                 {score != null ? score.toFixed(1) : '—'}
               </p>
             </div>
-            <div className="rounded-2xl border-2 border-green-200 bg-green-50 p-3 text-center">
-              <p className="text-[10px] font-semibold text-muted mb-1">إجابة «نعم»</p>
-              <p className="text-2xl font-extrabold tabular-nums text-green-700">{yes}</p>
+            <div className="rounded-[14px] border p-3 text-center"
+              style={{
+                background: 'color-mix(in srgb, #15803D 12%, #fff)',
+                borderColor: 'color-mix(in srgb, #15803D 28%, #fff)',
+              }}>
+              <p className="text-[10.5px] font-semibold text-muted mb-2">إجابة «نعم»</p>
+              <p className="text-[26px] font-extrabold tabular-nums leading-none text-green-700">{yes}</p>
             </div>
-            <div className="rounded-2xl border-2 border-red-200 bg-red-50 p-3 text-center">
-              <p className="text-[10px] font-semibold text-muted mb-1">إجابة «لا»</p>
-              <p className="text-2xl font-extrabold tabular-nums text-red-700">{no}</p>
+            <div className="rounded-[14px] border p-3 text-center"
+              style={{
+                background: 'color-mix(in srgb, #B91C1C 12%, #fff)',
+                borderColor: 'color-mix(in srgb, #B91C1C 28%, #fff)',
+              }}>
+              <p className="text-[10.5px] font-semibold text-muted mb-2">إجابة «لا»</p>
+              <p className="text-[26px] font-extrabold tabular-nums leading-none text-red-700">{no}</p>
             </div>
           </div>
 
           {/* Meta */}
-          <div className="bg-background border border-line rounded-2xl p-4 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-white border border-primary/30 flex items-center justify-center shrink-0">
-              <User size={15} className="text-primary" weight="bold" />
-            </div>
+          <Surface className="p-4 flex items-center gap-3">
+            <IconTile Icon={User} color="rgb(var(--c-primary))" size="sm" />
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] text-muted font-semibold">المراقب</p>
-              <p className="text-sm font-bold text-ink truncate">
+              <p className="text-[10.5px] text-muted font-semibold">المراقب</p>
+              <p className="text-[13.5px] font-bold text-ink truncate mt-0.5">
                 {record.observer || record.observerName || '—'}
               </p>
             </div>
             {record.caterer && (
               <div className="min-w-0 flex-1 hidden sm:block">
-                <p className="text-[10px] text-muted font-semibold">المتعهد</p>
-                <p className="text-sm font-bold text-primary truncate">{record.caterer}</p>
+                <p className="text-[10.5px] text-muted font-semibold">المتعهد</p>
+                <p className="text-[13.5px] font-bold text-primary truncate mt-0.5">{record.caterer}</p>
               </div>
             )}
-          </div>
+          </Surface>
 
           {/* Violations list */}
           <div>
             <div className="flex items-center gap-2 mb-2.5">
-              <div className="w-1.5 h-5 rounded-full bg-red-500" />
-              <p className="text-sm font-black text-red-700">
+              <div className="w-1 h-4 rounded-full bg-red-500" />
+              <p className="text-[14px] font-bold text-red-700">
                 المخالفات (الأسئلة المُجابة بـ «لا»)
               </p>
-              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-red-50 border border-red-200 text-red-700 tabular-nums">
-                {noQs.length}
-              </span>
+              <Pill color="#B91C1C">{noQs.length}</Pill>
             </div>
             {noQs.length === 0 ? (
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50/40 border-2 border-green-200 rounded-2xl p-5 text-center">
-                <CheckCircle2 size={26} className="mx-auto text-green-600 mb-2" weight="regular" />
-                <p className="text-green-700 font-bold text-sm">لا توجد مخالفات في هذا التقييم 🎉</p>
-                <p className="text-green-600 text-xs mt-1">جميع الأسئلة أُجيب عنها بنعم</p>
+              <div className="rounded-[14px] border p-5 text-center"
+                style={{
+                  background: 'color-mix(in srgb, #15803D 12%, #fff)',
+                  borderColor: 'color-mix(in srgb, #15803D 28%, #fff)',
+                }}>
+                <CheckCircle2 size={26} className="mx-auto text-green-600 mb-2" weight="duotone" />
+                <p className="text-green-700 font-bold text-[13.5px]">لا توجد مخالفات في هذا التقييم 🎉</p>
+                <p className="text-green-600 text-[11.5px] font-medium mt-1">جميع الأسئلة أُجيب عنها بنعم</p>
               </div>
             ) : (
               <ul className="space-y-2">
                 {noQs.map(q => (
-                  <li key={q.id} className="bg-red-50/60 border border-red-200/70 rounded-xl p-3 flex items-start gap-2.5">
-                    <span className="w-6 h-6 rounded-md bg-red-500 text-white text-[10px] font-black flex items-center justify-center shrink-0 mt-0.5 tabular-nums">
+                  <li key={q.id} className="rounded-[10px] border p-3 flex items-start gap-2.5"
+                    style={{
+                      background: 'color-mix(in srgb, #B91C1C 7%, #fff)',
+                      borderColor: 'color-mix(in srgb, #B91C1C 22%, #fff)',
+                    }}>
+                    <span className="w-6 h-6 rounded-md bg-red-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5 tabular-nums">
                       {q.id}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-ink font-medium leading-relaxed">{q.text}</p>
+                      <p className="text-[13.5px] text-ink font-medium leading-relaxed">{q.text}</p>
                       {q.category && (
-                        <p className="text-[10px] text-primary font-bold mt-1">{q.category}</p>
+                        <p className="text-[10.5px] text-primary font-semibold mt-1">{q.category}</p>
                       )}
                     </div>
                   </li>
@@ -1085,11 +1107,11 @@ function EvalDetailModal({ record, onClose, onDelete }) {
           {/* All answered questions with photos */}
           <div>
             <div className="flex items-center gap-2 mb-2.5">
-              <div className="w-1.5 h-5 rounded-full bg-primary" />
-              <p className="text-sm font-black text-ink">جميع الإجابات والصور</p>
-              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-background border border-line text-primary tabular-nums">
+              <div className="w-1 h-4 rounded-full bg-primary" />
+              <p className="text-[14px] font-bold text-ink">جميع الإجابات والصور</p>
+              <Pill color="rgb(var(--c-primary))">
                 {MEAL_QUESTIONS.filter(q => ans[q.id]).length} سؤال
-              </span>
+              </Pill>
             </div>
             <div className="space-y-2">
               {MEAL_QUESTIONS.map(q => {
@@ -1100,18 +1122,21 @@ function EvalDetailModal({ record, onClose, onDelete }) {
                 const photoUrl = photos[q.id];
                 return (
                   <div key={q.id}
-                    className={`rounded-xl px-3 py-2.5 border ${
-                      isYes ? 'bg-green-50/40 border-green-200/60'
-                    : isNo  ? 'bg-red-50/40 border-red-200/60'
-                    :         'bg-white border-line'
-                    }`}>
+                    className="rounded-[10px] px-3 py-2.5 border"
+                    style={
+                      isYes
+                        ? { background: 'color-mix(in srgb, #15803D 6%, #fff)', borderColor: 'color-mix(in srgb, #15803D 20%, #fff)' }
+                        : isNo
+                          ? { background: 'color-mix(in srgb, #B91C1C 6%, #fff)', borderColor: 'color-mix(in srgb, #B91C1C 20%, #fff)' }
+                          : { background: '#fff', borderColor: 'rgb(var(--c-line))' }
+                    }>
                     <div className="flex items-start gap-2">
-                      <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md text-white tabular-nums shrink-0 mt-0.5"
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md text-white tabular-nums shrink-0 mt-0.5"
                         style={{ background: 'rgb(var(--c-primary))' }}>
                         {q.id}
                       </span>
-                      <p className="text-[12px] text-ink leading-relaxed flex-1">{q.text}</p>
-                      <span className={`text-[10px] font-black flex-shrink-0 flex items-center gap-0.5 ${
+                      <p className="text-[12.5px] text-ink leading-relaxed flex-1">{q.text}</p>
+                      <span className={`text-[10.5px] font-bold flex-shrink-0 flex items-center gap-0.5 ${
                         isYes ? 'text-green-700' : isNo ? 'text-red-700' : 'text-muted'
                       }`}>
                         {a}
@@ -1173,15 +1198,12 @@ function ReportsCenterList({ centers, selectedDay, phasesData, evalLookup, cente
 
   return (
     <div className="space-y-4">
-      <div className="bg-gradient-to-br from-background to-white border border-line rounded-2xl p-4 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md"
-          style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
-          <ImageIcon size={18} className="text-white" weight="bold" />
-        </div>
+      <Surface className="p-4 flex items-center gap-3">
+        <IconTile Icon={ImageIcon} color="rgb(var(--c-primary))" size="md" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-black text-ink">تقارير المراكز · {DAYS.find(d => d.id === selectedDay)?.label}</p>
+          <p className="text-[14px] font-bold text-ink">تقارير المراكز · {DAYS.find(d => d.id === selectedDay)?.label}</p>
         </div>
-      </div>
+      </Surface>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {summaries.map(s => {
@@ -1192,35 +1214,30 @@ function ReportsCenterList({ centers, selectedDay, phasesData, evalLookup, cente
             <button
               key={s.center}
               onClick={() => onSelect(s.center)}
-              className="text-right group bg-white rounded-2xl border border-line p-4 shadow-[0_2px_8px_rgb(var(--c-ink)/0.07)] hover:shadow-[0_6px_24px_rgb(var(--c-primary)/0.18)] hover:border-line hover:-translate-y-0.5 transition-all"
+              className="text-start group bg-white rounded-[14px] border border-line p-4
+                         shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] transition-shadow duration-200
+                         hover:shadow-[0_6px_20px_-6px_rgb(var(--c-ink)/0.16)]"
             >
               {/* Header */}
               <div className="flex items-start gap-3 mb-3">
-                <div className="relative shrink-0">
-                  <div className="absolute inset-0 rounded-xl blur-md opacity-40 bg-primary group-hover:opacity-60 transition-opacity" />
-                  <div className="relative w-11 h-11 rounded-xl flex items-center justify-center shadow-md"
-                    style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
-                    <span className="text-white text-sm font-black tabular-nums">
-                      {(s.center.match(/\d+/) || ['—'])[0]}
-                    </span>
-                  </div>
-                </div>
+                <span className="w-11 h-11 rounded-[10px] flex items-center justify-center shrink-0 border"
+                  style={{
+                    background: 'color-mix(in srgb, rgb(var(--c-primary)) 9%, #fff)',
+                    borderColor: 'color-mix(in srgb, rgb(var(--c-primary)) 22%, #fff)',
+                  }}>
+                  <span className="text-primary text-[14px] font-extrabold tabular-nums">
+                    {(s.center.match(/\d+/) || ['—'])[0]}
+                  </span>
+                </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-black text-ink truncate">{s.center}</p>
-                  <p className="text-[10px] text-primary font-bold truncate mt-0.5">{s.caterer}</p>
-                  <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                  <p className="text-[13.5px] font-bold text-ink truncate">{s.center}</p>
+                  <p className="text-[11.5px] text-primary font-medium truncate mt-1">{s.caterer}</p>
+                  <div className="flex items-center gap-1 mt-2 flex-wrap">
                     {cats.map(cat => {
                       const meta = MEAL_CATEGORY_META[cat];
                       if (!meta) return null;
-                      const CIcon = meta.Icon;
                       return (
-                        <span key={cat}
-                          className="inline-flex items-center gap-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border"
-                          style={{ background: meta.bg, borderColor: meta.border, color: meta.color }}
-                        >
-                          <CIcon size={9} weight="bold" />
-                          {meta.label}
-                        </span>
+                        <Pill key={cat} color={meta.color} Icon={meta.Icon}>{meta.label}</Pill>
                       );
                     })}
                   </div>
@@ -1235,15 +1252,18 @@ function ReportsCenterList({ centers, selectedDay, phasesData, evalLookup, cente
                   const done  = PHASES.filter(p => cell[`phase${p.id}`]).length;
                   const pPct  = Math.round((done / PHASES.length) * 100);
                   return (
-                    <div key={m.id} className="rounded-xl p-2 border text-center"
-                      style={{ background: m.bg, borderColor: m.border }}>
+                    <div key={m.id} className="rounded-[10px] p-2 border text-center"
+                      style={{
+                        background: `color-mix(in srgb, ${m.color} 12%, #fff)`,
+                        borderColor: `color-mix(in srgb, ${m.color} 28%, #fff)`,
+                      }}>
                       <div className="flex items-center justify-center gap-1 mb-1">
-                        <MIcon size={11} weight="bold" style={{ color: m.color }} />
-                        <span className="text-[9px] font-bold" style={{ color: m.color }}>{m.label}</span>
+                        <MIcon size={11} weight="duotone" style={{ color: m.color }} />
+                        <span className="text-[10px] font-semibold" style={{ color: m.color }}>{m.label}</span>
                       </div>
-                      <p className="text-[11px] font-black tabular-nums" style={{ color: m.color }}>
+                      <p className="text-[13px] font-extrabold tabular-nums leading-none" style={{ color: m.color }}>
                         {done}/{PHASES.length}
-                        <span className="text-[8px] opacity-70 ms-0.5">· {pPct}%</span>
+                        <span className="text-[10px] font-medium opacity-70 ms-1">· {pPct}%</span>
                       </p>
                     </div>
                   );
@@ -1252,33 +1272,37 @@ function ReportsCenterList({ centers, selectedDay, phasesData, evalLookup, cente
 
               {/* Stats row */}
               <div className="grid grid-cols-3 gap-1.5">
-                <div className="rounded-lg border border-line bg-bg p-1.5 text-center">
+                <div className="rounded-[10px] border border-line bg-[rgb(var(--c-bg))] p-2 text-center">
                   <div className="flex items-center justify-center gap-1 text-primary">
-                    <ImageIcon size={10} weight="bold" />
-                    <span className="text-[8px] font-bold">صور</span>
+                    <ImageIcon size={11} weight="duotone" />
+                    <span className="text-[10px] font-semibold">صور</span>
                   </div>
-                  <p className="text-sm font-black text-ink tabular-nums mt-0.5">{s.photoCount}</p>
+                  <p className="text-[18px] font-extrabold text-ink tabular-nums leading-none mt-1.5">{s.photoCount}</p>
                 </div>
-                <div className="rounded-lg border p-1.5 text-center"
-                  style={{ background: sst.bg, borderColor: sst.border }}>
+                <div className="rounded-[10px] border p-2 text-center"
+                  style={{
+                    background: `color-mix(in srgb, ${sst.color} 12%, #fff)`,
+                    borderColor: `color-mix(in srgb, ${sst.color} 28%, #fff)`,
+                  }}>
                   <div className="flex items-center justify-center gap-1" style={{ color: sst.color }}>
-                    <Sparkles size={10} weight="bold" />
-                    <span className="text-[8px] font-bold">متوسط</span>
+                    <Sparkles size={11} weight="duotone" />
+                    <span className="text-[10px] font-semibold">متوسط</span>
                   </div>
-                  <p className="text-sm font-black tabular-nums mt-0.5" style={{ color: sst.color }}>
+                  <p className="text-[18px] font-extrabold tabular-nums leading-none mt-1.5" style={{ color: sst.color }}>
                     {s.avgScore != null ? s.avgScore.toFixed(1) : '—'}
                   </p>
                 </div>
-                <div className="rounded-lg border p-1.5 text-center"
-                  style={s.violations > 0
-                    ? { background: '#FEF2F2', borderColor: '#FCA5A5' }
-                    : { background: '#F0FDF4', borderColor: '#86EFAC' }}>
+                <div className="rounded-[10px] border p-2 text-center"
+                  style={{
+                    background: `color-mix(in srgb, ${s.violations > 0 ? '#B91C1C' : '#15803D'} 12%, #fff)`,
+                    borderColor: `color-mix(in srgb, ${s.violations > 0 ? '#B91C1C' : '#15803D'} 28%, #fff)`,
+                  }}>
                   <div className="flex items-center justify-center gap-1"
                     style={{ color: s.violations > 0 ? '#B91C1C' : '#15803D' }}>
-                    <AlertCircle size={10} weight="bold" />
-                    <span className="text-[8px] font-bold">مخالفات</span>
+                    <AlertCircle size={11} weight="duotone" />
+                    <span className="text-[10px] font-semibold">مخالفات</span>
                   </div>
-                  <p className="text-sm font-black tabular-nums mt-0.5"
+                  <p className="text-[18px] font-extrabold tabular-nums leading-none mt-1.5"
                     style={{ color: s.violations > 0 ? '#B91C1C' : '#15803D' }}>
                     {s.violations}
                   </p>
@@ -1287,9 +1311,9 @@ function ReportsCenterList({ centers, selectedDay, phasesData, evalLookup, cente
 
               {/* Overall progress bar */}
               <div className="mt-3">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[9px] font-bold text-muted">إجمالي المراحل</span>
-                  <span className="text-[10px] font-black tabular-nums"
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10.5px] font-semibold text-muted">إجمالي المراحل</span>
+                  <span className="text-[10.5px] font-bold tabular-nums"
                     style={{ color: pct === 100 ? '#5E9070' : pct > 0 ? '#F59E0B' : 'rgb(var(--c-muted))' }}>
                     {s.phasesDone}/{s.maxPhases} · {pct}%
                   </span>
@@ -1317,45 +1341,38 @@ function CenterReport({ center, selectedDay, phasesData, evalLookup, centerCateg
   return (
     <div className="space-y-4">
       {/* Header bar */}
-      <div className="bg-gradient-to-br from-white to-background border border-line rounded-2xl p-4 flex items-center gap-3 shadow-[0_2px_8px_rgb(var(--c-ink)/0.07)]">
+      <Surface className="p-4 flex items-center gap-3">
         <button onClick={onBack}
-          className="min-w-[40px] min-h-[40px] rounded-xl border border-line bg-white text-primary flex items-center justify-center hover:bg-background hover:border-primary transition-all shrink-0"
+          className="min-w-[40px] min-h-[40px] rounded-[10px] border border-line bg-white text-primary flex items-center justify-center hover:bg-background hover:border-primary transition-colors shrink-0"
           title="رجوع"
         >
           <X size={16} weight="bold" />
         </button>
-        <div className="relative shrink-0">
-          <div className="absolute inset-0 rounded-2xl blur-md opacity-50 bg-primary" />
-          <div className="relative w-12 h-12 rounded-2xl flex items-center justify-center shadow-md"
-            style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
-            <span className="text-white text-sm font-black tabular-nums">
-              {(center.match(/\d+/) || ['—'])[0]}
-            </span>
-          </div>
-        </div>
+        <span className="w-12 h-12 rounded-[10px] flex items-center justify-center shrink-0 border"
+          style={{
+            background: 'color-mix(in srgb, rgb(var(--c-primary)) 9%, #fff)',
+            borderColor: 'color-mix(in srgb, rgb(var(--c-primary)) 22%, #fff)',
+          }}>
+          <span className="text-primary text-[16px] font-extrabold tabular-nums">
+            {(center.match(/\d+/) || ['—'])[0]}
+          </span>
+        </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-base font-black text-ink truncate">{center}</p>
+            <p className="text-[16px] font-bold text-ink truncate">{center}</p>
             {cats.map(cat => {
               const meta = MEAL_CATEGORY_META[cat];
               if (!meta) return null;
-              const CIcon = meta.Icon;
               return (
-                <span key={cat}
-                  className="inline-flex items-center gap-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border"
-                  style={{ background: meta.bg, borderColor: meta.border, color: meta.color }}
-                >
-                  <CIcon size={9} weight="bold" />
-                  {meta.label}
-                </span>
+                <Pill key={cat} color={meta.color} Icon={meta.Icon}>{meta.label}</Pill>
               );
             })}
           </div>
-          <p className="text-[11px] text-primary font-bold mt-0.5 truncate">
+          <p className="text-[11.5px] text-primary font-medium mt-1 truncate">
             {centerObj.caterer} · {DAYS.find(d => d.id === selectedDay)?.label}
           </p>
         </div>
-      </div>
+      </Surface>
 
       {/* Per-meal sections */}
       <div className="space-y-4">
@@ -1371,48 +1388,39 @@ function CenterReport({ center, selectedDay, phasesData, evalLookup, centerCateg
             : 0;
 
           return (
-            <div key={m.id}
-              className="bg-white rounded-2xl border-2 overflow-hidden shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)]"
-              style={{ borderColor: m.border }}
-            >
-              {/* Meal header */}
-              <div className="px-4 sm:px-5 py-3 flex items-center gap-3 border-b"
-                style={{ background: m.bg, borderColor: m.border }}>
-                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm shrink-0"
-                  style={{ border: `1.5px solid ${m.border}` }}>
-                  <MIcon size={18} weight="bold" style={{ color: m.color }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-black" style={{ color: m.color }}>{m.label}</p>
-                  <p className="text-[10px] font-bold text-muted mt-0.5">
-                    {done}/{PHASES.length} مراحل مكتملة
-                  </p>
-                </div>
-                {/* Eval score chip */}
-                {evalDoc ? (
-                  <button onClick={() => onViewEval(evalDoc)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 hover:scale-105 active:scale-95 transition-transform shrink-0"
-                    style={{ background: sst.bg, borderColor: sst.border }}
-                    title="عرض تفاصيل التقييم"
-                  >
-                    <Sparkles size={11} style={{ color: sst.color }} weight="bold" />
-                    <span className="text-sm font-black tabular-nums" style={{ color: sst.color }}>
-                      {score != null ? score.toFixed(1) : '—'}
-                      <span className="text-[9px] opacity-70">/10</span>
-                    </span>
-                    {noAns > 0 && (
-                      <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-red-500 text-white tabular-nums">
-                        {noAns} مخالفة
-                      </span>
-                    )}
-                  </button>
-                ) : (
-                  <span className="text-[10px] font-bold text-muted px-2.5 py-1.5 rounded-lg border border-line bg-white">
-                    لم يُقيَّم
+            <Panel
+              key={m.id}
+              Icon={MIcon}
+              color={m.color}
+              title={m.label}
+              subtitle={`${done}/${PHASES.length} مراحل مكتملة`}
+              right={evalDoc ? (
+                <button onClick={() => onViewEval(evalDoc)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[10px] border shrink-0
+                             transition-shadow duration-200 hover:shadow-[0_6px_20px_-6px_rgb(var(--c-ink)/0.16)]"
+                  style={{
+                    background: `color-mix(in srgb, ${sst.color} 12%, #fff)`,
+                    borderColor: `color-mix(in srgb, ${sst.color} 28%, #fff)`,
+                  }}
+                  title="عرض تفاصيل التقييم"
+                >
+                  <Sparkles size={12} style={{ color: sst.color }} weight="duotone" />
+                  <span className="text-[14px] font-extrabold tabular-nums leading-none" style={{ color: sst.color }}>
+                    {score != null ? score.toFixed(1) : '—'}
+                    <span className="text-[10px] font-semibold opacity-70">/10</span>
                   </span>
-                )}
-              </div>
-
+                  {noAns > 0 && (
+                    <span className="text-[10px] font-bold px-1.5 py-[3px] rounded-md bg-red-500 text-white tabular-nums leading-none">
+                      {noAns} مخالفة
+                    </span>
+                  )}
+                </button>
+              ) : (
+                <span className="text-[10.5px] font-semibold text-muted px-2 py-[3px] rounded-md bg-[rgb(var(--c-primary-50))]">
+                  لم يُقيَّم
+                </span>
+              )}
+            >
               {/* Phase photos grid */}
               <div className="p-4 sm:p-5">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -1422,30 +1430,41 @@ function CenterReport({ center, selectedDay, phasesData, evalLookup, centerCateg
                     const photoUrl = cell[`phase${p.id}Photo`] || null;
                     return (
                       <div key={p.id}
-                        className="rounded-xl border-2 overflow-hidden"
-                        style={{ borderColor: isDone ? p.border : 'rgb(var(--c-line))', background: isDone ? p.bg : 'rgb(var(--c-bg))' }}
+                        className="rounded-[10px] border overflow-hidden"
+                        style={{
+                          borderColor: isDone
+                            ? `color-mix(in srgb, ${p.color} 28%, #fff)`
+                            : 'rgb(var(--c-line))',
+                          background: isDone
+                            ? `color-mix(in srgb, ${p.color} 12%, #fff)`
+                            : 'rgb(var(--c-bg))',
+                        }}
                       >
                         {/* Phase label strip */}
-                        <div className="px-3 py-2 flex items-center justify-between"
-                          style={{ background: isDone ? `${p.color}10` : 'rgb(var(--c-primary-50))' }}>
+                        <div className="px-3 py-2 flex items-center justify-between border-b"
+                          style={{
+                            borderColor: isDone
+                              ? `color-mix(in srgb, ${p.color} 22%, #fff)`
+                              : 'rgb(var(--c-line))',
+                          }}>
                           <div className="flex items-center gap-2">
-                            <span className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black text-white shrink-0"
+                            <span className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold text-white shrink-0"
                               style={{ background: isDone ? p.color : 'rgb(var(--c-muted))' }}>
                               {p.id}
                             </span>
-                            <span className="text-[11px] font-black"
+                            <span className="text-[12px] font-bold"
                               style={{ color: isDone ? p.color : 'rgb(var(--c-muted))' }}>
                               {p.label}
                             </span>
                           </div>
                           {isDone ? (
-                            <span className="flex items-center gap-1 text-[10px] font-bold tabular-nums"
+                            <span className="flex items-center gap-1 text-[10.5px] font-semibold tabular-nums"
                               style={{ color: p.color }}>
                               <CheckCircle2 size={11} weight="bold" />
                               {time || '—'}
                             </span>
                           ) : (
-                            <span className="text-[10px] font-bold text-muted">لم يبدأ</span>
+                            <span className="text-[10.5px] font-medium text-muted">لم يبدأ</span>
                           )}
                         </div>
                         {/* Photo */}
@@ -1458,17 +1477,15 @@ function CenterReport({ center, selectedDay, phasesData, evalLookup, centerCateg
                             <img src={photoUrl} alt={p.label}
                               className="w-full h-44 object-cover transition-transform group-hover/photo:scale-105" />
                             <div className="absolute inset-0 bg-black/0 group-hover/photo:bg-black/30 transition-colors flex items-center justify-center">
-                              <div className="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover/photo:opacity-100 transition-opacity shadow-lg">
+                              <div className="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover/photo:opacity-100 transition-opacity">
                                 <ImageIcon size={15} className="text-ink" weight="bold" />
                               </div>
                             </div>
                           </button>
                         ) : (
-                          <div className="w-full h-44 flex flex-col items-center justify-center gap-1.5 bg-bg">
-                            <div className="w-10 h-10 rounded-full bg-[rgb(var(--c-primary-50))] border border-line flex items-center justify-center">
-                              <ImageIcon size={16} className="text-muted" weight="regular" />
-                            </div>
-                            <span className="text-[10px] font-bold text-muted">
+                          <div className="w-full h-44 flex flex-col items-center justify-center gap-2 bg-[rgb(var(--c-bg))]">
+                            <ImageIcon size={22} className="text-muted/35" weight="duotone" />
+                            <span className="text-[11.5px] font-medium text-muted">
                               {isDone ? 'بدون صورة' : 'لم تُرفع بعد'}
                             </span>
                           </div>
@@ -1478,7 +1495,7 @@ function CenterReport({ center, selectedDay, phasesData, evalLookup, centerCateg
                   })}
                 </div>
               </div>
-            </div>
+            </Panel>
           );
         })}
       </div>

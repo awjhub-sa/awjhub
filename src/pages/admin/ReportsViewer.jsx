@@ -20,6 +20,7 @@ import { db } from '../../lib/db.js';
 import { useBrand } from '../../context/BrandContext.jsx';
 import { formatHijri } from '../../lib/hijri.js';
 import { SOURCE_BY_KEY } from '../../config/reportSources.js';
+import { readDetails } from '../../config/readinessScore.js';
 import {
   AR_NUM, buildLookups, buildTable, describeFilters,
   scoreOf, bandOf, exportCsv, readReportRequest,
@@ -312,7 +313,7 @@ function ReadinessSummary({ records }) {
    criterion with the inspector's note, the photographs, and a place to sign. */
 function CenterRecord({ rec, source, withPhotos, Sheet }) {
   const answers = rec.answers || {};
-  const details = answers.__details || {};
+  const details = readDetails(answers);
   const photos  = answers.__photos  || {};
   const sc = scoreOf(rec);
   const band = sc == null ? null : bandOf(sc);

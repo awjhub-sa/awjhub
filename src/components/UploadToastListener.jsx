@@ -19,11 +19,14 @@ import {
   User,
   Buildings as Building2,
 } from '@phosphor-icons/react';
+import { IconTile } from './ui/index.jsx';
 import { db } from '../lib/db.js';
 
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
+
 const SITE_META = {
-  mina:   { label: 'مشعر منى',  Icon: ShieldCheck, color: 'rgb(var(--c-success))', gradient: 'linear-gradient(135deg, #4F8856, rgb(var(--c-success)))' },
-  arafat: { label: 'مشعر عرفة', Icon: Mountain,    color: '#2F5580', gradient: 'linear-gradient(135deg, #6595C4, #2F5580)' },
+  mina:   { label: 'مشعر منى',  Icon: ShieldCheck, color: 'rgb(var(--c-success))' },
+  arafat: { label: 'مشعر عرفة', Icon: Mountain,    color: '#2F5580' },
 };
 
 const TOAST_TTL_MS = 8000;
@@ -69,7 +72,7 @@ export default function UploadToastListener() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed top-20 left-4 z-[200] flex flex-col gap-2 max-w-sm pointer-events-none" dir="rtl">
+    <div className="fixed top-20 end-4 z-[200] flex flex-col gap-2 max-w-sm pointer-events-none" dir="rtl">
       {toasts.map(t => (
         <ToastCard key={t.id} site={t.site} doc={t.doc} onClose={() => dismiss(t.id)} />
       ))}
@@ -79,37 +82,34 @@ export default function UploadToastListener() {
 
 function ToastCard({ site, doc, onClose }) {
   const meta = SITE_META[site];
-  const Icon = meta.Icon;
   return (
     <div
-      className="pointer-events-auto bg-white rounded-2xl border-2 shadow-[0_12px_32px_rgb(var(--c-ink)/0.18)] p-3.5 flex items-center gap-3 animate-in slide-in-from-left-4 fade-in duration-300"
-      style={{ borderColor: meta.color }}>
-      <div className="relative shrink-0">
-        <div className="absolute inset-0 rounded-2xl blur-md opacity-50" style={{ background: meta.color }} />
-        <div className="relative w-12 h-12 rounded-2xl flex items-center justify-center shadow-md"
-          style={{ background: meta.gradient }}>
-          <Icon size={22} className="text-white" weight="bold" />
-        </div>
-      </div>
+      className="relative pointer-events-auto rounded-[14px] border overflow-hidden
+                 shadow-[0_8px_28px_-8px_rgb(var(--c-ink)/0.28)]
+                 ps-4 pe-3 py-3 flex items-center gap-3
+                 animate-in slide-in-from-left-4 fade-in duration-300"
+      style={{ background: tint(meta.color, 12), borderColor: tint(meta.color, 28) }}>
+      <span aria-hidden className="absolute inset-y-0 start-0 w-[3px]" style={{ background: meta.color }} />
+      <IconTile Icon={meta.Icon} color={meta.color} size="lg" />
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-black uppercase tracking-wider mb-0.5" style={{ color: meta.color }}>
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: meta.color }}>
           تقييم جاهزية جديد
         </p>
-        <div className="flex items-center gap-1.5 mb-0.5">
-          <Building2 size={11} className="text-primary shrink-0" weight="bold" />
-          <p className="text-sm font-black text-ink truncate">{doc.center || '—'}</p>
+        <div className="flex items-center gap-1.5 mt-1">
+          <Building2 size={12} className="text-muted/60 shrink-0" weight="bold" />
+          <p className="text-[13.5px] font-bold text-ink truncate">{doc.center || '—'}</p>
         </div>
-        <div className="flex items-center gap-1.5">
-          <User size={10} className="text-muted shrink-0" weight="bold" />
-          <p className="text-[11px] text-muted font-bold truncate">
+        <div className="flex items-center gap-1.5 mt-1">
+          <User size={11} className="text-muted/60 shrink-0" weight="bold" />
+          <p className="text-[11.5px] text-muted font-medium truncate">
             {meta.label} · {doc.observer || (doc.role === 'supervisor' ? 'مشرف' : 'مراقب')}
           </p>
         </div>
       </div>
       <button onClick={onClose}
-        className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[rgb(var(--c-primary-50))] transition-colors shrink-0"
+        className="w-7 h-7 rounded-md flex items-center justify-center text-muted hover:bg-white/70 hover:text-ink transition-colors shrink-0"
         title="إغلاق">
-        <X size={14} className="text-muted" weight="bold" />
+        <X size={13} weight="bold" />
       </button>
     </div>
   );

@@ -12,6 +12,11 @@
 
 import { useEffect } from 'react';
 import { X } from '@phosphor-icons/react';
+import { Panel } from './ui/index.jsx';
+
+/* The head is navy, so a record's own colour has to be lifted toward white
+   before it lands there — a navy support type on a navy band is invisible. */
+const onDark = (c) => `color-mix(in srgb, ${c} 55%, #fff)`;
 
 export default function DetailDrawer({
   open, onClose,
@@ -62,34 +67,32 @@ export default function DetailDrawer({
             full width off-screen. */}
         <aside
           className="dw-panel absolute inset-y-0 left-0 bg-canvas flex flex-col
-                     rounded-s-3xl overflow-hidden shadow-[0_0_80px_rgb(var(--c-primary-900)/0.5)]"
+                     rounded-s-[18px] overflow-hidden shadow-[0_0_40px_-8px_rgb(0_0_0/0.45)]"
           style={{ width: `min(${width}px, 100%)`, animation: 'dwSlide .26s cubic-bezier(.2,.8,.2,1) both' }}
           onClick={e => e.stopPropagation()}
         >
             {/* ── Hero ── */}
-            <header className="relative px-6 pt-6 pb-5 flex-shrink-0 overflow-hidden"
-              style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary)) 0%, rgb(var(--c-primary-700)) 100%)' }}>
-              <span aria-hidden className="pointer-events-none absolute -top-24 -left-12 w-80 h-60 rounded-full opacity-[0.24]"
-                style={{ background: `radial-gradient(circle, ${accent} 0%, transparent 68%)` }} />
-              <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px]"
-                style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }} />
+            <header className="relative px-5 sm:px-6 pt-6 pb-5 flex-shrink-0"
+              style={{ background: 'linear-gradient(180deg, rgb(var(--c-primary)) 0%, rgb(var(--c-primary-700)) 100%)' }}>
+              <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-px"
+                style={{ background: `linear-gradient(90deg, transparent, ${onDark(accent)}, transparent)` }} />
 
-              <div className="relative flex items-start gap-3">
+              <div className="relative flex items-start gap-3.5">
                 {Icon && (
-                  <span className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 border backdrop-blur-sm"
-                    style={{ borderColor: `${accent}66`, background: `${accent}1F` }}>
-                    <Icon size={23} weight="bold" style={{ color: accent }} />
+                  <span className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/12"
+                    style={{ background: 'rgb(255 255 255 / 0.06)' }}>
+                    <Icon size={21} weight="duotone" style={{ color: onDark(accent) }} />
                   </span>
                 )}
                 <div className="min-w-0 flex-1">
                   {kicker && (
-                    <p className="text-[10.5px] font-black tracking-[0.22em] uppercase" style={{ color: accent }}>{kicker}</p>
+                    <p className="text-[10px] font-bold tracking-[0.18em] uppercase" style={{ color: onDark(accent) }}>{kicker}</p>
                   )}
-                  <h2 className="text-[21px] font-black text-white mt-1.5 leading-tight">{title}</h2>
-                  {subtitle && <p className="text-[12.5px] font-bold text-white/60 mt-1">{subtitle}</p>}
+                  <h2 className="text-[21px] font-extrabold text-white mt-1 leading-tight">{title}</h2>
+                  {subtitle && <p className="text-[12px] font-medium text-white/55 mt-1">{subtitle}</p>}
                 </div>
                 <button onClick={onClose} aria-label="إغلاق"
-                  className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-white/70 border border-white/20 hover:text-white hover:bg-white/10 transition-colors">
+                  className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0 text-white/70 border border-white/15 hover:text-white hover:bg-white/10 transition-colors">
                   <X size={16} weight="bold" />
                 </button>
               </div>
@@ -97,10 +100,10 @@ export default function DetailDrawer({
               {chips && <div className="relative flex items-center gap-1.5 flex-wrap mt-3.5">{chips}</div>}
             </header>
 
-            <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4">{children}</div>
+            <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-5 space-y-3">{children}</div>
 
             {footer && (
-              <footer className="flex-shrink-0 px-5 py-3.5 bg-white border-t border-line flex items-center gap-2 flex-wrap">
+              <footer className="flex-shrink-0 px-4 sm:px-5 py-3 bg-white border-t border-line flex items-center gap-2 flex-wrap">
                 {footer}
               </footer>
             )}
@@ -117,15 +120,9 @@ export default function DetailDrawer({
 
 export function Section({ title, Icon, right, children, tone = 'rgb(var(--c-accent))' }) {
   return (
-    <section className="bg-white rounded-2xl border border-line overflow-hidden">
-      <header className="px-3.5 py-2.5 border-b border-line flex items-center gap-2">
-        <span className="w-1 h-4 rounded-full flex-shrink-0" style={{ background: tone }} />
-        {Icon && <Icon size={13} weight="bold" className="text-muted flex-shrink-0" />}
-        <h3 className="text-[12px] font-black text-ink flex-1 truncate">{title}</h3>
-        {right}
-      </header>
-      <div className="p-3.5">{children}</div>
-    </section>
+    <Panel Icon={Icon} color={tone} title={title} right={right}>
+      <div className="p-3.5 sm:p-4">{children}</div>
+    </Panel>
   );
 }
 
@@ -135,12 +132,15 @@ export function Facts({ items }) {
   return (
     <dl className="grid grid-cols-2 gap-2">
       {live.map((f, i) => (
-        <div key={i} className={`rounded-xl border border-line bg-background/60 px-3 py-2.5 ${f.wide ? 'col-span-2' : ''}`}>
-          <dt className="text-[10px] font-bold text-muted flex items-center gap-1.5">
-            {f.Icon && <f.Icon size={11} weight="bold" style={{ color: f.color || 'rgb(var(--c-muted))' }} />}
+        <div
+          key={i}
+          className={`rounded-[11px] border border-line bg-[rgb(var(--c-bg))] px-3 py-2.5 ${f.wide ? 'col-span-2' : ''}`}
+        >
+          <dt className="text-[10.5px] font-semibold text-muted flex items-center gap-1.5">
+            {f.Icon && <f.Icon size={12} weight="bold" style={{ color: f.color || 'rgb(var(--c-muted))' }} />}
             {f.label}
           </dt>
-          <dd className="text-[12px] font-black text-ink mt-1 truncate" title={String(f.value)}>
+          <dd className="text-[12.5px] font-bold text-ink mt-1 truncate" title={String(f.value)}>
             {f.href
               ? <a href={f.href} target="_blank" rel="noopener noreferrer"
                   className="text-primary hover:underline">{f.value}</a>
@@ -153,13 +153,14 @@ export function Facts({ items }) {
 }
 
 /* A chip for the navy hero: light enough to read on it, quiet enough not to
-   compete with the title. */
+   compete with the title. Solid chips carry a lightened fill so dark text sits
+   on them whatever colour the record brought. */
 export function HeroChip({ children, color, solid }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-[10px] font-black px-2.5 py-1 rounded-full border"
+    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-[3px] rounded-md border leading-none whitespace-nowrap"
       style={solid
-        ? { background: color, borderColor: 'transparent', color: 'rgb(var(--c-primary-900))' }
-        : { background: 'rgb(255 255 255 / 0.1)', borderColor: 'rgb(255 255 255 / 0.22)', color: color || '#fff' }}>
+        ? { background: onDark(color), borderColor: 'transparent', color: 'rgb(var(--c-primary-900))' }
+        : { background: 'rgb(255 255 255 / 0.12)', borderColor: 'rgb(255 255 255 / 0.15)', color: color ? onDark(color) : '#fff' }}>
       {children}
     </span>
   );

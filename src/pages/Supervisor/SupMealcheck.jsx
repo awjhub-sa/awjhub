@@ -11,7 +11,6 @@ import {
   ArrowLeft,
   ArrowCounterClockwise as RotateCcw,
   Prohibit as Ban,
-  Sparkle as Sparkles,
   CircleNotch as Loader2,
   X,
 } from '@phosphor-icons/react';
@@ -21,6 +20,32 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { getCaterer } from '../../config/centers.js';
 import { extractDay, MEAL_META } from '../../hooks/useAssignedTasks.js';
 import { MEAL_QUESTIONS, MEAL_MAX_SCORE, computeMealScore } from '../../config/mealQuestions.js';
+import { Surface } from '../../components/ui/index.jsx';
+
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
+
+const NAVY  = 'rgb(var(--c-primary))';
+const GREEN = '#15803D';
+const RED   = '#DC2626';
+const INFO  = 'rgb(var(--c-info))';
+
+/* The identity block every screen here repeats: who, where, which caterer. */
+function IdentityGrid({ color, cells }) {
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      {cells.map(c => (
+        <div
+          key={c.lbl}
+          className="bg-white rounded-[11px] px-2.5 py-2.5 border text-center min-w-0"
+          style={{ borderColor: tint(color, 22) }}
+        >
+          <p className="text-[10px] font-semibold text-muted mb-1 truncate">{c.lbl}</p>
+          <p className="text-[12px] font-bold text-ink truncate" title={c.val || ''}>{c.val || '—'}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 /* Phase 2 (cooking) is skipped for the «وجبة جافة» (dry) category since
    dry meals are not cooked on-site. See buildPhases() below. */
@@ -64,9 +89,9 @@ function TaskGate({ profile, centerId, catererName, tasks, completions, loading,
 
   return (
     <div dir="rtl" className="min-h-screen bg-canvas pb-10 font-arabic">
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-line w-full px-4 py-3 mb-6 shadow-sm">
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-line w-full px-4 py-3 mb-6">
         <div className="max-w-xl mx-auto flex items-center justify-between">
-          <button onClick={() => window.history.back()} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition">
+          <button onClick={() => window.history.back()} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-[rgb(var(--c-bg))] rounded-[10px] transition-colors">
             <ChevronRight className="text-primary" size={22} weight="bold" />
           </button>
           <h1 className="text-base font-bold text-ink absolute left-1/2 -translate-x-1/2 whitespace-nowrap">تقييم جودة الوجبات</h1>
@@ -75,95 +100,106 @@ function TaskGate({ profile, centerId, catererName, tasks, completions, loading,
       </header>
 
       <div className="max-w-xl mx-auto px-4 space-y-5">
-        <div className="group rounded-[2rem] p-5 text-white bg-ink shadow-lg">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-xl blur-md bg-primary opacity-40 group-hover:opacity-70 transition-opacity" />
-              <div className="relative bg-white/10 p-2.5 rounded-xl transition-transform duration-300 group-hover:scale-110">
-                <Utensils className="text-primary" size={22} />
-                <Sparkles size={9} className="absolute -top-0.5 -right-0.5 text-yellow-200 drop-shadow" />
-              </div>
-            </div>
-            <div>
-              <p className="text-primary text-[10px] font-black uppercase tracking-widest">مهام التقييم</p>
-              <h2 className="text-base font-bold">الوجبات</h2>
+        <div
+          className="rounded-[14px] border p-5 shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)]"
+          style={{ background: tint(NAVY, 12), borderColor: tint(NAVY, 28) }}
+        >
+          <div className="flex items-center gap-3.5 mb-5">
+            <span
+              className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border"
+              style={{ background: tint(NAVY, 9), borderColor: tint(NAVY, 22) }}
+            >
+              <Utensils size={21} weight="duotone" style={{ color: NAVY }} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] leading-none" style={{ color: NAVY }}>مهام التقييم</p>
+              <h2 className="text-[19px] font-extrabold text-ink mt-1.5 leading-tight">الوجبات</h2>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { lbl: 'المشرف', val: profile?.nameAr || profile?.name, cls: 'text-white' },
-              { lbl: 'المركز', val: centerId,                          cls: 'text-primary' },
-              { lbl: 'المتعهد', val: catererName,                     cls: 'text-white' },
-            ].map(c => (
-              <div key={c.lbl} className="bg-white/5 rounded-xl px-2 py-2.5 border border-white/10 text-center min-w-0">
-                <p className="text-white/40 text-[9px] sm:text-[10px] mb-0.5 truncate">{c.lbl}</p>
-                <p className={`font-bold text-[10px] sm:text-[11px] truncate ${c.cls}`} title={c.val || ''}>{c.val || '—'}</p>
-              </div>
-            ))}
-          </div>
+          <IdentityGrid
+            color={NAVY}
+            cells={[
+              { lbl: 'المشرف', val: profile?.nameAr || profile?.name },
+              { lbl: 'المركز', val: centerId },
+              { lbl: 'المتعهد', val: catererName },
+            ]}
+          />
         </div>
 
         {items.length === 0 && (
-          <div className="bg-white border border-line rounded-2xl py-14 text-center shadow-sm">
-            <Ban size={36} className="mx-auto text-gray-300 mb-3" weight="thin" />
-            <p className="text-ink font-bold text-base mb-1">لا توجد مهام حالياً</p>
-            <p className="text-muted text-sm">لم تُسند مهام تقييم لهذا المركز بعد</p>
-          </div>
+          <Surface className="py-14 px-5 text-center">
+            <Ban size={26} weight="duotone" className="mx-auto text-muted/35" />
+            <p className="text-[13px] font-semibold text-muted mt-3">لا توجد مهام حالياً</p>
+            <p className="text-[11.5px] font-medium text-muted/70 mt-1">لم تُسند مهام تقييم لهذا المركز بعد</p>
+          </Surface>
         )}
 
         {pending.length > 0 && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 px-1">
-              <span className="w-1.5 h-4 rounded-full bg-primary" />
-              <p className="text-xs font-black text-primary uppercase tracking-wider">مهام معلقة</p>
-              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 tabular-nums">
+          <Surface className="overflow-hidden">
+            <div
+              className="flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 border-b"
+              style={{ background: tint(NAVY, 12), borderColor: tint(NAVY, 28) }}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <span
+                  className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 border"
+                  style={{ background: tint(NAVY, 9), borderColor: tint(NAVY, 22) }}
+                >
+                  <Utensils size={18} weight="duotone" style={{ color: NAVY }} />
+                </span>
+                <p className="text-[14px] font-bold truncate leading-tight" style={{ color: NAVY }}>مهام معلقة</p>
+              </div>
+              <span
+                className="text-[10.5px] font-bold px-1.5 py-[3px] rounded-md tabular-nums leading-none shrink-0"
+                style={{ background: tint(NAVY, 11), color: NAVY }}
+              >
                 {pending.length}
               </span>
             </div>
-            {pending.map(({ task, mealType }) => {
+
+            {pending.map(({ task, mealType }, i) => {
               const meta = MEAL_META[mealType] || {};
               return (
                 <button key={`${task.id}_${mealType}`}
                   onClick={() => onSelect({ taskId: task.id, mealType, scheduledDate: task.scheduledDate, day: extractDay(task.scheduledDate), categories: task.mealCategories || [] })}
-                  className="group/task relative w-full bg-gradient-to-br from-white via-white to-background/40 border-2 border-line hover:border-primary/60 rounded-2xl p-4 flex items-center gap-4 text-right transition-all duration-300 active:scale-[0.98] hover:shadow-[0_8px_24px_rgb(var(--c-primary)/0.18)] hover:-translate-y-0.5 overflow-hidden"
+                  className={`group/task relative w-full text-start flex items-center gap-3.5 ps-5 pe-4 py-3.5 transition-colors hover:bg-[rgb(var(--c-bg))] ${
+                    i === pending.length - 1 ? '' : 'border-b border-line'
+                  }`}
                 >
-                  <div className="absolute top-0 bottom-0 right-0 w-1"
-                    style={{ background: meta.color }} />
-                  <div className="relative flex-shrink-0">
-                    <div className="absolute inset-0 rounded-2xl blur-md opacity-0 group-hover/task:opacity-50 transition-opacity"
-                      style={{ background: meta.color }} />
-                    <div className="relative w-14 h-14 rounded-2xl flex items-center justify-center border-2 group-hover/task:scale-110 group-hover/task:rotate-3 transition-transform duration-300"
-                      style={{ background: `linear-gradient(135deg, ${meta.bg}, ${meta.bg}AA)`, borderColor: meta.border }}>
-                      <meta.icon size={28} weight="regular" style={{ color: meta.color }} />
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-bold text-base text-ink">{meta.label}</p>
-                      <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-primary bg-background border border-primary/30 px-2 py-0.5 rounded-full">
-                        <span className="w-1 h-1 rounded-full bg-primary animate-pulse" />
+                  <span className="absolute inset-y-0 start-0 w-[3px]" style={{ background: meta.color }} />
+                  <span
+                    className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border"
+                    style={{ background: tint(meta.color, 9), borderColor: tint(meta.color, 22) }}
+                  >
+                    <meta.icon size={21} weight="duotone" style={{ color: meta.color }} />
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[14px] font-bold text-ink leading-tight">{meta.label}</span>
+                      <span
+                        className="text-[10.5px] font-bold px-1.5 py-[3px] rounded-md leading-none"
+                        style={{ background: tint(meta.color, 11), color: meta.color }}
+                      >
                         معلقة
                       </span>
-                    </div>
-                    <p className="text-[11px] text-muted mt-0.5 flex items-center gap-1">
-                      <span className="w-1 h-1 rounded-full bg-primary" />
-                      {task.scheduledDate}
-                    </p>
-                  </div>
-                  <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-background flex items-center justify-center group-hover/task:bg-primary group-hover/task:-translate-x-1 transition-all duration-300">
-                    <ArrowLeft size={16} className="text-primary group-hover/task:text-white transition-colors" weight="bold" />
-                  </div>
+                    </span>
+                    <span className="block text-[11.5px] font-medium text-ink/75 mt-1.5">{task.scheduledDate}</span>
+                  </span>
+                  <ArrowLeft size={15} weight="bold" className="shrink-0 text-muted/40 group-hover/task:text-muted transition-colors" />
                 </button>
               );
             })}
-          </div>
+          </Surface>
         )}
 
         {items.length > 0 && pending.length === 0 && (
-          <div className="bg-green-50 border border-green-200 rounded-2xl py-10 text-center">
-            <CheckCircle2 size={32} className="mx-auto text-green-400 mb-2" weight="light" />
-            <p className="text-green-700 font-bold text-sm">جميع مهام هذا المركز مكتملة</p>
-            <p className="text-green-600 text-xs mt-1">تحقق من سجل نشاط المراقبين في الصفحة الرئيسية</p>
+          <div
+            className="rounded-[14px] border py-10 px-5 text-center"
+            style={{ background: tint(GREEN, 12), borderColor: tint(GREEN, 28) }}
+          >
+            <CheckCircle2 size={26} weight="duotone" style={{ color: GREEN }} className="mx-auto" />
+            <p className="text-[14px] font-bold mt-3" style={{ color: GREEN }}>جميع مهام هذا المركز مكتملة</p>
+            <p className="text-[11.5px] font-medium text-muted mt-1.5">تحقق من سجل نشاط المراقبين في الصفحة الرئيسية</p>
           </div>
         )}
       </div>
@@ -406,9 +442,9 @@ export default function SupMealcheck() {
     const totalPhases    = phases.length;
     return (
       <div dir="rtl" className="min-h-screen bg-canvas pb-32 font-arabic">
-        <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-line w-full px-4 py-3 mb-6 shadow-sm">
+        <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-line w-full px-4 py-3 mb-6">
           <div className="max-w-xl mx-auto flex items-center justify-between">
-            <button onClick={() => setSelectedTask(null)} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition">
+            <button onClick={() => setSelectedTask(null)} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-[rgb(var(--c-bg))] rounded-[10px] transition-colors">
               <ChevronRight className="text-primary" size={22} weight="bold" />
             </button>
             <h1 className="text-base font-bold text-ink absolute left-1/2 -translate-x-1/2 whitespace-nowrap">مراحل تقييم الوجبة</h1>
@@ -418,45 +454,50 @@ export default function SupMealcheck() {
 
         <div className="max-w-xl mx-auto px-4 space-y-4">
           {restored && (
-            <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3">
-              <RotateCcw size={14} className="text-blue-500 flex-shrink-0" weight="regular" />
-              <p className="text-blue-700 text-[12px] font-bold flex-1">تم استعادة تقدمك من الجلسة السابقة</p>
-              <button onClick={clearProgress} className="text-blue-400 hover:text-blue-600 text-[11px] font-bold underline flex-shrink-0">مسح</button>
+            <div
+              className="flex items-center gap-3 rounded-[14px] border px-4 py-3"
+              style={{ background: tint(INFO, 12), borderColor: tint(INFO, 28) }}
+            >
+              <RotateCcw size={14} weight="bold" style={{ color: INFO }} className="shrink-0" />
+              <p className="text-[12px] font-bold flex-1" style={{ color: INFO }}>تم استعادة تقدمك من الجلسة السابقة</p>
+              <button onClick={clearProgress} className="text-[11.5px] font-bold text-muted hover:text-ink transition-colors shrink-0">مسح</button>
             </div>
           )}
 
-          <div className="rounded-[2rem] p-6 text-white bg-ink shadow-lg">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: `${meta.color}22` }}>
-                <meta.icon size={22} weight="regular" style={{ color: meta.color }} />
-              </div>
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: meta.color }}>{meta.label} — {selectedTask.scheduledDate}</p>
-                <h2 className="text-lg font-bold">توثيق مراحل الوجبة</h2>
-              </div>
-            </div>
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-1.5">
-                <p className="text-white/50 text-[11px] font-semibold">التقدم</p>
-                <p className="text-white/70 text-[11px] font-bold">{completedCount} / {totalPhases}</p>
-              </div>
-              <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full bg-primary rounded-full transition-all duration-500"
-                  style={{ width: `${(completedCount / totalPhases) * 100}%` }} />
+          <div
+            className="rounded-[14px] border p-5 shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)]"
+            style={{ background: tint(meta.color, 12), borderColor: tint(meta.color, 28) }}
+          >
+            <div className="flex items-center gap-3.5 mb-5">
+              <span
+                className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border"
+                style={{ background: tint(meta.color, 9), borderColor: tint(meta.color, 22) }}
+              >
+                <meta.icon size={21} weight="duotone" style={{ color: meta.color }} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] leading-none" style={{ color: meta.color }}>{meta.label} — {selectedTask.scheduledDate}</p>
+                <h2 className="text-[19px] font-extrabold text-ink mt-1.5 leading-tight">توثيق مراحل الوجبة</h2>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { lbl: 'المشرف',  val: profile?.nameAr || profile?.name, cls: 'text-white' },
-                { lbl: 'المركز',  val: centerId,                          cls: 'text-primary' },
-                { lbl: 'المتعهد', val: catererName,                       cls: 'text-white' },
-              ].map(c => (
-                <div key={c.lbl} className="bg-white/5 rounded-xl px-2 py-2 border border-white/10 text-center">
-                  <p className="text-white/40 text-[9px] mb-0.5">{c.lbl}</p>
-                  <p className={`font-bold text-[10px] truncate ${c.cls}`}>{c.val || '—'}</p>
-                </div>
-              ))}
+            <div className="mb-5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[11px] font-semibold text-muted">التقدم</p>
+                <p className="text-[11px] font-bold text-ink tabular-nums">{completedCount} / {totalPhases}</p>
+              </div>
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: tint(meta.color, 22) }}>
+                <div className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${(completedCount / totalPhases) * 100}%`, background: meta.color }} />
+              </div>
             </div>
+            <IdentityGrid
+              color={meta.color}
+              cells={[
+                { lbl: 'المشرف',  val: profile?.nameAr || profile?.name },
+                { lbl: 'المركز',  val: centerId },
+                { lbl: 'المتعهد', val: catererName },
+              ]}
+            />
           </div>
 
           <div className="space-y-3">
@@ -468,54 +509,52 @@ export default function SupMealcheck() {
               const ref         = fileRefs[idx];
               const stepNum     = idx + 1;
               return (
-                <div key={phase.id} className={`group/phase relative rounded-2xl border-2 p-5 transition-all duration-300 overflow-hidden ${
-                  isDone
-                    ? 'bg-gradient-to-br from-green-50 via-white to-emerald-50/40 border-green-300 shadow-[0_6px_20px_rgba(34,197,94,0.18)]'
-                    : isUnlocked
-                      ? 'bg-gradient-to-br from-white via-white to-background/40 border-line hover:border-primary/40 hover:shadow-[0_6px_20px_rgb(var(--c-primary)/0.15)]'
-                      : 'bg-gradient-to-br from-gray-50 to-gray-100/40 border-gray-200 opacity-60'
-                }`}>
+                <div
+                  className={`relative rounded-[14px] border p-4 overflow-hidden shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] ${
+                    isUnlocked ? '' : 'opacity-60'
+                  }`}
+                  style={
+                    isDone
+                      ? { background: tint(GREEN, 12), borderColor: tint(GREEN, 28) }
+                      : isUnlocked
+                        ? { background: '#fff', borderColor: 'rgb(var(--c-line))' }
+                        : { background: 'rgb(var(--c-bg))', borderColor: 'rgb(var(--c-line))' }
+                  }
+                >
                   {(isDone || isUnlocked) && (
-                    <div className="absolute top-0 right-0 left-0 h-1"
-                      style={{ background: isDone
-                        ? 'linear-gradient(90deg, #16A34A, #22C55E, #16A34A)'
-                        : 'linear-gradient(90deg, transparent, rgb(var(--c-primary)), transparent)' }} />
+                    <span className="absolute inset-y-0 start-0 w-[3px]"
+                      style={{ background: isDone ? GREEN : NAVY }} />
                   )}
                   <input ref={ref} type="file" accept="image/*" capture="environment" className="hidden"
                     disabled={!isUnlocked} onChange={e => handlePhotoChange(phase.id, e.target.files[0])} />
-                  <div className="flex items-center gap-4">
-                    <div className="relative flex-shrink-0">
-                      {isUnlocked && !isDone && (
-                        <div className="absolute inset-0 rounded-2xl blur-md bg-primary opacity-0 group-hover/phase:opacity-50 transition-opacity" />
-                      )}
-                      {isDone && (
-                        <div className="absolute inset-0 rounded-2xl blur-md bg-green-400 opacity-40" />
-                      )}
-                      <div className={`relative w-14 h-14 rounded-2xl flex items-center justify-center transition-transform duration-300 ${
+                  <div className="flex items-center gap-3.5">
+                    <span
+                      className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border"
+                      style={
                         isDone
-                          ? 'bg-gradient-to-br from-green-500 to-emerald-600 shadow-md group-hover/phase:scale-110'
+                          ? { background: tint(GREEN, 9), borderColor: tint(GREEN, 22) }
                           : isUnlocked
-                            ? 'bg-gradient-to-br from-background to-primary-100 border-2 border-primary/25 group-hover/phase:scale-110 group-hover/phase:rotate-3'
-                            : 'bg-gray-100 border border-gray-200'
-                      }`}>
-                        {isDone
-                          ? <CheckCircle2 size={26} className="text-white" weight="bold" />
-                          : isUnlocked
-                            ? <span className="text-primary font-black text-xl tabular-nums">{stepNum}</span>
-                            : <Lock size={20} className="text-gray-300" weight="light" />}
-                      </div>
-                    </div>
+                            ? { background: tint(NAVY, 9), borderColor: tint(NAVY, 22) }
+                            : { background: '#fff', borderColor: 'rgb(var(--c-line))' }
+                      }
+                    >
+                      {isDone
+                        ? <CheckCircle2 size={21} weight="duotone" style={{ color: GREEN }} />
+                        : isUnlocked
+                          ? <span className="text-[19px] font-extrabold tabular-nums" style={{ color: NAVY }}>{stepNum}</span>
+                          : <Lock size={18} weight="duotone" className="text-muted/45" />}
+                    </span>
                     <div className="flex-1 min-w-0">
-                      <p className={`font-bold text-base ${isDone ? 'text-green-700' : isUnlocked ? 'text-ink' : 'text-gray-400'}`}>
+                      <p className="text-[14px] font-bold" style={{ color: isDone ? GREEN : isUnlocked ? 'rgb(var(--c-ink))' : 'rgb(var(--c-muted))' }}>
                         {phase.label}
                       </p>
                       {isDone
-                        ? <p className="text-[11px] text-green-600 font-semibold mt-1 flex items-center gap-1.5">
+                        ? <p className="text-[11.5px] font-medium mt-1 flex items-center gap-1.5" style={{ color: GREEN }}>
                             <CheckCircle2 size={12} weight="bold" />
                             {isRestored ? 'تم توثيق هذه المرحلة في جلسة سابقة' : `تم رفع الصورة — ${phasePhotos[phase.id]?.name}`}
                           </p>
-                        : <p className="text-[11px] text-muted mt-1 flex items-center gap-1.5">
-                            {!isUnlocked && <Lock size={10} className="text-gray-300" />}
+                        : <p className="text-[11.5px] font-medium text-muted mt-1 flex items-center gap-1.5">
+                            {!isUnlocked && <Lock size={11} weight="bold" className="text-muted/50" />}
                             {isUnlocked ? phase.desc : 'أكمل المرحلة السابقة أولاً'}
                           </p>
                       }
@@ -523,12 +562,11 @@ export default function SupMealcheck() {
                     {isUnlocked && (
                       <button onClick={() => !isUploading && ref.current?.click()}
                         disabled={isUploading}
-                        className={`flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all disabled:opacity-70 disabled:cursor-wait ${
+                        className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-[10px] text-[12px] font-bold border transition-colors disabled:opacity-70 disabled:cursor-wait ${
                           isDone
-                            ? 'bg-white border-2 border-green-300 text-green-600 hover:bg-green-50 hover:border-green-400'
-                            : 'text-white shadow-[0_4px_14px_rgb(var(--c-primary)/0.4)] active:scale-95 hover:shadow-[0_6px_20px_rgb(var(--c-primary)/0.5)]'
+                            ? 'bg-white border-line text-ink hover:bg-[rgb(var(--c-bg))]'
+                            : 'bg-primary border-primary text-white hover:bg-[rgb(var(--c-primary-700))]'
                         }`}
-                        style={isDone ? undefined : { background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}
                       >
                         {isUploading
                           ? <><Loader2 size={14} className="animate-spin" weight="bold" /> جارٍ الرفع...</>
@@ -550,14 +588,13 @@ export default function SupMealcheck() {
               </p>
             )}
             <button onClick={() => setScreen('questions')} disabled={!allPhasesComplete}
-              className={`min-h-[56px] w-full py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-3 transition-all duration-300 ${
+              className={`min-h-[52px] w-full py-3.5 rounded-[12px] font-bold text-[15px] flex items-center justify-center gap-2.5 border transition-colors ${
                 allPhasesComplete
-                  ? 'text-white shadow-[0_8px_28px_rgb(var(--c-primary)/0.4)] hover:shadow-[0_10px_36px_rgb(var(--c-primary)/0.5)] active:scale-95'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              }`}
-              style={allPhasesComplete ? { background: 'linear-gradient(135deg, rgb(var(--c-primary-400)) 0%, rgb(var(--c-primary)) 50%, rgb(var(--c-primary-700)) 100%)' } : undefined}>
+                  ? 'bg-primary border-primary text-white hover:bg-[rgb(var(--c-primary-700))]'
+                  : 'bg-[rgb(var(--c-bg))] border-line text-muted/60 cursor-not-allowed'
+              }`}>
               {allPhasesComplete
-                ? <>بدء التقييم <ArrowLeft size={18} weight="bold" /></>
+                ? <>بدء التقييم <ArrowLeft size={17} weight="bold" /></>
                 : <>{totalPhases - completedCount} مراحل متبقية</>}
             </button>
           </div>
@@ -569,9 +606,9 @@ export default function SupMealcheck() {
   const answeredCount = Object.keys(answers).length;
   return (
     <div dir="rtl" className="min-h-screen bg-canvas pb-32 font-arabic">
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-line w-full px-4 py-3 mb-6 shadow-sm">
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-line w-full px-4 py-3 mb-6">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <button onClick={() => setScreen('phases')} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 rounded-xl transition">
+          <button onClick={() => setScreen('phases')} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-[rgb(var(--c-bg))] rounded-[10px] transition-colors">
             <ChevronRight className="text-primary" size={22} weight="bold" />
           </button>
           <h1 className="text-base font-bold text-ink absolute left-1/2 -translate-x-1/2 whitespace-nowrap">تقييم جودة الوجبات</h1>
@@ -581,41 +618,50 @@ export default function SupMealcheck() {
 
       <div className="max-w-4xl mx-auto px-4 space-y-6">
         {restored && answeredCount > 0 && (
-          <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3">
-            <RotateCcw size={14} className="text-blue-500 flex-shrink-0" weight="regular" />
-            <p className="text-blue-700 text-[12px] font-bold">تم استعادة {answeredCount} إجابة محفوظة</p>
+          <div
+            className="flex items-center gap-3 rounded-[14px] border px-4 py-3"
+            style={{ background: tint(INFO, 12), borderColor: tint(INFO, 28) }}
+          >
+            <RotateCcw size={14} weight="bold" style={{ color: INFO }} className="shrink-0" />
+            <p className="text-[12px] font-bold" style={{ color: INFO }}>تم استعادة {answeredCount} إجابة محفوظة</p>
           </div>
         )}
 
-        <div className="rounded-[2.5rem] p-6 text-white shadow-lg bg-ink">
-          <div className="flex items-center gap-3 mb-5">
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: `${meta.color}22` }}>
-              <meta.icon size={22} weight="regular" style={{ color: meta.color }} />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold">{QUESTIONS.length} معياراً للجودة</h2>
-              <p className="text-white/40 text-[10px] font-bold">{meta.label} — {selectedTask.scheduledDate}</p>
+        <div
+          className="rounded-[14px] border p-5 shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)]"
+          style={{ background: tint(meta.color, 12), borderColor: tint(meta.color, 28) }}
+        >
+          <div className="flex items-center gap-3.5 mb-4">
+            <span
+              className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border"
+              style={{ background: tint(meta.color, 9), borderColor: tint(meta.color, 22) }}
+            >
+              <meta.icon size={21} weight="duotone" style={{ color: meta.color }} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] leading-none" style={{ color: meta.color }}>{meta.label} — {selectedTask.scheduledDate}</p>
+              <h2 className="text-[19px] font-extrabold text-ink mt-1.5 leading-tight">{QUESTIONS.length} معياراً للجودة</h2>
             </div>
           </div>
-          <div className="flex items-center gap-2 mb-4 flex-wrap">
+          <div className="flex items-center gap-1.5 mb-4 flex-wrap">
             {phases.map(p => (
-              <span key={p.id} className="flex items-center gap-1 bg-green-500/20 text-green-300 text-[10px] font-bold px-2.5 py-1 rounded-full border border-green-500/30">
+              <span
+                key={p.id}
+                className="inline-flex items-center gap-1 text-[10.5px] font-bold px-1.5 py-[3px] rounded-md leading-none whitespace-nowrap"
+                style={{ background: tint(GREEN, 11), color: GREEN }}
+              >
                 <CheckCircle2 size={10} weight="bold" /> {p.label}
               </span>
             ))}
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { lbl: 'المشرف',  val: profile?.nameAr || '—', cls: 'text-white' },
-              { lbl: 'المركز',  val: centerId || '—',         cls: 'text-primary' },
-              { lbl: 'المتعهد', val: catererName || '—',      cls: 'text-white' },
-            ].map(c => (
-              <div key={c.lbl} className="bg-white/5 rounded-xl px-2 py-2 border border-white/10 text-center">
-                <p className="text-white/40 text-[9px] mb-0.5">{c.lbl}</p>
-                <p className={`font-bold text-[10px] truncate ${c.cls}`}>{c.val}</p>
-              </div>
-            ))}
-          </div>
+          <IdentityGrid
+            color={meta.color}
+            cells={[
+              { lbl: 'المشرف',  val: profile?.nameAr || '—' },
+              { lbl: 'المركز',  val: centerId || '—' },
+              { lbl: 'المتعهد', val: catererName || '—' },
+            ]}
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -631,82 +677,67 @@ export default function SupMealcheck() {
               <React.Fragment key={q.id}>
                 {isFirstInCategory && (
                   <div className="col-span-full pt-6 pb-3 flex items-center gap-3">
-                    <div className="flex-grow h-px bg-gradient-to-l from-transparent via-primary/40 to-transparent" />
-                    <span className="px-5 py-2 rounded-full text-white text-xs font-black shadow-[0_4px_14px_rgb(var(--c-primary)/0.35)]"
-                      style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
+                    <div className="flex-grow h-px bg-line" />
+                    <span
+                      className="px-3 py-1.5 rounded-[10px] text-[11.5px] font-bold border"
+                      style={{ background: tint(NAVY, 12), borderColor: tint(NAVY, 28), color: NAVY }}
+                    >
                       {q.category}
                     </span>
-                    <div className="flex-grow h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+                    <div className="flex-grow h-px bg-line" />
                   </div>
                 )}
-                <div className={`group/q relative bg-gradient-to-br from-white via-white to-background/40 rounded-3xl shadow-[0_2px_12px_rgb(var(--c-ink)/0.05)] overflow-hidden transition-all duration-300 ${
-                  ans
-                    ? 'border-2 border-primary/40 shadow-[0_6px_24px_rgb(var(--c-primary)/0.18)]'
-                    : 'border border-line hover:shadow-[0_4px_18px_rgb(var(--c-ink)/0.08)]'
-                }`}>
+                <div
+                  className="relative bg-white rounded-[14px] border overflow-hidden shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] transition-shadow duration-200 hover:shadow-[0_6px_20px_-6px_rgb(var(--c-ink)/0.16)]"
+                  style={{ borderColor: ans ? tint(yesGood || noGood ? GREEN : RED, 28) : 'rgb(var(--c-line))' }}
+                >
                   {ans && (
-                    <div className="absolute top-0 right-0 left-0 h-1"
-                      style={{ background: yesGood || noGood
-                        ? 'linear-gradient(90deg, #16A34A, #22C55E, #16A34A)'
-                        : 'linear-gradient(90deg, #DC2626, #EF4444, #DC2626)' }} />
+                    <span className="absolute inset-y-0 start-0 w-[3px]"
+                      style={{ background: yesGood || noGood ? GREEN : RED }} />
                   )}
-                  <div className="p-5">
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="relative flex-shrink-0">
-                        <div className="absolute inset-0 rounded-2xl blur-md bg-primary opacity-30 group-hover/q:opacity-50 transition-opacity" />
-                        <div className="relative w-10 h-10 rounded-2xl flex items-center justify-center text-white font-black text-sm shadow-md tabular-nums"
-                          style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
-                          {q.id}
-                        </div>
-                      </div>
+                  <div className="p-4 ps-5">
+                    <div className="flex items-start gap-3 mb-3.5">
+                      <span
+                        className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 border text-[14px] font-bold tabular-nums"
+                        style={{ background: tint(NAVY, 9), borderColor: tint(NAVY, 22), color: NAVY }}
+                      >
+                        {q.id}
+                      </span>
                       <div className="flex-1 min-w-0">
                         {ans && (
                           <div className="mb-1.5">
-                            <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-green-50 border border-green-200 text-green-700">
-                              <CheckCircle2 size={9} weight="bold" />
+                            <span
+                              className="inline-flex items-center gap-1 text-[10.5px] font-bold px-1.5 py-[3px] rounded-md leading-none"
+                              style={{ background: tint(GREEN, 11), color: GREEN }}
+                            >
+                              <CheckCircle2 size={10} weight="bold" />
                               مُجاب
                             </span>
                           </div>
                         )}
-                        <p className="text-ink font-bold text-[15px] leading-relaxed">{q.text}</p>
+                        <p className="text-ink font-bold text-[14px] leading-relaxed">{q.text}</p>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-2.5">
                       <button
                         onClick={() => handleAnswer(q.id, 'نعم')}
-                        className={`min-h-[52px] py-3.5 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-2.5 active:scale-[0.98] ${
-                          isYes
-                            ? `text-white scale-[1.02] shadow-[0_6px_20px_${yesGood ? 'rgb(var(--c-success) / 0.4)' : 'rgb(var(--c-error) / 0.4)'}]`
-                            : 'bg-white text-muted border-2 border-line hover:border-primary/40 hover:bg-background'
-                        }`}
-                        style={isYes ? {
-                          background: yesGood
-                            ? 'linear-gradient(135deg, #16A34A, #15803D)'
-                            : 'linear-gradient(135deg, #DC2626, #B91C1C)'
-                        } : undefined}
+                        className="min-h-[48px] py-3 rounded-[11px] font-bold border transition-colors flex items-center justify-center gap-2"
+                        style={isYes
+                          ? { background: tint(yesGood ? GREEN : RED, 12), borderColor: yesGood ? GREEN : RED, color: yesGood ? GREEN : RED }
+                          : { background: '#fff', borderColor: 'rgb(var(--c-line))', color: 'rgb(var(--c-muted))' }}
                       >
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-transform ${isYes ? 'bg-white/25 scale-110' : 'bg-success/10'}`}>
-                          <CheckCircle2 size={16} weight="bold" className={isYes ? 'text-white' : 'text-success'} />
-                        </div>
-                        <span className="text-[15px]">نعم</span>
+                        <CheckCircle2 size={17} weight="duotone" />
+                        <span className="text-[14px]">نعم</span>
                       </button>
                       <button
                         onClick={() => handleAnswer(q.id, 'لا')}
-                        className={`min-h-[52px] py-3.5 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-2.5 active:scale-[0.98] ${
-                          isNo
-                            ? `text-white scale-[1.02] shadow-[0_6px_20px_${noGood ? 'rgb(var(--c-success) / 0.4)' : 'rgb(var(--c-error) / 0.4)'}]`
-                            : 'bg-white text-muted border-2 border-line hover:border-red-300 hover:bg-red-50/30'
-                        }`}
-                        style={isNo ? {
-                          background: noGood
-                            ? 'linear-gradient(135deg, #16A34A, #15803D)'
-                            : 'linear-gradient(135deg, #DC2626, #B91C1C)'
-                        } : undefined}
+                        className="min-h-[48px] py-3 rounded-[11px] font-bold border transition-colors flex items-center justify-center gap-2"
+                        style={isNo
+                          ? { background: tint(noGood ? GREEN : RED, 12), borderColor: noGood ? GREEN : RED, color: noGood ? GREEN : RED }
+                          : { background: '#fff', borderColor: 'rgb(var(--c-line))', color: 'rgb(var(--c-muted))' }}
                       >
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-transform ${isNo ? 'bg-white/25 scale-110' : 'bg-error/10'}`}>
-                          <Ban size={16} weight="bold" className={isNo ? 'text-white' : 'text-error'} />
-                        </div>
-                        <span className="text-[15px]">لا</span>
+                        <Ban size={17} weight="duotone" />
+                        <span className="text-[14px]">لا</span>
                       </button>
                     </div>
 
@@ -719,21 +750,25 @@ export default function SupMealcheck() {
                           onChange={e => handleQPhotoChange(q.id, e.target.files[0])}
                         />
                         {qPhotos[q.id] ? (
-                          <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl p-2.5">
-                            <img src={qPhotos[q.id]} alt="" className="w-14 h-14 rounded-lg object-cover border border-green-300" />
+                          <div
+                            className="flex items-center gap-3 rounded-[11px] border p-2.5"
+                            style={{ background: tint(GREEN, 12), borderColor: tint(GREEN, 28) }}
+                          >
+                            <img src={qPhotos[q.id]} alt="" className="w-14 h-14 rounded-[10px] object-cover border" style={{ borderColor: tint(GREEN, 28) }} />
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs font-black text-green-700 flex items-center gap-1.5">
+                              <p className="text-[12px] font-bold flex items-center gap-1.5" style={{ color: GREEN }}>
                                 <CheckCircle2 size={13} weight="bold" /> تم رفع الصورة
                               </p>
-                              <p className="text-[10px] text-green-600 mt-0.5">اضغط للتغيير</p>
+                              <p className="text-[10.5px] font-medium text-muted mt-1">اضغط للتغيير</p>
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
                               <button onClick={() => qPhotoInputRefs.current[q.id]?.click()}
-                                className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-green-700 bg-white border border-green-300 hover:bg-green-50">
+                                className="px-3 py-1.5 rounded-[10px] text-[11.5px] font-bold text-ink bg-white border border-line hover:bg-[rgb(var(--c-bg))] transition-colors">
                                 تغيير
                               </button>
                               <button onClick={() => removeQPhoto(q.id)}
-                                className="w-7 h-7 rounded-lg flex items-center justify-center text-red-500 bg-white border border-red-200 hover:bg-red-50">
+                                className="w-7 h-7 rounded-[10px] flex items-center justify-center bg-white border transition-colors"
+                                style={{ borderColor: tint(RED, 28), color: RED }}>
                                 <X size={13} weight="bold" />
                               </button>
                             </div>
@@ -742,7 +777,8 @@ export default function SupMealcheck() {
                           <button
                             onClick={() => !qPhotoUploading[q.id] && qPhotoInputRefs.current[q.id]?.click()}
                             disabled={qPhotoUploading[q.id]}
-                            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-primary/40 bg-background text-primary font-bold text-sm hover:bg-primary-50 hover:border-primary transition-all disabled:opacity-60 disabled:cursor-wait"
+                            className="w-full flex items-center justify-center gap-2 py-3 rounded-[11px] border border-dashed font-bold text-[13px] transition-colors disabled:opacity-60 disabled:cursor-wait"
+                            style={{ background: tint(NAVY, 9), borderColor: tint(NAVY, 30), color: NAVY }}
                           >
                             {qPhotoUploading[q.id]
                               ? <><Loader2 size={16} className="animate-spin" /> جارٍ رفع الصورة...</>
@@ -762,16 +798,16 @@ export default function SupMealcheck() {
       <div className="fixed bottom-0 left-0 right-0 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-white/90 backdrop-blur-md border-t border-line z-50">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-2 px-1">
-            <span className="text-[11px] text-muted font-semibold">{answeredCount} / {QUESTIONS.length} سؤال</span>
-            <span className="text-[11px] text-primary font-bold">{Math.round((answeredCount / QUESTIONS.length) * 100)}%</span>
+            <span className="text-[11px] text-muted font-semibold tabular-nums">{answeredCount} / {QUESTIONS.length} سؤال</span>
+            <span className="text-[11px] text-primary font-bold tabular-nums">{Math.round((answeredCount / QUESTIONS.length) * 100)}%</span>
           </div>
-          <div className="h-1.5 bg-gray-100 rounded-full mb-3 overflow-hidden">
+          <div className="h-1.5 bg-[rgb(var(--c-bg))] rounded-full mb-3 overflow-hidden">
             <div className="h-full bg-primary rounded-full transition-all duration-300"
               style={{ width: `${(answeredCount / QUESTIONS.length) * 100}%` }} />
           </div>
           <button onClick={handleSubmit} disabled={loadingSubmit}
-            className="w-full bg-primary text-white py-4 rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-3 active:scale-95 transition-all disabled:bg-gray-400">
-            <Save size={20} />
+            className="w-full bg-primary border border-primary text-white py-3.5 rounded-[12px] font-bold text-[15px] flex items-center justify-center gap-2.5 transition-colors hover:bg-[rgb(var(--c-primary-700))] disabled:bg-[rgb(var(--c-bg))] disabled:border-line disabled:text-muted/60">
+            <Save size={18} weight="bold" />
             {loadingSubmit ? 'جاري الإرسال...' : 'حفظ وإرسال التقرير النهائي'}
           </button>
         </div>

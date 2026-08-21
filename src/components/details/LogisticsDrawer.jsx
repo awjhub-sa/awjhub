@@ -6,6 +6,7 @@ import {
   FileText,
 } from '@phosphor-icons/react';
 import DetailDrawer, { Section, Facts, HeroChip } from '../DetailDrawer.jsx';
+import { IconTile } from '../ui/index.jsx';
 import { StatusTimeline } from '../StatusTimeline.jsx';
 import CenterNotesPanel from '../CenterNotesPanel.jsx';
 import { getCaterer, getShakhis, getLocation } from '../../config/centers.js';
@@ -20,6 +21,11 @@ import {
 const REPORT_TYPE_LABEL = Object.fromEntries(
   Object.entries(REPORT_TYPE_MAP).map(([k, v]) => [k, v.label]),
 );
+
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
+
+const INTERNAL = SUPPORT_LOOKUP.internal;
+const EXTERNAL = SUPPORT_LOOKUP.external;
 
 export default function LogisticsDrawer({ request: r, onClose, onStatus, onEdit, onDelete, onSaveNotes }) {
   const [notes, setNotes]             = useState(r?.adminNotes || '');
@@ -65,17 +71,19 @@ export default function LogisticsDrawer({ request: r, onClose, onStatus, onEdit,
           </HeroChip>
           <HeroChip color={st.color}>{st.label}</HeroChip>
           {r.holySite && HOLY_SITE_LABEL[r.holySite] && <HeroChip>{HOLY_SITE_LABEL[r.holySite]}</HeroChip>}
-          {r.reportNumber && <HeroChip color="#F59E0B">مرتبط ببلاغ #{r.reportNumber}</HeroChip>}
+          {r.reportNumber && <HeroChip color="#DC2626">مرتبط ببلاغ #{r.reportNumber}</HeroChip>}
         </>
       }
       footer={
         <>
           <button onClick={onEdit}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-black bg-background text-primary border border-line hover:bg-primary hover:text-white hover:border-primary transition-all">
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-[10px] text-[12px] font-bold bg-[rgb(var(--c-bg))] text-primary border border-line hover:bg-primary hover:text-white hover:border-primary transition-colors">
             <Pencil size={13} weight="bold" /> تعديل
           </button>
           <button onClick={onDelete}
-            className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black bg-red-50 text-red-600 border border-red-200 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all">
+            className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-[10px] text-[12px] font-bold
+                       bg-error/[0.08] text-error border border-error/25
+                       hover:bg-error hover:text-white hover:border-error transition-colors">
             <Trash2 size={13} weight="bold" /> حذف
           </button>
         </>
@@ -89,16 +97,16 @@ export default function LogisticsDrawer({ request: r, onClose, onStatus, onEdit,
           statusMeta={STATUS_LOOKUP}
           accentColor={st.color}
         />
-        <div className="grid grid-cols-2 gap-2 mt-3">
+        <div className="grid grid-cols-2 gap-2 mt-3.5">
           {STATUS_OPTIONS.map(s => {
             const SIcon = s.Icon;
             const active = (r.status || 'pending') === s.value;
             return (
               <button key={s.value} onClick={() => onStatus(r.id, s.value)}
-                className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[11px] font-black border transition-all ${
-                  active ? 'shadow-sm' : 'bg-white border-line text-muted hover:border-primary/40'
+                className={`flex items-center justify-center gap-1.5 py-2.5 rounded-[10px] text-[11.5px] font-bold border transition-colors ${
+                  active ? '' : 'bg-white border-line text-muted hover:bg-[rgb(var(--c-bg))]'
                 }`}
-                style={active ? { background: s.bg, borderColor: s.color, color: s.color } : undefined}>
+                style={active ? { background: tint(s.color, 12), borderColor: s.color, color: s.color } : undefined}>
                 <SIcon size={12} weight="bold" />
                 {s.label}
               </button>
@@ -112,21 +120,27 @@ export default function LogisticsDrawer({ request: r, onClose, onStatus, onEdit,
         <Section title="الكميات المطلوبة" Icon={st.Icon} tone={st.color}>
           <div className="grid grid-cols-2 gap-2.5">
             {hasInternal && (
-              <div className="rounded-xl border p-3.5 text-center"
-                style={{ borderColor: '#C4D8ED', background: 'linear-gradient(180deg,#EEF4FB,#fff)' }}>
-                <p className="text-[10px] font-bold" style={{ color: '#2F5580' }}>داخلي</p>
-                <p className="text-3xl font-black tabular-nums leading-tight mt-1" style={{ color: '#2F5580' }}>
-                  {r.qtyInternal}
-                </p>
+              <div className="rounded-[11px] border p-3.5 flex items-center gap-3"
+                style={{ background: tint(INTERNAL.color, 12), borderColor: tint(INTERNAL.color, 28) }}>
+                <IconTile Icon={INTERNAL.Icon} color={INTERNAL.color} size="sm" />
+                <div className="min-w-0">
+                  <p className="text-[10.5px] font-semibold text-muted">داخلي</p>
+                  <p className="text-[26px] font-extrabold tabular-nums leading-none mt-1.5" style={{ color: INTERNAL.color }}>
+                    {r.qtyInternal}
+                  </p>
+                </div>
               </div>
             )}
             {hasExternal && (
-              <div className="rounded-xl border p-3.5 text-center"
-                style={{ borderColor: '#EBCFC3', background: 'linear-gradient(180deg,#FBF3EF,#fff)' }}>
-                <p className="text-[10px] font-bold" style={{ color: '#9E5741' }}>خارجي</p>
-                <p className="text-3xl font-black tabular-nums leading-tight mt-1" style={{ color: '#9E5741' }}>
-                  {r.qtyExternal}
-                </p>
+              <div className="rounded-[11px] border p-3.5 flex items-center gap-3"
+                style={{ background: tint(EXTERNAL.color, 12), borderColor: tint(EXTERNAL.color, 28) }}>
+                <IconTile Icon={EXTERNAL.Icon} color={EXTERNAL.color} size="sm" />
+                <div className="min-w-0">
+                  <p className="text-[10.5px] font-semibold text-muted">خارجي</p>
+                  <p className="text-[26px] font-extrabold tabular-nums leading-none mt-1.5" style={{ color: EXTERNAL.color }}>
+                    {r.qtyExternal}
+                  </p>
+                </div>
               </div>
             )}
           </div>
@@ -139,7 +153,7 @@ export default function LogisticsDrawer({ request: r, onClose, onStatus, onEdit,
         </Section>
       )}
 
-      <Section title="بيانات الطلب" Icon={Building2}>
+      <Section title="بيانات الطلب" Icon={Building2} tone="rgb(var(--c-primary))">
         <Facts items={[
           { label: 'المركز',   value: r.center,   Icon: Building2, color: st.color },
           { label: 'المراقب',  value: r.observer, Icon: User,      color: 'rgb(var(--c-primary))' },
@@ -158,9 +172,10 @@ export default function LogisticsDrawer({ request: r, onClose, onStatus, onEdit,
         ]} />
       </Section>
 
-      <Section title="ملاحظات غرفة العمليات" Icon={Pencil}
+      <Section title="ملاحظات غرفة العمليات" Icon={Pencil} tone="rgb(var(--c-accent))"
         right={savedNotes && (
-          <span className="text-[10px] font-black text-green-700 bg-green-50 border border-green-200 rounded-md px-2 py-0.5">
+          <span className="text-[10.5px] font-bold rounded-md px-2 py-[3px] leading-none border"
+            style={{ background: tint('#15803D', 11), borderColor: tint('#15803D', 26), color: '#15803D' }}>
             ✓ حُفظت
           </span>
         )}>
@@ -168,11 +183,10 @@ export default function LogisticsDrawer({ request: r, onClose, onStatus, onEdit,
           value={notes} rows={3}
           onChange={e => { setNotes(e.target.value); setSavedNotes(false); }}
           placeholder="اكتب ملاحظات تظهر للمراقب/المشرف الذي رفع الطلب..."
-          className="w-full px-3 py-2.5 border border-line rounded-xl text-[13px] text-ink placeholder-muted/60 focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none transition-all bg-white resize-none"
+          className="w-full px-3.5 py-2.5 border border-line rounded-[10px] text-[13px] text-ink placeholder:text-muted/70 focus:border-primary/50 outline-none transition-colors bg-white resize-none leading-relaxed"
         />
         <button onClick={saveNotes} disabled={savingNotes || notes === (r.adminNotes || '')}
-          className="mt-2 w-full py-2.5 rounded-xl text-white text-[12px] font-black transition-all disabled:opacity-40"
-          style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}>
+          className="mt-2 w-full py-2.5 rounded-[10px] bg-primary border border-primary text-white text-[12.5px] font-bold hover:opacity-90 transition-opacity disabled:opacity-40">
           {savingNotes ? 'جارٍ الحفظ…' : 'حفظ الملاحظات'}
         </button>
       </Section>

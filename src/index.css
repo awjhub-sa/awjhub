@@ -1,6 +1,6 @@
 /* src/index.css */
-/* Cairo is loaded from index.html — see the note there. */
-/* src/index.css */
+/* The UI face is loaded in index.html, which also sets the --font-arabic
+   default read below and by tailwind's `arabic` family. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -57,7 +57,7 @@
 @layer base {
   html {
     direction: rtl;
-    font-family: 'Cairo', Tahoma, sans-serif;
+    font-family: var(--font-arabic), Tahoma, sans-serif;
     -webkit-tap-highlight-color: transparent;
     -webkit-font-smoothing: antialiased;
   }
@@ -126,7 +126,7 @@
     box-shadow: 0 8px 32px rgb(var(--c-ink) / 0.12);
   }
   .font-arabic {
-    font-family: 'Cairo', Tahoma, sans-serif;
+    font-family: var(--font-arabic), Tahoma, sans-serif;
   }
 }
 

@@ -18,7 +18,6 @@ import {
   Sparkle as Sparkles,
   Warning as AlertTriangle,
   MagnifyingGlass as Search,
-  MapPin,
   Hash,
   Factory,
   CalendarBlank as Calendar,
@@ -26,10 +25,11 @@ import {
   ArrowRight,
   ArrowLeft,
   Stack as Layers,
-  Mountains as Mountain,
   FileText,
 } from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
+import FilterChip from '../../components/FilterChip.jsx';
+import { Surface, IconTile, Pill, RowMeta, StatTile, EmptyState } from '../../components/ui/index.jsx';
 import LogisticsDrawer from '../../components/details/LogisticsDrawer.jsx';
 import NotificationBadge from '../../components/NotificationBadge.jsx';
 import { getCaterer, getShakhis, getLocation } from '../../config/centers.js';
@@ -38,11 +38,11 @@ import {
 } from '../../lib/statusTracking.js';
 import { StatusTimerChip, StatusTimeline } from '../../components/StatusTimeline.jsx';
 import CenterNotesPanel from '../../components/CenterNotesPanel.jsx';
+import { HOLY_SITE_LABEL, HOLY_SITE_COLOR, HOLY_SITE_ICON } from '../../config/fieldRecords.js';
+
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
 
 const CATEGORY_LABEL = { meals: 'وجبات', water: 'مياه' };
-const HOLY_SITE_LABEL = { mina: 'منى', arafat: 'عرفات' };
-const HOLY_SITE_COLOR = { mina: 'rgb(var(--c-primary))', arafat: '#5E9070' };
-const HOLY_SITE_ICON  = { mina: MapPin,   arafat: Mountain };
 
 /* A request is "new" when pending AND submitted within the last 10 minutes */
 const NEW_THRESHOLD_MS = 10 * 60 * 1000;
@@ -173,11 +173,14 @@ export default function AdminLogistics() {
         glowColor="rgba(49,130,206,0.4)"
         right={
           countOf('pending') > 0 ? (
-            <div className="flex items-center gap-2 bg-blue-50 border border-blue-200/60 rounded-2xl px-4 py-2 shadow-[0_2px_10px_rgba(59,130,246,0.12)]">
+            <div
+              className="flex items-center gap-2.5 rounded-[11px] border px-3.5 py-2"
+              style={{ background: tint('#4E7CB0', 12), borderColor: tint('#4E7CB0', 28) }}
+            >
               <NotificationBadge count={countOf('pending')} variant="blue" />
-              <div className="text-right">
-                <p className="text-[10px] font-bold text-blue-700 leading-none">قيد الانتظار</p>
-                <p className="text-[9px] text-blue-500 mt-1 font-medium">يحتاج موافقة</p>
+              <div className="text-start">
+                <p className="text-[11px] font-bold leading-none" style={{ color: '#4E7CB0' }}>قيد الانتظار</p>
+                <p className="text-[10px] text-muted mt-1 font-medium">يحتاج موافقة</p>
               </div>
             </div>
           ) : null
@@ -187,91 +190,62 @@ export default function AdminLogistics() {
       {/* Stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'إجمالي الطلبات', value: requests.length,       color: 'rgb(var(--c-primary))', Icon: Truck        },
-          { label: 'قيد الانتظار',    value: countOf('pending'),    color: '#F59E0B', Icon: Clock        },
-          { label: 'موافق عليه',      value: countOf('approved'),   color: '#4E7CB0', Icon: ThumbsUp     },
-          { label: 'تم التسليم',      value: countOf('delivered'),  color: '#5E9070', Icon: CheckCircle2 },
+          { to: 'all',       label: 'إجمالي الطلبات', value: requests.length,       color: 'rgb(var(--c-primary))', Icon: Truck        },
+          { to: 'pending',   label: 'قيد الانتظار',    value: countOf('pending'),    color: '#F59E0B', Icon: Clock        },
+          { to: 'approved',  label: 'موافق عليه',      value: countOf('approved'),   color: '#4E7CB0', Icon: ThumbsUp     },
+          { to: 'delivered', label: 'تم التسليم',      value: countOf('delivered'),  color: '#5E9070', Icon: CheckCircle2 },
         ].map(c => (
-          <div key={c.label}
-            className="bg-white rounded-2xl p-4 border border-line shadow-[0_2px_8px_rgb(var(--c-ink)/0.07)] flex items-center gap-3"
-            style={{ borderRight: `3px solid ${c.color}` }}>
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-semibold text-muted mb-0.5">{c.label}</p>
-              <p className="text-2xl font-bold tabular-nums" style={{ color: c.color }}>{c.value}</p>
-            </div>
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: `${c.color}18` }}>
-              <c.Icon size={18} style={{ color: c.color }} weight="regular" />
-            </div>
-          </div>
+          <StatTile key={c.label} label={c.label} value={c.value} Icon={c.Icon} color={c.color}
+            active={filter === c.to} onClick={() => setFilter(c.to)} />
         ))}
       </div>
 
       {/* Filter tabs */}
-      <div className="bg-white border border-line rounded-2xl p-1.5 flex overflow-x-auto no-scrollbar shadow-[0_2px_8px_rgb(var(--c-ink)/0.05)]">
+      <div className="flex gap-2 flex-wrap">
         {[
           { value: 'all',       label: 'الكل',         count: requests.length,        Icon: Filter,        color: 'rgb(var(--c-muted))' },
           { value: 'pending',   label: 'قيد الانتظار', count: countOf('pending'),     Icon: Clock,         color: '#F59E0B' },
           { value: 'approved',  label: 'موافق عليه',   count: countOf('approved'),    Icon: ThumbsUp,      color: '#4E7CB0' },
           { value: 'delivered', label: 'تم التسليم',   count: countOf('delivered'),   Icon: CheckCircle2,  color: '#5E9070' },
           { value: 'rejected',  label: 'مرفوض',         count: countOf('rejected'),    Icon: XCircle,       color: '#EF4444' },
-        ].map(opt => {
-          const active = filter === opt.value;
-          const OIcon = opt.Icon;
-          return (
-            <button key={opt.value}
-              onClick={() => setFilter(opt.value)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${
-                active ? 'text-white shadow-md' : 'text-muted hover:text-ink hover:bg-background'
-              }`}
-              style={active
-                ? { background: `linear-gradient(135deg, ${opt.color}, ${opt.color}DD)` }
-                : undefined}>
-              <OIcon size={14} weight="bold" />
-              {opt.label}
-              <span className={`tabular-nums text-[10px] px-1.5 py-0.5 rounded-md ${
-                active ? 'bg-white/25' : ''
-              }`}
-                style={!active ? { background: `${opt.color}15`, color: opt.color } : undefined}>
-                {opt.count}
-              </span>
-            </button>
-          );
-        })}
+        ].map(opt => (
+          <FilterChip
+            key={opt.value}
+            active={filter === opt.value}
+            onClick={() => setFilter(opt.value)}
+            count={opt.count}
+            Icon={opt.Icon}
+            color={opt.color}
+          >
+            {opt.label}
+          </FilterChip>
+        ))}
       </div>
 
       {/* Search bar */}
       <div className="relative">
-        <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted" weight="regular" />
+        <Search size={15} className="absolute start-3.5 top-1/2 -translate-y-1/2 text-muted/60" weight="bold" />
         <input
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="بحث برقم الطلب، البلاغ، المركز، المراقب..."
-          className="w-full pr-11 pl-4 py-3 rounded-2xl border-2 border-line bg-white text-sm font-medium text-ink placeholder:text-muted focus:border-[#4E7CB0] focus:outline-none transition-colors shadow-[0_2px_8px_rgb(var(--c-ink)/0.05)]"
+          className="w-full ps-10 pe-10 py-2.5 rounded-[12px] border border-line bg-white text-[13px] font-medium text-ink placeholder:text-muted/70 focus:border-[#4E7CB0] focus:outline-none transition-colors shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)]"
         />
         {searchTerm && (
           <button onClick={() => setSearchTerm('')}
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:bg-[rgb(var(--c-primary-50))] transition-colors">
-            <X size={14} weight="bold" />
+            className="absolute end-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:bg-[rgb(var(--c-bg))] transition-colors">
+            <X size={13} weight="bold" />
           </button>
         )}
       </div>
 
       {/* Cards */}
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {filtered.length === 0 ? (
-          <div className="bg-gradient-to-br from-white via-white to-background/40 rounded-3xl border border-line py-20 text-center shadow-[0_2px_12px_rgb(var(--c-ink)/0.06)]">
-            <div className="relative w-fit mx-auto mb-3 group">
-              <div className="absolute inset-0 rounded-2xl blur-xl bg-blue-400 opacity-30 group-hover:opacity-60 transition-opacity" />
-              <div className="relative w-14 h-14 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300"
-                style={{ background: 'linear-gradient(135deg, #DBEAFE, #BFDBFE)' }}>
-                <Truck size={24} className="text-blue-400" weight="regular" />
-                <Sparkles size={9} className="absolute -top-0.5 -right-0.5 text-blue-300 drop-shadow animate-pulse" />
-              </div>
-            </div>
-            <p className="text-muted text-sm font-medium">لا توجد طلبات تطابق البحث</p>
-          </div>
+          <Surface>
+            <EmptyState Icon={Truck} title="لا توجد طلبات تطابق البحث" />
+          </Surface>
         ) : filtered.map(r => (
           <RequestCard
             key={r.id}
@@ -299,8 +273,6 @@ export default function AdminLogistics() {
           onSave={handleSaveEdit}
         />
       )}
-
-      <style>{`.no-scrollbar::-webkit-scrollbar { display: none; }`}</style>
     </div>
   );
 }
@@ -318,136 +290,83 @@ function RequestCard({ request: r, isOpen, onToggle }) {
 
   return (
     <div
-      className={`group/row relative bg-white rounded-2xl border-2 overflow-hidden transition-all duration-300 hover:shadow-[0_8px_28px_rgb(var(--c-ink)/0.10)] ${
+      className={`group/row relative bg-white rounded-[14px] border overflow-hidden
+                  shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] transition-shadow duration-200
+                  hover:shadow-[0_6px_20px_-6px_rgb(var(--c-ink)/0.16)] ${
         isNew && !isOpen ? 'card-pulse-blue' : ''
       }`}
-      style={!isNew || isOpen ? {
-        borderColor: isOpen ? `${st.color}40` : 'rgb(var(--c-line))',
-        boxShadow: isOpen ? `0 8px 28px ${st.color}1F` : '0 2px 10px rgb(var(--c-ink) / 0.06)',
-      } : undefined}
+      style={{ borderColor: isOpen ? tint(st.color, 34) : 'rgb(var(--c-line))' }}
     >
-      {/* "جديد" floating pill */}
-      {isNew && !isOpen && (
-        <span className="absolute top-2 left-2 z-10 inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md text-white shadow-md tabular-nums tracking-wide"
-          style={{ background: 'linear-gradient(135deg, #4E7CB0, #3D6795)' }}>
-          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-          جديد
-        </span>
-      )}
-      {/* Top status strip */}
-      <div className="h-1 w-full"
-        style={{ background: `linear-gradient(90deg, ${b.color}, ${b.color}66, transparent)` }} />
+      {/* The row's status lives on the leading rail, which frees the body to be
+          typography instead of a shelf of coloured strips. */}
+      <span aria-hidden className="absolute inset-y-0 start-0 w-[3px]" style={{ background: b.color }} />
 
       {/* Card body */}
       <button onClick={onToggle}
-        className="w-full text-right p-4 sm:p-5 flex items-start gap-3 sm:gap-4 hover:bg-[#FDFAF7] transition-colors">
-        {/* Icon */}
-        <div className="relative shrink-0">
-          <div className="absolute inset-0 rounded-2xl blur-md opacity-50 group-hover/row:opacity-80 transition-opacity"
-            style={{ background: st.color }} />
-          <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center shadow-md"
-            style={{
-              background: `linear-gradient(135deg, ${st.color}, ${st.color}CC)`,
-              border: '2px solid rgba(255,255,255,0.7)',
-            }}>
-            <Package size={26} className="text-white" weight="regular" />
-          </div>
-          {isNew && (
-            <div className="absolute -top-1.5 -right-1.5 badge-pulse-blue w-5 h-5 rounded-full bg-blue-500 border-2 border-white flex items-center justify-center">
-              <Sparkles size={9} className="text-white" weight="bold" />
-            </div>
-          )}
-        </div>
+        className="w-full text-start ps-5 pe-4 py-4 flex items-start gap-3.5 hover:bg-[rgb(var(--c-bg))] transition-colors">
+        <IconTile Icon={Package} color={st.color} size="lg" />
 
         {/* Main info */}
         <div className="flex-1 min-w-0">
           {/* Title row */}
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            <p className="text-base sm:text-lg font-black text-ink leading-tight">طلب إسناد</p>
-            <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md border"
-              style={{ background: `${st.color}15`, borderColor: `${st.color}40`, color: st.color }}>
-              <SupportIcon size={10} weight="bold" />
-              {st.short}
-            </span>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className="text-[14px] font-bold text-ink leading-tight">طلب إسناد</p>
+            {isNew && <Pill color="#4E7CB0" solid>جديد</Pill>}
+            <Pill color={st.color} Icon={SupportIcon}>{st.short}</Pill>
             {r.requestNumber && (
-              <span className={`inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md tabular-nums tracking-wide ${
-                isNew ? 'badge-pulse-blue text-white' : 'text-ink border'
-              }`}
-                style={isNew
-                  ? { background: 'linear-gradient(135deg, #4E7CB0, #3D6795)' }
-                  : { background: '#EFF6FF', borderColor: '#BFDBFE' }}>
-                #{r.requestNumber}
-              </span>
+              <Pill color="#4E7CB0" className="tabular-nums">#{r.requestNumber}</Pill>
             )}
             {r.holySite && HOLY_SITE_LABEL[r.holySite] && (() => {
               const HSIcon = HOLY_SITE_ICON[r.holySite];
               return (
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-md text-white inline-flex items-center gap-1"
-                  style={{ background: HOLY_SITE_COLOR[r.holySite] }}>
-                  <HSIcon size={10} weight="bold" />
+                <Pill color={HOLY_SITE_COLOR[r.holySite]} Icon={HSIcon}>
                   {HOLY_SITE_LABEL[r.holySite]}
-                </span>
+                </Pill>
               );
             })()}
           </div>
 
           {/* Meta row */}
-          <div className="flex items-center gap-3 text-[11px] text-muted flex-wrap mb-1.5">
-            <span className="flex items-center gap-1">
-              <User size={11} weight="bold" className="text-primary" />
-              <span className="font-bold text-ink">{r.observer || '—'}</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <Building2 size={11} weight="bold" className="text-primary" />
-              <span className="font-bold text-ink">{r.center || '—'}</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <Clock size={11} weight="bold" className="text-primary" />
-              <span className="font-bold">{timeAgo(r.timestamp)}</span>
-            </span>
-          </div>
+          <RowMeta items={[
+            { Icon: User,      value: r.observer },
+            { Icon: Building2, value: r.center },
+            { Icon: Clock,     value: timeAgo(r.timestamp) },
+          ]} />
 
           {/* Caterer accent + timer chip */}
-          <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
-            <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-primary bg-background border border-line rounded-md px-2 py-0.5">
-              <Factory size={10} weight="bold" />
-              <span className="truncate max-w-[200px]">{r.caterer || getCaterer(r.center) || '—'}</span>
-            </div>
+          <div className="flex items-center gap-1.5 flex-wrap mt-2">
+            <Pill Icon={Factory} color="rgb(var(--c-primary))" className="max-w-[220px]">
+              <span className="truncate min-w-0">{r.caterer || getCaterer(r.center) || '—'}</span>
+            </Pill>
             <StatusTimerChip doc={r} terminalStatuses={TERMINAL_LOGISTICS_STATUSES} statusMeta={STATUS_LOOKUP} />
           </div>
 
           {/* Quantity chips */}
-          <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
-            {hasInternal && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-700">
-                <ArrowRight size={10} weight="bold" />
-                داخلي
-                <span className="tabular-nums bg-white border border-blue-200 rounded px-1.5 ms-0.5">{r.qtyInternal}</span>
-              </span>
-            )}
-            {hasExternal && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-1 rounded-lg bg-violet-50 border border-violet-200 text-violet-700">
-                <ArrowLeft size={10} weight="bold" />
-                خارجي
-                <span className="tabular-nums bg-white border border-violet-200 rounded px-1.5 ms-0.5">{r.qtyExternal}</span>
-              </span>
-            )}
-            {(hasInternal || hasExternal) && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-1 rounded-lg bg-background border border-line text-primary">
-                المجموع <span className="tabular-nums">{totalQty}</span>
-              </span>
-            )}
-          </div>
+          {(hasInternal || hasExternal) && (
+            <div className="flex items-center gap-1.5 flex-wrap mt-2">
+              {hasInternal && (
+                <Pill color={SUPPORT_LOOKUP.internal.color} Icon={ArrowRight}>
+                  داخلي <span className="tabular-nums font-extrabold ms-0.5">{r.qtyInternal}</span>
+                </Pill>
+              )}
+              {hasExternal && (
+                <Pill color={SUPPORT_LOOKUP.external.color} Icon={ArrowLeft}>
+                  خارجي <span className="tabular-nums font-extrabold ms-0.5">{r.qtyExternal}</span>
+                </Pill>
+              )}
+              <Pill color="rgb(var(--c-primary))">
+                المجموع <span className="tabular-nums font-extrabold ms-0.5">{totalQty}</span>
+              </Pill>
+            </div>
+          )}
 
           {/* Linked report compact chip */}
           {r.reportNumber && !isOpen && (
-            <div className="mt-2 inline-flex items-center gap-1.5 text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-2 py-1">
-              <AlertTriangle size={10} weight="bold" className="text-amber-600" />
-              مرتبط بالبلاغ
-              <span className="tabular-nums bg-white border border-amber-300 rounded px-1.5 text-amber-700">#{r.reportNumber}</span>
-              {r.reportType && (
-                <span className="text-amber-700/80">· {REPORT_TYPE_LABEL[r.reportType] || r.reportType}</span>
-              )}
+            <div className="mt-2">
+              <Pill color="#DC2626" Icon={AlertTriangle}>
+                مرتبط بالبلاغ <span className="tabular-nums ms-0.5">#{r.reportNumber}</span>
+                {r.reportType && <span className="font-medium opacity-75">· {REPORT_TYPE_LABEL[r.reportType] || r.reportType}</span>}
+              </Pill>
             </div>
           )}
 
@@ -456,16 +375,14 @@ function RequestCard({ request: r, isOpen, onToggle }) {
         </div>
 
         {/* Status pill + chevron */}
-        <div className="flex flex-col items-end gap-2 shrink-0">
-          <span className="inline-flex items-center gap-1.5 text-[10px] font-black px-2.5 py-1.5 rounded-xl border-2"
-            style={{ background: b.bg, borderColor: b.border, color: b.color }}>
-            <StatusIcon size={11} weight="bold" />
-            {b.label}
-          </span>
-          <div className="w-8 h-8 rounded-lg border border-line bg-white flex items-center justify-center transition-transform"
-            style={{ transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>
-            <ChevronRight size={14} className="text-primary" weight="bold" />
-          </div>
+        <div className="flex flex-col items-end gap-2.5 shrink-0">
+          <Pill color={b.color} Icon={StatusIcon}>{b.label}</Pill>
+          <ChevronRight
+            size={14}
+            weight="bold"
+            className="text-muted/40 group-hover/row:text-muted transition-all"
+            style={{ transform: isOpen ? 'rotate(90deg)' : undefined }}
+          />
         </div>
       </button>
 
@@ -496,64 +413,54 @@ function EditModal({ req, onClose, onSave }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" dir="rtl">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+      <div className="absolute inset-0 bg-[rgb(var(--c-ink)/0.45)]" onClick={onClose} />
+      <div className="relative bg-white rounded-[18px] w-full max-w-md border border-line shadow-[0_24px_60px_-16px_rgb(var(--c-ink)/0.35)] overflow-hidden max-h-[90vh] flex flex-col">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-line shrink-0"
-          style={{ background: 'linear-gradient(135deg, #EFF6FF, rgb(var(--c-bg)))' }}>
-          <div className="flex items-center gap-2.5">
-            <div className="relative shrink-0">
-              <div className="absolute inset-0 rounded-xl blur-md opacity-40 bg-blue-500" />
-              <div className="relative w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
-                style={{ background: 'linear-gradient(135deg, #84AAD4, #4E7CB0)' }}>
-                <Package size={18} className="text-white" weight="regular" />
-              </div>
-            </div>
-            <div>
-              <p className="font-black text-ink text-sm">تعديل طلب الإسناد</p>
-              <p className="text-[11px] text-muted font-bold mt-0.5">{req.observer} · {req.center}</p>
+        <div className="flex items-center justify-between gap-3 px-5 py-3.5 border-b shrink-0"
+          style={{ background: tint('#4E7CB0', 12), borderColor: tint('#4E7CB0', 28) }}>
+          <div className="flex items-center gap-3 min-w-0">
+            <IconTile Icon={Package} color="#4E7CB0" size="md" />
+            <div className="min-w-0">
+              <p className="text-[14px] font-bold leading-tight" style={{ color: '#4E7CB0' }}>تعديل طلب الإسناد</p>
+              <p className="text-[11.5px] text-muted font-medium mt-1 truncate">{req.observer} · {req.center}</p>
             </div>
           </div>
           <button onClick={onClose}
-            className="w-8 h-8 rounded-xl border border-line flex items-center justify-center hover:bg-[rgb(var(--c-primary-50))] transition-colors">
-            <X size={15} className="text-muted" weight="bold" />
+            className="w-8 h-8 rounded-[10px] border border-line bg-white flex items-center justify-center text-muted hover:text-ink transition-colors shrink-0">
+            <X size={14} weight="bold" />
           </button>
         </div>
 
-        <div className="px-6 py-5 space-y-4 overflow-y-auto">
+        <div className="px-5 py-5 space-y-4 overflow-y-auto">
           {/* Observer info (read-only) */}
           <div className="grid grid-cols-2 gap-2.5">
             {[
               { label: 'المراقب', val: req.observer, Icon: User,     color: 'rgb(var(--c-primary))' },
               { label: 'المركز',  val: req.center,   Icon: Building2,color: '#4E7CB0' },
             ].map(c => (
-              <div key={c.label} className="bg-white rounded-xl border border-line p-2.5 flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: `${c.color}15` }}>
-                  <c.Icon size={13} style={{ color: c.color }} weight="bold" />
-                </div>
+              <div key={c.label} className="rounded-[11px] border p-2.5 flex items-center gap-2.5"
+                style={{ background: tint(c.color, 12), borderColor: tint(c.color, 28) }}>
+                <IconTile Icon={c.Icon} color={c.color} size="sm" />
                 <div className="min-w-0">
-                  <p className="text-[9px] text-muted font-bold">{c.label}</p>
-                  <p className="text-[11px] font-bold text-ink truncate">{c.val || '—'}</p>
+                  <p className="text-[10px] text-muted font-semibold">{c.label}</p>
+                  <p className="text-[11.5px] font-bold text-ink truncate mt-0.5">{c.val || '—'}</p>
                 </div>
               </div>
             ))}
           </div>
-          <div className="bg-gradient-to-br from-background to-white rounded-xl border border-line p-2.5 flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm"
-              style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
-              <Factory size={13} className="text-white" weight="bold" />
-            </div>
+          <div className="rounded-[11px] border p-2.5 flex items-center gap-2.5"
+            style={{ background: tint('rgb(var(--c-primary))', 12), borderColor: tint('rgb(var(--c-primary))', 28) }}>
+            <IconTile Icon={Factory} size="sm" />
             <div className="min-w-0">
-              <p className="text-[9px] text-muted font-bold">المتعهد</p>
-              <p className="text-[11px] font-black text-primary truncate">{req.caterer || getCaterer(req.center) || '—'}</p>
+              <p className="text-[10px] text-muted font-semibold">المتعهد</p>
+              <p className="text-[11.5px] font-bold text-primary truncate mt-0.5">{req.caterer || getCaterer(req.center) || '—'}</p>
             </div>
           </div>
 
           {/* Support type */}
           <div>
-            <label className="text-xs font-black text-ink mb-2 block">نوع الإسناد</label>
+            <label className="text-[11.5px] font-bold text-muted mb-2 block">نوع الإسناد</label>
             <div className="grid grid-cols-3 gap-2">
               {SUPPORT_TYPES.map(t => {
                 const TIcon = t.Icon;
@@ -561,12 +468,10 @@ function EditModal({ req, onClose, onSave }) {
                 return (
                   <button key={t.value}
                     onClick={() => setForm(f => ({ ...f, supportType: t.value, qtyInternal: '', qtyExternal: '' }))}
-                    className={`flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl text-[10px] font-black border-2 transition-all ${
-                      active ? 'shadow-md scale-[1.02] text-white' : 'bg-white border-line text-muted'
+                    className={`flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-[10px] text-[11px] font-bold border transition-colors ${
+                      active ? 'text-white' : 'bg-white border-line text-muted hover:bg-[rgb(var(--c-bg))]'
                     }`}
-                    style={active
-                      ? { background: `linear-gradient(135deg, ${t.color}, ${t.color}DD)`, borderColor: t.color }
-                      : undefined}>
+                    style={active ? { background: t.color, borderColor: t.color } : undefined}>
                     <TIcon size={14} weight="bold" />
                     {t.short}
                   </button>
@@ -579,25 +484,25 @@ function EditModal({ req, onClose, onSave }) {
           <div className="grid grid-cols-2 gap-3">
             {showInternal && (
               <div>
-                <label className="text-xs font-black text-ink mb-1.5 block flex items-center gap-1.5">
-                  <ArrowRight size={12} weight="bold" className="text-blue-500" />
+                <label className="text-[11.5px] font-bold text-muted mb-1.5 flex items-center gap-1.5">
+                  <ArrowRight size={12} weight="bold" style={{ color: SUPPORT_LOOKUP.internal.color }} />
                   {form.supportType === 'both' ? 'الكمية الداخلية' : 'الكمية'}
                 </label>
                 <input type="number" min="1" value={form.qtyInternal}
                   onChange={e => setForm(f => ({ ...f, qtyInternal: e.target.value }))}
-                  className="w-full px-4 py-2.5 border-2 border-line rounded-xl text-sm font-bold text-ink outline-none focus:border-blue-500 transition-colors bg-white"
+                  className="w-full px-3.5 py-2.5 border border-line rounded-[10px] text-[13px] font-bold text-ink outline-none focus:border-[#4E7CB0] transition-colors bg-white"
                   placeholder="0" />
               </div>
             )}
             {showExternal && (
               <div>
-                <label className="text-xs font-black text-ink mb-1.5 block flex items-center gap-1.5">
-                  <ArrowLeft size={12} weight="bold" className="text-violet-500" />
+                <label className="text-[11.5px] font-bold text-muted mb-1.5 flex items-center gap-1.5">
+                  <ArrowLeft size={12} weight="bold" style={{ color: SUPPORT_LOOKUP.external.color }} />
                   {form.supportType === 'both' ? 'الكمية الخارجية' : 'الكمية'}
                 </label>
                 <input type="number" min="1" value={form.qtyExternal}
                   onChange={e => setForm(f => ({ ...f, qtyExternal: e.target.value }))}
-                  className="w-full px-4 py-2.5 border-2 border-line rounded-xl text-sm font-bold text-ink outline-none focus:border-violet-500 transition-colors bg-white"
+                  className="w-full px-3.5 py-2.5 border border-line rounded-[10px] text-[13px] font-bold text-ink outline-none focus:border-[#B4674E] transition-colors bg-white"
                   placeholder="0" />
               </div>
             )}
@@ -605,18 +510,18 @@ function EditModal({ req, onClose, onSave }) {
 
           {/* Status */}
           <div>
-            <label className="text-xs font-black text-ink mb-2 block">حالة الطلب</label>
+            <label className="text-[11.5px] font-bold text-muted mb-2 block">حالة الطلب</label>
             <div className="grid grid-cols-2 gap-2">
               {STATUS_OPTIONS.map(s => {
                 const SIcon = s.Icon;
                 const active = form.status === s.value;
                 return (
                   <button key={s.value} onClick={() => setForm(f => ({ ...f, status: s.value }))}
-                    className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[11px] font-black border-2 transition-all ${
-                      active ? 'shadow-md scale-[1.02]' : 'bg-white border-line text-muted'
+                    className={`flex items-center justify-center gap-1.5 py-2.5 rounded-[10px] text-[11.5px] font-bold border transition-colors ${
+                      active ? '' : 'bg-white border-line text-muted hover:bg-[rgb(var(--c-bg))]'
                     }`}
                     style={active
-                      ? { background: s.bg, borderColor: s.color, color: s.color }
+                      ? { background: tint(s.color, 12), borderColor: s.color, color: s.color }
                       : undefined}>
                     <SIcon size={12} weight="bold" />
                     {s.label}
@@ -628,26 +533,26 @@ function EditModal({ req, onClose, onSave }) {
 
           {/* Notes */}
           <div>
-            <label className="text-xs font-black text-ink mb-1.5 block">ملاحظات</label>
+            <label className="text-[11.5px] font-bold text-muted mb-1.5 block">ملاحظات</label>
             <textarea rows={3} value={form.notes}
               onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-              className="w-full px-4 py-3 border-2 border-line rounded-xl text-sm text-ink outline-none focus:border-blue-500 transition-colors resize-none bg-white"
+              className="w-full px-3.5 py-3 border border-line rounded-[10px] text-[13px] text-ink outline-none focus:border-[#4E7CB0] transition-colors resize-none bg-white"
               placeholder="ملاحظات إضافية..." />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-line flex gap-2.5 shrink-0">
+        <div className="px-5 py-4 border-t border-line flex gap-2.5 shrink-0">
           <button onClick={onClose}
-            className="flex-1 py-3 rounded-xl text-sm font-black border-2 border-line text-muted hover:bg-[rgb(var(--c-primary-50))] transition-colors">
+            className="flex-1 py-2.5 rounded-[10px] text-[13px] font-bold border border-line text-muted hover:bg-[rgb(var(--c-bg))] transition-colors">
             إلغاء
           </button>
           <button onClick={handleSave} disabled={saving}
-            className="flex-1 py-3 rounded-xl text-sm font-black text-white flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-60 shadow-md"
-            style={{ background: 'linear-gradient(135deg, #84AAD4, #4E7CB0)' }}>
+            className="flex-1 py-2.5 rounded-[10px] text-[13px] font-bold text-white flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-60"
+            style={{ background: '#4E7CB0' }}>
             {saving
               ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              : <Save size={15} weight="bold" />}
+              : <Save size={14} weight="bold" />}
             {saving ? 'جارٍ الحفظ...' : 'حفظ التعديلات'}
           </button>
         </div>

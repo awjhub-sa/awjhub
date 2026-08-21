@@ -6,42 +6,33 @@ export default function FilterChip({
   color = 'rgb(var(--c-primary))',
   children,
 }) {
-  const activeStyle = active
-    ? {
-        background: `linear-gradient(135deg, ${color}DD, ${color})`,
-        borderColor: color,
-        color: '#fff',
-        boxShadow: `0 3px 10px ${color}55`,
-      }
-    : undefined;
-
+  /* Selected is a flat fill of the filter's own colour, not a gradient with a
+     coloured shadow under it. A chip that grows and glows when picked competes
+     with the rows it is meant to be filtering. */
   return (
     <button
       type="button"
       onClick={onClick}
-      style={activeStyle}
-      className={`group/chip px-3 py-1.5 rounded-xl text-sm font-bold border transition-all flex items-center gap-1.5 ${
+      style={
         active
-          ? 'scale-[1.03]'
-          : 'bg-white text-ink border-line hover:scale-[1.02]'
+          ? { background: color, borderColor: color, color: '#fff' }
+          : undefined
+      }
+      className={`group/chip px-3 py-1.5 rounded-[10px] text-[12.5px] font-bold border
+                  transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+        active ? '' : 'bg-white text-ink border-line hover:bg-[rgb(var(--c-bg))]'
       }`}
     >
-      {Icon && (
-        <Icon
-          size={14}
-          className={`transition-transform duration-300 ${
-            active ? 'scale-110' : 'group-hover/chip:scale-110'
-          }`}
-          style={!active ? { color } : undefined}
-        />
-      )}
+      {Icon && <Icon size={14} weight="bold" style={!active ? { color } : undefined} />}
       {children}
       {count !== undefined && count !== null && (
         <span
-          className={`px-1.5 py-0.5 rounded-full text-xs ${
-            active ? 'bg-white/25 text-white' : 'bg-background'
-          }`}
-          style={!active ? { color } : undefined}
+          className="px-1.5 py-0.5 rounded-md text-[11px] font-bold tabular-nums"
+          style={
+            active
+              ? { background: 'rgb(255 255 255 / 0.22)', color: '#fff' }
+              : { background: `color-mix(in srgb, ${color} 12%, #fff)`, color }
+          }
         >
           {count}
         </span>

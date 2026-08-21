@@ -17,12 +17,19 @@
     <link rel="apple-touch-icon" href="/brand/icon-mark.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Variable axis 200..1000: the UI reaches for font-black (900) in 61
-         places, which a static set could only fake. Loaded here rather than via
-         @import in CSS so the browser starts fetching immediately instead of
-         waiting for the stylesheet to parse. Cairo is also the font embedded
-         in the generated PDFs, so screen and print stay identical. -->
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200..1000&display=swap" rel="stylesheet" />
+    <!-- Loaded here rather than via @import in CSS so the browser starts
+         fetching immediately instead of waiting for the stylesheet to parse.
+         The print stylesheets name this same family, so screen and the
+         browser-generated PDFs stay identical.
+
+         The family stops at 700. The UI asks for 800 in ~138 places, which the
+         browser resolves to this real 700 face rather than synthesising a
+         faux-bold — measured identical advance widths at 700/800/900 — so those
+         call sites render as true Bold and were left alone. Do not add a
+         heavier request expecting a heavier result. -->
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@100;200;300;400;500;600;700&display=swap" rel="stylesheet" />
+    <!-- One variable drives every screen surface; everything else reads it. -->
+    <style>:root { --font-arabic: 'IBM Plex Sans Arabic', Tahoma, sans-serif; }</style>
   </head>
   <body>
     <div id="root"></div>

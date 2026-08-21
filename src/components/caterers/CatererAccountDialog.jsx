@@ -18,6 +18,13 @@ import {
   createCatererAccount, findCatererAccount, unlinkCatererAccount,
   suggestPassword, isEmail,
 } from '../../lib/catererAccounts.js';
+import { IconTile } from '../ui/index.jsx';
+
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
+
+const NAVY  = 'rgb(var(--c-primary))';
+const CLAY  = '#B4674E';
+const GREEN = '#15803D';
 
 export default function CatererAccountDialog({ caterer, onClose, onChanged }) {
   const [existing, setExisting] = useState(undefined);   // undefined = still loading
@@ -75,20 +82,19 @@ export default function CatererAccountDialog({ caterer, onClose, onChanged }) {
   return (
     <div className="fixed inset-0 z-[75] flex items-end sm:items-center justify-center" dir="rtl">
       <button className="absolute inset-0 bg-ink/45 backdrop-blur-[2px]" onClick={onClose} aria-label="إغلاق" />
-      <div className="relative w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden
-                      shadow-[0_20px_70px_rgb(var(--c-ink)/0.35)] max-h-[92vh] flex flex-col">
+      <div className="relative w-full sm:max-w-md bg-white rounded-t-[18px] sm:rounded-[18px] border border-line overflow-hidden
+                      shadow-[0_0_40px_-8px_rgb(0_0_0/0.45)] max-h-[92vh] flex flex-col">
 
-        <header className="px-5 py-4 border-b border-line flex items-center gap-3 flex-shrink-0">
-          <span className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}>
-            <Key size={17} weight="bold" className="text-white" />
-          </span>
+        <header className="px-5 py-3.5 border-b flex items-center gap-3 flex-shrink-0"
+          style={{ background: tint(NAVY, 12), borderColor: tint(NAVY, 28) }}>
+          <IconTile Icon={Key} color={NAVY} size="md" />
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-black text-ink">حساب دخول المتعهد</p>
-            <p className="text-[10.5px] font-bold text-muted mt-0.5 truncate">{caterer.name}</p>
+            <p className="text-[14px] font-bold leading-tight" style={{ color: NAVY }}>حساب دخول المتعهد</p>
+            <p className="text-[11.5px] font-medium text-muted mt-1 truncate">{caterer.name}</p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg border border-line flex items-center justify-center flex-shrink-0">
-            <X size={15} weight="bold" className="text-muted" />
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-[10px] border border-line bg-white flex items-center justify-center flex-shrink-0 text-muted hover:text-ink transition-colors">
+            <X size={14} weight="bold" />
           </button>
         </header>
 
@@ -96,16 +102,16 @@ export default function CatererAccountDialog({ caterer, onClose, onChanged }) {
 
           {existing === undefined && (
             <div className="py-8 flex justify-center">
-              <div className="w-7 h-7 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+              <div className="w-7 h-7 border-2 border-primary/25 border-t-primary rounded-full animate-spin" />
             </div>
           )}
 
           {/* ── just created ── */}
           {done && (
             <>
-              <div className="rounded-xl border p-3 flex gap-2"
-                style={{ borderColor: '#BBE7C8', background: 'color-mix(in srgb, #16A34A 7%, #fff)' }}>
-                <CheckCircle size={16} weight="fill" className="text-success flex-shrink-0 mt-0.5" />
+              <div className="rounded-[11px] border p-3 flex gap-2"
+                style={{ background: tint(GREEN, 12), borderColor: tint(GREEN, 28) }}>
+                <CheckCircle size={16} weight="fill" className="flex-shrink-0 mt-0.5" style={{ color: GREEN }} />
               </div>
 
               <Cred label="البريد" value={done.email}
@@ -114,10 +120,10 @@ export default function CatererAccountDialog({ caterer, onClose, onChanged }) {
                 onCopy={() => copy(password, 'pw')} copied={copied === 'pw'} />
 
               {done.needsConfirmation && (
-                <div className="rounded-xl border p-3 flex gap-2"
-                  style={{ borderColor: '#EBCFC3', background: 'color-mix(in srgb, #B4674E 7%, #fff)' }}>
-                  <WarningCircle size={15} weight="bold" style={{ color: '#B4674E' }} className="flex-shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-ink leading-relaxed">
+                <div className="rounded-[11px] border p-3 flex gap-2"
+                  style={{ background: tint(CLAY, 12), borderColor: tint(CLAY, 28) }}>
+                  <WarningCircle size={15} weight="bold" style={{ color: CLAY }} className="flex-shrink-0 mt-0.5" />
+                  <p className="text-[11.5px] text-ink leading-relaxed">
                     المشروع يطلب تأكيد البريد، فلن يستطيع الدخول قبل تأكيده.
                     عطّل <b>Confirm email</b> من إعدادات المصادقة في Supabase،
                     أو أكّد العنوان يدوياً من لوحة المستخدمين.
@@ -130,13 +136,13 @@ export default function CatererAccountDialog({ caterer, onClose, onChanged }) {
           {/* ── already has one ── */}
           {!done && existing && (
             <>
-              <div className="rounded-xl border border-line bg-background p-3">
-                <p className="text-[10px] font-black text-muted/70 tracking-widest mb-1">الحساب المرتبط</p>
+              <div className="rounded-[11px] border border-line bg-[rgb(var(--c-bg))] p-3">
+                <p className="text-[10.5px] font-bold text-muted tracking-[0.14em] mb-1.5">الحساب المرتبط</p>
                 <p className="text-[12.5px] font-bold text-ink flex items-center gap-1.5">
                   <Envelope size={13} weight="bold" className="text-primary" />
                   {existing.email || '— بلا بريد —'}
                 </p>
-                <p className="text-[10.5px] font-bold text-muted mt-1">
+                <p className="text-[11px] font-medium text-muted mt-1.5">
                   {existing.authUid
                     ? 'مرتبط بحساب مصادقة'
                     : 'غير مرتبط بمصادقة — لا يستطيع الدخول'}
@@ -145,21 +151,21 @@ export default function CatererAccountDialog({ caterer, onClose, onChanged }) {
 
               {!confirmUnlink ? (
                 <button onClick={() => setConfirmUnlink(true)} disabled={busy}
-                  className="w-full h-9 rounded-lg border border-line text-[12px] font-bold text-error/80
-                             hover:text-error flex items-center justify-center gap-1.5 disabled:opacity-40">
+                  className="w-full h-9 rounded-[10px] border border-line bg-white text-[12px] font-bold text-error/80
+                             hover:text-error hover:border-error/30 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-40">
                   <LinkBreak size={13} weight="bold" />
                   فكّ الربط بهذا المتعهد
                 </button>
               ) : (
-                <div className="rounded-xl border p-3"
-                  style={{ borderColor: '#EBCFC3', background: 'color-mix(in srgb, #B4674E 7%, #fff)' }}>
+                <div className="rounded-[11px] border p-3"
+                  style={{ background: tint(CLAY, 12), borderColor: tint(CLAY, 28) }}>
                   <div className="flex gap-2">
                     <button onClick={unlink} disabled={busy}
-                      className="h-8 px-3 rounded-lg bg-error text-white text-[11px] font-black disabled:opacity-40">
+                      className="h-8 px-3 rounded-[10px] bg-error border border-error text-white text-[11.5px] font-bold hover:opacity-90 transition-opacity disabled:opacity-40">
                       نعم، فكّ الربط
                     </button>
                     <button onClick={() => setConfirmUnlink(false)}
-                      className="h-8 px-3 text-[11px] font-bold text-muted">تراجع</button>
+                      className="h-8 px-3 text-[11.5px] font-bold text-muted hover:text-ink transition-colors">تراجع</button>
                   </div>
                 </div>
               )}
@@ -170,29 +176,29 @@ export default function CatererAccountDialog({ caterer, onClose, onChanged }) {
           {!done && existing === null && (
             <>
               <label className="block">
-                <span className="text-[10px] font-black text-muted/70 tracking-widest block mb-1.5">البريد الإلكتروني</span>
+                <span className="text-[11.5px] font-bold text-muted block mb-1.5">البريد الإلكتروني</span>
                 <input value={email} onChange={e => setEmail(e.target.value)} dir="ltr"
                   placeholder="caterer@example.com" autoComplete="off"
-                  className="w-full h-9 px-3 rounded-lg border border-line bg-background text-[12.5px] text-ink
-                             focus:outline-none focus:border-primary/50 focus:bg-white" />
+                  className="w-full h-9 px-3 rounded-[10px] border border-line bg-[rgb(var(--c-bg))] text-[12.5px] text-ink
+                             transition-colors focus:outline-none focus:border-primary/50 focus:bg-white" />
                 {email && !isEmail(email) && (
-                  <span className="text-[10px] font-bold text-error mt-1 block">صيغة البريد غير صحيحة</span>
+                  <span className="text-[10.5px] font-bold text-error mt-1.5 block">صيغة البريد غير صحيحة</span>
                 )}
               </label>
 
               <label className="block">
-                <span className="text-[10px] font-black text-muted/70 tracking-widest block mb-1.5">كلمة المرور</span>
+                <span className="text-[11.5px] font-bold text-muted block mb-1.5">كلمة المرور</span>
                 <div className="flex gap-1.5">
                   <input value={password} onChange={e => setPassword(e.target.value)} dir="ltr"
                     type={show ? 'text' : 'password'} autoComplete="new-password"
-                    className="flex-1 h-9 px-3 rounded-lg border border-line bg-background text-[12.5px] font-mono
-                               text-ink focus:outline-none focus:border-primary/50 focus:bg-white" />
+                    className="flex-1 h-9 px-3 rounded-[10px] border border-line bg-[rgb(var(--c-bg))] text-[12.5px] font-mono
+                               text-ink transition-colors focus:outline-none focus:border-primary/50 focus:bg-white" />
                   <button type="button" onClick={() => setShow(s => !s)} title={show ? 'إخفاء' : 'إظهار'}
-                    className="w-9 h-9 rounded-lg border border-line flex items-center justify-center text-muted hover:text-ink">
+                    className="w-9 h-9 rounded-[10px] border border-line bg-white flex items-center justify-center text-muted hover:text-ink transition-colors">
                     {show ? <EyeSlash size={14} weight="bold" /> : <Eye size={14} weight="bold" />}
                   </button>
                   <button type="button" onClick={() => setPassword(suggestPassword())} title="توليد كلمة أخرى"
-                    className="w-9 h-9 rounded-lg border border-line flex items-center justify-center text-muted hover:text-ink">
+                    className="w-9 h-9 rounded-[10px] border border-line bg-white flex items-center justify-center text-muted hover:text-ink transition-colors">
                     <ArrowsClockwise size={14} weight="bold" />
                   </button>
                 </div>
@@ -202,23 +208,23 @@ export default function CatererAccountDialog({ caterer, onClose, onChanged }) {
           )}
 
           {err && (
-            <div className="rounded-xl border p-3 flex gap-2"
-              style={{ borderColor: '#EBCFC3', background: 'color-mix(in srgb, #B4674E 8%, #fff)' }}>
-              <WarningCircle size={15} weight="bold" style={{ color: '#B4674E' }} className="flex-shrink-0 mt-0.5" />
-              <p className="text-[11px] text-ink leading-relaxed">{err}</p>
+            <div className="rounded-[11px] border p-3 flex gap-2"
+              style={{ background: tint(CLAY, 12), borderColor: tint(CLAY, 28) }}>
+              <WarningCircle size={15} weight="bold" style={{ color: CLAY }} className="flex-shrink-0 mt-0.5" />
+              <p className="text-[11.5px] text-ink leading-relaxed">{err}</p>
             </div>
           )}
         </div>
 
         <footer className="px-5 py-3 border-t border-line flex items-center gap-2 flex-shrink-0">
           <button onClick={onClose}
-            className="h-9 px-4 rounded-lg border border-line text-[12px] font-bold text-muted hover:text-ink">
+            className="h-9 px-4 rounded-[10px] border border-line bg-white text-[12px] font-bold text-muted hover:text-ink hover:bg-[rgb(var(--c-bg))] transition-colors">
             {done ? 'تم' : 'إغلاق'}
           </button>
           {!done && existing === null && (
             <button onClick={create} disabled={busy || !isEmail(email) || password.length < 8}
-              className="mr-auto h-9 px-5 rounded-lg text-white text-[12px] font-black flex items-center gap-1.5 disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}>
+              className="ms-auto h-9 px-5 rounded-[10px] bg-primary border border-primary text-white text-[12px] font-bold
+                         flex items-center gap-1.5 hover:opacity-90 transition-opacity disabled:opacity-50">
               <Key size={13} weight="bold" />
               {busy ? 'جارٍ الإنشاء…' : 'إنشاء الحساب'}
             </button>
@@ -231,16 +237,16 @@ export default function CatererAccountDialog({ caterer, onClose, onChanged }) {
 
 function Cred({ label, value, mono, onCopy, copied }) {
   return (
-    <div className="rounded-xl border border-line bg-background p-3">
-      <p className="text-[10px] font-black text-muted/70 tracking-widest mb-1.5">{label}</p>
+    <div className="rounded-[11px] border border-line bg-[rgb(var(--c-bg))] p-3">
+      <p className="text-[10.5px] font-bold text-muted tracking-[0.14em] mb-1.5">{label}</p>
       <div className="flex items-center gap-2">
-        <code dir="ltr" className={`flex-1 text-[12.5px] text-ink break-all ${mono ? 'font-mono' : ''}`}>
+        <code dir="ltr" className={`flex-1 text-[12.5px] font-bold text-ink break-all ${mono ? 'font-mono' : ''}`}>
           {value}
         </code>
         <button onClick={onCopy}
-          className="w-8 h-8 rounded-lg border border-line bg-white flex items-center justify-center flex-shrink-0
-                     text-muted hover:text-ink">
-          {copied ? <CheckCircle size={14} weight="fill" className="text-success" />
+          className="w-8 h-8 rounded-[10px] border border-line bg-white flex items-center justify-center flex-shrink-0
+                     text-muted hover:text-ink transition-colors">
+          {copied ? <CheckCircle size={14} weight="fill" style={{ color: GREEN }} />
                   : <Copy size={13} weight="bold" />}
         </button>
       </div>

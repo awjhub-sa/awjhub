@@ -36,13 +36,19 @@ import { CENTERS } from '../../config/centers.js';
 import { BASELINE_SCORES } from '../../config/baselineScores.js';
 import { MINA_SECTIONS, MINA_ALL_CRITERIA } from '../../config/minaQuestions.js';
 import { ARAFAT_SECTIONS, ARAFAT_ALL_CRITERIA } from '../../config/arafatQuestions.js';
+import { closeDocumentTab } from '../../lib/printPage.js';
 const logoSrc = BRAND.logo.color;
 import { BRAND } from '../../config/brand.js';
 
 const TABS = [
-  { key: 'mina',   label: 'مشعر منى',  short: 'منى',   col: 'mina_readiness',   color: 'rgb(var(--c-success))', gradient: 'linear-gradient(135deg, #4F8856, rgb(var(--c-success)))', Icon: ShieldCheck, sections: MINA_SECTIONS,   allCriteria: MINA_ALL_CRITERIA   },
-  { key: 'arafat', label: 'مشعر عرفة', short: 'عرفة',  col: 'arafat_readiness', color: '#2F5580', gradient: 'linear-gradient(135deg, #6595C4, #2F5580)', Icon: Mountain,    sections: ARAFAT_SECTIONS, allCriteria: ARAFAT_ALL_CRITERIA },
+  { key: 'mina',   label: 'مشعر منى',  short: 'منى',   col: 'mina_readiness',   color: '#16A34A', Icon: ShieldCheck, sections: MINA_SECTIONS,   allCriteria: MINA_ALL_CRITERIA   },
+  { key: 'arafat', label: 'مشعر عرفة', short: 'عرفة',  col: 'arafat_readiness', color: '#2F5580', Icon: Mountain,    sections: ARAFAT_SECTIONS, allCriteria: ARAFAT_ALL_CRITERIA },
 ];
+
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
+
+const GAIN = '#15803D';
+const WARN = '#B45309';
 
 /* Current eval score → /100 (matches baseline scale). */
 function getCurrentPercent(doc) {
@@ -193,16 +199,17 @@ export default function StagesReport() {
   return (
     <div className="stages-report" dir="rtl">
       {/* Toolbar — hidden on print */}
-      <div className="print:hidden sticky top-0 z-50 bg-white border-b border-line shadow-sm">
+      <div className="print:hidden sticky top-0 z-50 bg-white border-b border-line shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)]">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-3 px-5 py-3">
           <div className="flex items-center gap-2">
             <button onClick={() => closeDocumentTab(nav, '/admin/insights')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line text-muted text-xs font-bold hover:bg-[rgb(var(--c-primary-50))] transition-colors">
-              <X size={13} /> إغلاق
+              className="flex items-center gap-1.5 h-9 px-3.5 rounded-[10px] border border-line bg-white text-muted
+                         text-[12px] font-bold hover:text-ink hover:bg-[rgb(var(--c-bg))] transition-colors">
+              <X size={13} weight="bold" /> إغلاق
             </button>
             <button onClick={() => window.print()}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-xs font-bold transition-colors"
-              style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary)), rgb(var(--c-primary-700)))' }}>
+              className="flex items-center gap-1.5 h-9 px-4 rounded-[10px] bg-primary hover:bg-primary-700
+                         text-white text-[12px] font-bold transition-colors">
               <Printer size={14} weight="bold" /> طباعة / حفظ PDF
             </button>
           </div>
@@ -212,10 +219,12 @@ export default function StagesReport() {
               return (
                 <button key={t.key}
                   onClick={() => setActiveTab(t.key)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black border-2 transition-all ${
-                    active ? 'text-white' : 'bg-white text-muted border-line hover:border-primary/50'
+                  className={`flex items-center gap-1.5 h-9 px-3.5 rounded-[10px] text-[12px] font-bold border transition-colors ${
+                    active ? '' : 'bg-white text-muted border-line hover:text-ink'
                   }`}
-                  style={active ? { background: t.gradient, borderColor: t.color } : undefined}>
+                  style={active
+                    ? { background: tint(t.color, 12), borderColor: tint(t.color, 28), color: t.color }
+                    : undefined}>
                   {t.label}
                 </button>
               );
@@ -226,31 +235,31 @@ export default function StagesReport() {
 
       <div className="max-w-6xl mx-auto p-5 space-y-5">
         {/* ════ PAGE 1 — Cover page (Executive summary) ════ */}
-        <article className="report-page bg-white rounded-3xl border border-line overflow-hidden shadow-[0_2px_18px_rgb(var(--c-ink)/0.06)] print:break-after-page print:rounded-none print:border-0 print:shadow-none">
+        <article className="report-page bg-white rounded-[18px] border border-line overflow-hidden shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] print:break-after-page print:rounded-none print:border-0 print:shadow-none">
           {/* Brand banner */}
-          <div className="p-7 text-white relative overflow-hidden"
-            style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)) 0%, rgb(var(--c-primary)) 60%, rgb(var(--c-primary-700)) 100%)' }}>
-            <div className="absolute top-0 right-0 w-48 h-48 rounded-full opacity-15"
-              style={{ background: 'radial-gradient(circle, #fff 0%, transparent 70%)', transform: 'translate(40%, -50%)' }} />
-            <div className="flex items-center gap-5 relative">
-              <div className="bg-white rounded-2xl p-3 shadow-md flex-shrink-0">
+          <div className="relative p-7 text-white"
+            style={{ background: 'linear-gradient(180deg, rgb(var(--c-primary)) 0%, rgb(var(--c-primary-700)) 100%)' }}>
+            <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px"
+              style={{ background: 'linear-gradient(90deg, transparent, rgb(var(--c-accent) / 0.6), transparent)' }} />
+            <div className="flex items-center gap-5">
+              <div className="bg-white rounded-xl p-3 border border-white/10 flex-shrink-0">
                 <img src={logoSrc} alt={BRAND.companyName} className="w-20 h-auto" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold mb-1">{BRAND.companyName}</h1>
-                <p className="text-white/85 text-sm font-medium"></p>
+                <h1 className="text-[28px] font-extrabold leading-tight">{BRAND.companyName}</h1>
+                <p className="text-white/55 text-sm font-medium"></p>
               </div>
             </div>
           </div>
 
           {/* Title + mash'ar pill */}
-          <div className="px-8 pt-8 pb-4 text-center border-b border-line">
-            <p className="text-xs text-muted font-bold tracking-widest uppercase mb-2">تقرير تنفيذي</p>
-            <h2 className="text-3xl sm:text-4xl font-black text-ink mb-3">المراحل والمقارنة الزمنية</h2>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-white shadow-md"
-              style={{ background: tab.gradient }}>
-              <tab.Icon size={16} weight="bold" />
-              <span className="text-sm font-black">المشعر: {tab.label}</span>
+          <div className="px-8 pt-8 pb-5 text-center border-b border-line">
+            <p className="text-[10px] text-primary/55 font-bold tracking-[0.18em] uppercase mb-2">تقرير تنفيذي</p>
+            <h2 className="text-[28px] sm:text-[34px] font-extrabold text-ink mb-3.5 leading-tight">المراحل والمقارنة الزمنية</h2>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-[11px] border"
+              style={{ background: tint(tab.color, 12), borderColor: tint(tab.color, 28), color: tab.color }}>
+              <tab.Icon size={16} weight="duotone" />
+              <span className="text-[13px] font-bold">المشعر: {tab.label}</span>
             </div>
           </div>
 
@@ -263,34 +272,33 @@ export default function StagesReport() {
           </div>
 
           {/* Hero: before → after */}
-          <div className="p-5 sm:p-7 border-b border-line"
-            style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, rgb(var(--c-bg)) 100%)' }}>
-            <p className="text-[11px] font-black text-muted uppercase tracking-widest text-center mb-4">
+          <div className="p-5 sm:p-7 border-b border-line bg-[rgb(var(--c-bg))]">
+            <p className="text-[10px] font-bold text-muted uppercase tracking-[0.18em] text-center mb-4">
               متوسط الجاهزية العامة
             </p>
             <div className="grid grid-cols-3 items-center gap-3 max-w-2xl mx-auto">
               <div className="text-center">
-                <p className="text-[10px] font-bold text-muted mb-1">قبل</p>
-                <div className="rounded-2xl border-2 border-line bg-white py-4 px-2">
-                  <p className="text-3xl sm:text-4xl font-black tabular-nums text-muted">
+                <p className="text-[10.5px] font-semibold text-muted mb-1.5">قبل</p>
+                <div className="rounded-[14px] border border-line bg-white py-4 px-2">
+                  <p className="text-[30px] sm:text-[38px] font-extrabold tabular-nums text-muted leading-none">
                     {summary.avgBefore != null ? `${summary.avgBefore}%` : '—'}
                   </p>
                 </div>
               </div>
-              <div className="flex flex-col items-center justify-center gap-1">
-                <ArrowLeft size={28} className="text-[#15803D]" weight="bold" />
+              <div className="flex flex-col items-center justify-center gap-1.5">
+                <ArrowLeft size={26} weight="bold" style={{ color: GAIN }} />
                 {summary.avgDelta != null && (
-                  <span className="text-[11px] font-black px-2 py-0.5 rounded-md text-white shadow-sm"
-                    style={{ background: 'linear-gradient(135deg, #22C55E, #15803D)' }}>
+                  <span className="text-[10.5px] font-bold px-2 py-[3px] rounded-md tabular-nums"
+                    style={{ background: tint(GAIN, 11), color: GAIN }}>
                     {fmtDelta(summary.avgDelta, '%')}
                   </span>
                 )}
               </div>
               <div className="text-center">
-                <p className="text-[10px] font-bold mb-1" style={{ color: tab.color }}>بعد</p>
-                <div className="rounded-2xl border-2 py-4 px-2 shadow-md"
-                  style={{ background: tab.gradient, borderColor: tab.color }}>
-                  <p className="text-3xl sm:text-4xl font-black tabular-nums text-white">
+                <p className="text-[10.5px] font-semibold mb-1.5" style={{ color: tab.color }}>بعد</p>
+                <div className="rounded-[14px] border py-4 px-2"
+                  style={{ background: tint(tab.color, 12), borderColor: tint(tab.color, 28) }}>
+                  <p className="text-[30px] sm:text-[38px] font-extrabold tabular-nums leading-none" style={{ color: tab.color }}>
                     {summary.avgAfter != null ? `${summary.avgAfter}%` : '—'}
                   </p>
                 </div>
@@ -300,7 +308,7 @@ export default function StagesReport() {
 
           {/* Status distribution */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-5 border-b border-line">
-            <CounterPill Icon={TrendingUp}  label="تحسن"        value={summary.improved} color="#15803D" />
+            <CounterPill Icon={TrendingUp}  label="تحسن"        value={summary.improved} color={GAIN} />
             <CounterPill Icon={Minus}        label="ثبات"        value={summary.same}     color="rgb(var(--c-primary))" />
             <CounterPill Icon={TrendingDown} label="تراجع"       value={summary.declined} color="#B91C1C" />
             <CounterPill Icon={AlertCircle}  label="بدون مقارنة" value={rows.length - summary.both} color="rgb(var(--c-muted))" />
@@ -308,23 +316,25 @@ export default function StagesReport() {
 
           {/* Violations summary */}
           {(summary.beforeViols > 0 || summary.afterViols > 0) && (
-            <div className="px-5 py-4 border-b border-line flex items-center justify-between gap-3 bg-bg">
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center">
-                  <AlertCircle size={16} className="text-amber-700" weight="bold" />
-                </div>
+            <div className="px-5 py-4 border-b border-line flex items-center justify-between gap-3 flex-wrap"
+              style={{ background: tint(WARN, 12) }}>
+              <div className="flex items-center gap-3">
+                <span className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 border"
+                  style={{ background: tint(WARN, 9), borderColor: tint(WARN, 22) }}>
+                  <AlertCircle size={18} weight="duotone" style={{ color: WARN }} />
+                </span>
                 <div>
-                  <p className="text-[11px] font-bold text-muted">مخالفات مرصودة</p>
-                  <p className="text-sm font-black text-ink">
-                    {summary.beforeViols} <span className="text-muted font-bold text-xs">قبل</span>
-                    <span className="text-muted mx-2">←</span>
-                    {summary.afterViols} <span className="text-muted font-bold text-xs">بعد</span>
+                  <p className="text-[11.5px] font-bold" style={{ color: WARN }}>مخالفات مرصودة</p>
+                  <p className="text-[15px] font-extrabold text-ink tabular-nums mt-0.5">
+                    {summary.beforeViols} <span className="text-muted font-semibold text-[11.5px]">قبل</span>
+                    <span className="text-muted/60 mx-2">←</span>
+                    {summary.afterViols} <span className="text-muted font-semibold text-[11.5px]">بعد</span>
                   </p>
                 </div>
               </div>
               {summary.beforeViols > summary.afterViols && (
-                <span className="text-[11px] font-black px-2.5 py-1 rounded-md text-white"
-                  style={{ background: 'linear-gradient(135deg, #22C55E, #15803D)' }}>
+                <span className="text-[10.5px] font-bold px-2 py-[3px] rounded-md"
+                  style={{ background: tint(GAIN, 11), color: GAIN }}>
                   ↓ تراجع المخالفات بـ {summary.beforeViols - summary.afterViols}
                 </span>
               )}
@@ -333,14 +343,14 @@ export default function StagesReport() {
 
           {/* Evaluation criteria summary */}
           <div className="p-5 sm:p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                style={{ background: `${tab.color}15` }}>
-                <Layers size={16} style={{ color: tab.color }} weight="bold" />
-              </div>
+            <div className="flex items-center gap-3 mb-4">
+              <span className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 border"
+                style={{ background: tint(tab.color, 9), borderColor: tint(tab.color, 22) }}>
+                <Layers size={18} weight="duotone" style={{ color: tab.color }} />
+              </span>
               <div>
-                <p className="text-sm font-black text-ink">أبرز محاور التقييم</p>
-                <p className="text-[11px] text-muted font-bold">
+                <p className="text-[14px] font-bold" style={{ color: tab.color }}>أبرز محاور التقييم</p>
+                <p className="text-[11.5px] text-muted font-medium mt-1">
                   مجموع {tab.allCriteria.length} بنداً موزعة على {tab.sections.length} محور رئيسي
                 </p>
               </div>
@@ -355,21 +365,22 @@ export default function StagesReport() {
                   .slice(0, 4);
                 return (
                   <div key={section.id}
-                    className="rounded-2xl border border-line bg-bg p-3.5">
-                    <div className="flex items-center justify-between gap-2 mb-2.5">
-                      <p className="text-xs font-black" style={{ color: tab.color }}>{section.title}</p>
-                      <span className="text-[10px] font-black px-2 py-0.5 rounded-md text-white tabular-nums"
-                        style={{ background: tab.color }}>
+                    className="rounded-[14px] border p-4"
+                    style={{ background: tint(tab.color, 12), borderColor: tint(tab.color, 28) }}>
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <p className="text-[12.5px] font-bold" style={{ color: tab.color }}>{section.title}</p>
+                      <span className="text-[10.5px] font-bold px-1.5 py-[3px] rounded-md tabular-nums whitespace-nowrap leading-none"
+                        style={{ background: tab.color, color: '#fff' }}>
                         {section.criteria.length} بند
                       </span>
                     </div>
-                    <ul className="space-y-1.5">
+                    <ul className="space-y-2">
                       {top.map(c => (
                         <li key={c.id}
-                          className="flex items-start gap-1.5 text-[11px] leading-snug text-ink">
-                          <CheckCircle2 size={11} weight="bold" className="mt-[3px] shrink-0" style={{ color: tab.color }} />
-                          <span className="flex-1">{c.text}</span>
-                          <span className="text-[9px] font-black text-muted tabular-nums shrink-0 mr-1">
+                          className="flex items-start gap-2 text-[11.5px] leading-snug text-ink/85">
+                          <CheckCircle2 size={12} weight="bold" className="mt-[3px] shrink-0" style={{ color: tab.color }} />
+                          <span className="flex-1 font-medium">{c.text}</span>
+                          <span className="text-[10.5px] font-bold text-muted tabular-nums shrink-0 ms-1">
                             {c.score}
                           </span>
                         </li>
@@ -384,36 +395,40 @@ export default function StagesReport() {
         </article>
 
         {/* ════ PAGE 2 — Visual bar comparison ════ */}
-        <section className="report-page bg-white rounded-3xl border border-line shadow-[0_2px_12px_rgb(var(--c-ink)/0.07)] overflow-hidden print:break-before-page print:rounded-none print:border-0 print:shadow-none">
-          <div className="px-5 py-3.5 border-b border-line"
-            style={{ background: 'linear-gradient(135deg, rgb(var(--c-bg)) 0%, #fff 100%)' }}>
-            <p className="text-sm font-black text-ink">رسم بياني للجاهزية</p>
+        <section className="report-page bg-white rounded-[18px] border border-line shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] overflow-hidden print:break-before-page print:rounded-none print:border-0 print:shadow-none">
+          <div className="flex items-center gap-3 px-4 sm:px-5 py-3.5 border-b"
+            style={{ background: tint(tab.color, 12), borderColor: tint(tab.color, 28) }}>
+            <span className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 border"
+              style={{ background: tint(tab.color, 9), borderColor: tint(tab.color, 22) }}>
+              <tab.Icon size={18} weight="duotone" style={{ color: tab.color }} />
+            </span>
+            <p className="text-[14px] font-bold" style={{ color: tab.color }}>رسم بياني للجاهزية</p>
           </div>
           <div className="p-5 space-y-2.5">
             {rows.filter(r => r.beforeScore != null || r.afterScore != null).map(r => (
               <div key={r.center} className="grid gap-2 items-center"
                 style={{ gridTemplateColumns: '110px 1fr 1fr 60px' }}>
-                <p className="text-xs font-black text-ink truncate">{r.center}</p>
+                <p className="text-[12px] font-bold text-ink truncate">{r.center}</p>
                 {/* Before bar */}
-                <div className="h-5 rounded-md bg-[rgb(var(--c-primary-50))] relative overflow-hidden">
+                <div className="h-5 rounded-md bg-[rgb(var(--c-bg))] border border-line relative overflow-hidden">
                   {r.beforeScore != null && (
-                    <div className="h-full rounded-md flex items-center justify-end px-1.5 text-[9px] font-black text-white tabular-nums"
-                      style={{ background: 'rgb(var(--c-muted))', width: `${r.beforeScore}%`, minWidth: '28px' }}>
+                    <div className="h-full rounded-md flex items-center justify-end px-1.5 text-[10px] font-bold text-white tabular-nums"
+                      style={{ background: 'rgb(var(--c-muted))', width: `${r.beforeScore}%`, minWidth: '30px' }}>
                       {r.beforeScore}%
                     </div>
                   )}
                 </div>
                 {/* After bar */}
-                <div className="h-5 rounded-md bg-[rgb(var(--c-primary-50))] relative overflow-hidden">
+                <div className="h-5 rounded-md bg-[rgb(var(--c-bg))] border border-line relative overflow-hidden">
                   {r.afterScore != null && (
-                    <div className="h-full rounded-md flex items-center justify-end px-1.5 text-[9px] font-black text-white tabular-nums"
-                      style={{ background: tab.color, width: `${r.afterScore}%`, minWidth: '28px' }}>
+                    <div className="h-full rounded-md flex items-center justify-end px-1.5 text-[10px] font-bold text-white tabular-nums"
+                      style={{ background: tab.color, width: `${r.afterScore}%`, minWidth: '30px' }}>
                       {r.afterScore}%
                     </div>
                   )}
                 </div>
                 {/* Delta */}
-                <div className="text-[10px] font-black tabular-nums text-center"
+                <div className="text-[10.5px] font-bold tabular-nums text-center"
                   style={{ color: deltaStyle(r.scoreDelta).color }}>
                   {r.scoreDelta != null ? fmtDelta(r.scoreDelta, '%') : '—'}
                 </div>
@@ -458,8 +473,8 @@ function Row({ label, value, delta }) {
   const ds = delta != null ? deltaStyle(delta) : null;
   return (
     <div className="flex items-center justify-between gap-3">
-      <span className="text-xs font-bold text-muted">{label}</span>
-      <span className="text-sm font-black text-ink tabular-nums"
+      <span className="text-[11.5px] font-semibold text-muted">{label}</span>
+      <span className="text-[13.5px] font-bold text-ink tabular-nums"
         style={ds ? { color: ds.color } : undefined}>{value}</span>
     </div>
   );
@@ -467,16 +482,16 @@ function Row({ label, value, delta }) {
 
 function StatBlock({ label, value, color, Icon }) {
   return (
-    <div className="bg-white rounded-2xl p-4 border border-line shadow-[0_2px_8px_rgb(var(--c-ink)/0.07)] flex items-center gap-3"
-      style={{ borderRight: `3px solid ${color}` }}>
+    <div className="rounded-[14px] p-4 border shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] flex items-center gap-3"
+      style={{ background: tint(color, 12), borderColor: tint(color, 28) }}>
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-semibold text-muted mb-0.5">{label}</p>
-        <p className="text-2xl font-bold tabular-nums" style={{ color }}>{value}</p>
+        <p className="text-[11.5px] font-semibold text-muted mb-1">{label}</p>
+        <p className="text-[26px] font-extrabold tabular-nums leading-none" style={{ color }}>{value}</p>
       </div>
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-        style={{ background: `${color}18` }}>
-        <Icon size={20} style={{ color }} weight="regular" />
-      </div>
+      <span className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 border"
+        style={{ background: tint(color, 9), borderColor: tint(color, 22) }}>
+        <Icon size={18} weight="duotone" style={{ color }} />
+      </span>
     </div>
   );
 }
@@ -484,14 +499,15 @@ function StatBlock({ label, value, color, Icon }) {
 /* Compact stat tile for the cover page metrics row */
 function CoverMetric({ Icon, label, value, color }) {
   return (
-    <div className="rounded-2xl bg-white border border-line p-3 flex items-center gap-2.5 shadow-[0_2px_8px_rgb(var(--c-ink)/0.04)]">
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-        style={{ background: `${color}15`, border: `1px solid ${color}30` }}>
-        <Icon size={18} style={{ color }} weight="regular" />
-      </div>
+    <div className="rounded-[14px] border p-3.5 flex items-center gap-3 shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)]"
+      style={{ background: tint(color, 12), borderColor: tint(color, 28) }}>
+      <span className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 border"
+        style={{ background: tint(color, 9), borderColor: tint(color, 22) }}>
+        <Icon size={18} weight="duotone" style={{ color }} />
+      </span>
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-bold text-muted leading-tight">{label}</p>
-        <p className="text-xl font-black tabular-nums leading-tight mt-0.5" style={{ color }}>
+        <p className="text-[10.5px] font-semibold text-muted leading-tight">{label}</p>
+        <p className="text-[22px] font-extrabold tabular-nums leading-none mt-1.5" style={{ color }}>
           {value}
         </p>
       </div>
@@ -502,15 +518,15 @@ function CoverMetric({ Icon, label, value, color }) {
 /* Status counter pill for the cover page (تحسن / ثبات / تراجع / بدون) */
 function CounterPill({ Icon, label, value, color }) {
   return (
-    <div className="rounded-xl border-2 px-3 py-2 flex items-center gap-2.5"
-      style={{ borderColor: `${color}30`, background: `${color}08` }}>
-      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-        style={{ background: `${color}18` }}>
-        <Icon size={14} style={{ color }} weight="bold" />
-      </div>
+    <div className="rounded-[11px] border px-3 py-2 flex items-center gap-2.5"
+      style={{ background: tint(color, 12), borderColor: tint(color, 28) }}>
+      <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border"
+        style={{ background: tint(color, 9), borderColor: tint(color, 22) }}>
+        <Icon size={15} weight="duotone" style={{ color }} />
+      </span>
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-bold text-muted">{label}</p>
-        <p className="text-lg font-black tabular-nums leading-tight" style={{ color }}>{value}</p>
+        <p className="text-[10.5px] font-semibold text-muted">{label}</p>
+        <p className="text-[19px] font-extrabold tabular-nums leading-none mt-1" style={{ color }}>{value}</p>
       </div>
     </div>
   );

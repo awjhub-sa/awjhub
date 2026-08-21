@@ -15,7 +15,6 @@ import {
   Mountains as Mountain,
   Buildings as Building2,
   Clock,
-  Sparkle as Sparkles,
 } from '@phosphor-icons/react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -24,56 +23,45 @@ import { useAssignedTasks } from '../hooks/useAssignedTasks.js';
 import TodayMenuCard from '../components/TodayMenuCard.jsx';
 import { formatHijri } from '../lib/hijri.js';
 import { BRAND } from '../config/brand.js';
+import { Surface, IconTile, Pill, EmptyState } from '../components/ui/index.jsx';
+
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
+
+const NAVY = 'rgb(var(--c-primary))';
 
 const _cardSpring = { type: 'spring', stiffness: 380, damping: 18 };
 
 const MenuCard = ({ icon: Icon, title, badge, onClick, variant = 'default' }) => {
+  /* The lead action carries the brand tint; the rest are plain white rows, so
+     one card leads instead of five competing. */
   const isAccent = variant === 'accent';
   return (
     <motion.button
       onClick={onClick}
-      whileHover={{ y: -3 }}
-      whileTap={{ scale: 0.97 }}
+      type="button"
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.98, y: 0 }}
       transition={_cardSpring}
-      className={`group/menu relative w-full text-right rounded-2xl p-5 flex items-center gap-4 border-2 overflow-hidden transition-all duration-300 ${
-        isAccent
-          ? 'border-transparent text-white'
-          : 'bg-gradient-to-br from-white via-white to-background/40 border-line text-ink hover:border-primary/40 hover:shadow-[0_8px_28px_rgb(var(--c-primary)/0.18)]'
+      className={`group group/menu w-full text-start rounded-[14px] border p-4 flex items-center gap-3.5
+                  cursor-pointer shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] transition-shadow duration-200
+                  hover:shadow-[0_8px_22px_-8px_rgb(var(--c-ink)/0.22)]
+                  active:shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] ${
+        isAccent ? '' : 'bg-white border-line'
       }`}
-      style={isAccent
-        ? { background: 'linear-gradient(135deg, rgb(var(--c-ink-800)) 0%, rgb(var(--c-ink)) 100%)', boxShadow: '0 6px 24px rgb(var(--c-ink) / 0.28)' }
-        : { boxShadow: '0 2px 10px rgb(var(--c-ink) / 0.06)' }}
+      style={isAccent ? { background: tint(NAVY, 12), borderColor: tint(NAVY, 28) } : undefined}
     >
-      {isAccent && (
-        <div className="absolute top-0 right-0 left-0 h-0.5 opacity-70"
-          style={{ background: 'linear-gradient(90deg, transparent, rgb(var(--c-primary-400)), transparent)' }} />
-      )}
-
-      <div className="relative flex-shrink-0">
-        <div className={`absolute inset-0 rounded-2xl blur-xl opacity-0 group-hover/menu:opacity-60 transition-opacity duration-500 ${isAccent ? 'bg-primary-400' : 'bg-primary'}`} />
-        <motion.div
-          whileHover={{ scale: 1.15, rotate: 5 }}
-          whileTap={{ scale: 0.88 }}
-          transition={_cardSpring}
-          className="relative w-14 h-14 rounded-2xl flex items-center justify-center backdrop-blur-md border-2"
-          style={isAccent
-            ? { background: 'linear-gradient(135deg, rgb(var(--c-primary-400) / 0.18), rgb(var(--c-primary) / 0.10))', borderColor: 'rgb(var(--c-primary-400) / 0.35)' }
-            : { background: 'linear-gradient(135deg, rgb(var(--c-bg)), rgb(var(--c-primary-100)))', borderColor: 'rgb(var(--c-primary) / 0.25)' }}
-        >
-          <Icon size={26} weight="regular" className="text-primary" />
-          <Sparkles size={9} className="absolute -top-0.5 -right-0.5 text-yellow-200 drop-shadow" />
-        </motion.div>
-      </div>
+      <IconTile Icon={Icon} color={NAVY} size="lg" />
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-bold text-base">{title}</span>
+          <span className={`text-[15px] font-bold ${isAccent ? 'text-primary' : 'text-ink'}`}>{title}</span>
           {badge != null && (
             <motion.span
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={_cardSpring}
-              className="badge-pulse-red inline-flex items-center min-w-[22px] h-[22px] bg-gradient-to-br from-red-500 to-red-600 text-white text-[10px] font-extrabold rounded-full px-1.5 ring-2 ring-white shadow-md tabular-nums"
+              className="badge-pulse-red inline-flex items-center justify-center min-w-[20px] h-[20px] px-1.5
+                         bg-[#DC2626] text-white text-[10px] font-bold rounded-full ring-2 ring-white tabular-nums"
             >
               {badge}
             </motion.span>
@@ -81,33 +69,26 @@ const MenuCard = ({ icon: Icon, title, badge, onClick, variant = 'default' }) =>
         </div>
       </div>
 
-      <motion.div
-        whileHover={{ x: -4 }}
-        className={`flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
-          isAccent ? 'bg-white/10 group-hover/menu:bg-white/20' : 'bg-background group-hover/menu:bg-primary/15'
-        }`}
-      >
-        <ChevronLeft size={16} weight="bold" className={isAccent ? 'text-white' : 'text-primary'} />
-      </motion.div>
+      <ChevronLeft size={15} weight="bold" className="shrink-0 text-muted/40 group-hover/menu:text-muted transition-colors" />
     </motion.button>
   );
 };
 
 const ACTIVITY_CFG = {
-  reports: { label: 'بلاغ طارئ', Icon: Siren, color: '#DC2626', bg: '#FEF2F2', border: '#FECACA' },
-  meal_evaluations: { label: 'تقييم وجبات', Icon: ChefHat, color: 'rgb(var(--c-primary))', bg: 'rgb(var(--c-bg))', border: 'rgb(var(--c-line))' },
-  mina_readiness: { label: 'جاهزية منى', Icon: Tent, color: '#3D6795', bg: '#EEF4FB', border: '#C4D8ED' },
-  arafat_readiness: { label: 'جاهزية عرفة', Icon: Mountain, color: '#9E5741', bg: '#FBF3EF', border: '#EBCFC3' },
-  logistics_requests: { label: 'طلب إسناد', Icon: Boxes, color: '#4E7CB0', bg: '#EFF6FF', border: '#BFDBFE' },
+  reports: { label: 'بلاغ طارئ', Icon: Siren, color: '#DC2626' },
+  meal_evaluations: { label: 'تقييم وجبات', Icon: ChefHat, color: 'rgb(var(--c-primary))' },
+  mina_readiness: { label: 'جاهزية منى', Icon: Tent, color: '#3D6795' },
+  arafat_readiness: { label: 'جاهزية عرفة', Icon: Mountain, color: '#9E5741' },
+  logistics_requests: { label: 'طلب إسناد', Icon: Boxes, color: '#4E7CB0' },
 };
 
 const STATUS_DATA = {
-  pending:     { label: 'قيد الانتظار', bg: '#FEF9C3', text: '#854D0E' },
-  in_progress: { label: 'جارٍ التنفيذ', bg: '#DBEAFE', text: '#26456A' },
-  resolved:    { label: 'تم الحل',      bg: '#DCFCE7', text: '#166534' },
-  approved:    { label: 'موافق عليه',   bg: '#DBEAFE', text: '#26456A' },
-  delivered:   { label: 'تم التسليم',   bg: '#DCFCE7', text: '#166534' },
-  rejected:    { label: 'مرفوض',        bg: '#FEE2E2', text: '#991B1B' },
+  pending:     { label: 'قيد الانتظار', color: '#B45309' },
+  in_progress: { label: 'جارٍ التنفيذ', color: '#4E7CB0' },
+  resolved:    { label: 'تم الحل',      color: '#15803D' },
+  approved:    { label: 'موافق عليه',   color: '#4E7CB0' },
+  delivered:   { label: 'تم التسليم',   color: '#15803D' },
+  rejected:    { label: 'مرفوض',        color: '#DC2626' },
 };
 
 const SEVERITY_LABEL = { high: 'عالي', medium: 'متوسط', low: 'منخفض' };
@@ -198,18 +179,17 @@ export default function Home() {
           <div className="flex items-center gap-2.5 min-w-0">
             <img src={BRAND.logo.icon} alt="" className="w-10 h-10 shrink-0" />
             <div className="min-w-0">
-              <p className="text-xs font-bold text-ink leading-tight truncate">{BRAND.companyName}</p>
+              <p className="text-[12px] font-bold text-ink leading-tight truncate">{BRAND.companyName}</p>
               <p className="text-[10px] text-primary font-bold leading-tight truncate">{BRAND.tagline}</p>
             </div>
           </div>
 
           <motion.button
             onClick={() => navigate('/profile')}
-            whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.92 }}
-            className="w-10 h-10 rounded-xl bg-background border border-primary/20 flex items-center justify-center hover:bg-primary group transition-colors shrink-0"
+            whileTap={{ scale: 0.94 }}
+            className="w-10 h-10 rounded-[10px] bg-white border border-line flex items-center justify-center hover:bg-[rgb(var(--c-bg))] transition-colors shrink-0"
           >
-            <CircleUser size={18} weight="regular" className="text-primary group-hover:text-white transition-colors" />
+            <CircleUser size={18} weight="duotone" className="text-primary" />
           </motion.button>
         </div>
       </header>
@@ -217,32 +197,34 @@ export default function Home() {
       <main className="max-w-3xl mx-auto px-4 md:px-8 py-5 space-y-5">
 
         {/* Compact welcome card */}
-        <div className="rounded-3xl overflow-hidden shadow-lg animate-fade-slide-up">
-          <div className="p-5 sm:p-6 relative overflow-hidden bg-ink">
-            <div className="absolute inset-0 opacity-[0.04]"
-              style={{ backgroundImage: 'repeating-linear-gradient(45deg, rgb(var(--c-primary)) 0, rgb(var(--c-primary)) 1px, transparent 0, transparent 50%)', backgroundSize: '12px 12px' }} />
-            <div className="flex items-center justify-between gap-3 relative">
+        <div className="rounded-[18px] overflow-hidden border border-line animate-fade-slide-up">
+          <div className="p-5 sm:p-6 relative" style={{ background: 'rgb(var(--c-ink))' }}>
+            <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px"
+              style={{ background: 'linear-gradient(90deg, transparent, rgb(var(--c-accent) / 0.6), transparent)' }} />
+            <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-white/50 text-xs mb-0.5">مرحباً بك،</p>
-                <h2 className="text-white font-bold text-lg sm:text-xl truncate leading-tight">{name}</h2>
+                <p className="text-[11px] font-medium text-white/50 mb-1">مرحباً بك،</p>
+                <h2 className="text-white font-extrabold text-[19px] sm:text-[21px] truncate leading-tight">{name}</h2>
                 <div className="flex items-center gap-1.5 mt-1.5">
-                  <MapPin size={12} className="text-primary" />
-                  <span className="text-primary text-xs font-bold">مراقب ميداني</span>
+                  <MapPin size={12} weight="bold" className="text-accent" />
+                  <span className="text-accent text-[11.5px] font-bold">مراقب ميداني</span>
                 </div>
               </div>
-              <div className="bg-white/10 rounded-2xl px-3.5 py-2 text-center border border-white/10 shrink-0">
-                <p className="text-white/50 text-[9px] mb-0.5">مركز</p>
-                <p className="text-primary font-bold text-lg leading-tight tabular-nums">{centerNum}</p>
+              <div className="rounded-[10px] px-4 py-2.5 text-center border border-white/10 shrink-0"
+                style={{ background: 'rgb(255 255 255 / 0.06)' }}>
+                <p className="text-[10px] font-medium text-white/50 mb-1">مركز</p>
+                <p className="text-accent font-extrabold text-[19px] leading-none tabular-nums">{centerNum}</p>
               </div>
             </div>
-            <div className="bg-white/5 rounded-xl px-3 py-2 border border-white/10 mt-3 flex items-center gap-2">
-              <Building2 size={14} className="text-primary shrink-0" />
-              <p className="text-white text-xs font-medium leading-snug truncate">{caterer}</p>
+            <div className="rounded-[10px] px-3 py-2.5 border border-white/10 mt-3 flex items-center gap-2"
+              style={{ background: 'rgb(255 255 255 / 0.06)' }}>
+              <Building2 size={14} weight="duotone" className="text-accent shrink-0" />
+              <p className="text-white text-[12px] font-medium leading-snug truncate">{caterer}</p>
             </div>
           </div>
-          <div className="bg-background border-t border-line px-5 py-2 flex items-center justify-between">
-            <span className="text-[11px] font-bold text-ink">{clock.hijri}</span>
-            <span className="text-[11px] text-muted font-bold tabular-nums">{clock.time}</span>
+          <div className="bg-white border-t border-line px-5 py-2.5 flex items-center justify-between">
+            <span className="text-[11.5px] font-bold text-ink">{clock.hijri}</span>
+            <span className="text-[11.5px] font-bold text-muted tabular-nums">{clock.time}</span>
           </div>
         </div>
 
@@ -250,12 +232,11 @@ export default function Home() {
         {view === 'actions' && (
           <div className="space-y-4 animate-fade-slide-up">
             <div className="flex items-center gap-3">
-              <div className="h-px flex-1 bg-line/50" />
-              <span className="text-[10px] font-black text-primary uppercase tracking-widest">القائمة الرئيسية</span>
-              <div className="h-px flex-1 bg-line/50" />
+              <span className="text-[10px] font-bold text-muted tracking-[0.18em]">القائمة الرئيسية</span>
+              <span aria-hidden className="h-px flex-1 bg-line" />
             </div>
             <motion.div
-              className="grid grid-cols-1 gap-3"
+              className="grid grid-cols-1 gap-2.5"
               initial="hidden" animate="visible"
               variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
             >
@@ -289,27 +270,26 @@ export default function Home() {
         {view === 'activity' && (
           <div className="space-y-3 animate-fade-slide-up">
             <div className="flex items-center justify-between px-1">
-              <div className="flex items-center gap-2">
-                <ClipboardCheck size={18} className="text-primary" />
-                <span className="text-base font-black text-ink">نشاط اليوم</span>
+              <div className="flex items-center gap-2.5">
+                <ClipboardCheck size={17} weight="duotone" className="text-primary" />
+                <span className="text-[15px] font-bold text-ink">نشاط اليوم</span>
                 {activities.length > 0 && (
-                  <span className="bg-primary text-white text-xs font-bold px-2 py-0.5 rounded-full tabular-nums">{activities.length}</span>
+                  <Pill color={NAVY} className="tabular-nums">{activities.length}</Pill>
                 )}
               </div>
             </div>
 
             {activities.length === 0 ? (
-              <div className="bg-white border border-line rounded-3xl py-12 text-center shadow-sm">
-                <Clock size={36} className="mx-auto text-line mb-3 opacity-40" weight="thin" />
-                <p className="text-muted text-sm font-bold">لا يوجد نشاط مسجل لليوم بعد</p>
-              </div>
+              <Surface>
+                <EmptyState Icon={Clock} title="لا يوجد نشاط مسجل لليوم بعد" />
+              </Surface>
             ) : (
               <div className="grid grid-cols-1 gap-2.5">
                 {displayed.map(item => {
                   const cfg = ACTIVITY_CFG[item._col];
                   const { Icon } = cfg;
                   const ms = toMs(item);
-                  const statusInfo = STATUS_DATA[item.status] || { label: item.status, bg: '#F3F4F6', text: '#374151' };
+                  const statusInfo = STATUS_DATA[item.status] || { label: item.status, color: 'rgb(var(--c-muted))' };
                   const showStatus = item.status && (item._col === 'reports' || item._col === 'logistics_requests');
                   const isSubmission = ['meal_evaluations', 'mina_readiness', 'arafat_readiness'].includes(item._col);
                   let title = item.reportType || item.type || cfg.label;
@@ -320,39 +300,34 @@ export default function Home() {
                     : (item.mealType ? (MEAL_LBL[item.mealType] || item.mealType) : '');
 
                   return (
-                    <div key={item.id} className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden">
-                      <div className="px-4 py-3 flex items-center gap-3">
-                        <div className="w-1.5 self-stretch rounded-full shrink-0"
-                          style={{ background: item.severity ? SEVERITY_COLOR[item.severity] : cfg.color }} />
-                        <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-                          style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}>
-                          <Icon size={18} style={{ color: cfg.color }} />
-                        </div>
+                    <div key={item.id}
+                      className="relative bg-white border border-line rounded-[14px] overflow-hidden
+                                 shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)]">
+                      {/* The rail carries severity when there is one, otherwise the kind of entry. */}
+                      <span aria-hidden className="absolute inset-y-0 start-0 w-[3px]"
+                        style={{ background: item.severity ? SEVERITY_COLOR[item.severity] : cfg.color }} />
+                      <div className="ps-5 pe-4 py-3.5 flex items-center gap-3">
+                        <IconTile Icon={Icon} color={cfg.color} size="md" />
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-0.5 gap-2">
-                            <p className="text-sm font-bold text-ink truncate">{title}</p>
-                            <span className="text-[10px] text-muted font-bold shrink-0 tabular-nums">{fmtTime(ms)}</span>
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-[13.5px] font-bold text-ink truncate">{title}</p>
+                            <span className="text-[10.5px] font-semibold text-muted shrink-0 tabular-nums">{fmtTime(ms)}</span>
                           </div>
-                          <div className="flex items-center gap-1.5 flex-wrap">
+                          <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
                             {(item.reportNumber || item.requestNumber) && (
-                              <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md tabular-nums"
-                                style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
+                              <Pill color={cfg.color} className="tabular-nums">
                                 {item.reportNumber || item.requestNumber}
-                              </span>
+                              </Pill>
                             )}
-                            {sub && <span className="text-[10px] text-muted font-bold">{sub}</span>}
-                            {showStatus && (
-                              <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
-                                style={{ background: statusInfo.bg, color: statusInfo.text }}>
-                                {statusInfo.label}
-                              </span>
-                            )}
+                            {sub && <span className="text-[11px] font-medium text-muted">{sub}</span>}
+                            {showStatus && <Pill color={statusInfo.color}>{statusInfo.label}</Pill>}
                           </div>
                         </div>
                       </div>
                       {item.adminNotes && (item._col === 'reports' || item._col === 'logistics_requests') && (
-                        <div className="border-t border-line bg-gradient-to-br from-background to-white px-4 py-2.5">
-                          <p className="text-[10px] text-primary font-black mb-1 tracking-wide">ملاحظات غرفة العمليات</p>
+                        <div className="border-t border-line pt-2.5 pb-3 pe-4 ps-5"
+                          style={{ background: tint(NAVY, 7) }}>
+                          <p className="text-[10px] font-bold text-primary mb-1 tracking-[0.12em]">ملاحظات غرفة العمليات</p>
                           <p className="text-[12px] text-ink font-medium leading-relaxed whitespace-pre-wrap">{item.adminNotes}</p>
                         </div>
                       )}
@@ -361,7 +336,8 @@ export default function Home() {
                 })}
                 {activities.length > 8 && (
                   <button onClick={() => setShowAll(p => !p)}
-                    className="w-full py-3 text-primary font-bold text-sm bg-white rounded-2xl border border-dashed border-line mt-1">
+                    className="w-full min-h-[44px] mt-1 rounded-[12px] bg-white border border-dashed border-line
+                               text-primary font-bold text-[13px] hover:bg-[rgb(var(--c-bg))] transition-colors">
                     {showAll ? 'عرض أقل' : `عرض الكل (${activities.length})`}
                   </button>
                 )}
@@ -373,7 +349,7 @@ export default function Home() {
       </main>
 
       {/* Bottom Tab Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-line shadow-[0_-4px_20px_rgb(var(--c-ink)/0.06)] pb-[env(safe-area-inset-bottom)]">
+      <nav className="fixed inset-x-0 bottom-0 z-40 bg-white/95 backdrop-blur-md border-t border-line pb-[env(safe-area-inset-bottom)]">
         <div className="max-w-3xl mx-auto grid grid-cols-3">
           {TABS.map(tab => {
             const active = view === tab.key;
@@ -387,12 +363,12 @@ export default function Home() {
                 }`}
               >
                 {active && (
-                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 rounded-b-full bg-primary" />
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-[3px] rounded-b-full bg-primary" />
                 )}
                 <div className="relative">
-                  <TIcon size={22} weight={active ? 'bold' : 'regular'} />
+                  <TIcon size={21} weight={active ? 'fill' : 'regular'} />
                   {showBadge && (
-                    <span className="absolute -top-1 -right-2 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center ring-2 ring-white tabular-nums">
+                    <span className="absolute -top-1 -end-2 min-w-[18px] h-[18px] px-1 bg-[#DC2626] text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-white tabular-nums">
                       {totalPending}
                     </span>
                   )}

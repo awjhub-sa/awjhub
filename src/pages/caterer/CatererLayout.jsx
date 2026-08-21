@@ -33,7 +33,7 @@ const AR = (n) => String(n ?? '').replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[
 const Tile = ({ n, label, tone }) => (
   <div className="rounded-xl px-2.5 py-2 border"
     style={{ background: 'rgb(255 255 255 / 0.05)', borderColor: 'rgb(255 255 255 / 0.10)' }}>
-    <p className="text-[20px] font-black leading-none tabular-nums" style={{ color: tone }}>{AR(n)}</p>
+    <p className="text-[20px] font-extrabold leading-none tabular-nums" style={{ color: tone }}>{AR(n)}</p>
     <p className="text-[10.5px] font-bold text-white/50 mt-1 leading-tight">{label}</p>
   </div>
 );
@@ -133,8 +133,9 @@ export default function CatererLayout() {
   if (!loading && !catererId) {
     return (
       <div className="min-h-screen bg-canvas flex items-center justify-center p-6" dir="rtl">
-        <div className="bg-white rounded-2xl border border-line p-7 max-w-sm text-center">
-          <p className="text-[16px] font-black text-ink">الحساب غير مرتبط بمنشأة</p>
+        <div className="bg-white rounded-[14px] border border-line p-7 max-w-sm text-center
+                        shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)]">
+          <p className="text-[16px] font-bold text-ink">الحساب غير مرتبط بمنشأة</p>
           <p className="text-[13.5px] text-muted leading-relaxed mt-2">
             راجع إدارة النظام لربط حسابك بملف المتعهد.
           </p>
@@ -195,7 +196,7 @@ export default function CatererLayout() {
                     : standing.unanswered > 0;
                   return (
                     <span
-                      className="min-w-[22px] h-[22px] px-1.5 rounded-full text-[11px] font-black
+                      className="min-w-[22px] h-[22px] px-1.5 rounded-full text-[11px] font-bold
                                  flex items-center justify-center tabular-nums flex-shrink-0"
                       style={{
                         background: hot ? '#DC2626' : 'rgb(var(--c-accent))',
@@ -216,9 +217,9 @@ export default function CatererLayout() {
           because it is the reason they opened the portal. */}
       {(standing.due > 0 || standing.open > 0) && (
         <div className="px-3 pb-3">
-          <div className="rounded-2xl border border-white/12 p-3"
+          <div className="rounded-[14px] border border-white/12 p-3"
             style={{ background: 'rgb(255 255 255 / 0.06)' }}>
-            <p className="text-[10px] font-black tracking-widest text-white/40 mb-2.5">عليك الآن</p>
+            <p className="text-[10px] font-bold tracking-widest text-white/40 mb-2.5">عليك الآن</p>
 
             <div className="grid grid-cols-2 gap-2">
               <Tile n={standing.due}  label="نموذج مستحق"
@@ -271,22 +272,19 @@ export default function CatererLayout() {
       {/* ── the rail ── */}
       <aside className="hidden lg:flex flex-col w-60 flex-shrink-0"
         style={{ background:
-                      'radial-gradient(120% 60% at 50% 0%, rgb(var(--c-primary-400) / 0.30) 0%, transparent 60%),' +
-                      'radial-gradient(90% 40% at 50% 100%, rgb(var(--c-accent) / 0.14) 0%, transparent 62%),' +
-                      'linear-gradient(180deg, rgb(var(--c-primary-700)), rgb(var(--c-primary)) 45%, rgb(var(--c-primary-900)))', }}>
+                      'linear-gradient(180deg, rgb(var(--c-primary)) 0%, rgb(var(--c-primary-700)) 55%, rgb(var(--c-primary-900)) 100%)', }}>
         <Rail />
       </aside>
 
       {open && (
         <>
           <button className="lg:hidden fixed inset-0 z-40 bg-ink/50" onClick={() => setOpen(false)} aria-label="إغلاق" />
-          <aside className="lg:hidden fixed inset-y-0 right-0 z-50 w-64 flex flex-col shadow-2xl"
+          <aside className="lg:hidden fixed inset-y-0 right-0 z-50 w-64 flex flex-col
+                            shadow-[0_0_40px_-8px_rgb(0_0_0/0.45)]"
             style={{ background:
-                      'radial-gradient(120% 60% at 50% 0%, rgb(var(--c-primary-400) / 0.30) 0%, transparent 60%),' +
-                      'radial-gradient(90% 40% at 50% 100%, rgb(var(--c-accent) / 0.14) 0%, transparent 62%),' +
-                      'linear-gradient(180deg, rgb(var(--c-primary-700)), rgb(var(--c-primary)) 45%, rgb(var(--c-primary-900)))', }}>
+                      'linear-gradient(180deg, rgb(var(--c-primary)) 0%, rgb(var(--c-primary-700)) 55%, rgb(var(--c-primary-900)) 100%)', }}>
             <button onClick={() => setOpen(false)}
-              className="absolute top-3 left-3 w-8 h-8 rounded-lg bg-white/12 border border-white/20
+              className="absolute top-3 end-3 w-8 h-8 rounded-[10px] bg-white/12 border border-white/20
                          flex items-center justify-center text-white">
               <X size={17} weight="bold" />
             </button>
@@ -305,7 +303,7 @@ export default function CatererLayout() {
             <List size={18} weight="bold" />
           </button>
           <span className="min-w-0 flex-1">
-            <span className="block text-[14px] font-black truncate">{caterer?.name || '—'}</span>
+            <span className="block text-[14px] font-bold truncate">{caterer?.name || '—'}</span>
             <span className="block text-[11px] font-bold opacity-55">بوابة المتعهد</span>
           </span>
         </header>

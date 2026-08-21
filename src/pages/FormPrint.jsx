@@ -105,7 +105,7 @@ export default function FormPrint() {
       <div className="fp-shell" dir="rtl">
         <div className="bg-white rounded-2xl border border-line p-7 max-w-sm text-center">
           <WarningCircle size={26} weight="fill" className="text-error mx-auto" />
-          <p className="text-[15px] font-black text-ink mt-2">{error}</p>
+          <p className="text-[15px] font-bold text-ink mt-2">{error}</p>
           <button onClick={() => nav(-1)}
             className="mt-4 h-9 px-5 rounded-xl border border-line text-[13px] font-bold text-muted hover:text-ink">
             رجوع

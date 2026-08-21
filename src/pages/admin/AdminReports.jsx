@@ -39,6 +39,8 @@ import {
   Mountains as Mountain,
 } from '@phosphor-icons/react';
 import PageHeader from '../../components/PageHeader.jsx';
+import FilterChip from '../../components/FilterChip.jsx';
+import { Surface, IconTile, Pill, RowMeta, StatTile, EmptyState } from '../../components/ui/index.jsx';
 import MediaLightbox from '../../components/MediaLightbox.jsx';
 import ReportDrawer from '../../components/details/ReportDrawer.jsx';
 import NotificationBadge from '../../components/NotificationBadge.jsx';
@@ -48,6 +50,8 @@ import {
 } from '../../lib/statusTracking.js';
 import { StatusTimerChip, StatusTimeline } from '../../components/StatusTimeline.jsx';
 import CenterNotesPanel from '../../components/CenterNotesPanel.jsx';
+
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
 
 function timeAgo(ts) {
   if (!ts) return '—';
@@ -185,11 +189,14 @@ export default function AdminReports() {
         glowColor="rgba(239,68,68,0.4)"
         right={
           countOf('pending') > 0 ? (
-            <div className="flex items-center gap-2 bg-red-50 border border-red-200/60 rounded-2xl px-4 py-2 shadow-[0_2px_10px_rgba(239,68,68,0.12)]">
+            <div
+              className="flex items-center gap-2.5 rounded-[11px] border px-3.5 py-2"
+              style={{ background: tint('#DC2626', 12), borderColor: tint('#DC2626', 28) }}
+            >
               <NotificationBadge count={countOf('pending')} variant="red" />
-              <div className="text-right">
-                <p className="text-[10px] font-bold text-red-700 leading-none">قيد الانتظار</p>
-                <p className="text-[9px] text-red-500 mt-1 font-medium">يحتاج متابعة</p>
+              <div className="text-start">
+                <p className="text-[11px] font-bold leading-none" style={{ color: '#DC2626' }}>قيد الانتظار</p>
+                <p className="text-[10px] text-muted mt-1 font-medium">يحتاج متابعة</p>
               </div>
             </div>
           ) : null
@@ -199,90 +206,61 @@ export default function AdminReports() {
       {/* Stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'إجمالي البلاغات', value: reports.length,         color: 'rgb(var(--c-primary))', Icon: AlertTriangle },
-          { label: 'قيد الانتظار',     value: countOf('pending'),     color: '#F59E0B', Icon: Clock         },
-          { label: 'جارٍ التنفيذ',      value: countOf('in_progress'), color: '#4E7CB0', Icon: Activity      },
-          { label: 'تم الحل',           value: countOf('resolved'),    color: '#5E9070', Icon: CheckCircle2  },
+          { to: 'all',         label: 'إجمالي البلاغات', value: reports.length,         color: 'rgb(var(--c-primary))', Icon: AlertTriangle },
+          { to: 'pending',     label: 'قيد الانتظار',     value: countOf('pending'),     color: '#F59E0B', Icon: Clock         },
+          { to: 'in_progress', label: 'جارٍ التنفيذ',      value: countOf('in_progress'), color: '#4E7CB0', Icon: Activity      },
+          { to: 'resolved',    label: 'تم الحل',           value: countOf('resolved'),    color: '#5E9070', Icon: CheckCircle2  },
         ].map(c => (
-          <div key={c.label}
-            className="bg-white rounded-2xl p-4 border border-line shadow-[0_2px_8px_rgb(var(--c-ink)/0.07)] flex items-center gap-3"
-            style={{ borderRight: `3px solid ${c.color}` }}>
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-semibold text-muted mb-0.5">{c.label}</p>
-              <p className="text-2xl font-bold tabular-nums" style={{ color: c.color }}>{c.value}</p>
-            </div>
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: `${c.color}18` }}>
-              <c.Icon size={18} style={{ color: c.color }} weight="regular" />
-            </div>
-          </div>
+          <StatTile key={c.label} label={c.label} value={c.value} Icon={c.Icon} color={c.color}
+            active={filter === c.to} onClick={() => setFilter(c.to)} />
         ))}
       </div>
 
       {/* Filter tabs */}
-      <div className="bg-white border border-line rounded-2xl p-1.5 flex overflow-x-auto no-scrollbar shadow-[0_2px_8px_rgb(var(--c-ink)/0.05)]">
+      <div className="flex gap-2 flex-wrap">
         {[
           { value: 'all',         label: 'الكل',         count: reports.length,         Icon: Filter,        color: 'rgb(var(--c-muted))' },
           { value: 'pending',     label: 'قيد الانتظار', count: countOf('pending'),     Icon: Clock,         color: '#F59E0B' },
           { value: 'in_progress', label: 'جارٍ التنفيذ',  count: countOf('in_progress'), Icon: Activity,      color: '#4E7CB0' },
           { value: 'resolved',    label: 'تم الحل',       count: countOf('resolved'),    Icon: CheckCircle2,  color: '#5E9070' },
-        ].map(opt => {
-          const active = filter === opt.value;
-          const OIcon = opt.Icon;
-          return (
-            <button key={opt.value}
-              onClick={() => setFilter(opt.value)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${
-                active ? 'text-white shadow-md' : 'text-muted hover:text-ink hover:bg-background'
-              }`}
-              style={active
-                ? { background: `linear-gradient(135deg, ${opt.color}, ${opt.color}DD)` }
-                : undefined}>
-              <OIcon size={14} weight="bold" />
-              {opt.label}
-              <span className={`tabular-nums text-[10px] px-1.5 py-0.5 rounded-md ${
-                active ? 'bg-white/25' : ''
-              }`}
-                style={!active ? { background: `${opt.color}15`, color: opt.color } : undefined}>
-                {opt.count}
-              </span>
-            </button>
-          );
-        })}
+        ].map(opt => (
+          <FilterChip
+            key={opt.value}
+            active={filter === opt.value}
+            onClick={() => setFilter(opt.value)}
+            count={opt.count}
+            Icon={opt.Icon}
+            color={opt.color}
+          >
+            {opt.label}
+          </FilterChip>
+        ))}
       </div>
 
       {/* Search bar */}
       <div className="relative">
-        <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted" weight="regular" />
+        <Search size={15} className="absolute start-3.5 top-1/2 -translate-y-1/2 text-muted/60" weight="bold" />
         <input
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="بحث برقم البلاغ، المركز، المراقب، أو الوصف..."
-          className="w-full pr-11 pl-4 py-3 rounded-2xl border-2 border-line bg-white text-sm font-medium text-ink placeholder:text-muted focus:border-primary focus:outline-none transition-colors shadow-[0_2px_8px_rgb(var(--c-ink)/0.05)]"
+          className="w-full ps-10 pe-10 py-2.5 rounded-[12px] border border-line bg-white text-[13px] font-medium text-ink placeholder:text-muted/70 focus:border-primary focus:outline-none transition-colors shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)]"
         />
         {searchTerm && (
           <button onClick={() => setSearchTerm('')}
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:bg-[rgb(var(--c-primary-50))] transition-colors">
-            <X size={14} weight="bold" />
+            className="absolute end-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:bg-[rgb(var(--c-bg))] transition-colors">
+            <X size={13} weight="bold" />
           </button>
         )}
       </div>
 
       {/* Reports list */}
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {filtered.length === 0 ? (
-          <div className="bg-gradient-to-br from-white via-white to-background/40 rounded-3xl border border-line py-20 text-center shadow-[0_2px_12px_rgb(var(--c-ink)/0.06)]">
-            <div className="relative w-fit mx-auto mb-3 group">
-              <div className="absolute inset-0 rounded-2xl blur-xl bg-red-400 opacity-30 group-hover:opacity-60 transition-opacity" />
-              <div className="relative w-14 h-14 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300"
-                style={{ background: 'linear-gradient(135deg, #FEE2E2, #FECACA)' }}>
-                <AlertTriangle size={24} className="text-red-400" weight="regular" />
-                <Sparkles size={9} className="absolute -top-0.5 -right-0.5 text-red-300 drop-shadow animate-pulse" />
-              </div>
-            </div>
-            <p className="text-muted text-sm font-medium">لا توجد بلاغات تطابق البحث</p>
-          </div>
+          <Surface>
+            <EmptyState Icon={AlertTriangle} title="لا توجد بلاغات تطابق البحث" />
+          </Surface>
         ) : filtered.map(r => (
           <ReportCard
             key={r.id}
@@ -320,8 +298,6 @@ export default function AdminReports() {
           onClose={() => setLightbox(null)}
         />
       )}
-
-      <style>{`.no-scrollbar::-webkit-scrollbar { display: none; }`}</style>
     </div>
   );
 }
@@ -338,111 +314,57 @@ function ReportCard({ report: r, isOpen, onToggle }) {
 
   return (
     <div
-      className={`group/row relative bg-white rounded-2xl border-2 overflow-hidden transition-all duration-300 hover:shadow-[0_8px_28px_rgb(var(--c-ink)/0.10)] ${
+      className={`group/row relative bg-white rounded-[14px] border overflow-hidden
+                  shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] transition-shadow duration-200
+                  hover:shadow-[0_6px_20px_-6px_rgb(var(--c-ink)/0.16)] ${
         isNew && !isOpen ? 'card-pulse-red' : ''
       }`}
-      style={!isNew || isOpen ? {
-        borderColor: isOpen ? `${rt.color}40` : 'rgb(var(--c-line))',
-        boxShadow: isOpen ? `0 8px 28px ${rt.color}1F` : '0 2px 10px rgb(var(--c-ink) / 0.06)',
-      } : undefined}
+      style={{ borderColor: isOpen ? tint(rt.color, 34) : 'rgb(var(--c-line))' }}
     >
-      {/* "جديد" floating pill */}
-      {isNew && !isOpen && (
-        <span className="absolute top-2 left-2 z-10 inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md text-white shadow-md tabular-nums tracking-wide"
-          style={{ background: 'linear-gradient(135deg, #EF4444, #DC2626)' }}>
-          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-          جديد
-        </span>
-      )}
-      {/* Top severity strip */}
-      {sv && (
-        <div className="h-1 w-full"
-          style={{ background: `linear-gradient(90deg, ${sv.bar}, ${sv.bar}66, transparent)` }} />
-      )}
+      {/* Severity leads the rail when it is set; otherwise the report's own type
+          colours it. Either way one solid edge replaces the old gradient strip. */}
+      <span aria-hidden className="absolute inset-y-0 start-0 w-[3px]" style={{ background: sv?.bar || rt.color }} />
 
       {/* Card body */}
       <button onClick={onToggle}
-        className="w-full text-right p-4 sm:p-5 flex items-start gap-3 sm:gap-4 hover:bg-[#FDFAF7] transition-colors">
-        {/* Type icon */}
-        <div className="relative shrink-0">
-          <div className="absolute inset-0 rounded-2xl blur-md opacity-50 group-hover/row:opacity-80 transition-opacity"
-            style={{ background: rt.color }} />
-          <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center shadow-md"
-            style={{
-              background: `linear-gradient(135deg, ${rt.color}, ${rt.color}CC)`,
-              border: '2px solid rgba(255,255,255,0.7)',
-            }}>
-            <rt.Icon size={26} className="text-white" weight="regular" />
-          </div>
-          {isNew && (
-            <div className="absolute -top-1.5 -right-1.5 badge-pulse-red w-5 h-5 rounded-full bg-red-500 border-2 border-white flex items-center justify-center">
-              <Sparkles size={9} className="text-white" weight="bold" />
-            </div>
-          )}
-        </div>
+        className="w-full text-start ps-5 pe-4 py-4 flex items-start gap-3.5 hover:bg-[rgb(var(--c-bg))] transition-colors">
+        <IconTile Icon={rt.Icon} color={rt.color} size="lg" />
 
         {/* Main info */}
         <div className="flex-1 min-w-0">
           {/* Title row */}
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            <p className="text-base sm:text-lg font-black text-ink leading-tight">{rt.label}</p>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className="text-[14px] font-bold text-ink leading-tight">{rt.label}</p>
+            {isNew && <Pill color="#DC2626" solid>جديد</Pill>}
             {r.reportNumber && (
-              <span className={`inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md tabular-nums tracking-wide ${
-                isNew ? 'badge-pulse-red text-white' : 'text-ink border'
-              }`}
-                style={isNew
-                  ? { background: 'linear-gradient(135deg, #EF4444, #DC2626)' }
-                  : { background: 'rgb(var(--c-bg))', borderColor: 'rgb(var(--c-line))' }}>
-                #{r.reportNumber}
-              </span>
+              <Pill color="rgb(var(--c-muted))" className="tabular-nums">#{r.reportNumber}</Pill>
             )}
-            {sv && (
-              <span className="text-[10px] font-black px-2 py-0.5 rounded-md border inline-flex items-center gap-1"
-                style={{ background: sv.bg, borderColor: sv.border, color: sv.text }}>
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: sv.bar }} />
-                {sv.label}
-              </span>
-            )}
+            {sv && <Pill color={sv.bar}>{sv.label}</Pill>}
             {r.mealType && MEAL_LABEL[r.mealType] && (
-              <span className="text-[10px] font-black px-2 py-0.5 rounded-md text-white inline-flex items-center"
-                style={{ background: MEAL_COLOR[r.mealType] }}>
-                {MEAL_LABEL[r.mealType]}
-              </span>
+              <Pill color={MEAL_COLOR[r.mealType]}>{MEAL_LABEL[r.mealType]}</Pill>
             )}
             {r.holySite && HOLY_SITE_LABEL[r.holySite] && (() => {
               const HSIcon = HOLY_SITE_ICON[r.holySite];
               return (
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-md text-white inline-flex items-center gap-1"
-                  style={{ background: HOLY_SITE_COLOR[r.holySite] }}>
-                  <HSIcon size={10} weight="bold" />
+                <Pill color={HOLY_SITE_COLOR[r.holySite]} Icon={HSIcon}>
                   {HOLY_SITE_LABEL[r.holySite]}
-                </span>
+                </Pill>
               );
             })()}
           </div>
 
           {/* Meta row */}
-          <div className="flex items-center gap-3 text-[11px] text-muted flex-wrap mb-1.5">
-            <span className="flex items-center gap-1">
-              <User size={11} weight="bold" className="text-primary" />
-              <span className="font-bold text-ink">{r.observer || '—'}</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <Building2 size={11} weight="bold" className="text-primary" />
-              <span className="font-bold text-ink">{r.center || '—'}</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <Clock size={11} weight="bold" className="text-primary" />
-              <span className="font-bold">{timeAgo(r.timestamp)}</span>
-            </span>
-          </div>
+          <RowMeta items={[
+            { Icon: User,      value: r.observer },
+            { Icon: Building2, value: r.center },
+            { Icon: Clock,     value: timeAgo(r.timestamp) },
+          ]} />
 
           {/* Caterer accent + timer chip */}
-          <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
-            <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-primary bg-background border border-line rounded-md px-2 py-0.5">
-              <Factory size={10} weight="bold" />
-              <span className="truncate max-w-[200px]">{r.caterer || getCaterer(r.center) || '—'}</span>
-            </div>
+          <div className="flex items-center gap-1.5 flex-wrap mt-2">
+            <Pill Icon={Factory} color="rgb(var(--c-primary))" className="max-w-[220px]">
+              <span className="truncate min-w-0">{r.caterer || getCaterer(r.center) || '—'}</span>
+            </Pill>
             <StatusTimerChip doc={r} terminalStatuses={TERMINAL_REPORT_STATUSES} statusMeta={STATUS_LOOKUP} />
           </div>
 
@@ -451,28 +373,31 @@ function ReportCard({ report: r, isOpen, onToggle }) {
 
           {/* Description preview */}
           {r.description && !isOpen && (
-            <p className="text-xs text-muted line-clamp-1 leading-relaxed">{r.description}</p>
+            <p className="text-[12px] text-muted line-clamp-1 leading-relaxed mt-2">{r.description}</p>
           )}
 
           {/* Thumbnails preview */}
           {!isOpen && (httpImages.length > 0 || r.videoUrl) && (
-            <div className="flex items-center gap-1.5 mt-2">
+            <div className="flex items-center gap-1.5 mt-2.5">
               {httpImages.slice(0, 3).map((src, i) => (
                 <div key={i}
-                  className="w-10 h-10 rounded-lg border-2 border-white shadow-sm overflow-hidden shrink-0"
-                  style={{ marginLeft: i > 0 ? '-12px' : 0, zIndex: 3 - i }}>
+                  className="w-10 h-10 rounded-[10px] border border-line overflow-hidden shrink-0 bg-white">
                   <img src={src} alt="" className="w-full h-full object-cover" />
                 </div>
               ))}
               {httpImages.length > 3 && (
-                <span className="inline-flex items-center justify-center text-[10px] font-black h-10 px-2 rounded-lg bg-background border-2 border-white text-primary shadow-sm"
-                  style={{ marginLeft: '-12px', zIndex: 0 }}>
+                <span className="inline-flex items-center justify-center text-[10.5px] font-bold h-10 px-2.5 rounded-[10px] bg-[rgb(var(--c-bg))] border border-line text-muted tabular-nums">
                   +{httpImages.length - 3}
                 </span>
               )}
               {r.videoUrl && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold h-10 px-2 rounded-lg bg-[#1A1A2E] text-white shadow-sm ms-1">
-                  <Play size={10} weight="bold" fill="white" />
+                <span className="inline-flex items-center gap-1.5 text-[10.5px] font-bold h-10 px-2.5 rounded-[10px] border"
+                  style={{
+                    background: tint('rgb(var(--c-primary))', 12),
+                    borderColor: tint('rgb(var(--c-primary))', 28),
+                    color: 'rgb(var(--c-primary))',
+                  }}>
+                  <Play size={11} weight="fill" />
                   فيديو
                 </span>
               )}
@@ -481,16 +406,14 @@ function ReportCard({ report: r, isOpen, onToggle }) {
         </div>
 
         {/* Status pill + chevron */}
-        <div className="flex flex-col items-end gap-2 shrink-0">
-          <span className="inline-flex items-center gap-1.5 text-[10px] font-black px-2.5 py-1.5 rounded-xl border-2"
-            style={{ background: b.bg, borderColor: b.border, color: b.color }}>
-            <StatusIcon size={11} weight="bold" />
-            {b.label}
-          </span>
-          <div className="w-8 h-8 rounded-lg border border-line bg-white flex items-center justify-center transition-transform"
-            style={{ transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>
-            <ChevronRight size={14} className="text-primary" weight="bold" />
-          </div>
+        <div className="flex flex-col items-end gap-2.5 shrink-0">
+          <Pill color={b.color} Icon={StatusIcon}>{b.label}</Pill>
+          <ChevronRight
+            size={14}
+            weight="bold"
+            className="text-muted/40 group-hover/row:text-muted transition-all"
+            style={{ transform: isOpen ? 'rotate(90deg)' : undefined }}
+          />
         </div>
       </button>
 
@@ -517,75 +440,65 @@ function EditModal({ report, onClose, onSave }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" dir="rtl">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+      <div className="absolute inset-0 bg-[rgb(var(--c-ink)/0.45)]" onClick={onClose} />
+      <div className="relative bg-white rounded-[18px] w-full max-w-md border border-line shadow-[0_24px_60px_-16px_rgb(var(--c-ink)/0.35)] overflow-hidden max-h-[90vh] flex flex-col">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-line shrink-0"
-          style={{ background: `linear-gradient(135deg, ${rt.color}10, rgb(var(--c-bg)))` }}>
-          <div className="flex items-center gap-2.5">
-            <div className="relative shrink-0">
-              <div className="absolute inset-0 rounded-xl blur-md opacity-40" style={{ background: rt.color }} />
-              <div className="relative w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
-                style={{ background: `linear-gradient(135deg, ${rt.color}, ${rt.color}CC)` }}>
-                <rt.Icon size={18} className="text-white" weight="regular" />
-              </div>
-            </div>
-            <div>
-              <p className="font-black text-ink text-sm">تعديل البلاغ</p>
-              <p className="text-[11px] text-primary font-bold mt-0.5">{rt.label}</p>
+        <div className="flex items-center justify-between gap-3 px-5 py-3.5 border-b shrink-0"
+          style={{ background: tint(rt.color, 12), borderColor: tint(rt.color, 28) }}>
+          <div className="flex items-center gap-3 min-w-0">
+            <IconTile Icon={rt.Icon} color={rt.color} size="md" />
+            <div className="min-w-0">
+              <p className="text-[14px] font-bold text-ink leading-tight">تعديل البلاغ</p>
+              <p className="text-[11.5px] font-medium mt-1 truncate" style={{ color: rt.color }}>{rt.label}</p>
             </div>
           </div>
           <button onClick={onClose}
-            className="w-8 h-8 rounded-xl border border-line flex items-center justify-center hover:bg-[rgb(var(--c-primary-50))] transition-colors">
-            <X size={15} className="text-muted" weight="bold" />
+            className="w-8 h-8 rounded-[10px] border border-line bg-white flex items-center justify-center text-muted hover:text-ink transition-colors shrink-0">
+            <X size={14} weight="bold" />
           </button>
         </div>
 
-        <div className="px-6 py-5 space-y-4 overflow-y-auto">
+        <div className="px-5 py-5 space-y-4 overflow-y-auto">
           {/* Observer info (read-only) */}
           <div className="grid grid-cols-2 gap-2.5">
             {[
               { label: 'المراقب', val: report.observer, Icon: User,     color: 'rgb(var(--c-primary))' },
               { label: 'المركز',  val: report.center,   Icon: Building2,color: rt.color  },
             ].map(c => (
-              <div key={c.label} className="bg-white rounded-xl border border-line p-2.5 flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: `${c.color}15` }}>
-                  <c.Icon size={13} style={{ color: c.color }} weight="bold" />
-                </div>
+              <div key={c.label} className="rounded-[11px] border p-2.5 flex items-center gap-2.5"
+                style={{ background: tint(c.color, 12), borderColor: tint(c.color, 28) }}>
+                <IconTile Icon={c.Icon} color={c.color} size="sm" />
                 <div className="min-w-0">
-                  <p className="text-[9px] text-muted font-bold">{c.label}</p>
-                  <p className="text-[11px] font-bold text-ink truncate">{c.val || '—'}</p>
+                  <p className="text-[10px] text-muted font-semibold">{c.label}</p>
+                  <p className="text-[11.5px] font-bold text-ink truncate mt-0.5">{c.val || '—'}</p>
                 </div>
               </div>
             ))}
           </div>
-          <div className="bg-gradient-to-br from-background to-white rounded-xl border border-line p-2.5 flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm"
-              style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
-              <Factory size={13} className="text-white" weight="bold" />
-            </div>
+          <div className="rounded-[11px] border p-2.5 flex items-center gap-2.5"
+            style={{ background: tint('rgb(var(--c-primary))', 12), borderColor: tint('rgb(var(--c-primary))', 28) }}>
+            <IconTile Icon={Factory} size="sm" />
             <div className="min-w-0">
-              <p className="text-[9px] text-muted font-bold">المتعهد</p>
-              <p className="text-[11px] font-black text-primary truncate">{report.caterer || getCaterer(report.center) || '—'}</p>
+              <p className="text-[10px] text-muted font-semibold">المتعهد</p>
+              <p className="text-[11.5px] font-bold text-primary truncate mt-0.5">{report.caterer || getCaterer(report.center) || '—'}</p>
             </div>
           </div>
 
           {/* Status */}
           <div>
-            <label className="text-xs font-black text-ink mb-2 block">حالة البلاغ</label>
+            <label className="text-[11.5px] font-bold text-muted mb-2 block">حالة البلاغ</label>
             <div className="grid grid-cols-3 gap-2">
               {STATUS_OPTIONS.map(s => {
                 const SIcon = s.Icon;
                 const active = form.status === s.value;
                 return (
                   <button key={s.value} onClick={() => setForm(f => ({ ...f, status: s.value }))}
-                    className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[11px] font-black border-2 transition-all ${
-                      active ? 'shadow-md scale-[1.02]' : 'bg-white border-line text-muted'
+                    className={`flex items-center justify-center gap-1.5 py-2.5 rounded-[10px] text-[11px] font-bold border transition-colors ${
+                      active ? '' : 'bg-white border-line text-muted hover:bg-[rgb(var(--c-bg))]'
                     }`}
                     style={active
-                      ? { background: s.bg, borderColor: s.color, color: s.color }
+                      ? { background: tint(s.color, 12), borderColor: s.color, color: s.color }
                       : undefined}>
                     <SIcon size={12} weight="bold" />
                     {s.label}
@@ -597,17 +510,19 @@ function EditModal({ report, onClose, onSave }) {
 
           {/* Severity */}
           <div>
-            <label className="text-xs font-black text-ink mb-2 block">مستوى الخطورة</label>
+            <label className="text-[11.5px] font-bold text-muted mb-2 block">مستوى الخطورة</label>
             <div className="grid grid-cols-2 gap-2">
               {Object.entries(SEVERITY_MAP).map(([key, sv]) => {
                 const active = form.severity === key;
                 return (
                   <button key={key} onClick={() => setForm(f => ({ ...f, severity: key }))}
-                    className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[11px] font-black border-2 transition-all ${
-                      active ? 'shadow-md scale-[1.02]' : 'bg-white border-line text-muted'
+                    className={`flex items-center justify-center gap-1.5 py-2.5 rounded-[10px] text-[11.5px] font-bold border transition-colors ${
+                      active ? '' : 'bg-white border-line text-muted hover:bg-[rgb(var(--c-bg))]'
                     }`}
-                    style={active ? { background: sv.bg, borderColor: sv.text, color: sv.text } : undefined}>
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: sv.bar }} />
+                    style={active
+                      ? { background: tint(sv.bar, 12), borderColor: sv.bar, color: sv.text }
+                      : undefined}>
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: sv.bar }} />
                     {sv.label}
                   </button>
                 );
@@ -617,26 +532,25 @@ function EditModal({ report, onClose, onSave }) {
 
           {/* Description */}
           <div>
-            <label className="text-xs font-black text-ink mb-2 block">وصف المشكلة</label>
+            <label className="text-[11.5px] font-bold text-muted mb-2 block">وصف المشكلة</label>
             <textarea rows={4} value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              className="w-full px-4 py-3 border-2 border-line rounded-xl text-sm text-ink outline-none focus:border-primary transition-colors resize-none bg-white"
+              className="w-full px-3.5 py-3 border border-line rounded-[10px] text-[13px] text-ink outline-none focus:border-primary transition-colors resize-none bg-white"
               placeholder="وصف المشكلة أو الملاحظات..." />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-line flex gap-2.5 shrink-0">
+        <div className="px-5 py-4 border-t border-line flex gap-2.5 shrink-0">
           <button onClick={onClose}
-            className="flex-1 py-3 rounded-xl text-sm font-black border-2 border-line text-muted hover:bg-[rgb(var(--c-primary-50))] transition-colors">
+            className="flex-1 py-2.5 rounded-[10px] text-[13px] font-bold border border-line text-muted hover:bg-[rgb(var(--c-bg))] transition-colors">
             إلغاء
           </button>
           <button onClick={handleSave} disabled={saving}
-            className="flex-1 py-3 rounded-xl text-sm font-black text-white flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-60 shadow-md"
-            style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}>
+            className="flex-1 py-2.5 rounded-[10px] text-[13px] font-bold text-white flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-60 bg-[rgb(var(--c-primary))]">
             {saving
               ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              : <Save size={15} weight="bold" />}
+              : <Save size={14} weight="bold" />}
             {saving ? 'جارٍ الحفظ...' : 'حفظ التعديلات'}
           </button>
         </div>

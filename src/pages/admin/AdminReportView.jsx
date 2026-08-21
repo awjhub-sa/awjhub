@@ -9,6 +9,7 @@ import { CENTERS, getCaterer } from '../../config/centers.js';
 import { MEAL_QUESTIONS } from '../../config/mealQuestions.js';
 import { MINA_ALL_CRITERIA } from '../../config/minaQuestions.js';
 import { ARAFAT_ALL_CRITERIA } from '../../config/arafatQuestions.js';
+import { readDetails } from '../../config/readinessScore.js';
 import {
   Printer,
   X,
@@ -27,6 +28,8 @@ const logoSrc = BRAND.logo.color;
 import './report-view.css';
 import { usePrintPage, closeDocumentTab } from '../../lib/printPage.js';
 import { BRAND } from '../../config/brand.js';
+
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
 
 const REPORT_TYPES = {
   meal_evaluations: {
@@ -279,15 +282,14 @@ function Toolbar() {
     <div className="report-toolbar no-print">
       <button
         onClick={() => window.print()}
-        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-bold text-sm shadow-[0_4px_16px_rgb(var(--c-primary)/0.35)] hover:shadow-[0_6px_24px_rgb(var(--c-primary)/0.45)] transition-shadow"
-        style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)), rgb(var(--c-primary)))' }}
+        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-[10px] bg-primary border border-primary text-white font-bold text-[13px] shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)] hover:shadow-[0_6px_20px_-6px_rgb(var(--c-ink)/0.16)] transition-shadow"
       >
         <Printer size={16} weight="bold" />
         اطبع / احفظ PDF
       </button>
       <button
         onClick={() => closeDocumentTab(nav, '/admin/reports')}
-        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-line bg-white text-muted font-bold text-sm hover:bg-background hover:border-primary transition-colors"
+        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-[10px] border border-line bg-white text-ink font-bold text-[13px] hover:bg-[rgb(var(--c-bg))] transition-colors"
       >
         <X size={14} weight="bold" />
         إغلاق
@@ -301,7 +303,7 @@ function LoadingCard() {
     <article className="report-page-card flex items-center justify-center text-center">
       <div>
         <div className="w-12 h-12 border-4 border-line border-t-primary rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-muted text-lg font-medium">جارٍ تحضير التقرير...</p>
+        <p className="text-muted text-[15px] font-medium">جارٍ تحضير التقرير...</p>
       </div>
     </article>
   );
@@ -311,11 +313,11 @@ function ErrorCard({ message }) {
   return (
     <article className="report-page-card flex items-center justify-center text-center">
       <div>
-        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3"
-          style={{ background: 'linear-gradient(135deg, #FEE2E2, #FECACA)' }}>
-          <AlertCircle size={26} className="text-red-500" weight="regular" />
+        <div className="w-14 h-14 rounded-[14px] border flex items-center justify-center mx-auto mb-3"
+          style={{ background: tint('#DC2626', 9), borderColor: tint('#DC2626', 22) }}>
+          <AlertCircle size={26} style={{ color: '#DC2626' }} weight="regular" />
         </div>
-        <p className="text-muted text-base font-medium">{message}</p>
+        <p className="text-muted text-[14px] font-medium">{message}</p>
       </div>
     </article>
   );
@@ -343,34 +345,32 @@ function CoverPage({ centerFilter, dateFilter, types, totals }) {
     <article className="report-page-card">
       {/* Top brand band */}
       <div
-        className="rounded-2xl p-7 text-white shadow-md relative overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, rgb(var(--c-primary-400)) 0%, rgb(var(--c-primary)) 60%, rgb(var(--c-primary-700)) 100%)' }}
+        className="rounded-[14px] p-7 text-white overflow-hidden"
+        style={{ background: 'rgb(var(--c-primary))' }}
       >
-        <div className="absolute top-0 right-0 w-48 h-48 rounded-full opacity-20"
-          style={{ background: 'radial-gradient(circle, #fff 0%, transparent 70%)', transform: 'translate(40%, -50%)' }} />
-        <div className="flex items-center gap-5 relative">
-          <div className="bg-white rounded-2xl p-3 shadow-md flex-shrink-0">
+        <div className="flex items-center gap-5">
+          <div className="bg-white rounded-[14px] p-3 shrink-0">
             <img src={logoSrc} alt={BRAND.companyName} className="w-20 h-auto" />
           </div>
           <div>
             <h1 className="text-3xl font-bold mb-1">{BRAND.companyName}</h1>
-            <p className="text-white/85 text-sm font-medium"></p>
+            <p className="text-white/85 text-[13px] font-medium"></p>
           </div>
         </div>
       </div>
 
       {/* Center title */}
       <div className="flex-1 flex flex-col items-center justify-center text-center py-10">
-        <p className="text-sm text-muted font-semibold mb-2">تقرير</p>
+        <p className="text-[13px] text-muted font-bold mb-2">تقرير</p>
         <h2 className="text-4xl font-bold text-ink mb-3">الرقابة الميدانية</h2>
         <div className="flex items-center gap-2 mb-8">
           <span className="w-2 h-2 rounded-full bg-primary" />
-          <p className="text-base text-primary font-bold"></p>
+          <p className="text-[15px] text-primary font-bold"></p>
           <span className="w-2 h-2 rounded-full bg-primary" />
         </div>
 
         {/* Filters summary card */}
-        <div className="bg-background border-2 border-line rounded-2xl p-6 max-w-xl w-full text-right shadow-sm">
+        <div className="bg-[rgb(var(--c-bg))] border border-line rounded-[14px] p-6 max-w-xl w-full text-start">
           <div className="space-y-3.5">
             <Row Icon={Building2} label="المركز" value={centerLabel} />
             <Row Icon={FileText}  label="اسم المتعهد" value={contractor} />
@@ -398,7 +398,7 @@ function CoverPage({ centerFilter, dateFilter, types, totals }) {
       </div>
 
       {/* Footer */}
-      <div className="border-t border-line pt-4 text-xs text-muted flex justify-between">
+      <div className="border-t border-line pt-4 text-[11px] text-muted flex justify-between">
         <span>
           <span className="font-bold text-ink">تاريخ الإصدار:</span> {generatedAt}
         </span>
@@ -411,12 +411,13 @@ function CoverPage({ centerFilter, dateFilter, types, totals }) {
 function Row({ Icon, label, value }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+      <div className="w-7 h-7 rounded-[9px] border flex items-center justify-center shrink-0 mt-0.5"
+        style={{ background: tint('rgb(var(--c-primary))', 9), borderColor: tint('rgb(var(--c-primary))', 22) }}>
         <Icon size={13} className="text-primary" weight="regular" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[11px] text-muted font-semibold">{label}</p>
-        <p className="text-sm text-ink font-bold leading-snug">{value || '—'}</p>
+        <p className="text-[11px] text-muted font-bold">{label}</p>
+        <p className="text-[13px] text-ink font-bold leading-snug">{value || '—'}</p>
       </div>
     </div>
   );
@@ -425,11 +426,11 @@ function Row({ Icon, label, value }) {
 function StatBlock({ label, value, accent }) {
   return (
     <div
-      className="rounded-xl p-3.5 text-center border"
-      style={{ borderColor: `${accent}40`, background: `${accent}10` }}
+      className="rounded-[11px] p-3.5 text-center border"
+      style={{ borderColor: tint(accent, 28), background: tint(accent, 12) }}
     >
-      <p className="text-[11px] text-muted font-semibold mb-1">{label}</p>
-      <p className="text-3xl font-bold tabular-nums" style={{ color: accent }}>
+      <p className="text-[11px] text-muted font-bold mb-1">{label}</p>
+      <p className="text-[28px] font-extrabold tabular-nums" style={{ color: accent }}>
         {value}
       </p>
     </div>
@@ -461,17 +462,15 @@ function TypeCoverPage({ type, records, centers }) {
     <article className="report-page-card">
       {/* Top brand band — matches main cover but tinted with type color */}
       <div
-        className="rounded-2xl p-6 text-white shadow-md relative overflow-hidden"
-        style={{ background: `linear-gradient(135deg, ${meta.color}, ${meta.color}CC, ${meta.color}AA)` }}
+        className="rounded-[14px] p-6 text-white overflow-hidden"
+        style={{ background: meta.color }}
       >
-        <div className="absolute top-0 right-0 w-48 h-48 rounded-full opacity-20"
-          style={{ background: 'radial-gradient(circle, #fff 0%, transparent 70%)', transform: 'translate(40%, -50%)' }} />
-        <div className="flex items-center gap-4 relative">
-          <div className="bg-white rounded-2xl p-2.5 shadow-md flex-shrink-0">
+        <div className="flex items-center gap-4">
+          <div className="bg-white rounded-[14px] p-2.5 shrink-0">
             <img src={logoSrc} alt={BRAND.companyName} className="w-16 h-auto" />
           </div>
           <div>
-            <p className="text-white/85 text-xs font-bold uppercase tracking-widest">قسم التقارير</p>
+            <p className="text-white/85 text-[10.5px] font-bold uppercase tracking-widest">قسم التقارير</p>
             <h2 className="text-xl font-bold mt-0.5">{meta.label}</h2>
           </div>
         </div>
@@ -479,46 +478,43 @@ function TypeCoverPage({ type, records, centers }) {
 
       {/* Massive type label centered */}
       <div className="flex-1 flex flex-col items-center justify-center text-center py-12">
-        <div className="relative mb-6">
-          {/* Glow halo behind icon */}
-          <div className="absolute inset-0 rounded-full blur-3xl opacity-30"
-            style={{ background: meta.color }} />
+        <div className="mb-6">
           <div
-            className="relative w-28 h-28 rounded-3xl flex items-center justify-center shadow-lg"
-            style={{ background: `linear-gradient(135deg, ${meta.color}, ${meta.color}DD)` }}
+            className="w-28 h-28 rounded-[22px] border flex items-center justify-center"
+            style={{ background: tint(meta.color, 12), borderColor: tint(meta.color, 28) }}
           >
-            <TypeIcon size={56} className="text-white" weight="regular" />
+            <TypeIcon size={56} style={{ color: meta.color }} weight="regular" />
           </div>
         </div>
 
-        <p className="text-sm text-muted font-semibold mb-2">قسم</p>
+        <p className="text-[13px] text-muted font-bold mb-2">قسم</p>
         <h1
           className="text-6xl md:text-7xl leading-none font-bold mb-3"
           style={{ color: meta.color }}
         >
           {meta.short}
         </h1>
-        <p className="text-base text-muted font-medium max-w-md">{meta.intro}</p>
+        <p className="text-[15px] text-muted font-medium max-w-md">{meta.intro}</p>
 
         {/* Stats strip */}
-        <div className="mt-10 bg-white border-2 rounded-2xl px-6 py-5 inline-flex gap-8 items-center shadow-sm"
-          style={{ borderColor: `${meta.color}33` }}>
+        <div className="mt-10 bg-white border rounded-[14px] px-6 py-5 inline-flex gap-8 items-center shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)]"
+          style={{ borderColor: tint(meta.color, 28) }}>
           <div className="text-center">
-            <p className="text-xs text-muted font-semibold mb-1">عدد السجلات</p>
-            <p className="text-3xl font-bold tabular-nums" style={{ color: meta.color }}>{totalRecs}</p>
+            <p className="text-[11px] text-muted font-bold mb-1">عدد السجلات</p>
+            <p className="text-[28px] font-extrabold tabular-nums" style={{ color: meta.color }}>{totalRecs}</p>
           </div>
-          <div className="w-px h-14" style={{ background: `${meta.color}22` }} />
+          <div className="w-px h-14" style={{ background: tint(meta.color, 28) }} />
           <div className="text-center">
-            <p className="text-xs text-muted font-semibold mb-1">عدد المراكز</p>
-            <p className="text-3xl font-bold tabular-nums" style={{ color: meta.color }}>{totalCenters}</p>
+            <p className="text-[11px] text-muted font-bold mb-1">عدد المراكز</p>
+            <p className="text-[28px] font-extrabold tabular-nums" style={{ color: meta.color }}>{totalCenters}</p>
           </div>
           {avgScore != null && (
             <>
-              <div className="w-px h-14" style={{ background: `${meta.color}22` }} />
+              <div className="w-px h-14" style={{ background: tint(meta.color, 28) }} />
               <div className="text-center">
-                <p className="text-xs text-muted font-semibold mb-1">متوسط الدرجة</p>
-                <p className="text-3xl font-bold tabular-nums" style={{ color: meta.color }}>
-                  {avgScore}<span className="text-base">/10</span>
+                <p className="text-[11px] text-muted font-bold mb-1">متوسط الدرجة</p>
+                <p className="text-[28px] font-extrabold tabular-nums" style={{ color: meta.color }}>
+                  {avgScore}<span className="text-[15px]">/10</span>
                 </p>
               </div>
             </>
@@ -543,16 +539,16 @@ function TypeCoverPage({ type, records, centers }) {
 
       {/* Centers chip list */}
       {centers.length > 0 && (
-        <div className="rounded-2xl border border-line bg-background/50 p-4 mb-4">
-          <p className="text-xs text-muted font-bold mb-2.5 flex items-center gap-1.5">
+        <div className="rounded-[14px] border border-line bg-[rgb(var(--c-bg))] p-4 mb-4">
+          <p className="text-[11px] text-muted font-bold mb-2.5 flex items-center gap-1.5">
             <Building2 size={12} className="text-primary" weight="regular" />
             المراكز المشمولة في هذا القسم
           </p>
           <div className="flex flex-wrap gap-1.5">
             {centers.map(c => (
               <span key={c}
-                className="text-[11px] font-bold px-2.5 py-1 rounded-full border text-ink bg-white"
-                style={{ borderColor: `${meta.color}40` }}>
+                className="text-[11px] font-bold px-2 py-[3px] rounded-md border text-ink bg-white"
+                style={{ borderColor: tint(meta.color, 28) }}>
                 {c}
               </span>
             ))}
@@ -561,7 +557,7 @@ function TypeCoverPage({ type, records, centers }) {
       )}
 
       {/* Footer */}
-      <div className="border-t border-line pt-4 text-xs text-muted flex justify-between">
+      <div className="border-t border-line pt-4 text-[11px] text-muted flex justify-between">
         <span className="font-bold text-primary">{BRAND.productName}</span>
         <span></span>
       </div>
@@ -571,8 +567,8 @@ function TypeCoverPage({ type, records, centers }) {
 
 function DistPill({ label, value, color }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-full border"
-      style={{ background: `${color}10`, borderColor: `${color}40`, color }}>
+    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-md border"
+      style={{ background: tint(color, 12), borderColor: tint(color, 28), color }}>
       <span className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
       {label}: <span className="tabular-nums">{value}</span>
     </span>
@@ -591,28 +587,27 @@ function SectionPage({ center, type, records, detailed }) {
   return (
     <article className="report-page-card">
       {/* Section header */}
-      <div className="rounded-2xl p-5 text-white shadow-md mb-5"
-        style={{ background: `linear-gradient(135deg, ${meta.color}, ${meta.color}DD)` }}>
+      <div className="rounded-[14px] p-5 text-white mb-5" style={{ background: meta.color }}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <p className="text-white/80 text-xs font-bold uppercase tracking-widest mb-1.5">
+            <p className="text-white/80 text-[10.5px] font-bold uppercase tracking-widest mb-1.5">
               {meta.label}
             </p>
             <h2 className="text-2xl font-bold mb-1.5">{center}</h2>
             {caterer && (
-              <p className="text-white/85 text-xs font-medium leading-relaxed">
+              <p className="text-white/85 text-[11.5px] font-medium leading-relaxed">
                 <span className="font-bold">المتعهد:</span> {caterer}
               </p>
             )}
           </div>
-          <div className="bg-white/15 backdrop-blur-sm rounded-2xl px-5 py-3 text-center flex-shrink-0">
-            <p className="text-[10px] text-white/80 font-semibold mb-0.5">عدد السجلات</p>
-            <p className="text-2xl font-bold tabular-nums">{records.length}</p>
+          <div className="bg-white/15 rounded-[11px] px-5 py-3 text-center shrink-0">
+            <p className="text-[10px] text-white/80 font-bold mb-0.5">عدد السجلات</p>
+            <p className="text-2xl font-extrabold tabular-nums">{records.length}</p>
           </div>
           {avgScore !== '—' && (
-            <div className="bg-white/15 backdrop-blur-sm rounded-2xl px-5 py-3 text-center flex-shrink-0">
-              <p className="text-[10px] text-white/80 font-semibold mb-0.5">متوسط الدرجة</p>
-              <p className="text-2xl font-bold tabular-nums">{avgScore}<span className="text-sm">/10</span></p>
+            <div className="bg-white/15 rounded-[11px] px-5 py-3 text-center shrink-0">
+              <p className="text-[10px] text-white/80 font-bold mb-0.5">متوسط الدرجة</p>
+              <p className="text-2xl font-extrabold tabular-nums">{avgScore}<span className="text-[13px]">/10</span></p>
             </div>
           )}
         </div>
@@ -624,7 +619,7 @@ function SectionPage({ center, type, records, detailed }) {
       {/* Detailed mode: per-record "no" answers — only for types with a question bank */}
       {detailed && QUESTION_BANK[type] && (
         <div className="mt-5 space-y-4">
-          <div className="rounded-xl py-2 px-4 text-white font-bold text-sm"
+          <div className="rounded-[11px] py-2 px-4 text-white font-bold text-[13px]"
             style={{ background: meta.color }}>
             التفاصيل الفردية · {records.length} سجل
           </div>
@@ -644,17 +639,17 @@ function RecordsTable({ type, records, accent }) {
   const isMeal = type === 'meal_evaluations';
 
   return (
-    <div className="rounded-2xl border border-line overflow-hidden">
-      <table className="w-full text-xs">
+    <div className="rounded-[14px] border border-line overflow-hidden">
+      <table className="w-full text-[11.5px]">
         <thead style={{ background: accent, color: '#fff' }}>
           <tr>
-            <th className="text-right px-4 py-3 font-bold">المراقب</th>
-            <th className="text-right px-4 py-3 font-bold">التاريخ</th>
-            {isMeal && <th className="text-right px-4 py-3 font-bold">الوجبة</th>}
+            <th className="text-start px-4 py-3 font-bold">المراقب</th>
+            <th className="text-start px-4 py-3 font-bold">التاريخ</th>
+            {isMeal && <th className="text-start px-4 py-3 font-bold">الوجبة</th>}
             <th className="text-center px-4 py-3 font-bold">نعم</th>
             <th className="text-center px-4 py-3 font-bold">لا</th>
             <th className="text-center px-4 py-3 font-bold">الدرجة</th>
-            <th className="text-right px-4 py-3 font-bold">وقت الإرسال</th>
+            <th className="text-start px-4 py-3 font-bold">وقت الإرسال</th>
           </tr>
         </thead>
         <tbody>
@@ -699,15 +694,15 @@ function ReportCard({ rec, accent }) {
   const elapsedMs = getTotalElapsedMs(rec, TERMINAL_REPORT_STATUSES);
 
   return (
-    <div className="rounded-2xl border border-line overflow-hidden bg-white"
+    <div className="rounded-[14px] border border-line overflow-hidden bg-white"
       style={{ breakInside: 'avoid' }}>
       <div className="flex items-center justify-between px-4 py-2.5"
-        style={{ background: `${accent}12`, borderBottom: `1px solid ${accent}25` }}>
-        <span className="font-black tabular-nums text-sm" style={{ color: accent }}>
+        style={{ background: tint(accent, 12), borderBottom: `1px solid ${tint(accent, 28)}` }}>
+        <span className="font-bold tabular-nums text-[13px]" style={{ color: accent }}>
           {rec.reportNumber ?? '—'}
         </span>
-        <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border"
-          style={{ background: '#fff', borderColor: `${accent}40`, color: accent }}>
+        <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-md border"
+          style={{ background: '#fff', borderColor: tint(accent, 28), color: accent }}>
           {REPORT_STATUS_LABELS[rec.status] ?? '—'}
         </span>
       </div>
@@ -728,7 +723,7 @@ function ReportCard({ rec, accent }) {
       {rec.description && (
         <div className="px-4 pb-4">
           <p className="text-[10px] font-bold text-muted mb-1">الوصف</p>
-          <p className="text-[12px] text-ink leading-relaxed whitespace-pre-wrap bg-bg border border-line rounded-xl p-2.5">
+          <p className="text-[12px] text-ink leading-relaxed whitespace-pre-wrap bg-[rgb(var(--c-bg))] border border-line rounded-[10px] p-2.5">
             {rec.description}
           </p>
         </div>
@@ -751,15 +746,15 @@ function LogisticsCard({ rec, accent }) {
   const elapsedMs = getTotalElapsedMs(rec, TERMINAL_LOGISTICS_STATUSES);
 
   return (
-    <div className="rounded-2xl border border-line overflow-hidden bg-white"
+    <div className="rounded-[14px] border border-line overflow-hidden bg-white"
       style={{ breakInside: 'avoid' }}>
       <div className="flex items-center justify-between px-4 py-2.5"
-        style={{ background: `${accent}12`, borderBottom: `1px solid ${accent}25` }}>
-        <span className="font-black tabular-nums text-sm" style={{ color: accent }}>
+        style={{ background: tint(accent, 12), borderBottom: `1px solid ${tint(accent, 28)}` }}>
+        <span className="font-bold tabular-nums text-[13px]" style={{ color: accent }}>
           {rec.requestNumber ?? '—'}
         </span>
-        <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border"
-          style={{ background: '#fff', borderColor: `${accent}40`, color: accent }}>
+        <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-md border"
+          style={{ background: '#fff', borderColor: tint(accent, 28), color: accent }}>
           {LOGISTICS_STATUS_LABELS[rec.status] ?? '—'}
         </span>
       </div>
@@ -783,7 +778,7 @@ function LogisticsCard({ rec, accent }) {
       {rec.notes && (
         <div className="px-4 pb-4">
           <p className="text-[10px] font-bold text-muted mb-1">ملاحظات</p>
-          <p className="text-[12px] text-ink leading-relaxed whitespace-pre-wrap bg-bg border border-line rounded-xl p-2.5">
+          <p className="text-[12px] text-ink leading-relaxed whitespace-pre-wrap bg-[rgb(var(--c-bg))] border border-line rounded-[10px] p-2.5">
             {rec.notes}
           </p>
         </div>
@@ -805,7 +800,7 @@ function DetailCard({ record, type, accent }) {
   const qsById = new Map(allQs.map(q => [String(q.id), q]));
   const ans = record.answers ?? {};
   const photos = ans.__photos ?? {};
-  const detailsMap = ans.__details ?? {};
+  const detailsMap = readDetails(ans);
   const score = getRecordScore(record);
   const observer = record.observer ?? record.observerName ?? '—';
   const dateStr = record.scheduled_date ?? record.scheduledDate ?? '—';
@@ -815,32 +810,42 @@ function DetailCard({ record, type, accent }) {
   const noCount  = allQs.filter(q => ans[q.id] === 'لا').length;
 
   return (
-    <div className="rounded-2xl border border-line overflow-hidden bg-white"
+    <div className="rounded-[14px] border border-line overflow-hidden bg-white"
       style={{ breakInside: 'avoid' }}>
       {/* Card head */}
       <div className="px-4 py-3 flex items-center justify-between gap-3 border-b border-line"
         style={{ background: 'rgb(var(--c-bg))' }}>
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold"
+          <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-white text-[11.5px] font-bold"
             style={{ background: accent }}>
             <User size={14} weight="bold" />
           </div>
           <div>
-            <p className="text-sm font-bold text-ink">{observer}</p>
+            <p className="text-[13px] font-bold text-ink">{observer}</p>
             <p className="text-[11px] text-muted">
               {dateStr}{mealLbl ? ` • ${mealLbl}` : ''} • {formatTime(record.timestamp)}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200 tabular-nums">
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-md border tabular-nums"
+            style={{
+              background: tint('rgb(var(--c-success))', 12),
+              borderColor: tint('rgb(var(--c-success))', 28),
+              color: 'rgb(var(--c-success))',
+            }}>
             ✓ {yesCount}
           </span>
-          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 tabular-nums">
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-md border tabular-nums"
+            style={{
+              background: tint('rgb(var(--c-error))', 12),
+              borderColor: tint('rgb(var(--c-error))', 28),
+              color: 'rgb(var(--c-error))',
+            }}>
             ✗ {noCount}
           </span>
           {score != null && (
-            <div className="px-3 py-1 rounded-full text-xs font-bold tabular-nums text-white"
+            <div className="px-3 py-1 rounded-md text-[11.5px] font-bold tabular-nums text-white"
               style={{ background: accent }}>
               {score.toFixed(1)}/10
             </div>
@@ -858,33 +863,44 @@ function DetailCard({ record, type, accent }) {
           const isNo  = a === 'لا';
           return (
             <div key={q.id}
-              className={`rounded-lg px-3 py-2.5 border ${
-                isYes ? 'bg-green-50/40 border-green-200/60'
-              : isNo  ? 'bg-red-50/40 border-red-200/60'
-              :         'bg-bg border-line'
-              }`}
-              style={{ breakInside: 'avoid' }}>
+              className="rounded-[10px] px-3 py-2.5 border"
+              style={{
+                breakInside: 'avoid',
+                background: isYes ? tint('rgb(var(--c-success))', 12)
+                          : isNo  ? tint('rgb(var(--c-error))', 12)
+                          :         'rgb(var(--c-bg))',
+                borderColor: isYes ? tint('rgb(var(--c-success))', 28)
+                           : isNo  ? tint('rgb(var(--c-error))', 28)
+                           :         'rgb(var(--c-line))',
+              }}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-2 min-w-0 flex-1">
-                  <span className="inline-block text-[10px] font-black px-1.5 py-0.5 rounded-md text-white tabular-nums shrink-0 mt-0.5"
+                  <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-md text-white tabular-nums shrink-0 mt-0.5"
                     style={{ background: accent }}>
                     {q.id}
                   </span>
                   <p className="text-[12px] text-ink leading-relaxed">{q.text}</p>
                 </div>
                 {a && (
-                  <span className={`inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-1 rounded-full shrink-0 ${
-                    isYes ? 'bg-green-500 text-white'
-                  : isNo  ? 'bg-red-500 text-white'
-                  :         'bg-gray-200 text-gray-700'
-                  }`}>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-md border shrink-0"
+                    style={{
+                      background: isYes ? tint('rgb(var(--c-success))', 9)
+                                : isNo  ? tint('rgb(var(--c-error))', 9)
+                                :         '#fff',
+                      borderColor: isYes ? tint('rgb(var(--c-success))', 22)
+                                 : isNo  ? tint('rgb(var(--c-error))', 22)
+                                 :         'rgb(var(--c-line))',
+                      color: isYes ? 'rgb(var(--c-success))'
+                           : isNo  ? 'rgb(var(--c-error))'
+                           :         'rgb(var(--c-muted))',
+                    }}>
                     {isYes && <CheckCircle2 size={11} weight="bold" />}
                     {a}
                   </span>
                 )}
               </div>
               {detail && (
-                <p className="mt-2 text-[11px] text-muted bg-white border border-line rounded px-2 py-1 leading-snug">
+                <p className="mt-2 text-[11px] text-muted bg-white border border-line rounded-md px-2 py-1 leading-snug">
                   {detail}
                 </p>
               )}
@@ -892,7 +908,7 @@ function DetailCard({ record, type, accent }) {
                 <a href={photoUrl} target="_blank" rel="noreferrer"
                   className="mt-2 block">
                   <img src={photoUrl} alt={`q${q.id}`}
-                    className="rounded-lg border border-line max-h-48 object-cover" />
+                    className="rounded-[10px] border border-line max-h-48 object-cover" />
                 </a>
               )}
             </div>

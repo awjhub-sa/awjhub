@@ -1,33 +1,20 @@
 /**
  * A small chart kit, drawn by hand in SVG.
  *
- * No charting library. Four shapes cover everything this system has to say —
- * a ranked bar, a ring, a trend, a matrix — and a library would have brought
- * a hundred kilobytes, its own theme system, and its own idea of which way
- * round a right-to-left axis goes. These take the brand tokens directly and
- * read correctly in Arabic because they were written for it.
+ * No charting library. Three shapes cover everything this system has to say —
+ * a ranked bar, a ring, a trend — and a library would have brought a hundred
+ * kilobytes, its own theme system, and its own idea of which way round a
+ * right-to-left axis goes. These take the brand tokens directly and read
+ * correctly in Arabic because they were written for it.
+ *
+ * The card these sit in is src/components/ui's Panel; the leading number is
+ * its StatTile. A chart kit should draw the data and nothing around it.
  */
 
 import { useId } from 'react';
 
 const AR = (n) => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
 export const arNum = AR;
-
-/* ── The card every chart sits in ─────────────────────────── */
-export function Panel({ title, subtitle, right, children, className = '' }) {
-  return (
-    <section className={`bg-white rounded-2xl border border-line overflow-hidden ${className}`}>
-      <header className="px-4 py-3 border-b border-line flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="text-[13px] font-black text-ink truncate">{title}</h3>
-          {subtitle && <p className="text-[11px] font-bold text-muted mt-0.5 truncate">{subtitle}</p>}
-        </div>
-        {right && <div className="flex-shrink-0">{right}</div>}
-      </header>
-      <div className="p-4">{children}</div>
-    </section>
-  );
-}
 
 export function Empty({ label = 'لا بيانات في هذا القسم بعد' }) {
   return (
@@ -48,14 +35,14 @@ export function BarsH({ items, max, unit = '', height = 26 }) {
         <div key={i} className="grid items-center gap-3"
           style={{ gridTemplateColumns: `minmax(0, ${it.wide ? '13rem' : '7.5rem'}) 1fr auto` }}>
           <span className="text-[11px] font-bold text-ink truncate" title={it.label}>{it.label}</span>
-          <span className="rounded-full bg-background overflow-hidden" style={{ height: height / 3 }}>
+          <span className="rounded-full bg-[rgb(var(--c-bg))] overflow-hidden" style={{ height: height / 3 }}>
             <span className="block h-full rounded-full transition-[width] duration-500"
               style={{
                 width: `${Math.max(2, (it.value / top) * 100)}%`,
-                background: `linear-gradient(90deg, ${it.color}, color-mix(in srgb, ${it.color} 55%, #fff))`,
+                background: it.color,
               }} />
           </span>
-          <span className="text-[11px] font-black tabular-nums text-ink w-10 text-left">
+          <span className="text-[11px] font-bold tabular-nums text-ink w-10 text-end">
             {AR(it.value)}{unit}
           </span>
         </div>
@@ -106,8 +93,8 @@ export function Donut({ segments, total, caption, size = 150, thickness = 22 }) 
           <li key={i} className="flex items-center gap-2 text-[11px]">
             <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: s.color }} />
             <span className="font-bold text-ink flex-1 truncate">{s.label}</span>
-            <span className="font-black tabular-nums text-muted">{AR(s.value)}</span>
-            <span className="font-bold tabular-nums text-muted/60 w-9 text-left">
+            <span className="font-bold tabular-nums text-muted">{AR(s.value)}</span>
+            <span className="font-semibold tabular-nums text-muted/60 w-9 text-end">
               {AR(Math.round((s.value / sum) * 100))}٪
             </span>
           </li>
@@ -143,10 +130,10 @@ export function Trend({ series, labels, max = 10, height = 190, unit = '' }) {
 
   return (
     <div className="relative">
-      <span className="absolute top-0 left-0 text-[9px] font-bold text-muted tabular-nums">
+      <span className="absolute top-0 end-0 text-[10px] font-semibold text-muted tabular-nums">
         {AR(hi.toFixed(1))}
       </span>
-      <span className="absolute left-0 text-[9px] font-bold text-muted tabular-nums"
+      <span className="absolute end-0 text-[10px] font-semibold text-muted tabular-nums"
         style={{ top: height - 12 }}>
         {AR(lo.toFixed(1))}
       </span>
@@ -187,7 +174,7 @@ export function Trend({ series, labels, max = 10, height = 190, unit = '' }) {
       <div className="flex justify-between mt-2 px-0.5" dir="rtl">
         {labels.map((l, i) => (
           <span key={i} className="text-center leading-tight">
-            <span className="block text-[11px] font-black tabular-nums text-ink">
+            <span className="block text-[11px] font-bold tabular-nums text-ink">
               {live[0]?.points[i] == null ? '—' : AR(live[0].points[i].toFixed(1))}
             </span>
             <span className="block text-[10px] font-bold text-muted tabular-nums mt-0.5">{l}</span>
@@ -208,76 +195,3 @@ export function Trend({ series, labels, max = 10, height = 190, unit = '' }) {
   );
 }
 
-/* ── Matrix ───────────────────────────────────────────────
-   Where two lists meet — a centre and a criterion, a caterer and a day. The
-   cell is a colour, so a hundred numbers read as one picture. */
-export function HeatGrid({ cols, rows, valueOf, color = '#B91C1C', legend }) {
-  if (!rows.length || !cols.length) return <Empty />;
-  const values = rows.flatMap(r => cols.map(c => valueOf(r, c) ?? 0));
-  const max = Math.max(...values, 1);
-
-  return (
-    <div className="overflow-x-auto">
-      <table className="border-separate w-full" style={{ borderSpacing: '2px' }}>
-        <thead>
-          <tr>
-            <th />
-            {cols.map(c => (
-              <th key={c.key} className="text-[9px] font-bold text-muted pb-1 whitespace-nowrap"
-                title={c.title || c.label}>
-                {c.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(r => (
-            <tr key={r.key}>
-              <td className="text-[10px] font-bold text-ink pl-2 whitespace-nowrap" title={r.title || r.label}>
-                {r.label}
-              </td>
-              {cols.map(c => {
-                const v = valueOf(r, c) ?? 0;
-                const t = v / max;
-                return (
-                  <td key={c.key} title={`${r.label} · ${c.label}: ${AR(v)}`}
-                    className="h-6 rounded"
-                    style={{
-                      background: v === 0
-                        ? 'rgb(var(--c-bg))'
-                        : `color-mix(in srgb, ${color} ${Math.round(18 + t * 82)}%, #fff)`,
-                    }} />
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {legend && <p className="text-[10px] font-bold text-muted mt-2">{legend}</p>}
-    </div>
-  );
-}
-
-/* ── A number that leads ──────────────────────────────────── */
-export function Kpi({ label, value, unit, tone = 'rgb(var(--c-primary))', hint, Icon }) {
-  return (
-    <div className="bg-white rounded-2xl border border-line p-4 relative overflow-hidden">
-      <span className="absolute inset-x-0 top-0 h-1" style={{ background: tone }} />
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-[11px] font-bold text-muted truncate">{label}</p>
-          <p className="text-2xl font-black tabular-nums mt-1.5 leading-none" style={{ color: tone }}>
-            {value}<span className="text-sm font-bold text-muted">{unit}</span>
-          </p>
-          {hint && <p className="text-[10px] font-bold text-muted/70 mt-1.5 truncate">{hint}</p>}
-        </div>
-        {Icon && (
-          <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: `color-mix(in srgb, ${tone} 12%, #fff)` }}>
-            <Icon size={17} weight="bold" style={{ color: tone }} />
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}

@@ -45,7 +45,7 @@ export default {
         appBorder:  token('line'),
       },
       fontFamily: {
-        arabic: ['"Cairo"', 'Tahoma', 'sans-serif'],
+        arabic: ['var(--font-arabic)', 'Tahoma', 'sans-serif'],
       },
       /* Softer and more generous than Tailwind's defaults.
        *

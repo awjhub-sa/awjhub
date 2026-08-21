@@ -22,6 +22,10 @@ import { splitDishes } from '../../lib/menuImport.js';
 
 const AR = (n) => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
 
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, #fff)`;
+
+const ALERT = '#B4674E';
+
 /** Common spots, offered as chips — typing "منى" forty-two times is not a task. */
 const PLACES = ['منى', 'عرفات', 'مزدلفة', 'مكة'];
 
@@ -109,44 +113,46 @@ export default function MealEditor({
     <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center" dir="rtl">
       <button className="absolute inset-0 bg-ink/45 backdrop-blur-[2px]" onClick={onClose} aria-label="إغلاق" />
 
-      <div className="relative w-full sm:max-w-2xl max-h-[92vh] sm:max-h-[88vh] bg-background
-                      rounded-t-3xl sm:rounded-3xl overflow-hidden flex flex-col
-                      shadow-[0_20px_70px_rgb(var(--c-ink)/0.35)] animate-[meSlide_.22s_ease-out]">
+      <div className="relative w-full sm:max-w-2xl max-h-[92vh] sm:max-h-[88vh] bg-[rgb(var(--c-bg))]
+                      rounded-t-[18px] sm:rounded-[18px] overflow-hidden flex flex-col
+                      shadow-[0_24px_60px_-16px_rgb(var(--c-ink)/0.35)] animate-[meSlide_.22s_ease-out]">
 
-        <header className="px-4 sm:px-6 py-4 bg-white border-b border-line flex items-start gap-3 flex-shrink-0">
-          <span className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-[15px] font-black"
-            style={{ background: `color-mix(in srgb, ${mealColor} 14%, #fff)`, color: mealColor }}>
+        <header className="px-4 sm:px-6 py-4 border-b flex items-start gap-3 flex-shrink-0"
+          style={{ background: tint(mealColor, 12), borderColor: tint(mealColor, 28) }}>
+          <span className="w-10 h-10 rounded-[10px] flex items-center justify-center flex-shrink-0 border
+                           text-[15px] font-extrabold tabular-nums"
+            style={{ background: tint(mealColor, 9), borderColor: tint(mealColor, 22), color: mealColor }}>
             {AR(total)}
           </span>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-black text-ink truncate">
+            <p className="text-[14px] font-bold truncate leading-tight" style={{ color: mealColor }}>
               {mealLabel} — {natLabel}
             </p>
-            <p className="text-[10.5px] font-bold text-muted mt-0.5">
+            <p className="text-[11.5px] font-medium text-muted mt-1">
               {dayLabel} · {total > 0 ? `${AR(total)} صنف` : 'لا أصناف بعد'}
             </p>
           </div>
           <button onClick={onClose}
-            className="w-8 h-8 rounded-lg border border-line bg-white hover:bg-background
-                       flex items-center justify-center flex-shrink-0">
-            <X size={15} weight="bold" className="text-muted" />
+            className="w-8 h-8 rounded-[10px] border border-line bg-white hover:text-ink
+                       flex items-center justify-center flex-shrink-0 text-muted transition-colors">
+            <X size={15} weight="bold" />
           </button>
         </header>
 
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
 
           {seedLines?.length > 0 && (
-            <div className="rounded-xl border p-3"
-              style={{ borderColor: '#EBCFC3', background: 'color-mix(in srgb, #B4674E 7%, #fff)' }}>
+            <div className="rounded-[14px] border p-3"
+              style={{ background: tint(ALERT, 12), borderColor: tint(ALERT, 28) }}>
               <SeedLines lines={seedLines} onPick={addDish} />
             </div>
           )}
 
           {/* ── Where and when ── */}
-          <section className="bg-white rounded-2xl border border-line p-4">
+          <section className="bg-white rounded-[14px] border border-line p-4 shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)]">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="block">
-                <span className="text-[10px] font-black text-muted/70 tracking-widest flex items-center gap-1 mb-1.5">
+                <span className="text-[10px] font-bold text-muted/70 tracking-widest flex items-center gap-1 mb-1.5">
                   <MapPin size={11} weight="bold" /> الموقع
                 </span>
                 <input
@@ -154,15 +160,15 @@ export default function MealEditor({
                   value={draft.location}
                   onChange={e => setDraft(d => ({ ...d, location: e.target.value }))}
                   placeholder="منى"
-                  className="w-full h-9 px-3 rounded-lg border border-line bg-background text-[12px] font-bold text-ink
-                             focus:outline-none focus:border-primary/50 focus:bg-white"
+                  className="w-full h-9 px-3 rounded-[10px] border border-line bg-[rgb(var(--c-bg))] text-[12.5px] font-medium text-ink
+                             focus:outline-none focus:border-primary/50 focus:bg-white transition-colors"
                 />
                 <span className="flex gap-1 mt-1.5">
                   {PLACES.map(p => (
                     <button key={p} type="button"
                       onClick={() => setDraft(d => ({ ...d, location: p }))}
-                      className="text-[10px] font-bold px-2 py-0.5 rounded-md border border-line
-                                 bg-white text-muted hover:text-ink hover:border-primary/40">
+                      className="text-[10.5px] font-bold px-2 py-0.5 rounded-md border border-line
+                                 bg-white text-muted hover:text-ink hover:border-primary/40 transition-colors">
                       {p}
                     </button>
                   ))}
@@ -170,15 +176,15 @@ export default function MealEditor({
               </label>
 
               <label className="block">
-                <span className="text-[10px] font-black text-muted/70 tracking-widest flex items-center gap-1 mb-1.5">
+                <span className="text-[10px] font-bold text-muted/70 tracking-widest flex items-center gap-1 mb-1.5">
                   <ClockIcon size={11} weight="bold" /> وقت التقديم
                 </span>
                 <input
                   value={draft.time}
                   onChange={e => setDraft(d => ({ ...d, time: e.target.value }))}
                   placeholder="٠٦:٠٠ ص - ٠٩:٠٠ ص"
-                  className="w-full h-9 px-3 rounded-lg border border-line bg-background text-[12px] font-bold text-ink
-                             focus:outline-none focus:border-primary/50 focus:bg-white"
+                  className="w-full h-9 px-3 rounded-[10px] border border-line bg-[rgb(var(--c-bg))] text-[12.5px] font-medium text-ink
+                             focus:outline-none focus:border-primary/50 focus:bg-white transition-colors"
                 />
               </label>
             </div>
@@ -189,14 +195,16 @@ export default function MealEditor({
             const c = CATEGORY_META[cat];
             const list = draft[cat];
             return (
-              <section key={cat} className="bg-white rounded-2xl border border-line overflow-hidden">
-                <div className="flex items-center gap-2 px-4 py-2.5 border-b border-line">
+              <section key={cat} className="bg-white rounded-[14px] border border-line overflow-hidden
+                                            shadow-[0_1px_2px_rgb(var(--c-ink)/0.04)]">
+                <div className="flex items-center gap-2 px-4 py-2.5 border-b"
+                  style={{ background: tint(c.color, 12), borderColor: tint(c.color, 28) }}>
                   <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: c.color }} />
-                  <span className="text-[11.5px] font-black" style={{ color: c.color }}>{c.label}</span>
+                  <span className="text-[12px] font-bold" style={{ color: c.color }}>{c.label}</span>
                   {cat === 'main' && (
-                    <span className="text-[9px] font-bold text-muted/70">أساسي</span>
+                    <span className="text-[10px] font-medium text-muted/70">أساسي</span>
                   )}
-                  <span className="mr-auto text-[10px] font-black tabular-nums text-muted">
+                  <span className="ms-auto text-[10.5px] font-bold tabular-nums text-muted">
                     {list.length ? AR(list.length) : '—'}
                   </span>
                 </div>
@@ -216,21 +224,21 @@ export default function MealEditor({
                         }}
                         placeholder="اسم الصنف، الكمية"
                         autoFocus={!dish && i === list.length - 1}
-                        className="flex-1 h-8 px-2.5 rounded-lg border border-line bg-background text-[12px] text-ink
-                                   focus:outline-none focus:border-primary/50 focus:bg-white"
+                        className="flex-1 h-8 px-2.5 rounded-[10px] border border-line bg-[rgb(var(--c-bg))] text-[12.5px] text-ink
+                                   focus:outline-none focus:border-primary/50 focus:bg-white transition-colors"
                       />
                       <button type="button" onClick={() => removeDish(cat, i)}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0
-                                   text-muted/50 hover:text-error hover:bg-error/10">
+                        className="w-7 h-7 rounded-[10px] flex items-center justify-center flex-shrink-0
+                                   text-muted/50 hover:text-error hover:bg-error/10 transition-colors">
                         <Trash size={13} weight="bold" />
                       </button>
                     </div>
                   ))}
 
                   <button type="button" onClick={() => addDish(cat)}
-                    className="w-full h-8 rounded-lg border border-dashed flex items-center justify-center gap-1.5
-                               text-[11px] font-bold transition-colors"
-                    style={{ borderColor: c.border, color: c.color }}>
+                    className="w-full h-8 rounded-[10px] border border-dashed flex items-center justify-center gap-1.5
+                               text-[11.5px] font-bold transition-colors"
+                    style={{ borderColor: tint(c.color, 30), color: c.color }}>
                     <Plus size={12} weight="bold" />
                     إضافة صنف
                   </button>
@@ -243,25 +251,24 @@ export default function MealEditor({
 
         <footer className="px-4 sm:px-6 py-3 bg-white border-t border-line flex items-center gap-2 flex-shrink-0">
           {err && (
-            <p className="text-[11px] font-bold text-error flex-1 truncate">{err}</p>
+            <p className="text-[11.5px] font-bold text-error flex-1 truncate">{err}</p>
           )}
           {!err && isSaved && (
             <button type="button" onClick={remove} disabled={busy}
-              className="text-[11px] font-bold text-error/80 hover:text-error flex items-center gap-1 disabled:opacity-40">
+              className="text-[11.5px] font-bold text-error/80 hover:text-error flex items-center gap-1 disabled:opacity-40 transition-colors">
               <Trash size={12} weight="bold" />
               حذف المنيو
             </button>
           )}
-          <div className="mr-auto flex items-center gap-2">
+          <div className="ms-auto flex items-center gap-2">
             <button type="button" onClick={onClose} disabled={busy}
-              className="h-9 px-4 rounded-lg border border-line bg-white text-[12px] font-bold text-muted
-                         hover:text-ink disabled:opacity-40">
+              className="h-9 px-4 rounded-[10px] border border-line bg-white text-[12.5px] font-bold text-muted
+                         hover:text-ink disabled:opacity-40 transition-colors">
               إلغاء
             </button>
             <button type="button" onClick={save} disabled={busy}
-              className="h-9 px-5 rounded-lg text-white text-[12px] font-black flex items-center gap-1.5
-                         disabled:opacity-50 shadow-[0_3px_12px_rgb(var(--c-primary)/0.3)]"
-              style={{ background: 'linear-gradient(135deg,rgb(var(--c-primary-400)),rgb(var(--c-primary)))' }}>
+              className="h-9 px-5 rounded-[10px] bg-primary text-white text-[12.5px] font-bold flex items-center gap-1.5
+                         disabled:opacity-50 hover:brightness-110 transition-all">
               <FloppyDisk size={14} weight="bold" />
               {busy ? 'جارٍ الحفظ…' : 'حفظ المنيو'}
             </button>
@@ -289,7 +296,7 @@ function SeedLines({ lines, onPick }) {
     <div className="space-y-1 max-h-44 overflow-y-auto">
       {lines.map((line, i) => (
         <div key={i} className={`flex items-center gap-1.5 ${used.has(i) ? 'opacity-40' : ''}`}>
-          <span className="flex-1 text-[11px] text-ink truncate bg-white/70 rounded px-2 py-1 border border-line/60">
+          <span className="flex-1 text-[11.5px] text-ink truncate bg-white rounded-md px-2 py-1 border border-line">
             {line}
           </span>
           {CATEGORY_KEYS.map(cat => {
@@ -297,8 +304,8 @@ function SeedLines({ lines, onPick }) {
             return (
               <button key={cat} type="button" title={c.label}
                 onClick={() => { onPick(cat, line); setUsed(s => new Set(s).add(i)); }}
-                className="w-6 h-6 rounded-md flex items-center justify-center text-[9px] font-black flex-shrink-0"
-                style={{ background: `color-mix(in srgb, ${c.color} 14%, #fff)`, color: c.color }}>
+                className="w-6 h-6 rounded-md border flex items-center justify-center text-[10px] font-bold flex-shrink-0"
+                style={{ background: tint(c.color, 9), borderColor: tint(c.color, 22), color: c.color }}>
                 {c.label.replace('ال', '')[0]}
               </button>
             );
